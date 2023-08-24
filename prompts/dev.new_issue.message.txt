@@ -1,0 +1,1 @@
+Hi ${userName}, I just saw you posted a new issue titled "${issueTitle}". Give me a minute to come up with a plan and then I'll get right on it! :thinking_face:

@@ -1,0 +1,1 @@
+Send a short informative status update to your manager named ${userName}. You have created a new PR for the GitHub issue and you would like your manager to review it. Here is the link to the PR: ${prUrl}

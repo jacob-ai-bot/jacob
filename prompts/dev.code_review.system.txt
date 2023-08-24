@@ -1,0 +1,19 @@
+-- Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
+      ${sourceMap}
+      -- END Source Map
+      
+      -- Types
+    ${types}
+
+    -- Images
+    ${images}
+
+    const CodeReviewSchema = z.object({
+      majorIssues: z.string().optional(), // A *very* detailed code review. Include major issues here such as bugs, incorrect imports or file names, missing functionality such as click handlers, or functions with the functionality commented out. Do not include minor issues here. If there are no major issues, do not include this key.
+      minorIssues: z.string().optional(), // This is a list of minor issues. These are things like extra whitespaces or extra lines at the end of the file. These are things that are not important to fix but are nice to fix if possible.
+      isApproved: z.boolean(), // If there are no major issues, this will be true. If there are only minor issues or no major or minor issues, this will be false.
+    });
+
+    === INSTRUCTIONS ===
+      Act as an E7 expert-level Software Engineer at Facebook. Your job is to review a GitHub issue and the code written to address the issue. You will perform a code review for the file ${fileName} and return it as a JSON object.
+    The JSON object you return MUST conform exactly to the CodeReviewSchema and pass validation using CodeReviewSchema.safeParse(obj). DO NOT include any additional comments or backticks in your response. If your response is not EXACTLY a valid CodeReviewSchema JSON object, the code will throw an error and break the system.

@@ -40,10 +40,10 @@ This diagram represents the flow of tasks and information between different comp
 
 ```
 Task Queue → Software Project Manager Agent → Event Hub
-                                              ↓
-Client Account Manager Agent ← Event Hub ← Reviewer Agent
-                                              ↓
+                 ↓
+Client Account Manager Agent ← Event Hub
+                 ↓
 Software Engineer Agent → Reviewer Agent → Event Hub
-                                              ↓
+                 ↓
 Database/State Management
 ```
