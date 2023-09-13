@@ -21,7 +21,7 @@ describe("parseTemplate", () => {
     const expectedOutput = `Hi John, I just saw you posted a new issue titled "Bug in code". Give me a minute to come up with a plan and then I'll get right on it! :thinking_face:`;
 
     expect(parseTemplate(agent, action, type, mockParams)).toEqual(
-      expectedOutput
+      expectedOutput,
     );
   });
 

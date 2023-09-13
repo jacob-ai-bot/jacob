@@ -18,7 +18,7 @@ export const parseTemplate = (
   agent: string,
   action: string,
   type: string,
-  params: TemplateParams
+  params: TemplateParams,
 ): string => {
   // Get the folder path from the environment variable
   const folder = process.env.PROMPT_FOLDER;
@@ -55,7 +55,7 @@ export const parseTemplate = (
     // Throw an error if any required variables are missing
     if (requiredVariables.length > 0) {
       throw new Error(
-        `Missing required variables: ${requiredVariables.join(", ")}`
+        `Missing required variables: ${requiredVariables.join(", ")}`,
       );
     }
   }

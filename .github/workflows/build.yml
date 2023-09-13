@@ -15,5 +15,6 @@ jobs:
       with:
         node-version-file: .tool-versions
     - run: npm install
+    - run: npm run lint
     - run: npm run build
     - run: npm test
