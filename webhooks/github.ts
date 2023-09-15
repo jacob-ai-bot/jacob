@@ -2,6 +2,7 @@ import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
 import SmeeClient from "smee-client";
 import * as dotenv from "dotenv";
 import { Application } from "express";
+import { text } from "body-parser";
 
 dotenv.config();
 
@@ -83,10 +84,10 @@ webhooks.on("pull_request_review_comment.created", async ({ payload }) => {
 });
 
 export async function setupGitHubWebhook(app: Application): Promise<void> {
-  app.use(
-    createNodeMiddleware(webhooks, {
-      path: "/",
-    }),
+  app.post(
+    "/api/github/webhooks",
+    text({ type: "*/*" }),
+    createNodeMiddleware(webhooks),
   );
 
   const events: EventSource | undefined = smeeClient?.start();
