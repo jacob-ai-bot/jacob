@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  rabbit:
+    image: rabbitmq:3.12.4-management
+    restart: always
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_ADMIN_PORT:-15672}:15672"
+    volumes:
+      - "rabbit:/var/lib/rabbitmq"
+
+volumes:
+  rabbit:

@@ -47,3 +47,28 @@ Software Engineer Agent → Reviewer Agent → Event Hub
                  ↓
 Database/State Management
 ```
+
+## Local dev setup
+
+* Create the `.env` file based on `.env.example`
+  * Configure a smee.io URL for webhooks
+  * Generate a `GITHUB_WEBHOOK_SECRET`
+* Assuming `docker` is installed locally, run this to start RabbitMQ:
+```console
+docker compose up -d
+```
+* Ensure you are using the version of `node` referenced in `.tool-versions` (handled automatically if you are using `asdf`)
+* Install dependencies:
+```console
+npm install
+```
+* Verify tests pass:
+```console
+npm test
+```
+* Start dev server:
+```console
+npm run dev
+```
+* Add a webhook to a repo on github.com, using your secret, the smee.io URL, including the following events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
+* Verify local server log activity when github repo issues are created or commented on.
