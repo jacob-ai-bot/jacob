@@ -10,5 +10,17 @@ services:
     volumes:
       - "rabbit:/var/lib/rabbitmq"
 
+  db:
+    image: ankane/pgvector:v0.5.0
+    restart: always
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - "pgdata:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+
 volumes:
   rabbit:
+  pgdata:
