@@ -53,7 +53,7 @@ Database/State Management
 * Create the `.env` file based on `.env.example`
   * Configure a smee.io URL for webhooks
   * Generate a `GITHUB_WEBHOOK_SECRET`
-* Assuming `docker` is installed locally, run this to start RabbitMQ:
+* Assuming `docker` is installed locally, run this to start RabbitMQ and Postgres:
 ```console
 docker compose up -d
 ```
@@ -61,6 +61,14 @@ docker compose up -d
 * Install dependencies:
 ```console
 npm install
+```
+* Create local dev and test databases:
+```console
+npm run db create
+```
+* Migrate local dev database:
+```console
+npm run db migrate
 ```
 * Verify tests pass:
 ```console
