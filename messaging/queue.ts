@@ -1,6 +1,8 @@
 import ampq from "amqplib";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 
+import { db } from "../src/db/db";
+
 const QUEUE_NAME = "github_event_queue";
 
 let channel: ampq.Channel | undefined;
@@ -48,13 +50,40 @@ async function initRabbitMQ() {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function onGitHubEvent(event: EmitterWebhookEvent) {
+  const start = Date.now();
   console.log(`onGitHubEvent: ${event.id} ${event.name}`);
-  const delay = Math.random() * 10000;
-  await sleep(delay);
+  if (
+    event.name === "issues" ||
+    event.name === "issue_comment" ||
+    event.name === "pull_request_review" ||
+    event.name === "pull_request_review_comment"
+  ) {
+    const {
+      payload: { repository },
+    } = event;
+    const projectUpdate = {
+      repoName: repository.name,
+      repoFullName: repository.full_name,
+      repoNodeId: repository.node_id,
+    };
+    const project = await db.projects
+      .create({
+        ...projectUpdate,
+        repoId: `${repository.id}`,
+      })
+      .onConflict("repoId")
+      .merge(projectUpdate);
+    console.log(
+      `onGitHubEvent: ${event.id} ${event.name} : DB project ID: ${project.id}`,
+    );
+  } else {
+    const delay = Math.random() * 10000;
+    await sleep(delay);
+  }
   console.log(
-    `onGitHubEvent: handled event after ${delay / 1000}s: ${event.id} ${
-      event.name
-    }`,
+    `onGitHubEvent: ${event.id} ${event.name} : complete after ${
+      Date.now() - start
+    }ms`,
   );
 }
 

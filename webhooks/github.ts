@@ -105,7 +105,9 @@ export async function setupGitHubWebhook(app: Application): Promise<void> {
   );
 
   const events: EventSource | undefined = smeeClient?.start();
-  console.log("Smee event stream started");
+  if (events) {
+    console.log("Smee event stream started");
+  }
 
   process.on("SIGTERM", () => {
     console.info("Gracefully shutting down smee event stream...");
