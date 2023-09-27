@@ -2,6 +2,7 @@ import ampq from "amqplib";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 
 import { db } from "../src/db/db";
+import { cloneRepo } from "../src/github/clone";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -76,6 +77,10 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
     console.log(
       `onGitHubEvent: ${event.id} ${event.name} : DB project ID: ${project.id}`,
     );
+
+    const { path, cleanup } = await cloneRepo(repository.full_name);
+    console.log(`cleaning up repo cloned to ${path}`);
+    cleanup();
   } else {
     const delay = Math.random() * 10000;
     await sleep(delay);

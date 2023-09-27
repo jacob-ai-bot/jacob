@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
 
 export type TemplateParams = {
   [key: string]: string;
@@ -62,3 +64,18 @@ export const parseTemplate = (
 
   return content;
 };
+
+const execAsync = promisify(exec);
+
+export function execAsyncWithLog(
+  command: string,
+  options: Parameters<typeof execAsync>[1],
+) {
+  const promise = execAsync(command, options);
+
+  promise.child.stdout?.on("data", (d) => console.log(`child stdout: ${d}`));
+  promise.child.stderr?.on("data", (d) => console.log(`child stderr: ${d}`));
+  promise.child.on("close", (code) => console.log(`child code: ${code}`));
+
+  return promise;
+}
