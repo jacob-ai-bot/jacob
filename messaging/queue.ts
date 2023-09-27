@@ -3,6 +3,7 @@ import { EmitterWebhookEvent } from "@octokit/webhooks";
 
 import { db } from "../src/db/db";
 import { cloneRepo } from "../src/github/clone";
+import { getSourceMap } from "../src/analyze/sourceMap";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -78,7 +79,23 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
       `onGitHubEvent: ${event.id} ${event.name} : DB project ID: ${project.id}`,
     );
 
-    const { path, cleanup } = await cloneRepo(repository.full_name);
+    let branch: string | undefined;
+    if (
+      event.name === "pull_request_review" ||
+      event.name === "pull_request_review_comment"
+    ) {
+      branch = event.payload.pull_request.head.ref;
+    }
+
+    const { path, cleanup } = await cloneRepo(repository.full_name, branch);
+
+    const sourceMap = getSourceMap(path);
+    console.log(
+      `onGitHubEvent: ${event.id} ${event.name} : sourceMap: ${JSON.stringify(
+        sourceMap,
+      )}`,
+    );
+
     console.log(`cleaning up repo cloned to ${path}`);
     cleanup();
   } else {
