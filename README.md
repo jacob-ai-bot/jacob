@@ -51,8 +51,11 @@ Database/State Management
 ## Local dev setup
 
 * Create the `.env` file based on `.env.example`
-  * Configure a smee.io URL for webhooks
+  * Configure a smee.io URL
   * Generate a `GITHUB_WEBHOOK_SECRET`
+  * Generate a `GITHUB_PRIVATE_KEY`
+  * Register a GitHub app (use the fields above) and take note of the `GITHUB_APP_ID`
+    * Ensure the app is listening for the following webhook events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
 * Assuming `docker` is installed locally, run this to start RabbitMQ and Postgres:
 ```console
 docker compose up -d
@@ -78,5 +81,5 @@ npm test
 ```console
 npm run dev
 ```
-* Add a webhook to a repo on github.com, using your secret, the smee.io URL, including the following events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
+* Install the registered GitHub app on a repo on github.com
 * Verify local server log activity when github repo issues are created or commented on.

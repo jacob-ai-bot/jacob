@@ -1,11 +1,18 @@
 import ampq from "amqplib";
+import { Octokit } from "@octokit/core";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
+import { createAppAuth } from "@octokit/auth-app";
 
 import { db } from "../src/db/db";
 import { cloneRepo } from "../src/github/clone";
 import { getSourceMap } from "../src/analyze/sourceMap";
 
 const QUEUE_NAME = "github_event_queue";
+
+const auth = createAppAuth({
+  appId: process.env.GITHUB_APP_ID ?? "",
+  privateKey: process.env.GITHUB_PRIVATE_KEY ?? "",
+});
 
 let channel: ampq.Channel | undefined;
 const LOCALHOST_RABBITMQ_PORT = process.env.RABBITMQ_PORT ?? 5672;
@@ -34,7 +41,7 @@ async function initRabbitMQ() {
           await onGitHubEvent(event);
           channel?.ack(message);
         } catch (error) {
-          console.error(`Error parsing message: ${error}`);
+          console.error(`Error parsing or processing message: ${error}`);
           channel?.nack(message);
         }
       },
@@ -61,7 +68,7 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
     event.name === "pull_request_review_comment"
   ) {
     const {
-      payload: { repository },
+      payload: { repository, installation },
     } = event;
     const projectUpdate = {
       repoName: repository.name,
@@ -87,17 +94,33 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
       branch = event.payload.pull_request.head.ref;
     }
 
-    const { path, cleanup } = await cloneRepo(repository.full_name, branch);
+    const installationId = installation?.id;
+    if (installationId) {
+      const installationAuthentication = await auth({
+        type: "installation",
+        installationId,
+      });
 
-    const sourceMap = getSourceMap(path);
-    console.log(
-      `onGitHubEvent: ${event.id} ${event.name} : sourceMap: ${JSON.stringify(
-        sourceMap,
-      )}`,
-    );
+      const { path, cleanup } = await cloneRepo(
+        repository.full_name,
+        branch,
+        installationAuthentication.token,
+      );
 
-    console.log(`cleaning up repo cloned to ${path}`);
-    cleanup();
+      const sourceMap = getSourceMap(path);
+      console.log(
+        `onGitHubEvent: ${event.id} ${event.name} : sourceMap: ${JSON.stringify(
+          sourceMap,
+        )}`,
+      );
+
+      console.log(`cleaning up repo cloned to ${path}`);
+      cleanup();
+    } else {
+      console.error(
+        `onGitHubEvent: ${event.id} ${event.name} : no installationId`,
+      );
+    }
   } else {
     const delay = Math.random() * 10000;
     await sleep(delay);
@@ -108,11 +131,20 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
     }ms`,
   );
 }
+type GHEventWithOctokit = EmitterWebhookEvent & {
+  octokit: Octokit;
+};
 
-export const publishGitHubEventToQueue = async (event: EmitterWebhookEvent) => {
-  channel?.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(event)), {
-    persistent: true,
-  });
+export const publishGitHubEventToQueue = async (event: GHEventWithOctokit) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { octokit, ...eventWithoutOctokit } = event;
+  channel?.sendToQueue(
+    QUEUE_NAME,
+    Buffer.from(JSON.stringify(eventWithoutOctokit)),
+    {
+      persistent: true,
+    },
+  );
   console.log(`publishGitHubEventToQueue: ${event.id} ${event.name}`);
 };
 

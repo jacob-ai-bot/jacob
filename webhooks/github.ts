@@ -1,4 +1,4 @@
-import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
+import { App, createNodeMiddleware } from "@octokit/app";
 import SmeeClient from "smee-client";
 import * as dotenv from "dotenv";
 import { Application } from "express";
@@ -8,8 +8,13 @@ import { publishGitHubEventToQueue } from "../messaging/queue";
 
 dotenv.config();
 
-const webhooks = new Webhooks({
-  secret: process.env.GITHUB_WEBHOOK_SECRET ?? "",
+export const ghApp = new App({
+  appId: process.env.GITHUB_APP_ID ?? "",
+  privateKey: process.env.GITHUB_PRIVATE_KEY ?? "",
+  webhooks: {
+    secret: process.env.GITHUB_WEBHOOK_SECRET ?? "",
+  },
+  oauth: { clientId: "", clientSecret: "" },
 });
 
 let smeeClient: SmeeClient | undefined;
@@ -25,9 +30,9 @@ const errorHandler = (error: Error) => {
   console.error(`Error in webhook event: ${error}`);
 };
 
-webhooks.onError(errorHandler);
+ghApp.webhooks.onError(errorHandler);
 
-webhooks.on("issues.opened", async (event) => {
+ghApp.webhooks.on("issues.opened", async (event) => {
   const { payload } = event;
   // Only add a new issue to the queue if the issue body contains the @otto mention
   console.log(`Received issue #${payload.issue.number} opened event`);
@@ -40,7 +45,7 @@ webhooks.on("issues.opened", async (event) => {
 });
 
 // add a new webhook event handler for when an issue is labeled
-webhooks.on("issues.labeled", async (event) => {
+ghApp.webhooks.on("issues.labeled", async (event) => {
   const { payload } = event;
   // Only add the issue to the queue if it is labeled with the "otto" label
   console.log(`Received issue #${payload.issue.number} labeled event`);
@@ -53,7 +58,7 @@ webhooks.on("issues.labeled", async (event) => {
 });
 
 // add a new webhook event handler for when an issue is edited
-webhooks.on("issues.edited", async (event) => {
+ghApp.webhooks.on("issues.edited", async (event) => {
   const { payload } = event;
   console.log(`Received issue #${payload.issue.number} edited event`);
   if (payload?.issue.body?.includes("@otto")) {
@@ -65,7 +70,7 @@ webhooks.on("issues.edited", async (event) => {
 });
 
 // add a new webhook event handler for when an issue is assigned to a user
-webhooks.on("issues.assigned", async (event) => {
+ghApp.webhooks.on("issues.assigned", async (event) => {
   const { payload } = event;
   console.log(`Received issue #${payload.issue.number} assigned event`);
   const ottoLogin = process.env.OTTO_GITHUB_USERNAME;
@@ -78,7 +83,7 @@ webhooks.on("issues.assigned", async (event) => {
   }
 });
 
-webhooks.on("pull_request_review.submitted", async (event) => {
+ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const { payload } = event;
   console.log(`Received PR #${payload.pull_request.number} submitted event`);
   if (
@@ -90,7 +95,7 @@ webhooks.on("pull_request_review.submitted", async (event) => {
   }
 });
 
-webhooks.on("pull_request_review_comment.created", async (event) => {
+ghApp.webhooks.on("pull_request_review_comment.created", async (event) => {
   const { payload } = event;
   console.log(
     `Received PR #${payload.pull_request.number} review comment created event`,
@@ -101,7 +106,7 @@ export async function setupGitHubWebhook(app: Application): Promise<void> {
   app.post(
     "/api/github/webhooks",
     text({ type: "*/*" }),
-    createNodeMiddleware(webhooks),
+    createNodeMiddleware(ghApp),
   );
 
   const events: EventSource | undefined = smeeClient?.start();
