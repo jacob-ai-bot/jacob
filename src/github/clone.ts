@@ -14,7 +14,7 @@ export async function cloneRepo(
   const { path } = result;
 
   const args = branch ? `-b ${branch}` : "";
-  const tokenArg = token ? `${token}@` : "";
+  const tokenArg = token ? `x-access-token:${token}@` : "";
   const cloneCommand = `git clone ${args} ${HTTPS_PREFIX}${tokenArg}${HTTPS_SUFFIX}${repoName}${GIT_REPO_SUFFIX} .`;
   console.log(`Exec: ${cloneCommand} cwd: ${path}`);
   await execAsyncWithLog(cloneCommand, { cwd: path });
