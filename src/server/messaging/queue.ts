@@ -3,9 +3,9 @@ import { Octokit } from "@octokit/core";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 import { createAppAuth } from "@octokit/auth-app";
 
-import { db } from "../src/db/db";
-import { cloneRepo } from "../src/github/clone";
-import { getSourceMap } from "../src/analyze/sourceMap";
+import { db } from "../db/db";
+import { cloneRepo } from "../github/clone";
+import { getSourceMap } from "../analyze/sourceMap";
 
 const QUEUE_NAME = "github_event_queue";
 
