@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import { parseTemplate, TemplateParams } from "../utils";
 
 dotenv.config();
-const originalPromptsFolder = process.env.PROMPT_FOLDER;
+const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
 describe("parseTemplate", () => {
   const mockParams: TemplateParams = {
