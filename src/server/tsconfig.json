@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.settings.json",
+  "exclude": ["server/**/*.ts"],
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "commonjs",
+  }
+}

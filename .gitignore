@@ -2,6 +2,9 @@
 node_modules/
 dist/
 
+# Vite config build
+vite/
+
 # Environment variables
 .env
 .env.local
