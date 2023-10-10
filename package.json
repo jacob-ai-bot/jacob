@@ -1,17 +1,14 @@
 {
   "scripts": {
-    "v:dev": "vite",
-    "v:build": "tsc && vite build",
-    "v:lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
+    "dev": "tsc -p ./tsconfig.node.json && vite",
+    "build": "tsc -p ./tsconfig.node.json && vite --config ./vite/vite.config.js build && tsc -b",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint --fix . --ext ts,tsx --report-unused-disable-directives",
+    "preview": "tsc -p ./tsconfig.node.json && vite --config ./vite/vite.config.js preview",
     "start": "node dist/src/server/index.js",
-    "build": "tsc",
-    "dev": "tsc-watch --onSuccess \"nodemon dist/src/server/index.js\"",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
     "test": "jest --config=jest.config.js",
     "create-project": "node dist/scripts/create_new_project.js",
-    "db": "ts-node src/db/dbScript.ts"
+    "db": "ts-node -O {\\\"module\\\":\\\"commonjs\\\"} src/server/db/dbScript.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",

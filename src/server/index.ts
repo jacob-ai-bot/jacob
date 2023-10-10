@@ -3,13 +3,17 @@ import express from "express";
 
 const port = process.env["PORT"] ?? 4000;
 
-async function init() {
-  // set up the server
-  const app = express();
-  app.use(express.urlencoded({ extended: true }));
+// set up the server
+export const app = express();
+app.use(express.urlencoded({ extended: true }));
 
-  await setupGitHubWebhook(app);
+if (!process.env["VITE"]) {
+  const frontendFiles = process.cwd() + "/dist";
+  app.use(express.static(frontendFiles));
+  app.get("/*", (_, res) => {
+    res.send(frontendFiles + "/index.html");
+  });
   app.listen(port, () => console.log(`Server is running on port ${port}`));
 }
 
-init();
+setupGitHubWebhook(app);
