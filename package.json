@@ -28,6 +28,7 @@
     "pqb": "^0.18.18",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.16.0",
     "smee-client": "^1.2.3",
     "tiktoken-node": "^0.0.6",
     "tmp-promise": "^3.0.3",
