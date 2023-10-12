@@ -21,6 +21,7 @@ export function GitHubOAuth() {
   const [repos] = useState<GetUserReposResponse | undefined>();
 
   const code = searchParams.get("code");
+  const figma = searchParams.get("figma");
 
   const handleAccessToken = (event: MessageEvent) => {
     if (event?.data?.pluginMessage?.message === "GET_EXISTING_ACCESS_TOKEN") {
@@ -122,9 +123,18 @@ export function GitHubOAuth() {
     };
   }, []);
 
+  const handleFigmaSignin = () => {
+    window.open(location.origin + location.pathname, "_blank", "popup");
+  };
+
   return (
     <div>
-      {!accessToken && <a href={githubOAuthURL}>Sign in with GitHub</a>}
+      {!accessToken && !figma && (
+        <a href={githubOAuthURL}>Sign in with GitHub</a>
+      )}
+      {!accessToken && figma && (
+        <a onClick={handleFigmaSignin}>Sign in with GitHub</a>
+      )}
       {accessToken && <div>Signed in to github!</div>}
       {repos &&
         repos.map((repo) => (
