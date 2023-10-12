@@ -18,9 +18,28 @@ export function GitHubOAuth() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [attemptedLogin, setAttemptedLogin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
-  const [repos, setRepos] = useState<GetUserReposResponse | undefined>();
+  const [repos] = useState<GetUserReposResponse | undefined>();
 
   const code = searchParams.get("code");
+
+  const handleAccessToken = (event: MessageEvent) => {
+    if (event?.data?.pluginMessage?.message === "GET_EXISTING_ACCESS_TOKEN") {
+      const token = event?.data?.pluginMessage?.accessToken;
+
+      console.log("handleAccessToken received token", token);
+      // Check if that token works
+      // and save it to use with network requests
+
+      setAccessToken(token);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("message", handleAccessToken);
+    return () => {
+      window.removeEventListener("message", handleAccessToken);
+    };
+  }, []);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -43,30 +62,45 @@ export function GitHubOAuth() {
           const accessToken = data?.token;
           setAccessToken(accessToken);
 
-          // Fetch the user's repos
-          const userReposResponse = await fetch(
-            "https://api.github.com/user/repos",
+          setError(undefined);
+          searchParams.delete("code");
+          setSearchParams(searchParams);
+
+          parent.postMessage(
             {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "User-Agent": "Your-App-Name",
-                "Content-Type": "application/json",
+              pluginMessage: {
+                message: "SAVE_ACCESS_TOKEN",
+                accessToken,
               },
+              pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
             },
+            "https://www.figma.com",
           );
 
-          if (userReposResponse.ok) {
-            const repos: GetUserReposResponse = await userReposResponse.json();
-            setRepos(repos);
+          // Fetch the user's repos
+          // const userReposResponse = await fetch(
+          //   "https://api.github.com/user/repos",
+          //   {
+          //     headers: {
+          //       Authorization: `Bearer ${accessToken}`,
+          //       "User-Agent": "Your-App-Name",
+          //       "Content-Type": "application/json",
+          //     },
+          //   },
+          // );
 
-            setError(undefined);
-            searchParams.delete("code");
-            setSearchParams(searchParams);
-          } else {
-            throw new Error(
-              `Failed to fetch user repos: ${userReposResponse.status} ${userReposResponse.statusText}`,
-            );
-          }
+          // if (userReposResponse.ok) {
+          //   const repos: GetUserReposResponse = await userReposResponse.json();
+          //   setRepos(repos);
+
+          //   setError(undefined);
+          //   searchParams.delete("code");
+          //   setSearchParams(searchParams);
+          // } else {
+          //   throw new Error(
+          //     `Failed to fetch user repos: ${userReposResponse.status} ${userReposResponse.statusText}`,
+          //   );
+          // }
         } else {
           throw new Error(
             `Failed to fetch access token: ${accessTokenResponse.status} ${accessTokenResponse.statusText}`,
