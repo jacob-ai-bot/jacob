@@ -75,7 +75,7 @@ export function GitHubOAuth() {
               },
               pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
             },
-            "https://www.figma.com",
+            "https://otto-mvp.onrender.com",
           );
 
           // Fetch the user's repos
