@@ -54,7 +54,7 @@ Database/State Management
   * Configure a smee.io URL
   * Generate a `GITHUB_WEBHOOK_SECRET`
   * Generate a `GITHUB_PRIVATE_KEY`
-  * Register a GitHub app (use the fields above) and take note of the `GITHUB_APP_ID`
+  * Register a GitHub app (use the fields above) and take note of the `GITHUB_APP_ID`, the `GITHUB_CLIENT_ID`, and the `GITHUB_CLIENT_SECRET` (note that this needs to be populated as both `GITHUB_CLIENT_SECRET` and `VITE_GITHUB_CLIENT_SECRET` in the `.env` file)
     * Ensure the app is listening for the following webhook events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
 * Assuming `docker` is installed locally, run this to start RabbitMQ and Postgres:
 ```console
@@ -82,4 +82,5 @@ npm test
 npm run dev
 ```
 * Install the registered GitHub app on a repo on github.com
+* Verify that you can visit the `/auth/github` page and sign in to github
 * Verify local server log activity when github repo issues are created or commented on.
