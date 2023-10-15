@@ -23,7 +23,9 @@ export function GitHubOAuth() {
   const code = searchParams.get("code");
   const figma = searchParams.get("figma");
 
-  const handleAccessToken = (event: MessageEvent) => {
+  const onMessage = (event: MessageEvent) => {
+    console.log(`onMessage received event`, event);
+
     if (event?.data?.pluginMessage?.message === "GET_EXISTING_ACCESS_TOKEN") {
       const token = event?.data?.pluginMessage?.accessToken;
 
@@ -32,13 +34,16 @@ export function GitHubOAuth() {
       // and save it to use with network requests
 
       setAccessToken(token);
+    } else if (event?.data?.pluginMessage?.message === "GET_ACCESS_TOKEN") {
+      console.log("received GET_ACCESS_TOKEN message, passing it on to Figma");
+      parent.postMessage(event.data, "https://www.figma.com");
     }
   };
 
   useEffect(() => {
-    window.addEventListener("message", handleAccessToken);
+    window.addEventListener("message", onMessage);
     return () => {
-      window.removeEventListener("message", handleAccessToken);
+      window.removeEventListener("message", onMessage);
     };
   }, []);
 
