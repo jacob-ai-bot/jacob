@@ -29,13 +29,17 @@ export function GitHubOAuth() {
     if (event?.data?.pluginMessage?.message === "GET_EXISTING_ACCESS_TOKEN") {
       const token = event?.data?.pluginMessage?.accessToken;
 
-      console.log("handleAccessToken received token", token);
+      console.log("received GET_EXISTING_ACCESS_TOKEN: token: ", token);
       // Check if that token works
       // and save it to use with network requests
 
       setAccessToken(token);
-    } else if (event?.data?.pluginMessage?.message === "GET_ACCESS_TOKEN") {
-      console.log("received GET_ACCESS_TOKEN message, passing it on to Figma");
+    } else if (event?.data?.pluginMessage?.message === "SAVE_ACCESS_TOKEN") {
+      console.log("received SAVE_ACCESS_TOKEN message, passing it on to Figma");
+      console.log(
+        `window.figma`,
+        (window as unknown as { figma: object }).figma,
+      );
       parent.postMessage(event.data, "https://www.figma.com");
     }
   };
@@ -72,16 +76,21 @@ export function GitHubOAuth() {
           searchParams.delete("code");
           setSearchParams(searchParams);
 
-          parent.postMessage(
-            {
-              pluginMessage: {
-                message: "SAVE_ACCESS_TOKEN",
-                accessToken,
+          if (window.opener) {
+            console.log("sending SAVE_ACCESS_TOKEN message to opener...");
+            window.opener.postMessage(
+              {
+                pluginMessage: {
+                  message: "SAVE_ACCESS_TOKEN",
+                  accessToken,
+                },
+                pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
               },
-              pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
-            },
-            "https://otto-mvp.onrender.com",
-          );
+              "https://otto-mvp.onrender.com",
+            );
+          } else {
+            console.log("no window.opener, not calling postMessage on opener.");
+          }
 
           // Fetch the user's repos
           // const userReposResponse = await fetch(
