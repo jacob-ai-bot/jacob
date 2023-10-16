@@ -16,6 +16,11 @@ type CreateAccessTokenResponse = {
   errors?: Array<{ message: string }>;
 };
 
+type ReadAccessTokenResponse = {
+  data?: { accessToken: string };
+  errors?: Array<{ message: string }>;
+};
+
 type GetUserReposResponse = Endpoints["GET /user/repos"]["response"]["data"];
 
 export function GitHubOAuth() {
@@ -24,6 +29,7 @@ export function GitHubOAuth() {
   const [attemptedLogin, setAttemptedLogin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
   const [repos] = useState<GetUserReposResponse | undefined>();
+  const [readKey, setReadKey] = useState<string | undefined>();
 
   const code = searchParams.get("code");
   const state = searchParams.get("state");
@@ -59,6 +65,52 @@ export function GitHubOAuth() {
   }, []);
 
   useEffect(() => {
+    if (!readKey) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/auth/accessToken/${readKey}`, {
+          headers: { "Content-Type": "application/json" },
+        });
+        if (response.ok) {
+          const { data, errors }: ReadAccessTokenResponse =
+            await response.json();
+          if (data) {
+            const { accessToken } = data;
+            parent.postMessage(
+              {
+                pluginMessage: { message: "SET_ACCESS_TOKEN", accessToken },
+                pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
+              },
+              "https://www.figma.com",
+            );
+            console.log(
+              "access token found, posted message to parent, stopping polling loop",
+            );
+            clearInterval(intervalId);
+            setReadKey(undefined);
+          } else {
+            console.error(
+              `read key found, but no access token: ${errors
+                ?.map((e) => e.message)
+                .join(",")}`,
+            );
+          }
+        } else {
+          console.log(
+            `read key not found ${response.status} ${response.statusText}, will try again`,
+          );
+        }
+      } catch (error) {
+        console.error(error);
+        setError(error as Error);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [readKey]);
+
+  useEffect(() => {
     const abortController = new AbortController();
 
     const handleLogin = async (code: string) => {
@@ -83,21 +135,24 @@ export function GitHubOAuth() {
           searchParams.delete("code");
           setSearchParams(searchParams);
 
-          if (window.opener) {
-            console.log("sending SAVE_ACCESS_TOKEN message to opener...");
-            window.opener.postMessage(
-              {
-                pluginMessage: {
-                  message: "SAVE_ACCESS_TOKEN",
-                  accessToken,
-                },
-                pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
-              },
-              "https://otto-mvp.onrender.com",
-            );
-          } else {
-            console.log("no window.opener, not calling postMessage on opener.");
-          }
+          // if (window.opener) {
+          //   console.log("sending SAVE_ACCESS_TOKEN message to opener...");
+          //   window.opener.postMessage(
+          //     {
+          //       pluginMessage: {
+          //         message: "SAVE_ACCESS_TOKEN",
+          //         accessToken,
+          //       },
+          //       pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
+          //     },
+          //     "https://otto-mvp.onrender.com",
+          //   );
+          // } else {
+          //   console.log("no window.opener, not calling postMessage on opener.");
+          // }
+
+          // TODO - verify that the state matches the writeKey stored in a cookie
+
           const postAccessTokenResponse = await fetch(
             `/api/auth/accessToken/${state}`,
             {
@@ -183,15 +238,17 @@ export function GitHubOAuth() {
       const { data, errors }: CreateAccessTokenResponse = await response.json();
       if (data) {
         const { readKey, writeKey } = data;
-        // Post message read key back to parent
-        console.log("sending readKey in message to parent", readKey, parent);
-        parent.postMessage(
-          {
-            pluginMessage: { message: "SET_READ_KEY", readKey },
-            pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
-          },
-          "https://www.figma.com",
-        );
+        // Store read key, which will start a polling loop waiting for the access token:
+        setReadKey(readKey);
+
+        // console.log("sending readKey in message to parent", readKey, parent);
+        // parent.postMessage(
+        //   {
+        //     pluginMessage: { message: "SET_READ_KEY", readKey },
+        //     pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
+        //   },
+        //   "https://www.figma.com",
+        // );
 
         // Open popup with write key:
         window.open(
@@ -202,7 +259,9 @@ export function GitHubOAuth() {
       } else {
         setError(
           new Error(
-            `Error creating access token keys: ${(errors ?? []).join(",")}`,
+            `Error creating access token keys: ${(errors ?? [])
+              .map(({ message }) => message)
+              .join(",")}`,
           ),
         );
       }
