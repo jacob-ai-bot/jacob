@@ -11,6 +11,11 @@ type AuthJSONResponse = {
   errors?: Array<{ message: string }>;
 };
 
+type CreateAccessTokenResponse = {
+  data?: { readKey: string; writeKey: string };
+  errors?: Array<{ message: string }>;
+};
+
 type GetUserReposResponse = Endpoints["GET /user/repos"]["response"]["data"];
 
 export function GitHubOAuth() {
@@ -21,7 +26,9 @@ export function GitHubOAuth() {
   const [repos] = useState<GetUserReposResponse | undefined>();
 
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
   const figma = searchParams.get("figma");
+  const writeKey = searchParams.get("writeKey");
 
   const onMessage = (event: MessageEvent) => {
     console.log(`onMessage received event`, event);
@@ -91,6 +98,27 @@ export function GitHubOAuth() {
           } else {
             console.log("no window.opener, not calling postMessage on opener.");
           }
+          const postAccessTokenResponse = await fetch(
+            `/api/auth/accessToken/${state}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ accessToken }),
+            },
+          );
+
+          if (
+            postAccessTokenResponse.ok &&
+            postAccessTokenResponse.status === 200
+          ) {
+            console.log("successfully posted access token to server");
+          } else {
+            setError(
+              new Error(
+                `Failed to post access token: ${postAccessTokenResponse.status} ${postAccessTokenResponse.statusText}`,
+              ),
+            );
+          }
 
           // Fetch the user's repos
           // const userReposResponse = await fetch(
@@ -117,8 +145,10 @@ export function GitHubOAuth() {
           //   );
           // }
         } else {
-          throw new Error(
-            `Failed to fetch access token: ${accessTokenResponse.status} ${accessTokenResponse.statusText}`,
+          setError(
+            new Error(
+              `Failed to fetch access token: ${accessTokenResponse.status} ${accessTokenResponse.statusText}`,
+            ),
           );
         }
       } catch (error) {
@@ -137,14 +167,58 @@ export function GitHubOAuth() {
     };
   }, []);
 
-  const handleFigmaSignin = () => {
-    window.open(location.origin + location.pathname, "_blank", "popup");
+  const handleFigmaSignin = async () => {
+    let response: Response;
+    try {
+      response = await fetch("/api/auth/accessToken/", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error(error);
+      setError(error as Error);
+      return;
+    }
+
+    if (response.ok) {
+      const { data, errors }: CreateAccessTokenResponse = await response.json();
+      if (data) {
+        const { readKey, writeKey } = data;
+        // Post message read key back to parent
+        console.log("sending readKey in message to parent", readKey, parent);
+        parent.postMessage(
+          {
+            pluginMessage: { message: "SET_READ_KEY", readKey },
+            pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
+          },
+          "https://www.figma.com",
+        );
+
+        // Open popup with write key:
+        window.open(
+          `${location.origin}${location.pathname}?writeKey=${writeKey}`,
+          "_blank",
+          "popup",
+        );
+      } else {
+        setError(
+          new Error(
+            `Error creating access token keys: ${(errors ?? []).join(",")}`,
+          ),
+        );
+      }
+    } else {
+      setError(
+        new Error(
+          `Error creating access token keys: ${response.status} ${response.statusText}`,
+        ),
+      );
+    }
   };
 
   return (
     <div>
       {!accessToken && !figma && (
-        <a href={githubOAuthURL}>Sign in with GitHub</a>
+        <a href={`${githubOAuthURL}&state=${writeKey}`}>Sign in with GitHub</a>
       )}
       {!accessToken && figma && (
         <a onClick={handleFigmaSignin}>Sign in with GitHub</a>

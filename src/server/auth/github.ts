@@ -24,6 +24,6 @@ export async function gitHubOAuthCallback(req: Request, res: Response) {
 
     res.status(200).json({ data: { token } });
   } catch (error) {
-    res.status(500).json({ errors: [JSON.stringify(error)] });
+    res.status(500).json({ errors: [`${error}`] });
   }
 }
