@@ -47,13 +47,13 @@ export function GitHubOAuth() {
       // and save it to use with network requests
 
       setAccessToken(token);
-    } else if (event?.data?.pluginMessage?.message === "SAVE_ACCESS_TOKEN") {
-      console.log("received SAVE_ACCESS_TOKEN message, passing it on to Figma");
-      console.log(
-        `window.figma`,
-        (window as unknown as { figma: object }).figma,
-      );
-      parent.postMessage(event.data, "https://www.figma.com");
+      // } else if (event?.data?.pluginMessage?.message === "SAVE_ACCESS_TOKEN") {
+      //   console.log("received SAVE_ACCESS_TOKEN message, passing it on to Figma");
+      //   console.log(
+      //     `window.figma`,
+      //     (window as unknown as { figma: object }).figma,
+      //   );
+      //   parent.postMessage(event.data, "https://www.figma.com");
     }
   };
 
@@ -77,9 +77,10 @@ export function GitHubOAuth() {
             await response.json();
           if (data) {
             const { accessToken } = data;
+            setAccessToken(accessToken);
             parent.postMessage(
               {
-                pluginMessage: { message: "SET_ACCESS_TOKEN", accessToken },
+                pluginMessage: { message: "SAVE_ACCESS_TOKEN", accessToken },
                 pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
               },
               "https://www.figma.com",
