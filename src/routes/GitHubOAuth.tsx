@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Endpoints } from "@octokit/types";
 import { useSearchParams } from "react-router-dom";
 
 const githubOAuthURL = `https://github.com/login/oauth/authorize?client_id=${
@@ -21,48 +20,19 @@ type ReadAccessTokenResponse = {
   errors?: Array<{ message: string }>;
 };
 
-type GetUserReposResponse = Endpoints["GET /user/repos"]["response"]["data"];
+const READ_KEY_POLLING_INTERVAL_MS = 5000;
 
 export function GitHubOAuth() {
   const [error, setError] = useState<Error | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [attemptedLogin, setAttemptedLogin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
-  const [repos] = useState<GetUserReposResponse | undefined>();
   const [readKey, setReadKey] = useState<string | undefined>();
 
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const figma = searchParams.get("figma");
   const writeKey = searchParams.get("writeKey");
-
-  const onMessage = (event: MessageEvent) => {
-    console.log(`onMessage received event`, event);
-
-    if (event?.data?.pluginMessage?.message === "GET_EXISTING_ACCESS_TOKEN") {
-      const token = event?.data?.pluginMessage?.accessToken;
-
-      console.log("received GET_EXISTING_ACCESS_TOKEN: token: ", token);
-      // Check if that token works
-      // and save it to use with network requests
-
-      setAccessToken(token);
-      // } else if (event?.data?.pluginMessage?.message === "SAVE_ACCESS_TOKEN") {
-      //   console.log("received SAVE_ACCESS_TOKEN message, passing it on to Figma");
-      //   console.log(
-      //     `window.figma`,
-      //     (window as unknown as { figma: object }).figma,
-      //   );
-      //   parent.postMessage(event.data, "https://www.figma.com");
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener("message", onMessage);
-    return () => {
-      window.removeEventListener("message", onMessage);
-    };
-  }, []);
 
   useEffect(() => {
     if (!readKey) return;
@@ -106,7 +76,7 @@ export function GitHubOAuth() {
         console.error(error);
         setError(error as Error);
       }
-    }, 5000);
+    }, READ_KEY_POLLING_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
   }, [readKey]);
@@ -136,24 +106,7 @@ export function GitHubOAuth() {
           searchParams.delete("code");
           setSearchParams(searchParams);
 
-          // if (window.opener) {
-          //   console.log("sending SAVE_ACCESS_TOKEN message to opener...");
-          //   window.opener.postMessage(
-          //     {
-          //       pluginMessage: {
-          //         message: "SAVE_ACCESS_TOKEN",
-          //         accessToken,
-          //       },
-          //       pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
-          //     },
-          //     "https://otto-mvp.onrender.com",
-          //   );
-          // } else {
-          //   console.log("no window.opener, not calling postMessage on opener.");
-          // }
-
           // TODO - verify that the state matches the writeKey stored in a cookie
-
           const postAccessTokenResponse = await fetch(
             `/api/auth/accessToken/${state}`,
             {
@@ -175,31 +128,6 @@ export function GitHubOAuth() {
               ),
             );
           }
-
-          // Fetch the user's repos
-          // const userReposResponse = await fetch(
-          //   "https://api.github.com/user/repos",
-          //   {
-          //     headers: {
-          //       Authorization: `Bearer ${accessToken}`,
-          //       "User-Agent": "Your-App-Name",
-          //       "Content-Type": "application/json",
-          //     },
-          //   },
-          // );
-
-          // if (userReposResponse.ok) {
-          //   const repos: GetUserReposResponse = await userReposResponse.json();
-          //   setRepos(repos);
-
-          //   setError(undefined);
-          //   searchParams.delete("code");
-          //   setSearchParams(searchParams);
-          // } else {
-          //   throw new Error(
-          //     `Failed to fetch user repos: ${userReposResponse.status} ${userReposResponse.statusText}`,
-          //   );
-          // }
         } else {
           setError(
             new Error(
@@ -242,15 +170,6 @@ export function GitHubOAuth() {
         // Store read key, which will start a polling loop waiting for the access token:
         setReadKey(readKey);
 
-        // console.log("sending readKey in message to parent", readKey, parent);
-        // parent.postMessage(
-        //   {
-        //     pluginMessage: { message: "SET_READ_KEY", readKey },
-        //     pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
-        //   },
-        //   "https://www.figma.com",
-        // );
-
         // Open popup with write key:
         window.open(
           `${location.origin}${location.pathname}?writeKey=${writeKey}`,
@@ -283,12 +202,13 @@ export function GitHubOAuth() {
       {!accessToken && figma && (
         <a onClick={handleFigmaSignin}>Sign in with GitHub</a>
       )}
-      {accessToken && <div>Signed in to github!</div>}
-      {repos &&
-        repos.map((repo) => (
-          <div key={repo.id}>{`${repo.name}: ${repo.full_name}`}</div>
-        ))}
-      {error && <div>{error.message}</div>}
+      {accessToken && (
+        <>
+          <p>Signed in successfully</p>
+          <p>You can now close this browser window.</p>
+        </>
+      )}
+      {error && <p>{error.message}</p>}
     </div>
   );
 }
