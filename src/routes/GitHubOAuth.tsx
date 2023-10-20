@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useCookies } from "react-cookie";
+import GitHubButton from "react-github-btn";
+import "./GitHubOAuth.css";
 
 const githubOAuthURL = `https://github.com/login/oauth/authorize?client_id=${
   import.meta.env.VITE_GITHUB_CLIENT_ID
@@ -28,11 +31,24 @@ export function GitHubOAuth() {
   const [attemptedLogin, setAttemptedLogin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
   const [readKey, setReadKey] = useState<string | undefined>();
+  const [writeKey, setWriteKey] = useState<string | undefined>();
+  const [cookies, setCookie] = useCookies(["writeKey"]);
 
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const figma = searchParams.get("figma");
-  const writeKey = searchParams.get("writeKey");
+  const writeKeyParam = searchParams.get("writeKey");
+
+  // Remove the writeKey from the URL
+  // after storing it in state and writing it to a cookie
+  useEffect(() => {
+    if (!writeKeyParam) return;
+
+    setWriteKey(writeKeyParam);
+    setCookie("writeKey", writeKeyParam);
+    searchParams.delete("writeKey");
+    setSearchParams(searchParams);
+  }, [writeKeyParam]);
 
   useEffect(() => {
     if (!readKey) return;
@@ -105,6 +121,15 @@ export function GitHubOAuth() {
           setError(undefined);
           searchParams.delete("code");
           setSearchParams(searchParams);
+
+          if (state !== cookies["writeKey"]) {
+            setError(
+              new Error(
+                `State does not match writeKey cookie: ${state} ${cookies["writeKey"]}`,
+              ),
+            );
+            return;
+          }
 
           // TODO - verify that the state matches the writeKey stored in a cookie
           const postAccessTokenResponse = await fetch(
@@ -196,16 +221,26 @@ export function GitHubOAuth() {
 
   return (
     <div>
+      <h1>Otto</h1>
       {!accessToken && !figma && (
-        <a href={`${githubOAuthURL}&state=${writeKey}`}>Sign in with GitHub</a>
+        <div className="githubbutton">
+          <GitHubButton href={`${githubOAuthURL}&state=${writeKey}`}>
+            Sign in with GitHub
+          </GitHubButton>
+        </div>
       )}
       {!accessToken && figma && (
-        <a onClick={handleFigmaSignin}>Sign in with GitHub</a>
+        <>
+          <h3>Click here to connect Figma to your GitHub account</h3>
+          <div className="githubbutton" onClick={handleFigmaSignin}>
+            <GitHubButton href="">Sign in with GitHub</GitHubButton>
+          </div>
+        </>
       )}
       {accessToken && (
         <>
           <p>Signed in successfully</p>
-          <p>You can now close this browser window.</p>
+          <p>You can now close this browser window and return to Figma.</p>
         </>
       )}
       {error && <p>{error.message}</p>}
