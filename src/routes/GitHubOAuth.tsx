@@ -220,7 +220,7 @@ export function GitHubOAuth() {
   };
 
   return (
-    <div>
+    <div className={figma ? "figmacontainer" : ""}>
       <h1>Otto</h1>
       {!accessToken && !figma && (
         <div className="githubbutton">
@@ -231,10 +231,13 @@ export function GitHubOAuth() {
       )}
       {!accessToken && figma && (
         <>
-          <h3>Click here to connect Figma to your GitHub account</h3>
-          <div className="githubbutton" onClick={handleFigmaSignin}>
-            <GitHubButton href="">Sign in with GitHub</GitHubButton>
+          <div>
+            In order to get started, you need to connect Figma to your GitHub
+            account.
           </div>
+          <a className="figmalink" onClick={handleFigmaSignin}>
+            Click here to open a browser window to continue
+          </a>
         </>
       )}
       {accessToken && (
