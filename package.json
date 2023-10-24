@@ -18,6 +18,7 @@
     "@octokit/auth-oauth-user": "^4.0.1",
     "@octokit/core": "^5.0.1",
     "@octokit/rest": "^20.0.2",
+    "@octokit/types": "^12.0.0",
     "@octokit/webhooks": "^12.0.3",
     "amqplib": "^0.10.3",
     "body-parser": "^1.20.2",

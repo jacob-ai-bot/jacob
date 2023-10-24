@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
+import { Endpoints } from "@octokit/types";
+
+type GetUserReposResponse = Endpoints["GET /user/repos"]["response"]["data"];
+type GitHubRepo = GetUserReposResponse[0];
 
 const octokitOAuthApp = new Octokit({
   authStrategy: createOAuthAppAuth,
@@ -54,11 +58,14 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       return;
     }
 
-    const { repo, fileName } = req.body;
+    const { repo, fileName } = req.body as {
+      fileName: string;
+      repo: GitHubRepo;
+    };
 
     const { status: installationStatus, data: installationData } =
       await octokitApp.rest.apps.getRepoInstallation({
-        owner: repo.owner,
+        owner: repo.owner.login,
         repo: repo.name,
       });
 
@@ -79,7 +86,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
 
     const { status: issueStatus, data: issueData } =
       await octokitAppInstallation.rest.issues.create({
-        owner: repo.owner,
+        owner: repo.owner.login,
         repo: repo.name,
         title: `Create new file => ${fileName}`,
         body: `A new design has been added to Figma for the file ${fileName}.`,
