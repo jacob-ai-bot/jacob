@@ -8,7 +8,9 @@ const octokit = new Octokit({
   auth: {
     appId: process.env.GITHUB_APP_ID ?? "",
     privateKey: process.env.GITHUB_PRIVATE_KEY ?? "",
+    type: "basic",
   },
+  type: "basic",
   log: console,
   userAgent: "otto",
 });
@@ -54,8 +56,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { repo, fileName, figmaMap, additionalInstructions } = req.body;
+    const { repo, fileName } = req.body;
 
     const { status: issueStatus, data: issueData } =
       await octokit.rest.issues.create({
