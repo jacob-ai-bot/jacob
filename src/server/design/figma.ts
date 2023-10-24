@@ -8,9 +8,7 @@ const octokit = new Octokit({
   auth: {
     appId: process.env.GITHUB_APP_ID ?? "",
     privateKey: process.env.GITHUB_PRIVATE_KEY ?? "",
-    type: "basic",
   },
-  type: "basic",
   log: console,
   userAgent: "otto",
 });
@@ -20,7 +18,12 @@ const octokitToken = new Octokit({
   auth: {
     username: process.env.GITHUB_CLIENT_ID ?? "",
     password: process.env.GITHUB_CLIENT_SECRET ?? "",
+    type: "basic",
+    async on2Fa() {
+      console.error("2FA required");
+    },
   },
+  type: "basic",
   log: console,
   userAgent: "otto",
 });
