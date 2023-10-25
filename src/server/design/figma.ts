@@ -35,6 +35,11 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
 
   console.log(`newIssueForFigmaFile: ${verb}`);
 
+  if (verb !== "edit" && verb !== "new") {
+    res.status(400).send("Invalid verb");
+    return;
+  }
+
   const { authorization } = req.headers;
   const access_token: string | undefined = (authorization ?? "")
     .trim()
@@ -102,7 +107,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
     };
     const body = parseTemplate(
       "dev",
-      "new_figma_file",
+      verb === "new" ? "new_figma_file" : "edit_figma_file",
       "body",
       issueTemplateParams,
     );
@@ -132,7 +137,10 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       await octokitAppInstallation.rest.issues.create({
         owner: repo.owner.login,
         repo: repo.name,
-        title: `Create new file => ${fileName}`,
+        title:
+          verb === "new"
+            ? `Create new file => ${fileName}`
+            : `Update the design for ${fileName}`,
         body,
       });
 
