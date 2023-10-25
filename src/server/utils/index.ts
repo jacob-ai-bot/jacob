@@ -47,7 +47,7 @@ export const parseTemplate = (
     // Replace each variable
     matches.forEach((match) => {
       const variableName = match.slice(2, -1);
-      if (params[variableName]) {
+      if (params[variableName] !== undefined) {
         content = content.replace(match, params[variableName]);
       } else {
         requiredVariables.push(variableName);

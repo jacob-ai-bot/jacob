@@ -4,6 +4,9 @@ import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Endpoints } from "@octokit/types";
 
+import { parseTemplate } from "../utils";
+import { sendGptRequest } from "../openai/request";
+
 type GetUserReposResponse = Endpoints["GET /user/repos"]["response"]["data"];
 type GitHubRepo = GetUserReposResponse[0];
 
@@ -58,10 +61,51 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       return;
     }
 
-    const { repo, fileName } = req.body as {
+    const { repo, fileName, figmaMap, additionalInstructions } = req.body as {
+      figmaMap: string;
       fileName: string;
+      additionalInstructions: string;
       repo: GitHubRepo;
     };
+
+    const codeTemplateParams = {
+      figmaMap,
+      additionalInstructions: additionalInstructions
+        ? `Here are some additional instructions: ${additionalInstructions}`
+        : "",
+    };
+
+    const systemPrompt = parseTemplate(
+      "dev",
+      "new_figma_file",
+      "system",
+      codeTemplateParams,
+    );
+    const userPrompt = parseTemplate(
+      "dev",
+      "new_figma_file",
+      "user",
+      codeTemplateParams,
+    );
+    const code = (await sendGptRequest(
+      userPrompt,
+      systemPrompt,
+      0.5,
+    )) as string;
+
+    const issueTemplateParams = {
+      fileName,
+      code,
+      additionalInstructions: additionalInstructions
+        ? `Here are some important additional instructions from the product owner. You MUST follow these instructions, even if it means adjusting the JSX code provided above: \n ${additionalInstructions}`
+        : "",
+    };
+    const body = parseTemplate(
+      "dev",
+      "new_figma_file",
+      "body",
+      issueTemplateParams,
+    );
 
     const { status: installationStatus, data: installationData } =
       await octokitApp.rest.apps.getRepoInstallation({
@@ -89,7 +133,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         owner: repo.owner.login,
         repo: repo.name,
         title: `Create new file => ${fileName}`,
-        body: `A new design has been added to Figma for the file ${fileName}.`,
+        body,
       });
 
     if (issueStatus < 200 || issueStatus >= 300) {

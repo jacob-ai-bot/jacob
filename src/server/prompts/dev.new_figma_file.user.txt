@@ -1,0 +1,14 @@
+Act as an expert-level TypeScript Front-End TailwindCSS software developer.
+Your job is to take a representation of a Figma design and convert it into JSX to be used in a React functional component. 
+The Figma design will be provided in a format called FigML, which is a YAML representation of a Figma file.
+  
+=== START FigML ===
+${figmaMap}
+=== END FigML ===
+
+${additionalInstructions}
+
+Write the JSX code for the FigML file.
+This JSX code will be used in a React functional component.
+ONLY respond with the JSX. Do not include backticks or any comments.
+This output will be rendered directly by React and anything other than valid JSX will throw a serious error in the application!
