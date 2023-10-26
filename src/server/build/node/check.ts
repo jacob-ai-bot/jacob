@@ -48,5 +48,9 @@ export async function runBuildCheck(path: string): ExecPromise {
   await executeWithLogRequiringSuccess(path, "node --version");
   await executeWithLogRequiringSuccess(path, "npm --version");
   await executeWithLogRequiringSuccess(path, "npm install");
+  await executeWithLogRequiringSuccess(
+    path,
+    "npm install --save-dev typescript @types/react @types/node",
+  );
   return await executeWithLogRequiringSuccess(path, "npm run build --verbose");
 }
