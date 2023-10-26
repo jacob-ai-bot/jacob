@@ -18,11 +18,13 @@ async function executeWithLogRequiringSuccess(
 
 export async function runBuildCheck(path: string): ExecPromise {
   console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
-  await executeWithLogRequiringSuccess(path, 'bash -c "export"');
-  await executeWithLogRequiringSuccess(path, "nvm --version");
-  await executeWithLogRequiringSuccess(path, "asdf --version");
+  try {
+    await executeWithLogRequiringSuccess(path, "asdf --version");
+  } catch (error) {
+    console.error(error);
+  }
   await executeWithLogRequiringSuccess(path, "node --version");
   await executeWithLogRequiringSuccess(path, "npm --version");
-  return await executeWithLogRequiringSuccess(path, "npm install");
-  //   return await executeWithLogRequiringSuccess(path, "npm run build --verbose");
+  await executeWithLogRequiringSuccess(path, "npm install");
+  return await executeWithLogRequiringSuccess(path, "npm run build --verbose");
 }
