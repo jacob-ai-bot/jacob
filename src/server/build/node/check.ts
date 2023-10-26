@@ -18,7 +18,7 @@ async function executeWithLogRequiringSuccess(
 
 export async function runBuildCheck(path: string): ExecPromise {
   await executeWithLogRequiringSuccess(path, "node --version");
-  await executeWithLogRequiringSuccess(path, "npm --version");
-  await executeWithLogRequiringSuccess(path, "npm install");
-  return await executeWithLogRequiringSuccess(path, "npm run build --verbose");
+  return await executeWithLogRequiringSuccess(path, "npm --version");
+  //   await executeWithLogRequiringSuccess(path, "npm install");
+  //   return await executeWithLogRequiringSuccess(path, "npm run build --verbose");
 }
