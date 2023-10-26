@@ -73,9 +73,9 @@ export async function execAsyncWithLog(
 ) {
   const promise = execAsync(command, options);
 
-  promise.child.stdout?.on("data", (d) => console.log(`child stdout: ${d}`));
-  promise.child.stderr?.on("data", (d) => console.log(`child stderr: ${d}`));
-  promise.child.on("close", (code) => console.log(`child code: ${code}`));
+  promise.child.stdout?.on("data", (d) => process.stdout.write(d));
+  promise.child.stderr?.on("data", (d) => process.stderr.write(d));
+  promise.child.on("close", (code) => console.log(`*:EXIT:${code}`));
 
   await promise;
 
