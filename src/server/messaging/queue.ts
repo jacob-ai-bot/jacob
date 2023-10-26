@@ -120,8 +120,8 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
 
         await runBuildCheck(path);
       } finally {
-        console.log(`SKIPPING cleaning up repo cloned to ${path}`);
-        // cleanup();
+        console.log(`cleaning up repo cloned to ${path}`);
+        cleanup();
       }
     } else {
       console.error(
