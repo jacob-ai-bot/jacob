@@ -107,18 +107,22 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
         branch,
         installationAuthentication.token,
       );
-      console.log(`cleaning up repo cloned to ${path}`);
 
-      const sourceMap = getSourceMap(path);
-      console.log(
-        `onGitHubEvent: ${event.id} ${event.name} : sourceMap: ${JSON.stringify(
-          sourceMap,
-        )}`,
-      );
+      console.log(`repo cloned to ${path}`);
 
-      await runBuildCheck(path);
+      try {
+        const sourceMap = getSourceMap(path);
+        console.log(
+          `onGitHubEvent: ${event.id} ${
+            event.name
+          } : sourceMap: ${JSON.stringify(sourceMap)}`,
+        );
 
-      cleanup();
+        await runBuildCheck(path);
+      } finally {
+        console.log(`cleaning up repo cloned to ${path}`);
+        cleanup();
+      }
     } else {
       console.error(
         `onGitHubEvent: ${event.id} ${event.name} : no installationId`,
