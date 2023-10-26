@@ -6,6 +6,7 @@ import { createAppAuth } from "@octokit/auth-app";
 import { db } from "../db/db";
 import { cloneRepo } from "../github/clone";
 import { getSourceMap } from "../analyze/sourceMap";
+import { runBuildCheck } from "../build/node/check";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -106,6 +107,7 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
         branch,
         installationAuthentication.token,
       );
+      console.log(`cleaning up repo cloned to ${path}`);
 
       const sourceMap = getSourceMap(path);
       console.log(
@@ -114,7 +116,8 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
         )}`,
       );
 
-      console.log(`cleaning up repo cloned to ${path}`);
+      await runBuildCheck(path);
+
       cleanup();
     } else {
       console.error(
