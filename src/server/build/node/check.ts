@@ -12,7 +12,7 @@ const NEXT_JS_ENV = {
   EMAIL_SERVER_USER: "EMAIL_SERVER_USER",
   EMAIL_SERVER_PASSWORD: "EMAIL_SERVER_PASSWORD",
   DATABASE_URL: "file:./db.sqlite",
-  NEXTAUTH_URL: "NEXTAUTH_URL",
+  NEXTAUTH_URL: "http://localhost:3000",
 };
 
 async function executeWithLogRequiringSuccess(
