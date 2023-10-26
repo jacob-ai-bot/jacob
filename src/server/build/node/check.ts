@@ -1,11 +1,24 @@
 import { execAsyncWithLog } from "../../utils";
 
-export async function runBuildCheck(path: string): Promise<void> {
-  const nodeVersionCommand = `node --version`;
-  console.log(`Exec: ${nodeVersionCommand} cwd: ${path}`);
-  await execAsyncWithLog(nodeVersionCommand, { cwd: path });
+type ExecPromise = ReturnType<typeof execAsyncWithLog>;
 
-  const npmVersionCommand = `npm --version`;
-  console.log(`Exec: ${npmVersionCommand} cwd: ${path}`);
-  await execAsyncWithLog(npmVersionCommand, { cwd: path });
+async function executeWithLogRequiringSuccess(
+  path: string,
+  command: string,
+): ExecPromise {
+  console.log(`Exec: ${command} cwd: ${path}`);
+  const result = await execAsyncWithLog(command, { cwd: path });
+
+  if (result.exitCode !== 0) {
+    throw new Error(`${command} failed with exit code: ${result.exitCode}`);
+  }
+
+  return result;
+}
+
+export async function runBuildCheck(path: string): ExecPromise {
+  await executeWithLogRequiringSuccess(path, "node --version");
+  await executeWithLogRequiringSuccess(path, "npm --version");
+  await executeWithLogRequiringSuccess(path, "npm install");
+  return await executeWithLogRequiringSuccess(path, "npm run build --verbose");
 }

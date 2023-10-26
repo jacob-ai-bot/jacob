@@ -67,7 +67,7 @@ export const parseTemplate = (
 
 const execAsync = promisify(exec);
 
-export function execAsyncWithLog(
+export async function execAsyncWithLog(
   command: string,
   options: Parameters<typeof execAsync>[1],
 ) {
@@ -77,5 +77,7 @@ export function execAsyncWithLog(
   promise.child.stderr?.on("data", (d) => console.log(`child stderr: ${d}`));
   promise.child.on("close", (code) => console.log(`child code: ${code}`));
 
-  return promise;
+  await promise;
+
+  return promise.child;
 }
