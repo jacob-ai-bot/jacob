@@ -3,6 +3,7 @@ import { execAsyncWithLog } from "../../utils";
 type ExecPromise = ReturnType<typeof execAsyncWithLog>;
 
 const NEXT_JS_ENV = {
+  NODE_ENV: "development",
   NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
   GITHUB_ID: "GITHUB_ID",
   GITHUB_SECRET: "GITHUB_SECRET",
@@ -21,6 +22,7 @@ async function executeWithLogRequiringSuccess(
 ): ExecPromise {
   console.log(`*:${command} (cwd: ${path})`);
   const {
+    NODE_ENV, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_PRIVATE_KEY, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_APP_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_CLIENT_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -48,9 +50,5 @@ export async function runBuildCheck(path: string): ExecPromise {
   await executeWithLogRequiringSuccess(path, "node --version");
   await executeWithLogRequiringSuccess(path, "npm --version");
   await executeWithLogRequiringSuccess(path, "npm install");
-  await executeWithLogRequiringSuccess(
-    path,
-    "npm install --save-dev typescript @types/react @types/node",
-  );
   return await executeWithLogRequiringSuccess(path, "npm run build --verbose");
 }
