@@ -9,6 +9,7 @@ import { setNewBranch } from "../git/branch";
 import { addCommitAndPush } from "../git/commit";
 import { runBuildCheck } from "../build/node/check";
 import { createPR } from "../github/pr";
+import { addCommentToIssue } from "../github/issue";
 
 export async function createNewFile(
   newFileName: string,
@@ -96,11 +97,16 @@ export async function createNewFile(
     `Otto commit for Issue ${issue.number}`,
   );
 
-  await createPR(
+  const { data: pullRequest } = await createPR(
     repository,
     token,
     newBranch,
     `Create ${newFileName}`,
     `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${plan}`,
   );
+
+  console.log(`Created PR #${pullRequest.number}: ${pullRequest.html_url}`);
+
+  const message = `Hello human! 👋 \n\nThis PR was created by Otto to address the issue [${pullRequest.title}](${pullRequest.html_url})\n\n## Next Steps\n\n1. Please review the PR carefully. Auto-generated code can and will contain subtle bugs and mistakes.\n\n2. If you identify code that needs to be changed, please reject the PR with a specific reason. Be as detailed as possible in your comments. Otto will take these comments, make changes to the code and push up changes. Please note that this process will take a few minutes.\n\n3. Once the code looks good, approve the PR and merge the code.`;
+  await addCommentToIssue(repository, pullRequest.number, token, message);
 }
