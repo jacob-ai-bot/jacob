@@ -126,7 +126,13 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
 
           const newFileName = extractFilePathWithArrow(issueTitle);
           if (newFileName) {
-            await createNewFile(newFileName, event.payload.issue, path);
+            await createNewFile(
+              newFileName,
+              repository,
+              installationAuthentication.token,
+              event.payload.issue,
+              path,
+            );
           }
         }
       } finally {

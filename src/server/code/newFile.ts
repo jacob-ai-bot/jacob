@@ -1,4 +1,4 @@
-import { Issue } from "@octokit/webhooks-types";
+import { Issue, Repository } from "@octokit/webhooks-types";
 import fs from "fs";
 import path from "path";
 
@@ -8,9 +8,12 @@ import { sendGptRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { addCommitAndPush } from "../git/commit";
 import { runBuildCheck } from "../build/node/check";
+import { createPR } from "../github/pr";
 
 export async function createNewFile(
   newFileName: string,
+  repository: Repository,
+  token: string,
   issue: Issue,
   rootPath: string,
 ) {
@@ -87,7 +90,17 @@ export async function createNewFile(
 
   await runBuildCheck(rootPath);
 
-  const commitMessage = `Otto commit for Issue ${issue.number}`;
+  await addCommitAndPush(
+    rootPath,
+    newBranch,
+    `Otto commit for Issue ${issue.number}`,
+  );
 
-  await addCommitAndPush(rootPath, newBranch, commitMessage);
+  await createPR(
+    repository,
+    token,
+    newBranch,
+    `Create ${newFileName}`,
+    `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${plan}`,
+  );
 }
