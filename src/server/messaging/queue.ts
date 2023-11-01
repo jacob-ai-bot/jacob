@@ -4,9 +4,9 @@ import { EmitterWebhookEvent } from "@octokit/webhooks";
 import { createAppAuth } from "@octokit/auth-app";
 
 import { db } from "../db/db";
-import { cloneRepo } from "../github/clone";
-import { getSourceMap } from "../analyze/sourceMap";
+import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
+import { createNewFile } from "../code/newFile";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -56,6 +56,14 @@ async function initRabbitMQ() {
     return;
   }
 }
+
+export const extractFilePathWithArrow = (title?: string) => {
+  if (!title) return null;
+  const regex = /=>\s*(.+)/; // This regex matches "=>" followed by optional spaces and a file name with an extension
+  const match = title.match(regex);
+
+  return match ? match[1]?.trim() : null;
+};
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -111,14 +119,16 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
       console.log(`repo cloned to ${path}`);
 
       try {
-        const sourceMap = getSourceMap(path);
-        console.log(
-          `onGitHubEvent: ${event.id} ${
-            event.name
-          } : sourceMap: ${JSON.stringify(sourceMap)}`,
-        );
-
         await runBuildCheck(path);
+
+        if (event.name === "issues" || event.name === "issue_comment") {
+          const issueTitle = event.payload.issue.title;
+
+          const newFileName = extractFilePathWithArrow(issueTitle);
+          if (newFileName) {
+            await createNewFile(newFileName, event.payload.issue, path);
+          }
+        }
       } finally {
         console.log(`cleaning up repo cloned to ${path}`);
         cleanup();

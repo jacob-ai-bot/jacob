@@ -1,0 +1,3 @@
+Create a step-by-step plan to create the file ${newFileName}.
+The plan should be between 5-10 steps.
+Here is information about the file you are creating: ${issueBody}

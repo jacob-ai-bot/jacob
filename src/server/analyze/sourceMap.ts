@@ -1,4 +1,5 @@
-import { Project } from "ts-morph";
+import { Project, SourceFile } from "ts-morph";
+import fs from "fs";
 
 const FILES_TO_IGNORE = [
   "types.ts",
@@ -96,6 +97,81 @@ export const getSourceMap = (rootPath: string, targetFilePath?: string) => {
   const files = getFiles(rootPath, targetFilePath);
   const sourceMap = generateMapFromFiles(files);
   return sourceMap;
+};
+
+export const getTypes = (rootPath: string): string => {
+  try {
+    let sourceFile: SourceFile | undefined;
+
+    const configPath = rootPath + "/tsconfig.json"; // Path to tsconfig.json
+    const project = new Project({
+      tsConfigFilePath: configPath,
+    });
+
+    const sourceFiles = project.getSourceFiles();
+
+    sourceFiles.map((file) => {
+      const filePath = file.getFilePath();
+      const fileName = file.getBaseName();
+      const relativePath = filePath.replaceAll(rootPath, "");
+      if (
+        fileName === "types.ts" ||
+        fileName === "interfaces.ts" ||
+        relativePath === "/interfaces/index.ts" ||
+        relativePath === "/types/index.ts"
+      ) {
+        console.log("found types file", fileName);
+        sourceFile = file;
+      }
+    });
+
+    if (!sourceFile) {
+      console.log("no types file found, looking for types.ts or src/types.ts");
+      // check to see if the file exists at the root
+      let filePath = rootPath + "types.ts";
+      console.log("filePath", filePath);
+      if (fs.existsSync(filePath)) {
+        sourceFile = project.addSourceFileAtPath(filePath);
+      } else {
+        filePath = rootPath + "src/types.ts";
+        console.log("filePath", filePath);
+        if (fs.existsSync(filePath)) {
+          sourceFile = project.addSourceFileAtPath(filePath);
+        } else {
+          console.log("no types file found");
+          return "";
+        }
+      }
+    }
+
+    return sourceFile?.getText() || "";
+  } catch (error) {
+    console.log("error in getTypes", error);
+    throw new Error("Error in getTypes: " + error);
+  }
+};
+
+export const getImages = (rootPath: string): string => {
+  const publicPath = rootPath + "/public/images";
+
+  // if /public/images doesn't exist, create it
+  if (!fs.existsSync(publicPath)) {
+    fs.mkdirSync(publicPath, { recursive: true });
+  }
+
+  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".svg"];
+
+  const imageFiles = fs
+    .readdirSync(publicPath)
+    .filter((file) => imageExtensions.includes(file.slice(-4)));
+
+  if (imageFiles.length === 0) {
+    return "";
+  }
+
+  let imagesString = "Images: \n\t";
+  imagesString += imageFiles.map((file) => `${file}`).join("\n\t");
+  return imagesString;
 };
 
 const getFiles = (rootPath: string, targetFilePath?: string): SourceMap[] => {

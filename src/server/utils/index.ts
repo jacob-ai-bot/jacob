@@ -81,3 +81,41 @@ export async function execAsyncWithLog(
 
   return promise.child;
 }
+
+export function getSanitizedEnv() {
+  const {
+    NODE_ENV, // eslint-disable-line @typescript-eslint/no-unused-vars
+    GITHUB_PRIVATE_KEY, // eslint-disable-line @typescript-eslint/no-unused-vars
+    GITHUB_APP_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
+    GITHUB_CLIENT_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
+    GITHUB_CLIENT_SECRET, // eslint-disable-line @typescript-eslint/no-unused-vars
+    GITHUB_WEBHOOK_SECRET, // eslint-disable-line @typescript-eslint/no-unused-vars
+    OPENAI_API_KEY, // eslint-disable-line @typescript-eslint/no-unused-vars
+    DATABASE_URL, // eslint-disable-line @typescript-eslint/no-unused-vars
+    VITE_GITHUB_CLIENT_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
+    VITE_FIGMA_PLUGIN_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
+    ...baseEnv
+  } = process.env;
+  return baseEnv;
+}
+
+export type ExecPromise = ReturnType<typeof execAsyncWithLog>;
+
+export async function executeWithLogRequiringSuccess(
+  path: string,
+  command: string,
+  options?: Parameters<typeof execAsync>[1],
+): ExecPromise {
+  console.log(`*:${command} (cwd: ${path})`);
+  const result = await execAsyncWithLog(command, {
+    cwd: path,
+    env: getSanitizedEnv(),
+    ...options,
+  });
+
+  if (result.exitCode !== 0) {
+    throw new Error(`${command} failed with exit code: ${result.exitCode}`);
+  }
+
+  return result;
+}
