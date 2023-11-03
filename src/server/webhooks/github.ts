@@ -72,15 +72,9 @@ ghApp.webhooks.on("issues.edited", async (event) => {
 // add a new webhook event handler for when an issue is assigned to a user
 ghApp.webhooks.on("issues.assigned", async (event) => {
   const { payload } = event;
-  console.log(`Received issue #${payload.issue.number} assigned event`);
-  const ottoLogin = process.env.OTTO_GITHUB_USERNAME;
-  if (ottoLogin && payload?.assignee?.login === ottoLogin) {
-    console.log(`Issue #${payload.issue.number} assigned to ${ottoLogin}`);
-    publishGitHubEventToQueue(event);
-  } else if (payload?.issue.body?.includes("@otto")) {
-    console.log(`Issue #${payload.issue.number} contains @otto mention`);
-    publishGitHubEventToQueue(event);
-  }
+  console.log(
+    `Received issue #${payload.issue.number} assigned event, ignoring...`,
+  );
 });
 
 ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
@@ -98,7 +92,7 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
 ghApp.webhooks.on("pull_request_review_comment.created", async (event) => {
   const { payload } = event;
   console.log(
-    `Received PR #${payload.pull_request.number} review comment created event`,
+    `Received PR #${payload.pull_request.number} review comment created event, ignoring...`,
   );
 });
 

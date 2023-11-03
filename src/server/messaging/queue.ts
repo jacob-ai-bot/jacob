@@ -7,6 +7,7 @@ import { db } from "../db/db";
 import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { createNewFile } from "../code/newFile";
+import { addCommentToIssue } from "../github/issue";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -110,6 +111,16 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
         installationId,
       });
 
+      if (event.name === "issues") {
+        const message = `Otto here...\n\nYou mentioned me on this issue and I am busy taking a look at it.\n\nI'll continue to comment on this issue with status as I make progress.`;
+        await addCommentToIssue(
+          repository,
+          event.payload.issue.number,
+          installationAuthentication.token,
+          message,
+        );
+      }
+
       const { path, cleanup } = await cloneRepo(
         repository.full_name,
         branch,
@@ -133,7 +144,23 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
               event.payload.issue,
               path,
             );
+          } else {
+            // TODO: handle editing
+            console.log("Need to handle editing files");
           }
+        }
+      } catch (error) {
+        if (event.name === "issues") {
+          const message = `Unfortunately, I ran into trouble working on this.\n\nHere is some error information:\n${
+            (error as { message?: string })?.message ??
+            (error as Error).toString()
+          }\n\nI'll try again in a few minutes.`;
+          await addCommentToIssue(
+            repository,
+            event.payload.issue.number,
+            installationAuthentication.token,
+            message,
+          );
         }
       } finally {
         console.log(`cleaning up repo cloned to ${path}`);

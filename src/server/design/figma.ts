@@ -137,6 +137,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       await octokitAppInstallation.rest.issues.create({
         owner: repo.owner.login,
         repo: repo.name,
+        assignees: tokenData.user?.login ? [tokenData.user.login] : [],
         title:
           verb === "new"
             ? `Create new file => ${fileName}`
