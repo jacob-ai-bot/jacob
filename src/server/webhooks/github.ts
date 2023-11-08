@@ -96,6 +96,10 @@ ghApp.webhooks.on("pull_request_review_comment.created", async (event) => {
   );
 });
 
+ghApp.webhooks.onAny(async ({ id, name }) => {
+  console.log(`GitHub Webhook Handled: Event Name: ${name} (id: ${id})`);
+});
+
 export async function setupGitHubWebhook(app: Application): Promise<void> {
   app.post(
     "/api/github/webhooks",

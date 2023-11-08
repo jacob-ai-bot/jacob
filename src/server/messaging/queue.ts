@@ -7,6 +7,7 @@ import { db } from "../db/db";
 import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { createNewFile } from "../code/newFile";
+import { editFiles } from "../code/editFiles";
 import { addCommentToIssue } from "../github/issue";
 
 const QUEUE_NAME = "github_event_queue";
@@ -36,6 +37,7 @@ async function initRabbitMQ() {
           console.error(`null message received from channel.consume()!`);
           return;
         }
+        console.log(`Received queue message: ${message.properties.messageId}`);
         try {
           const event = JSON.parse(
             message.content.toString(),
@@ -145,8 +147,12 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
               path,
             );
           } else {
-            // TODO: handle editing
-            console.log("Need to handle editing files");
+            await editFiles(
+              repository,
+              installationAuthentication.token,
+              event.payload.issue,
+              path,
+            );
           }
         }
       } catch (error) {

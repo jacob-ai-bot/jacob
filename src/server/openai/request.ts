@@ -1,5 +1,12 @@
 import { OpenAI } from "openai";
 import { encodingForModel } from "tiktoken-node";
+import {
+  SafeParseError,
+  SafeParseReturnType,
+  SafeParseSuccess,
+  ZodSchema,
+} from "zod";
+import { parse } from "jsonc-parser";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -98,4 +105,89 @@ export const sendGptRequest = async (
       });
     }
   }
+};
+
+// Return type should be a ZodSchema or an array of ZodSchema objects
+export const sendGptRequestWithSchema = async (
+  userPrompt: string,
+  systemPrompt: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  zodSchema: ZodSchema<any>,
+  maxRetries: number = 3,
+  temperature: number = 0.2,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<any> => {
+  let extractedInfo;
+  let retries = 0; // Initialize a retries counter
+
+  // Loop until a valid response is received or the maxRetries limit is reached
+  while (retries < maxRetries) {
+    let gptResponse;
+
+    try {
+      gptResponse = (await sendGptRequest(
+        userPrompt,
+        systemPrompt,
+        temperature, // Use a lower temperature for retries
+      )) as string;
+
+      if (!gptResponse) {
+        throw new Error("/n/n/n/n **** Empty response from GPT **** /n/n/n/n");
+      }
+
+      // Remove lines that start with ```
+      gptResponse = gptResponse.replace(/^`{3}.*$/gm, "");
+
+      extractedInfo = parse(gptResponse);
+
+      // if the response is an array of objects, validate each object individually and return the full array if successful
+      if (Array.isArray(extractedInfo)) {
+        const validatedInfo = extractedInfo.map(
+          (info) => zodSchema.safeParse(info), // as SafeParseReturnType<any, any>,
+        );
+
+        const failedValidations = validatedInfo.filter(
+          (result) => result.success === false,
+        );
+
+        if (failedValidations.length > 0) {
+          throw new Error(
+            `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
+              failedValidations,
+            )}`,
+          );
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (validatedInfo as SafeParseSuccess<any>[]).map(
+          (result) => result.data,
+        );
+      }
+
+      // if the response is a single object, validate it and return it if successful
+      const validationResult = zodSchema.safeParse(
+        extractedInfo,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ) as SafeParseReturnType<any, any>;
+
+      if (validationResult.success) {
+        return validationResult.data;
+      }
+
+      throw new Error(
+        `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (validationResult as SafeParseError<any>).error,
+        )}`,
+      );
+    } catch (error) {
+      console.log(
+        `Error occurred during GPT request: ${(error as { message?: string })
+          ?.message}`,
+      );
+      retries++;
+    }
+  }
+
+  throw new Error(`Max retries exceeded for GPT request: ${userPrompt}`);
 };

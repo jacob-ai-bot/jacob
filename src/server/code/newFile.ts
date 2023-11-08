@@ -77,8 +77,10 @@ export async function createNewFile(
     throw new Error("No code generated");
   }
 
+  // if the first line of the diff starts with ``` then it is a code block. Remove the first line.
+  // TODO: move this to the prompt and accept an answer that can be parsed with Zod. If it fails validation, try again with the validation error message.
   const realCode = code.startsWith("```")
-    ? code.substring(code.indexOf("\n") + 1)
+    ? code.split("```").slice(1).join("")
     : code;
 
   const newBranch = `otto-issue-${issue.number}-${Date.now()}`;
