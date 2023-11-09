@@ -5,7 +5,7 @@ import {
 } from "../../utils";
 
 const NEXT_JS_ENV = {
-  NODE_ENV: "development",
+  NODE_ENV: "",
   NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
   GITHUB_ID: "GITHUB_ID",
   GITHUB_SECRET: "GITHUB_SECRET",
