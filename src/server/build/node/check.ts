@@ -25,8 +25,6 @@ export async function runBuildCheck(path: string): ExecPromise {
     ...getSanitizedEnv(),
     ...NEXT_JS_ENV,
   };
-  await executeWithLogRequiringSuccess(path, "node --version", { env });
-  await executeWithLogRequiringSuccess(path, "npm --version", { env });
   await executeWithLogRequiringSuccess(path, "npm install", { env });
   return executeWithLogRequiringSuccess(path, "npm run build --verbose", {
     env,
