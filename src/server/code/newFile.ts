@@ -6,10 +6,7 @@ import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
-import { addCommitAndPush } from "../git/commit";
-import { runBuildCheck } from "../build/node/check";
-import { createPR } from "../github/pr";
-import { addCommentToIssue } from "../github/issue";
+import { checkAndCommit } from "./checkAndCommit";
 
 export async function createNewFile(
   newFileName: string,
@@ -91,28 +88,18 @@ export async function createNewFile(
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, realCode);
 
-  await runBuildCheck(rootPath);
-
-  await addCommitAndPush(
+  await checkAndCommit(
+    repository,
+    token,
     rootPath,
     newBranch,
     `Otto commit for Issue ${issue.number}`,
-  );
-
-  const { data: pullRequest } = await createPR(
-    repository,
-    token,
-    newBranch,
+    issue,
+    undefined,
+    undefined,
+    undefined,
     `Create ${newFileName}`,
     `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${plan}`,
     issue.assignees.map((assignee) => assignee.login),
   );
-
-  console.log(`Created PR #${pullRequest.number}: ${pullRequest.html_url}`);
-
-  const prMessage = `Hello human! 👋 \n\nThis PR was created by Otto to address the issue [${issue.title}](${issue.html_url})\n\n## Next Steps\n\n1. Please review the PR carefully. Auto-generated code can and will contain subtle bugs and mistakes.\n\n2. If you identify code that needs to be changed, please reject the PR with a specific reason. Be as detailed as possible in your comments. Otto will take these comments, make changes to the code and push up changes. Please note that this process will take a few minutes.\n\n3. Once the code looks good, approve the PR and merge the code.`;
-  await addCommentToIssue(repository, pullRequest.number, token, prMessage);
-
-  const issueMessage = `Good news!\n\nI've completed my work on this issue and have created a pull request: [${pullRequest.title}](${pullRequest.html_url}).\n\nPlease review my changes there.\n`;
-  await addCommentToIssue(repository, issue.number, token, issueMessage);
 }

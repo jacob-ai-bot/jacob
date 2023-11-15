@@ -35,3 +35,21 @@ export async function createPR(
 
   return result;
 }
+
+export async function getPR(
+  repository: Repository,
+  token: string,
+  pull_number: number,
+) {
+  const octokit = new Octokit({
+    auth: token,
+    log: console,
+    userAgent: "otto",
+  });
+
+  return octokit.pulls.get({
+    owner: repository.owner.login,
+    repo: repository.name,
+    pull_number,
+  });
+}

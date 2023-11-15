@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { exec } from "child_process";
+import { exec, ExecException } from "child_process";
 import { promisify } from "util";
 
 export type TemplateParams = {
@@ -67,6 +67,11 @@ export const parseTemplate = (
 
 const execAsync = promisify(exec);
 
+export interface ExecAsyncException extends ExecException {
+  stdout: string;
+  stderr: string;
+}
+
 export async function execAsyncWithLog(
   command: string,
   options: Parameters<typeof execAsync>[1],
@@ -77,9 +82,7 @@ export async function execAsyncWithLog(
   promise.child.stderr?.on("data", (d) => process.stderr.write(d));
   promise.child.on("close", (code) => console.log(`*:EXIT:${code}`));
 
-  await promise;
-
-  return promise.child;
+  return promise;
 }
 
 export function getSanitizedEnv() {
@@ -107,15 +110,9 @@ export async function executeWithLogRequiringSuccess(
   options?: Parameters<typeof execAsync>[1],
 ): ExecPromise {
   console.log(`*:${command} (cwd: ${path})`);
-  const result = await execAsyncWithLog(command, {
+  return execAsyncWithLog(command, {
     cwd: path,
     env: getSanitizedEnv(),
     ...options,
   });
-
-  if (result.exitCode !== 0) {
-    throw new Error(`${command} failed with exit code: ${result.exitCode}`);
-  }
-
-  return result;
 }

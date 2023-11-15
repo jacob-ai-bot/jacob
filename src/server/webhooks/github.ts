@@ -84,16 +84,25 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
     payload.review.state === "changes_requested" ||
     payload.review.state === "commented"
   ) {
-    console.log(`PR #${payload.pull_request.number} should be proceesed`);
+    console.log(`PR #${payload.pull_request.number} should be processed`);
     publishGitHubEventToQueue(event);
   }
 });
 
-ghApp.webhooks.on("pull_request_review_comment.created", async (event) => {
+ghApp.webhooks.on("issue_comment.created", async (event) => {
   const { payload } = event;
-  console.log(
-    `Received PR #${payload.pull_request.number} review comment created event, ignoring...`,
-  );
+  const { comment, issue } = payload;
+  console.log(`Received issue #${issue.number} comment created event`);
+  if (issue.pull_request && comment.body.includes("@otto fix build error")) {
+    console.log(
+      `Pull request comment body contains @otto fix build error mention (PR #${issue.number})`,
+    );
+    publishGitHubEventToQueue(event);
+  } else {
+    console.log(
+      `Issue comment is not a PR comment or body has no @otto fix build error mention (Issue #${issue.number})`,
+    );
+  }
 });
 
 ghApp.webhooks.onAny(async ({ id, name }) => {

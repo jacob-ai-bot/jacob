@@ -1,3 +1,5 @@
+import packageNameRegex from "package-name-regex";
+
 import {
   executeWithLogRequiringSuccess,
   getSanitizedEnv,
@@ -26,7 +28,16 @@ export async function runBuildCheck(path: string): ExecPromise {
   await executeWithLogRequiringSuccess(path, "node --version", { env });
   await executeWithLogRequiringSuccess(path, "npm --version", { env });
   await executeWithLogRequiringSuccess(path, "npm install", { env });
-  return await executeWithLogRequiringSuccess(path, "npm run build --verbose", {
+  return executeWithLogRequiringSuccess(path, "npm run build --verbose", {
     env,
   });
+}
+
+export async function runNpmInstall(path: string, packageName: string) {
+  // do some quick validation to ensure the package name is valid and does not include an injection attack
+  if (!packageNameRegex.test(packageName)) {
+    // This regex matches any word character or dash
+    throw new Error(`runNpmInstall: Invalid package name: ${packageName}`);
+  }
+  return executeWithLogRequiringSuccess(path, `npm install ${packageName}`);
 }

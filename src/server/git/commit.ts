@@ -28,7 +28,7 @@ export async function addCommitAndPush(
   );
 
   // Push branch to origin
-  return await executeWithLogRequiringSuccess(
+  return executeWithLogRequiringSuccess(
     rootPath,
     `git push --set-upstream origin ${branchName}`,
   );
