@@ -7,20 +7,35 @@ import { runBuildCheck } from "../build/node/check";
 import { ExecAsyncException } from "../utils";
 import { createPR } from "../github/pr";
 
-export async function checkAndCommit(
-  repository: Repository,
-  token: string,
-  rootPath: string,
-  branch: string,
-  commitMessage: string,
-  issue?: Issue,
-  existingPrNumber?: number,
-  existingPrTitle?: string,
-  existingPrUrl?: string,
-  newPrTitle?: string,
-  newPrBody?: string,
-  newPrReviewers?: string[],
-) {
+interface CheckAndCommitOptions {
+  repository: Repository;
+  token: string;
+  rootPath: string;
+  branch: string;
+  commitMessage: string;
+  issue?: Issue;
+  existingPrNumber?: number;
+  existingPrTitle?: string;
+  existingPrUrl?: string;
+  newPrTitle?: string;
+  newPrBody?: string;
+  newPrReviewers?: string[];
+}
+
+export async function checkAndCommit({
+  repository,
+  token,
+  rootPath,
+  branch,
+  commitMessage,
+  issue,
+  existingPrNumber,
+  existingPrTitle,
+  existingPrUrl,
+  newPrTitle,
+  newPrBody,
+  newPrReviewers,
+}: CheckAndCommitOptions) {
   let buildErrorMessage: string | undefined;
 
   try {

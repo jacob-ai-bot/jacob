@@ -88,18 +88,15 @@ export async function createNewFile(
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, realCode);
 
-  await checkAndCommit(
+  await checkAndCommit({
     repository,
     token,
     rootPath,
-    newBranch,
-    `Otto commit for Issue ${issue.number}`,
+    branch: newBranch,
+    commitMessage: `Otto commit for Issue ${issue.number}`,
     issue,
-    undefined,
-    undefined,
-    undefined,
-    `Create ${newFileName}`,
-    `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${plan}`,
-    issue.assignees.map((assignee) => assignee.login),
-  );
+    newPrTitle: `Create ${newFileName}`,
+    newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${plan}`,
+    newPrReviewers: issue.assignees.map((assignee) => assignee.login),
+  });
 }

@@ -7,10 +7,6 @@ import { parseTemplate } from "../utils";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
 import { sendGptRequest, sendGptRequestWithSchema } from "../openai/request";
 import { setNewBranch } from "../git/branch";
-import { addCommitAndPush } from "../git/commit";
-import { runBuildCheck } from "../build/node/check";
-import { createPR } from "../github/pr";
-import { addCommentToIssue } from "../github/issue";
 import { checkAndCommit } from "./checkAndCommit";
 
 export enum IssueType {
@@ -141,20 +137,17 @@ export async function editFiles(
 
   reconstructFiles(realCode, rootPath);
 
-  await checkAndCommit(
+  await checkAndCommit({
     repository,
     token,
     rootPath,
-    newBranch,
-    `Otto PR for Issue ${issue.title}`,
+    branch: newBranch,
+    commitMessage: `Otto PR for Issue ${issue.title}`,
     issue,
-    undefined,
-    undefined,
-    undefined,
-    `Otto PR for Issue ${issue.title}`,
-    `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
+    newPrTitle: `Otto PR for Issue ${issue.title}`,
+    newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
       extractedIssue.stepsToAddressIssue ?? ""
     }`,
-    issue.assignees.map((assignee) => assignee.login),
-  );
+    newPrReviewers: issue.assignees.map((assignee) => assignee.login),
+  });
 }

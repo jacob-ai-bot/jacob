@@ -196,17 +196,16 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
 
               await runNpmInstall(path, assessment.npmPackageToInstall.trim());
 
-              await checkAndCommit(
+              await checkAndCommit({
                 repository,
-                installationAuthentication.token,
-                path,
-                prBranch,
-                "Otto commit: fix build error",
-                undefined,
-                issueNumber,
-                existingPr.title,
-                existingPr.html_url,
-              );
+                token: installationAuthentication.token,
+                rootPath: path,
+                branch: prBranch,
+                commitMessage: "Otto commit: fix build error",
+                existingPrNumber: issueNumber,
+                existingPrTitle: existingPr.title,
+                existingPrUrl: existingPr.html_url,
+              });
             } else {
               const message = `Otto here once again...\n\n
               Unfortunately, I wasn't able to resolve this build error.\n\n
