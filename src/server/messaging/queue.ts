@@ -5,13 +5,12 @@ import { createAppAuth } from "@octokit/auth-app";
 
 import { db } from "../db/db";
 import { cloneRepo } from "../git/clone";
-import { runBuildCheck, runNpmInstall } from "../build/node/check";
+import { runBuildCheck } from "../build/node/check";
 import { createNewFile } from "../code/newFile";
 import { editFiles } from "../code/editFiles";
-import { assessBuildError } from "../code/assessBuildError";
 import { addCommentToIssue } from "../github/issue";
 import { getPR } from "../github/pr";
-import { checkAndCommit } from "../code/checkAndCommit";
+import { fixBuildError } from "../code/fixBuildError";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -182,44 +181,15 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
             if (!prBranch || !existingPr) {
               throw new Error("prBranch and existingPr required");
             }
-            const { body } = event.payload.comment;
-
-            const buildErrorSection = (body?.split("## Error Message:\n\n") ??
-              [])[1];
-            const buildError = (buildErrorSection ?? "").split("## ")[0];
-
-            const assessment = await assessBuildError(buildError);
-            console.log("Assessment of Error:", assessment);
-
-            if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
-              console.log("Needs npm install");
-
-              await runNpmInstall(path, assessment.npmPackageToInstall.trim());
-
-              await checkAndCommit({
-                repository,
-                token: installationAuthentication.token,
-                rootPath: path,
-                branch: prBranch,
-                commitMessage: "Otto commit: fix build error",
-                existingPrNumber: issueNumber,
-                existingPrTitle: existingPr.title,
-                existingPrUrl: existingPr.html_url,
-              });
-            } else {
-              const message = `Otto here once again...\n\n
-              Unfortunately, I wasn't able to resolve this build error.\n\n
-              Here is some information about the error:\n\n${assessment.causeOfError}\n\n
-              Here are some ideas for fixing the error:\n\n${assessment.ideasForFixingError}\n\n
-              Here is the suggested fix:\n\n${assessment.suggestedFix}\n`;
-
-              await addCommentToIssue(
-                repository,
-                issueNumber,
-                installationAuthentication.token,
-                message,
-              );
-            }
+            await fixBuildError(
+              repository,
+              installationAuthentication.token,
+              event.payload.issue,
+              event.payload.comment,
+              path,
+              prBranch,
+              existingPr,
+            );
           }
         } catch (error) {
           const message = `Unfortunately, I ran into trouble working on this.\n\nHere is some error information:\n${
