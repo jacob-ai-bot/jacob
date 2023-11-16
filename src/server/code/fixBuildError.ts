@@ -1,4 +1,4 @@
-import { Issue, IssueComment, Repository } from "@octokit/webhooks-types";
+import { Issue, Repository } from "@octokit/webhooks-types";
 import { Endpoints } from "@octokit/types";
 
 import { assessBuildError } from "./assessBuildError";
@@ -12,14 +12,12 @@ type PullRequest =
 export async function fixBuildError(
   repository: Repository,
   token: string,
-  issue: Issue,
-  issueComment: IssueComment,
+  issue: Issue | null,
+  body: string | null,
   rootPath: string,
   branch: string,
   existingPr: PullRequest,
 ) {
-  const { body } = issueComment;
-
   const buildErrorSection = (body?.split("## Error Message:\n\n") ?? [])[1];
   const buildError = (buildErrorSection ?? "").split("## ")[0];
 
@@ -37,11 +35,9 @@ export async function fixBuildError(
       rootPath,
       branch,
       commitMessage: "Otto commit: fix build error",
-      existingPrNumber: issue.number,
-      existingPrTitle: existingPr.title,
-      existingPrUrl: existingPr.html_url,
+      existingPr,
     });
-  } else {
+  } else if (issue) {
     const message = `Otto here once again...\n\n
   Unfortunately, I wasn't able to resolve this build error.\n\n
   Here is some information about the error:\n\n${assessment.causeOfError}\n\n

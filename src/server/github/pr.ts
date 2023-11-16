@@ -1,5 +1,7 @@
 import { Octokit } from "@octokit/rest";
 import { Repository } from "@octokit/webhooks-types";
+import { graphql } from "@octokit/graphql";
+import { MarkPullRequestReadyForReviewPayload } from "@octokit/graphql-schema";
 
 export async function createPR(
   repository: Repository,
@@ -8,6 +10,7 @@ export async function createPR(
   title: string,
   body: string,
   reviewers: string[],
+  draft?: boolean,
 ) {
   const octokit = new Octokit({
     auth: token,
@@ -22,6 +25,7 @@ export async function createPR(
     head: newBranch,
     base: repository.default_branch,
     body,
+    draft,
   });
 
   if (reviewers.length > 0) {
@@ -51,5 +55,30 @@ export async function getPR(
     owner: repository.owner.login,
     repo: repository.name,
     pull_number,
+  });
+}
+
+export async function markPRReadyForReview(
+  token: string,
+  pullRequestId: string,
+) {
+  const graphqlWithAuth = graphql.defaults({
+    headers: {
+      Authorization: `token ${token}`,
+    },
+  });
+
+  const mutation = `
+    mutation MarkPullRequestReadyForReview($pullRequestId: ID!) {
+      markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {
+        pullRequest {
+          isDraft
+        }
+      }
+    }`;
+
+  return graphqlWithAuth<MarkPullRequestReadyForReviewPayload>({
+    query: mutation,
+    pullRequestId,
   });
 }

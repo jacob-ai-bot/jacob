@@ -1,11 +1,15 @@
 import stripAnsi from "strip-ansi";
 import { Issue, Repository } from "@octokit/webhooks-types";
+import { Endpoints } from "@octokit/types";
 
 import { addCommitAndPush } from "../git/commit";
 import { addCommentToIssue } from "../github/issue";
 import { runBuildCheck } from "../build/node/check";
 import { ExecAsyncException } from "../utils";
-import { createPR } from "../github/pr";
+import { createPR, markPRReadyForReview } from "../github/pr";
+
+type PullRequest =
+  Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
 
 interface CheckAndCommitOptions {
   repository: Repository;
@@ -14,9 +18,7 @@ interface CheckAndCommitOptions {
   branch: string;
   commitMessage: string;
   issue?: Issue;
-  existingPrNumber?: number;
-  existingPrTitle?: string;
-  existingPrUrl?: string;
+  existingPr?: PullRequest;
   newPrTitle?: string;
   newPrBody?: string;
   newPrReviewers?: string[];
@@ -29,9 +31,7 @@ export async function checkAndCommit({
   branch,
   commitMessage,
   issue,
-  existingPrNumber,
-  existingPrTitle,
-  existingPrUrl,
+  existingPr,
   newPrTitle,
   newPrBody,
   newPrReviewers,
@@ -55,14 +55,17 @@ export async function checkAndCommit({
   let prTitle: string;
   let prUrl: string;
   if (!newPrTitle || !newPrBody) {
-    if (!existingPrNumber || !existingPrTitle || !existingPrUrl) {
+    if (!existingPr) {
       throw new Error(
-        "Must provide either prTitle and prBody or existingPrNumber, existingPrTitle, and existingPrUrl",
+        "Must provide either newPrTitle and newPrBody or existingPr",
       );
     }
-    prNumber = existingPrNumber;
-    prTitle = existingPrTitle;
-    prUrl = existingPrUrl;
+    prNumber = existingPr.number;
+    prTitle = existingPr.title;
+    prUrl = existingPr.html_url;
+    if (buildErrorMessage === undefined) {
+      await markPRReadyForReview(token, existingPr.node_id);
+    }
   } else {
     const { data: pullRequest } = await createPR(
       repository,
@@ -71,6 +74,7 @@ export async function checkAndCommit({
       newPrTitle,
       `${newPrBody}${buildErrorBody}`,
       newPrReviewers ?? [],
+      buildErrorMessage !== undefined,
     );
     prNumber = pullRequest.number;
     prTitle = pullRequest.title;
@@ -86,7 +90,9 @@ export async function checkAndCommit({
   const prMessage = issue
     ? `Hello human! 👋 \n\nThis PR was created by Otto to address the issue [${issue.title}](${issue.html_url})\n\n${nextStepsMessage}`
     : `This PR has been updated to fix a build error.\n\n${nextStepsMessage}`;
-  await addCommentToIssue(repository, prNumber, token, prMessage);
+  if (existingPr || !buildErrorMessage) {
+    await addCommentToIssue(repository, prNumber, token, prMessage);
+  }
 
   if (issue) {
     const issueMessage = buildErrorMessage

@@ -75,7 +75,11 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function onGitHubEvent(event: EmitterWebhookEvent) {
   const start = Date.now();
   console.log(`onGitHubEvent: ${event.id} ${event.name}`);
-  if (event.name === "issues" || event.name === "issue_comment") {
+  if (
+    event.name === "issues" ||
+    event.name === "issue_comment" ||
+    event.name === "pull_request"
+  ) {
     const {
       payload: { repository, installation },
     } = event;
@@ -106,14 +110,26 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
         event.name === "issues" && event.payload.action === "opened";
       const issueLabeled =
         event.name === "issues" && event.payload.action === "labeled";
+      const prOpenedBuildError =
+        event.name === "pull_request" &&
+        event.payload.action === "opened" &&
+        event.payload.pull_request.body?.includes("@otto fix build error");
       const prCommentBuildError =
         event.name === "issue_comment" &&
         event.payload.action === "created" &&
         event.payload.issue.pull_request &&
-        event.payload.comment.body?.includes("@otto fix build error");
+        event.payload.comment.body.includes("@otto fix build error");
 
-      if (issueOpened || issueLabeled || prCommentBuildError) {
-        const issueNumber = event.payload.issue.number;
+      if (
+        issueOpened ||
+        issueLabeled ||
+        prOpenedBuildError ||
+        prCommentBuildError
+      ) {
+        const issueNumber =
+          event.name === "pull_request"
+            ? event.payload.pull_request.number
+            : event.payload.issue.number;
 
         if (issueOpened || issueLabeled) {
           const message = `Otto here...\n\nYou mentioned me on this issue and I am busy taking a look at it.\n\nI'll continue to comment on this issue with status as I make progress.`;
@@ -123,7 +139,7 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
             installationAuthentication.token,
             message,
           );
-        } else if (prCommentBuildError) {
+        } else if (prOpenedBuildError || prCommentBuildError) {
           const message = `Otto here...\n\nI'm busy working on this build error.\n\nI'll continue to comment on this pull request with status as I make progress.`;
           await addCommentToIssue(
             repository,
@@ -135,7 +151,7 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
 
         let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
         let prBranch: string | undefined;
-        if (prCommentBuildError) {
+        if (prOpenedBuildError || prCommentBuildError) {
           const result = await getPR(
             repository,
             installationAuthentication.token,
@@ -177,15 +193,17 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
               );
             }
           }
-          if (prCommentBuildError) {
+          if (prOpenedBuildError || prCommentBuildError) {
             if (!prBranch || !existingPr) {
               throw new Error("prBranch and existingPr required");
             }
             await fixBuildError(
               repository,
               installationAuthentication.token,
-              event.payload.issue,
-              event.payload.comment,
+              event.name === "pull_request" ? null : event.payload.issue,
+              event.name === "pull_request"
+                ? event.payload.pull_request.body
+                : event.payload.comment.body,
               path,
               prBranch,
               existingPr,
