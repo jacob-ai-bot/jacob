@@ -20,3 +20,21 @@ export function addCommentToIssue(
     body,
   });
 }
+
+export async function getIssue(
+  repository: Repository,
+  token: string,
+  issue_number: number,
+) {
+  const octokit = new Octokit({
+    auth: token,
+    log: console,
+    userAgent: "otto",
+  });
+
+  return octokit.issues.get({
+    owner: repository.owner.login,
+    repo: repository.name,
+    issue_number,
+  });
+}
