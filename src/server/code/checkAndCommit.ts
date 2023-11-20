@@ -1,3 +1,4 @@
+import dedent from "dedent";
 import stripAnsi from "strip-ansi";
 import { Issue, Repository } from "@octokit/webhooks-types";
 import { Endpoints } from "@octokit/types";
@@ -8,7 +9,6 @@ import { runBuildCheck } from "../build/node/check";
 import { ExecAsyncException } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
-import e from "express";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -52,7 +52,13 @@ export async function checkAndCommit({
   await addCommitAndPush(rootPath, branch, commitMessage);
 
   const buildErrorBody = buildErrorMessage
-    ? `\n\n@otto fix build error\n\n## Error Message:\n\n${buildErrorMessage}`
+    ? dedent`
+        
+        @otto fix build error
+        
+        ## Error Message:
+                 
+        ${buildErrorMessage}`
     : "";
 
   let prNumber: number;
@@ -99,11 +105,18 @@ export async function checkAndCommit({
   }
 
   if (buildErrorMessage) {
-    const nextStepsMessage = `## Next Steps
+    const nextStepsMessage = dedent`
+      ## Next Steps
 
-I am working to resolve a build error. I will update this PR with my progress.${buildErrorBody}`;
+      I am working to resolve a build error. I will update this PR with my progress.${buildErrorBody}
+    `;
 
-    const prMessage = `This PR has been updated to fix a build error.\n\n${nextStepsMessage}`;
+    const prMessage = dedent`
+      This PR has been updated to fix a build error.
+      
+      ${nextStepsMessage}
+    `;
+
     if (existingPr) {
       await addCommentToIssue(repository, prNumber, token, prMessage);
     }
@@ -111,23 +124,30 @@ I am working to resolve a build error. I will update this PR with my progress.${
       const prStatus = existingPr
         ? `I've updated this pull request: [${prTitle}](${prUrl}).`
         : `I've completed my initial work on this issue and have created a pull request: [${prTitle}](${prUrl}).`;
-      const issueMessage = `## Update
+      const issueMessage = dedent`
+        ## Update
 
-${prStatus}
+        ${prStatus}
 
-The changes currently result in a build error, so I'll be making some additional changes before it is ready to merge.`;
+        The changes currently result in a build error, so I'll be making some additional changes before it is ready to merge.
+      `;
 
       await addCommentToIssue(repository, issue.number, token, issueMessage);
     }
   } else {
     // We have completed our work on this issue. Add a comment to the issue and PR.
 
-    const nextStepsMessage = `## Next Steps
+    const nextStepsMessage = dedent`
+      ## Next Steps
 
-1. Please review the PR carefully. Auto-generated code can and will contain subtle bugs and mistakes.\n\n
-2. If you identify code that needs to be changed, please reject the PR with a specific reason. 
-Be as detailed as possible in your comments. Otto will take these comments, make changes to the code and push up changes. 
-Please note that this process will take a few minutes.\n\n3. Once the code looks good, approve the PR and merge the code.`;
+      1. Please review the PR carefully. Auto-generated code can and will contain subtle bugs and mistakes.
+
+      2. If you identify code that needs to be changed, please reject the PR with a specific reason. 
+      Be as detailed as possible in your comments. Otto will take these comments, make changes to the code and push up changes. 
+      Please note that this process will take a few minutes.
+      
+      3. Once the code looks good, approve the PR and merge the code.
+    `;
 
     const issueInfo = issue
       ? ` to address the issue [${issue.title}](${issue.html_url})`
@@ -136,17 +156,25 @@ Please note that this process will take a few minutes.\n\n3. Once the code looks
       repository,
       prNumber,
       token,
-      `Hello human! 👋 \n\nThis PR was created by Otto${issueInfo}\n\n${nextStepsMessage}`,
+      dedent`
+        Hello human! 👋
+      
+        This PR was created by Otto${issueInfo}
+        
+        ${nextStepsMessage}
+      `,
     );
 
     if (issue) {
-      const issueMessage = `## Update
+      const issueMessage = dedent`
+        ## Update
 
-I've completed my work on this issue and have ${
-        existingPr ? "updating this" : "created a"
-      } pull request: [${prTitle}](${prUrl}).
+        I've completed my work on this issue and have ${
+          existingPr ? "updating this" : "created a"
+        } pull request: [${prTitle}](${prUrl}).
 
-Please review my changes there.`;
+        Please review my changes there.
+      `;
 
       await addCommentToIssue(repository, issue.number, token, issueMessage);
     }
