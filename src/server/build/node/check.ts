@@ -1,5 +1,3 @@
-import packageNameRegex from "package-name-regex";
-
 import {
   executeWithLogRequiringSuccess,
   getSanitizedEnv,
@@ -32,6 +30,7 @@ export async function runBuildCheck(path: string): ExecPromise {
 }
 
 export async function runNpmInstall(path: string, packageName: string) {
+  const packageNameRegex = await import("package-name-regex");
   // do some quick validation to ensure the package name is valid and does not include an injection attack
   if (!packageNameRegex.test(packageName)) {
     // This regex matches any word character or dash

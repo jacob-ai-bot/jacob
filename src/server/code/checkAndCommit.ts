@@ -1,5 +1,4 @@
 import dedent from "ts-dedent";
-import stripAnsi from "strip-ansi";
 import { Issue, Repository } from "@octokit/webhooks-types";
 import { Endpoints } from "@octokit/types";
 import fs from "fs";
@@ -50,6 +49,9 @@ export async function checkAndCommit({
     await runBuildCheck(rootPath);
   } catch (error) {
     const { message } = error as ExecAsyncException;
+    const stripAnsi = (await import("strip-ansi")) as unknown as (
+      string: string,
+    ) => string;
     buildErrorMessage = stripAnsi(message);
   }
 
