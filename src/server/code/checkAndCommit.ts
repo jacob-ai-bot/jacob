@@ -49,9 +49,7 @@ export async function checkAndCommit({
     await runBuildCheck(rootPath);
   } catch (error) {
     const { message } = error as ExecAsyncException;
-    const stripAnsi = (await import("strip-ansi")) as unknown as (
-      string: string,
-    ) => string;
+    const stripAnsi = (await import("strip-ansi")).default;
     buildErrorMessage = stripAnsi(message);
   }
 
