@@ -24,7 +24,6 @@
     "amqplib": "^0.10.3",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "dedent": "^1.5.1",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
@@ -44,6 +43,7 @@
     "strip-ansi": "^7.1.0",
     "tiktoken-node": "^0.0.6",
     "tmp-promise": "^3.0.3",
+    "ts-dedent": "^2.2.0",
     "ts-morph": "^20.0.0",
     "zod": "^3.22.2"
   },

@@ -116,3 +116,22 @@ export async function executeWithLogRequiringSuccess(
     ...options,
   });
 }
+
+export const extractFilePathWithArrow = (title?: string) => {
+  if (!title) return null;
+  const regex = /=>\s*(.+)/; // This regex matches "=>" followed by optional spaces and a file name with an extension
+  const match = title.match(regex);
+
+  return match ? match[1]?.trim() : null;
+};
+
+export const todayAsString = () => {
+  const today = new Date();
+  const todayFormatted = `${(today.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}/${today
+    .getDate()
+    .toString()
+    .padStart(2, "0")}/${today.getFullYear()}`;
+  return todayFormatted;
+};

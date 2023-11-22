@@ -93,14 +93,18 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
   const { payload } = event;
   const { comment, issue } = payload;
   console.log(`Received issue #${issue.number} comment created event`);
-  if (issue.pull_request && comment.body.includes("@otto fix build error")) {
+  if (
+    issue.pull_request &&
+    (comment.body.includes("@otto fix build error") ||
+      comment.body.includes("@otto create story"))
+  ) {
     console.log(
-      `Pull request comment body contains @otto fix build error mention (PR #${issue.number})`,
+      `Pull request comment body contains @otto <cmd> mention (PR #${issue.number})`,
     );
     publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `Issue comment is not a PR comment or body has no @otto fix build error mention (Issue #${issue.number})`,
+      `Issue comment is not a PR comment or body has no @otto <cmd> mention (Issue #${issue.number})`,
     );
   }
 });
@@ -109,14 +113,17 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
   const { payload } = event;
   const { pull_request } = payload;
   console.log(`Received PR #${pull_request.number} comment created event`);
-  if (pull_request.body?.includes("@otto fix build error")) {
+  if (
+    pull_request.body?.includes("@otto fix build error") ||
+    pull_request.body?.includes("@otto create story")
+  ) {
     console.log(
-      `Pull request body contains @otto fix build error mention (PR #${pull_request.number})`,
+      `Pull request body contains @otto <cmd> mention (PR #${pull_request.number})`,
     );
     publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `Pull request body has no @otto fix build error mention (Issue #${pull_request.number})`,
+      `Pull request body has no @otto fix <cmd> mention (Issue #${pull_request.number})`,
     );
   }
 });

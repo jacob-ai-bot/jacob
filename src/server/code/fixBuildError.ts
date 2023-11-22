@@ -12,7 +12,7 @@ type PullRequest =
 export async function fixBuildError(
   repository: Repository,
   token: string,
-  issue: Issue | null,
+  prIssue: Issue | null,
   body: string | null,
   rootPath: string,
   branch: string,
@@ -31,19 +31,19 @@ export async function fixBuildError(
 
     await checkAndCommit({
       repository,
-      token: token,
+      token,
       rootPath,
       branch,
       commitMessage: "Otto commit: fix build error",
       existingPr,
     });
-  } else if (issue) {
+  } else if (prIssue) {
     const message = `Otto here once again...\n\n
   Unfortunately, I wasn't able to resolve this build error.\n\n
   Here is some information about the error:\n\n${assessment.causeOfError}\n\n
   Here are some ideas for fixing the error:\n\n${assessment.ideasForFixingError}\n\n
   Here is the suggested fix:\n\n${assessment.suggestedFix}\n`;
 
-    await addCommentToIssue(repository, issue.number, token, message);
+    await addCommentToIssue(repository, prIssue.number, token, message);
   }
 }

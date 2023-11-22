@@ -1,12 +1,14 @@
-import dedent from "dedent";
+import dedent from "ts-dedent";
 import stripAnsi from "strip-ansi";
 import { Issue, Repository } from "@octokit/webhooks-types";
 import { Endpoints } from "@octokit/types";
+import fs from "fs";
+import path from "path";
 
 import { addCommitAndPush } from "../git/commit";
 import { addCommentToIssue } from "../github/issue";
 import { runBuildCheck } from "../build/node/check";
-import { ExecAsyncException } from "../utils";
+import { ExecAsyncException, extractFilePathWithArrow } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
 
@@ -26,6 +28,7 @@ interface CheckAndCommitOptions {
   newPrTitle?: string;
   newPrBody?: string;
   newPrReviewers?: string[];
+  creatingStory?: boolean;
 }
 
 export async function checkAndCommit({
@@ -39,6 +42,7 @@ export async function checkAndCommit({
   newPrTitle,
   newPrBody,
   newPrReviewers,
+  creatingStory,
 }: CheckAndCommitOptions) {
   let buildErrorMessage: string | undefined;
 
@@ -51,15 +55,48 @@ export async function checkAndCommit({
 
   await addCommitAndPush(rootPath, branch, commitMessage);
 
-  const buildErrorBody = buildErrorMessage
-    ? dedent`
-        
-        @otto fix build error
-        
-        ## Error Message:
-                 
-        ${buildErrorMessage}`
-    : "";
+  let issue: Issue | RetrievedIssue;
+
+  if (actingOnIssue) {
+    issue = actingOnIssue;
+  } else {
+    const regex = /otto-issue-(\d+)-.*/;
+    const match = branch.match(regex);
+    const issueNumber = parseInt(match?.[1] ?? "", 10);
+    const result = await getIssue(repository, token, issueNumber);
+    console.log(
+      `Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+    );
+    issue = result.data;
+  }
+
+  const newFileName = extractFilePathWithArrow(issue.title);
+  // if the new file name contains the word "component" or then it is a component
+  const isComponent = newFileName?.toLowerCase().includes("component");
+  const hasStorybook = fs.existsSync(path.join(rootPath, ".storybook"));
+  const requestStoryCreation = !creatingStory && isComponent && hasStorybook;
+
+  let prBodySuffix: string;
+  if (buildErrorMessage) {
+    prBodySuffix = dedent`\n
+      @otto fix build error
+      
+      ## Error Message:
+      
+      ${buildErrorMessage}
+    `;
+  } else if (requestStoryCreation) {
+    prBodySuffix = dedent`\n
+      ## Storybook Story:
+      
+      I will update this PR with a storybook story for this component.
+      
+      @otto create story
+
+    `;
+  } else {
+    prBodySuffix = "";
+  }
 
   let prNumber: number;
   let prTitle: string;
@@ -82,7 +119,7 @@ export async function checkAndCommit({
       token,
       branch,
       newPrTitle,
-      `${newPrBody}${buildErrorBody}`,
+      `${newPrBody}\n${prBodySuffix}`,
       newPrReviewers ?? [],
       buildErrorMessage !== undefined,
     );
@@ -93,31 +130,20 @@ export async function checkAndCommit({
     console.log(`Created PR #${prNumber}: ${prUrl}`);
   }
 
-  let issue: Issue | RetrievedIssue | undefined = actingOnIssue;
-
-  if (!issue) {
-    const regex = /otto-issue-(\d+)-.*/;
-    const match = branch.match(regex);
-    const issueNumber = parseInt(match?.[1] ?? "", 10);
-    const result = await getIssue(repository, token, issueNumber);
-    console.log(`Loaded Issue #${issueNumber} associated with PR #${prNumber}`);
-    issue = result.data;
-  }
-
   if (buildErrorMessage) {
-    const nextStepsMessage = dedent`
-      ## Next Steps
-
-      I am working to resolve a build error. I will update this PR with my progress.${buildErrorBody}
-    `;
-
-    const prMessage = dedent`
-      This PR has been updated to fix a build error.
-      
-      ${nextStepsMessage}
-    `;
-
     if (existingPr) {
+      const nextStepsMessage = dedent`
+        ## Next Steps
+
+        I am working to resolve a build error. I will update this PR with my progress.${prBodySuffix}
+      `;
+
+      const prMessage = dedent`
+        This PR has been updated to fix a build error.
+        
+        ${nextStepsMessage}
+      `;
+
       await addCommentToIssue(repository, prNumber, token, prMessage);
     }
     if (issue) {
@@ -130,6 +156,36 @@ export async function checkAndCommit({
         ${prStatus}
 
         The changes currently result in a build error, so I'll be making some additional changes before it is ready to merge.
+      `;
+
+      await addCommentToIssue(repository, issue.number, token, issueMessage);
+    }
+  } else if (requestStoryCreation) {
+    if (existingPr) {
+      const nextStepsMessage = dedent`
+        ## Next Steps
+
+        I am working to create a storybook story. I will update this PR with my progress.${prBodySuffix}
+      `;
+
+      const prMessage = dedent`
+        This PR has been updated to request a storybook story.
+        
+        ${nextStepsMessage}
+      `;
+
+      await addCommentToIssue(repository, prNumber, token, prMessage);
+    }
+    if (issue) {
+      const prStatus = existingPr
+        ? `I've updated this pull request: [${prTitle}](${prUrl}).`
+        : `I've completed my initial work on this issue and have created a pull request: [${prTitle}](${prUrl}).`;
+      const issueMessage = dedent`
+        ## Update
+
+        ${prStatus}
+
+        I will update this PR with a storybook story for this component.
       `;
 
       await addCommentToIssue(repository, issue.number, token, issueMessage);

@@ -1,0 +1,6 @@
+=== ${newFileName} File ===
+${componentCode}
+=== END ${newFileName} File ===
+-- Instructions: Act as a L8 Principal Software Engineer at Facebook and create a new storybook story named ${storybookFilename}.
+The story will be used to render the ${newFileName} file above.
+ONLY respond with the full, complete working ${storybookFilename} file.
