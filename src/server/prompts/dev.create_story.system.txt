@@ -11,7 +11,8 @@ The user will provide a working ${newFileName} file and you will need to create 
 Create several variations of the storybook story that show the ${newFileName} file in different states (if applicable).
 Note that today's date is ${todayAsString} and your training cutoff date was 10/1/21.
 The example Storybook story is the current format.
-Please use this format, not any previous formats. 
+Please use this format, not any previous formats.
+As in the example, be sure to define to include the line `type Story = StoryObj<typeof meta>;`
 ALWAYS use the 'any' type for mock data to prevent TypeScript build errors.
 Never import a variable from a component if it is not explicitly exported!
 DO NOT include backticks or ANY comments in your response. 
