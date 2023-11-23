@@ -233,7 +233,7 @@ export async function checkAndCommit({
         ## Update
 
         I've completed my work on this issue and have ${
-          existingPr ? "updating this" : "created a"
+          existingPr ? "updated this" : "created a"
         } pull request: [${prTitle}](${prUrl}).
 
         Please review my changes there.
