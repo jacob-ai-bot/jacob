@@ -13,7 +13,7 @@ Note that today's date is ${todayAsString} and your training cutoff date was 10/
 The example Storybook story is the current format.
 Please use this format, not any previous formats.
 As in the example, be sure to define to include the line `type Story = StoryObj<typeof meta>;`
-ALWAYS use the 'any' type for mock data to prevent TypeScript build errors.
+DO NOT use the 'any' type because this will result in TypeScript build errors.
 Never import a variable from a component if it is not explicitly exported!
 DO NOT include backticks or ANY comments in your response. 
 ONLY respond with the full, complete working ${storybookFilename} file.
