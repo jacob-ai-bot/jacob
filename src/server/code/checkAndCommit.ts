@@ -10,6 +10,8 @@ import { runBuildCheck } from "../build/node/check";
 import { ExecAsyncException, extractFilePathWithArrow } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
+import { dynamicImport } from "../utils/dynamicImport";
+import stripAnsi from "strip-ansi";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -49,8 +51,13 @@ export async function checkAndCommit({
     await runBuildCheck(rootPath);
   } catch (error) {
     const { message } = error as ExecAsyncException;
-    const stripAnsi = (await import("strip-ansi")).default;
-    buildErrorMessage = stripAnsi(message);
+    // Awkward workaround to dynamically import an ESM module
+    // within a commonjs TypeScript module
+
+    // See Option #4 here: https://github.com/TypeStrong/ts-node/discussions/1290
+    const stripAnsiFn = (await dynamicImport("strip-ansi"))
+      .default as typeof stripAnsi;
+    buildErrorMessage = stripAnsiFn(message);
   }
 
   await addCommitAndPush(rootPath, branch, commitMessage);

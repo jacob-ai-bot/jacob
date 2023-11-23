@@ -4,6 +4,10 @@ import {
   type ExecPromise,
 } from "../../utils";
 
+// From package-name-regexp 3.0.0 (without importing the ESM module)
+const packageNameRegex =
+  /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+
 const NEXT_JS_ENV = {
   NODE_ENV: "",
   NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
@@ -30,7 +34,6 @@ export async function runBuildCheck(path: string): ExecPromise {
 }
 
 export async function runNpmInstall(path: string, packageName: string) {
-  const packageNameRegex = await import("package-name-regex");
   // do some quick validation to ensure the package name is valid and does not include an injection attack
   if (!packageNameRegex.test(packageName)) {
     // This regex matches any word character or dash
