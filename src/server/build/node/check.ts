@@ -28,9 +28,10 @@ export async function runBuildCheck(path: string): ExecPromise {
     ...NEXT_JS_ENV,
   };
   await executeWithLogRequiringSuccess(path, "npm install", { env });
-  return executeWithLogRequiringSuccess(path, "npm run build --verbose", {
+  await executeWithLogRequiringSuccess(path, "npm run build --verbose", {
     env,
   });
+  return executeWithLogRequiringSuccess(path, "npm run lint", { env });
 }
 
 export async function runNpmInstall(path: string, packageName: string) {
