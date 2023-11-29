@@ -1,6 +1,6 @@
 === ZOD SCHEMA ===
 const AssessmentSchema = z.object({
-  fileName: z.string().optional(), // The name of a specific file that caused the build to fail. Always remove the initial ./ and replace ~/ with src/ when returning this value
+  fileName: z.string(), // The name of a specific file that caused the build to fail. Always remove the initial ./ and replace ~/ with src/ when returning this value
   causeOfError: z.string(), // A summary of what caused the build to fail
   ideasForFixingError: z.string(), // A list of ideas for fixing the build error. Bias towards ideas that change the file that caused the build to fail, not modifying other files.
   suggestedFix: z.string(), // The suggested fix to the code to make the build pass. Your first choice should bias towards changing the file that caused the build to fail. You may also suggest that the user comment out some code that is causing the issue.

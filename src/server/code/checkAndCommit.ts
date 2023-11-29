@@ -24,7 +24,7 @@ interface CheckAndCommitOptions {
   rootPath: string;
   branch: string;
   commitMessage: string;
-  issue?: Issue;
+  issue?: Issue | RetrievedIssue;
   existingPr?: PullRequest;
   newPrTitle?: string;
   newPrBody?: string;
@@ -81,7 +81,14 @@ export async function checkAndCommit({
   // if the new file name contains the word "component" or then it is a component
   const isComponent = newFileName?.toLowerCase().includes("component");
   const hasStorybook = fs.existsSync(path.join(rootPath, ".storybook"));
-  const requestStoryCreation = !creatingStory && isComponent && hasStorybook;
+  const hasAlreadyCreatedStory =
+    newFileName &&
+    fs.existsSync(
+      path.join(rootPath, newFileName.replace(".tsx", ".stories.tsx")),
+    );
+
+  const requestStoryCreation =
+    !creatingStory && isComponent && hasStorybook && !hasAlreadyCreatedStory;
 
   let prBodySuffix: string;
   if (buildErrorMessage) {
@@ -146,7 +153,7 @@ export async function checkAndCommit({
       `;
 
       const prMessage = dedent`
-        This PR has been updated to fix a build error.
+        This PR has been updated with a new commit.
         
         ${nextStepsMessage}
       `;

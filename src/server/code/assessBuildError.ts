@@ -4,7 +4,7 @@ import { parseTemplate } from "../utils";
 import { sendGptRequestWithSchema } from "../openai/request";
 
 export const AssessmentSchema = z.object({
-  fileName: z.string().optional(), // The name of a specific file that caused the build to fail. Always remove the initial ./ and replace ~/ with src/ when returning this value
+  fileName: z.string(), // The name of a specific file that caused the build to fail. Always remove the initial ./ and replace ~/ with src/ when returning this value
   causeOfError: z.string(), // A summary of what caused the build to fail
   ideasForFixingError: z.string(), // A list of ideas for fixing the build error
   suggestedFix: z.string(), // The suggested fix to the code to make the build pass

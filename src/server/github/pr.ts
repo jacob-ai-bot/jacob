@@ -58,6 +58,24 @@ export async function getPR(
   });
 }
 
+export async function getPRFiles(
+  repository: Repository,
+  token: string,
+  pull_number: number,
+) {
+  const octokit = new Octokit({
+    auth: token,
+    log: console,
+    userAgent: "otto",
+  });
+
+  return octokit.pulls.listFiles({
+    owner: repository.owner.login,
+    repo: repository.name,
+    pull_number,
+  });
+}
+
 export async function markPRReadyForReview(
   token: string,
   pullRequestId: string,
