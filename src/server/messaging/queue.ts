@@ -1,4 +1,5 @@
 import ampq from "amqplib";
+import dedent from "ts-dedent";
 import { Octokit } from "@octokit/core";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 import { createAppAuth } from "@octokit/auth-app";
@@ -12,7 +13,13 @@ import { addCommentToIssue } from "../github/issue";
 import { getPR } from "../github/pr";
 import { fixBuildError } from "../code/fixBuildError";
 import { createStory } from "../code/createStory";
-import { extractFilePathWithArrow } from "../utils";
+import { codeReview } from "../code/codeReview";
+import {
+  extractFilePathWithArrow,
+  PRCommand,
+  PR_COMMAND_VALUES,
+  enumFromStringValue,
+} from "../utils";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -102,41 +109,33 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
 
       const issueOpened =
         event.name === "issues" && event.payload.action === "opened";
-      const issueLabeled =
-        event.name === "issues" && event.payload.action === "labeled";
-      const prOpenedBuildError =
-        event.name === "pull_request" &&
-        event.payload.action === "opened" &&
-        event.payload.pull_request.body?.includes("@otto fix build error");
-      const prCommentBuildError =
+      const prOpened =
+        event.name === "pull_request" && event.payload.action === "opened";
+      const prComment =
         event.name === "issue_comment" &&
         event.payload.action === "created" &&
-        event.payload.issue.pull_request &&
-        event.payload.comment.body.includes("@otto fix build error");
-      const prOpenedCreateStory =
-        event.name === "pull_request" &&
-        event.payload.action === "opened" &&
-        event.payload.pull_request.body?.includes("@otto create story");
-      const prCommentCreateStory =
-        event.name === "issue_comment" &&
-        event.payload.action === "created" &&
-        event.payload.issue.pull_request &&
-        event.payload.comment.body.includes("@otto create story");
+        event.payload.issue.pull_request;
+      const prCommand = enumFromStringValue(
+        PRCommand,
+        (prOpened
+          ? PR_COMMAND_VALUES.find(
+              (cmd) => event.payload.pull_request.body?.includes(cmd),
+            )
+          : undefined) ||
+          (prComment
+            ? PR_COMMAND_VALUES.find(
+                (cmd) => event.payload.comment.body?.includes(cmd),
+              )
+            : undefined),
+      );
 
-      if (
-        issueOpened ||
-        issueLabeled ||
-        prOpenedBuildError ||
-        prCommentBuildError ||
-        prOpenedCreateStory ||
-        prCommentCreateStory
-      ) {
+      if (issueOpened || prCommand) {
         const issueNumber =
           event.name === "pull_request"
             ? event.payload.pull_request.number
             : event.payload.issue.number;
 
-        if (issueOpened || issueLabeled) {
+        if (issueOpened) {
           const message = `Otto here...\n\nYou mentioned me on this issue and I am busy taking a look at it.\n\nI'll continue to comment on this issue with status as I make progress.`;
           await addCommentToIssue(
             repository,
@@ -144,16 +143,25 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
             installationAuthentication.token,
             message,
           );
-        } else if (prOpenedBuildError || prCommentBuildError) {
-          const message = `Otto here...\n\nI'm busy working on this build error.\n\nI'll continue to comment on this pull request with status as I make progress.`;
-          await addCommentToIssue(
-            repository,
-            issueNumber,
-            installationAuthentication.token,
-            message,
-          );
-        } else if (prOpenedCreateStory || prCommentCreateStory) {
-          const message = `Otto here...\n\nI'm busy creating a storybook story for this component.\n\nI'll continue to comment on this pull request with status as I make progress.`;
+        } else if (prCommand) {
+          let updateMessage: string;
+          switch (prCommand) {
+            case PRCommand.FixBuildError:
+              updateMessage = "I'm busy working on this build error.";
+              break;
+            case PRCommand.CreateStory:
+              updateMessage =
+                "I'm busy creating a storybook story for this component.";
+              break;
+            case PRCommand.CodeReview:
+              updateMessage = "I'm starting a code review on this PR.";
+              break;
+          }
+          const message = dedent`Otto here...\n
+            ${updateMessage}
+            
+            I'll continue to comment on this pull request with status as I make progress.
+          `;
           await addCommentToIssue(
             repository,
             issueNumber,
@@ -164,12 +172,7 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
 
         let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
         let prBranch: string | undefined;
-        if (
-          prOpenedBuildError ||
-          prCommentBuildError ||
-          prOpenedCreateStory ||
-          prCommentCreateStory
-        ) {
+        if (prCommand) {
           const result = await getPR(
             repository,
             installationAuthentication.token,
@@ -210,34 +213,43 @@ async function onGitHubEvent(event: EmitterWebhookEvent) {
                 path,
               );
             }
-          }
-          if (prOpenedBuildError || prCommentBuildError) {
+          } else if ((prOpened || prComment) && prCommand) {
             if (!prBranch || !existingPr) {
               throw new Error("prBranch and existingPr required");
             }
-            await fixBuildError(
-              repository,
-              installationAuthentication.token,
-              event.name === "pull_request" ? null : event.payload.issue,
-              event.name === "pull_request"
-                ? event.payload.pull_request.body
-                : event.payload.comment.body,
-              path,
-              prBranch,
-              existingPr,
-            );
-          }
-          if (prOpenedCreateStory || prCommentCreateStory) {
-            if (!prBranch || !existingPr) {
-              throw new Error("prBranch and existingPr required");
+            switch (prCommand) {
+              case PRCommand.CreateStory:
+                await createStory(
+                  repository,
+                  installationAuthentication.token,
+                  path,
+                  prBranch,
+                  existingPr,
+                );
+                break;
+              case PRCommand.CodeReview:
+                await codeReview(
+                  repository,
+                  installationAuthentication.token,
+                  path,
+                  prBranch,
+                  existingPr,
+                );
+                break;
+              case PRCommand.FixBuildError:
+                await fixBuildError(
+                  repository,
+                  installationAuthentication.token,
+                  event.name === "pull_request" ? null : event.payload.issue,
+                  event.name === "pull_request"
+                    ? event.payload.pull_request.body
+                    : event.payload.comment.body,
+                  path,
+                  prBranch,
+                  existingPr,
+                );
+                break;
             }
-            await createStory(
-              repository,
-              installationAuthentication.token,
-              path,
-              prBranch,
-              existingPr,
-            );
           }
         } catch (error) {
           const message = `Unfortunately, I ran into trouble working on this.\n\nHere is some error information:\n${

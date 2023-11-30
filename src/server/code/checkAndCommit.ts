@@ -7,7 +7,11 @@ import path from "path";
 import { addCommitAndPush } from "../git/commit";
 import { addCommentToIssue } from "../github/issue";
 import { runBuildCheck } from "../build/node/check";
-import { ExecAsyncException, extractFilePathWithArrow } from "../utils";
+import {
+  ExecAsyncException,
+  extractFilePathWithArrow,
+  PRCommand,
+} from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
 import { dynamicImport } from "../utils/dynamicImport";
@@ -93,7 +97,7 @@ export async function checkAndCommit({
   let prBodySuffix: string;
   if (buildErrorMessage) {
     prBodySuffix = dedent`\n
-      @otto fix build error
+      ${PRCommand.FixBuildError}
       
       ## Error Message:
       
@@ -105,7 +109,7 @@ export async function checkAndCommit({
       
       I will update this PR with a storybook story for this component.
       
-      @otto create story
+      ${PRCommand.CreateStory}
 
     `;
   } else {

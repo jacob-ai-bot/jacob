@@ -5,6 +5,7 @@ import { Application } from "express";
 import { text } from "body-parser";
 
 import { publishGitHubEventToQueue } from "../messaging/queue";
+import { PR_COMMAND_VALUES } from "../utils";
 
 dotenv.config();
 
@@ -95,8 +96,7 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
   console.log(`Received issue #${issue.number} comment created event`);
   if (
     issue.pull_request &&
-    (comment.body.includes("@otto fix build error") ||
-      comment.body.includes("@otto create story"))
+    PR_COMMAND_VALUES.some((cmd) => comment.body?.includes(cmd))
   ) {
     console.log(
       `Pull request comment body contains @otto <cmd> mention (PR #${issue.number})`,
@@ -113,10 +113,8 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
   const { payload } = event;
   const { pull_request } = payload;
   console.log(`Received PR #${pull_request.number} comment created event`);
-  if (
-    pull_request.body?.includes("@otto fix build error") ||
-    pull_request.body?.includes("@otto create story")
-  ) {
+
+  if (PR_COMMAND_VALUES.some((cmd) => pull_request.body?.includes(cmd))) {
     console.log(
       `Pull request body contains @otto <cmd> mention (PR #${pull_request.number})`,
     );

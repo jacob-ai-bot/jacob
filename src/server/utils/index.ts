@@ -135,3 +135,20 @@ export const todayAsString = () => {
     .padStart(2, "0")}/${today.getFullYear()}`;
   return todayFormatted;
 };
+
+export enum PRCommand {
+  FixBuildError = "@otto fix build error",
+  CreateStory = "@otto create story",
+  CodeReview = "@otto code review",
+}
+
+export const PR_COMMAND_VALUES = Object.values(PRCommand);
+
+export function enumFromStringValue<T>(
+  enm: { [s: string]: T },
+  value?: string,
+): T | undefined {
+  return value && (Object.values(enm) as unknown as string[]).includes(value)
+    ? (value as unknown as T)
+    : undefined;
+}
