@@ -7,8 +7,8 @@ import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate } from "../utils";
 import { concatenateFiles } from "../utils/files";
 import { sendGptRequestWithSchema } from "../openai/request";
-import { addCommentToIssue, getIssue } from "../github/issue";
-import { getPRFiles } from "../github/pr";
+import { getIssue } from "../github/issue";
+import { getPRFiles, createPRReview } from "../github/pr";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -80,9 +80,20 @@ export async function codeReview(
   )) as CodeReview;
 
   if (codeReview.isApproved) {
-    const message =
+    const body =
       "I have performed a code review on this PR and found no issues. Looks good!";
-    await addCommentToIssue(repository, existingPr.number, token, message);
+
+    // Unfortunately, github does not allow a user/bot to "APPROVE" a PR
+    // created by the same user/bot. So we have to just create a review comment
+    // on the PR.
+    await createPRReview({
+      repository,
+      token,
+      pull_number: existingPr.number,
+      commit_id: existingPr.head.sha,
+      event: "COMMENT",
+      body,
+    });
   } else {
     const minorIssues = codeReview.minorIssues
       ? dedent`\n
@@ -91,7 +102,7 @@ export async function codeReview(
           ${codeReview.minorIssues}
         `
       : "";
-    const message = dedent`
+    const body = dedent`
       I have performed a code review on this PR and I've found a few issues that need to be addressed.
       
       Here are the main issues I found:
@@ -101,7 +112,16 @@ export async function codeReview(
 
       I will attempt to fix these issues and push up a new commit to the PR.
     `;
-
-    await addCommentToIssue(repository, existingPr.number, token, message);
+    // Unfortunately, github does not allow a user/bot to "REQUEST_CHANGES" on a PR
+    // created by the same user/bot. So we have to just create a review comment
+    // on the PR.
+    await createPRReview({
+      repository,
+      token,
+      pull_number: existingPr.number,
+      commit_id: existingPr.head.sha,
+      event: "COMMENT",
+      body,
+    });
   }
 }
