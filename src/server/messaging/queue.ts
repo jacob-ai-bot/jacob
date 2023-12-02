@@ -12,6 +12,7 @@ import { getPR } from "../github/pr";
 import { fixBuildError } from "../code/fixBuildError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
+import { respondToCodeReview } from "../code/respondToCodeReview";
 import {
   extractFilePathWithArrow,
   PRCommand,
@@ -98,7 +99,7 @@ async function onGitHubEvent(event: WebhookQueuedEvent) {
   );
 
   const installationId = installation?.id;
-  if (!installationId) {
+  if (installationId) {
     const installationAuthentication = await auth({
       type: "installation",
       installationId,
@@ -107,13 +108,18 @@ async function onGitHubEvent(event: WebhookQueuedEvent) {
     const issueOpened = eventName === "issues";
     const prOpened = eventName === "pull_request";
     const prComment = eventName === "issue_comment";
+    const prReview = eventName === "pull_request_review";
     const eventIssueOrPRNumber =
-      eventName === "pull_request"
+      eventName === "pull_request" || eventName === "pull_request_review"
         ? event.payload.pull_request.number
         : event.payload.issue.number;
     const body =
       eventName === "pull_request"
         ? event.payload.pull_request.body
+        : eventName === "pull_request_review"
+        ? event.payload.review.body
+        : eventName === "issue_comment"
+        ? event.payload.comment.body
         : event.payload.issue.body;
     const prCommand = enumFromStringValue(
       PRCommand,
@@ -122,10 +128,14 @@ async function onGitHubEvent(event: WebhookQueuedEvent) {
         : undefined,
     );
     if ((prOpened || prComment) && !prCommand) {
-      throw new Error("Valid prCommand required for PR event or comment");
+      throw new Error(
+        "Valid prCommand expected for queued PR opened or comment event",
+      );
     }
     if (prCommand && issueOpened) {
-      throw new Error("prCommand not valid for issue event");
+      throw new Error(
+        "prCommand unexpected while handling queued issue opened event",
+      );
     }
 
     await addStartingWorkComment({
@@ -141,7 +151,7 @@ async function onGitHubEvent(event: WebhookQueuedEvent) {
 
     let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
     let prBranch: string | undefined;
-    if (prCommand) {
+    if (prCommand || prReview) {
       const result = await getPR(
         repository,
         installationAuthentication.token,
@@ -182,9 +192,22 @@ async function onGitHubEvent(event: WebhookQueuedEvent) {
             path,
           );
         }
+      } else if (prReview) {
+        if (!prBranch || !existingPr) {
+          throw new Error("prBranch and existingPr when handling prReview");
+        }
+        await respondToCodeReview(
+          repository,
+          installationAuthentication.token,
+          path,
+          prBranch,
+          existingPr,
+          event.payload.review.state,
+          body,
+        );
       } else if (prCommand) {
         if (!prBranch || !existingPr) {
-          throw new Error("prBranch and existingPr required");
+          throw new Error("prBranch and existingPr when handling prCommand");
         }
         switch (prCommand) {
           case PRCommand.CreateStory:
@@ -267,22 +290,34 @@ type WebhookPullRequestOpenedEvent = EmitterWebhookEvent<"pull_request"> & {
   };
 };
 
+type WebhookPullRequestReviewWithCommentsSubmittedEvent =
+  EmitterWebhookEvent<"pull_request_review"> & {
+    payload: {
+      action: "submitted";
+      review: {
+        state: "changes_requested" | "commented";
+      };
+    };
+  };
+
 type WebhookQueuedEvent =
   | WebhookIssueOpenedEvent
   | WebhookPRCommentCreatedEvent
-  | WebhookPullRequestOpenedEvent;
+  | WebhookPullRequestOpenedEvent
+  | WebhookPullRequestReviewWithCommentsSubmittedEvent;
 
-type WebhookQueuedEventWithOctokit = WebhookQueuedEvent & {
+type WithOctokit<T> = T & {
   octokit: Octokit;
 };
 
 export type WebhookPRCommentCreatedEventWithOctokit =
-  WebhookPRCommentCreatedEvent & {
-    octokit: Octokit;
-  };
+  WithOctokit<WebhookPRCommentCreatedEvent>;
+
+export type WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit =
+  WithOctokit<WebhookPullRequestReviewWithCommentsSubmittedEvent>;
 
 export const publishGitHubEventToQueue = async (
-  event: WebhookQueuedEventWithOctokit,
+  event: WithOctokit<WebhookQueuedEvent>,
 ) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { octokit, ...eventWithoutOctokit } = event;

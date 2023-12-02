@@ -12,7 +12,10 @@ ${images}
 
 -- INSTRUCTIONS --
 The code that needs to be updated is a file called "code.txt":\n\n${code}\n\n
-Act as a L7 expert Software Engineer at Facebook and address the GitHub issue by editing existing code. Use only the 'Github Issue:' and 'Steps to address the issue:' provided by the user to update the file. The sitemap and types provided above are the only TypeScript types or filesystem files that you can import. DO NOT make up any imports! DO NOT add any new files to the "code.txt" file.
+Act as a L7 expert Software Engineer at Facebook and address the GitHub issue by editing existing code.
+Use only the 'Github Issue:' and 'Steps to address the issue:' provided by the user to update the file.
+The source map and types provided above are the only TypeScript types or filesystem files that you can import.
+DO NOT make up any imports! DO NOT add any new files to the "code.txt" file.
 The output MUST be the exact "code.txt" file with the updated code changes. 
 ${previousErrors}
 

@@ -7,6 +7,7 @@ import { text } from "body-parser";
 import {
   publishGitHubEventToQueue,
   type WebhookPRCommentCreatedEventWithOctokit,
+  type WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit,
 } from "../messaging/queue";
 import { PR_COMMAND_VALUES } from "../utils";
 
@@ -81,17 +82,20 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 //   );
 // });
 
-// ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
-//   const { payload } = event;
-//   console.log(`Received PR #${payload.pull_request.number} submitted event`);
-//   if (
-//     payload.review.state === "changes_requested" ||
-//     payload.review.state === "commented"
-//   ) {
-//     console.log(`PR #${payload.pull_request.number} should be processed`);
-//     publishGitHubEventToQueue(event);
-//   }
-// });
+ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
+  const { payload } = event;
+  console.log(`Received PR #${payload.pull_request.number} submitted event`);
+  if (
+    payload.action === "submitted" &&
+    (payload.review.state === "changes_requested" ||
+      payload.review.state === "commented")
+  ) {
+    console.log(`PR #${payload.pull_request.number} should be processed`);
+    publishGitHubEventToQueue(
+      event as WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit,
+    );
+  }
+});
 
 ghApp.webhooks.on("issue_comment.created", async (event) => {
   const { payload } = event;

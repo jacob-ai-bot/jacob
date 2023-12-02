@@ -223,9 +223,10 @@ export async function checkAndCommit({
       3. Once the code looks good, approve the PR and merge the code.
     `;
 
-    const issueInfo = issue
-      ? ` to address the issue [${issue.title}](${issue.html_url})`
-      : "";
+    const issueInfo =
+      issue && !existingPr
+        ? ` to address the issue [${issue.title}](${issue.html_url})`
+        : "";
     await addCommentToIssue(
       repository,
       prNumber,
@@ -233,7 +234,7 @@ export async function checkAndCommit({
       dedent`
         Hello human! 👋
       
-        This PR was created by Otto${issueInfo}
+        This PR was ${existingPr ? "updated" : "created"} by Otto${issueInfo}
         
         ${nextStepsMessage}
       `,
