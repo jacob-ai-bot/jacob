@@ -3,6 +3,9 @@ import { Repository } from "@octokit/webhooks-types";
 import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 import { graphql } from "@octokit/graphql";
 import { MarkPullRequestReadyForReviewPayload } from "@octokit/graphql-schema";
+import path from "path";
+
+import { concatenateFiles } from "../utils/files";
 
 export type PREvent =
   RestEndpointMethodTypes["pulls"]["createReview"]["parameters"]["event"];
@@ -134,4 +137,22 @@ export async function markPRReadyForReview(
     query: mutation,
     pullRequestId,
   });
+}
+
+export async function concatenatePRFiles(
+  rootPath: string,
+  repository: Repository,
+  token: string,
+  prNumber: number,
+) {
+  const prFiles = await getPRFiles(repository, token, prNumber);
+  const relevantFileNames = prFiles.data
+    .map(({ filename }) => filename)
+    .filter((filename) => !(path.basename(filename) === "package-lock.json"));
+
+  if (relevantFileNames.length === 0) {
+    console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files changed in PR\n\n\n\n");
+    throw new Error("No relevant files changed in PR");
+  }
+  return concatenateFiles(rootPath, relevantFileNames);
 }

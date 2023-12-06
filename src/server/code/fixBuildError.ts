@@ -9,8 +9,8 @@ import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
 import { checkAndCommit } from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import { getPRFiles } from "../github/pr";
-import { concatenateFiles, reconstructFiles } from "../utils/files";
+import { concatenatePRFiles } from "../github/pr";
+import { reconstructFiles } from "../utils/files";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -55,16 +55,12 @@ export async function fixBuildError(
         issue,
       });
     } else {
-      const prFiles = await getPRFiles(repository, token, existingPr.number);
-      const filesToUpdate = prFiles.data.map(({ filename }) => filename);
-
-      console.log("Files to update:", filesToUpdate);
-      if (!filesToUpdate?.length) {
-        console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files to update\n\n\n\n");
-        throw new Error("No files to update");
-      }
-      const code = concatenateFiles(rootPath, filesToUpdate);
-      console.log("Concatenated code:\n\n", code);
+      const code = await concatenatePRFiles(
+        rootPath,
+        repository,
+        token,
+        existingPr.number,
+      );
 
       const { causeOfError, ideasForFixingError, suggestedFix } = assessment;
       const sourceMap = getSourceMap(rootPath);

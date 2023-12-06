@@ -3,9 +3,9 @@ import { Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate } from "../utils";
-import { concatenateFiles, reconstructFiles } from "../utils/files";
+import { reconstructFiles } from "../utils/files";
 import { sendGptRequest } from "../openai/request";
-import { getPRFiles } from "../github/pr";
+import { concatenatePRFiles } from "../github/pr";
 import { checkAndCommit } from "./checkAndCommit";
 
 type PullRequest =
@@ -20,20 +20,16 @@ export async function respondToCodeReview(
   state: "changes_requested" | "commented",
   reviewBody: string | null,
 ) {
-  const prFiles = await getPRFiles(repository, token, existingPr.number);
-  const filesChangedInPR = prFiles.data.map(({ filename }) => filename);
-
   const sourceMap = getSourceMap(rootPath);
   const types = getTypes(rootPath);
   const images = getImages(rootPath);
 
-  console.log("Files changed in PR:", filesChangedInPR);
-  if (!filesChangedInPR?.length) {
-    console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files changed in PR\n\n\n\n");
-    throw new Error("No files to review");
-  }
-  const code = concatenateFiles(rootPath, filesChangedInPR);
-  console.log("Concatenated code:\n\n", code);
+  const code = await concatenatePRFiles(
+    rootPath,
+    repository,
+    token,
+    existingPr.number,
+  );
 
   const respondToCodeReviewTemplateParams = {
     sourceMap,

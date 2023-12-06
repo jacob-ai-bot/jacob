@@ -5,10 +5,9 @@ import { z } from "zod";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate } from "../utils";
-import { concatenateFiles } from "../utils/files";
 import { sendGptRequestWithSchema } from "../openai/request";
 import { getIssue } from "../github/issue";
-import { getPRFiles, createPRReview } from "../github/pr";
+import { concatenatePRFiles, createPRReview } from "../github/pr";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -37,20 +36,16 @@ export async function codeReview(
   );
   const issue = result.data;
 
-  const prFiles = await getPRFiles(repository, token, existingPr.number);
-  const filesToReview = prFiles.data.map(({ filename }) => filename);
-
   const sourceMap = getSourceMap(rootPath);
   const types = getTypes(rootPath);
   const images = getImages(rootPath);
 
-  console.log("Files to review:", filesToReview);
-  if (!filesToReview?.length) {
-    console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files to review\n\n\n\n");
-    throw new Error("No files to review");
-  }
-  const code = concatenateFiles(rootPath, filesToReview);
-  console.log("Concatenated code:\n\n", code);
+  const code = await concatenatePRFiles(
+    rootPath,
+    repository,
+    token,
+    existingPr.number,
+  );
 
   const codeReviewTemplateParams = {
     sourceMap,
