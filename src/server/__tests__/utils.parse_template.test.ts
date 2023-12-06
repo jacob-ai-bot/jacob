@@ -1,4 +1,6 @@
 import * as dotenv from "dotenv";
+import { describe, beforeEach, afterEach, it, expect } from "vitest";
+
 import { parseTemplate, TemplateParams } from "../utils";
 
 dotenv.config();
