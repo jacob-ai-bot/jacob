@@ -143,10 +143,16 @@ async function onGitHubEvent(event: WebhookQueuedEvent) {
       token: installationAuthentication.token,
       ...(prCommand
         ? {
+            task: "prCommand",
             prNumber: eventIssueOrPRNumber,
             prCommand: prCommand,
           }
-        : { issueOpenedNumber: eventIssueOrPRNumber }),
+        : prReview
+        ? { task: "prReview", prNumber: eventIssueOrPRNumber }
+        : {
+            task: "issueOpened",
+            issueOpenedNumber: eventIssueOrPRNumber,
+          }),
     });
 
     let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
