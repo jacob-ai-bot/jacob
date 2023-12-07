@@ -23,7 +23,11 @@ export const ghApp = new App({
 });
 
 let smeeClient: SmeeClient | undefined;
-if (process.env.SMEE_URL && process.env.TARGET_URL) {
+if (
+  process.env.SMEE_URL &&
+  process.env.TARGET_URL &&
+  process.env.NODE_ENV !== "test"
+) {
   smeeClient = new SmeeClient({
     source: process.env.SMEE_URL,
     target: process.env.TARGET_URL,

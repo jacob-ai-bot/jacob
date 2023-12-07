@@ -74,7 +74,7 @@ async function initRabbitMQ() {
   }
 }
 
-async function onGitHubEvent(event: WebhookQueuedEvent) {
+export async function onGitHubEvent(event: WebhookQueuedEvent) {
   const eventName = event.name;
   const start = Date.now();
   console.log(`onGitHubEvent: ${event.id} ${eventName}`);
@@ -272,7 +272,7 @@ async function onGitHubEvent(event: WebhookQueuedEvent) {
   );
 }
 
-type WebhookIssueOpenedEvent = EmitterWebhookEvent<"issues"> & {
+export type WebhookIssueOpenedEvent = EmitterWebhookEvent<"issues"> & {
   payload: {
     action: "opened";
   };
@@ -306,7 +306,7 @@ type WebhookPullRequestReviewWithCommentsSubmittedEvent =
     };
   };
 
-type WebhookQueuedEvent =
+export type WebhookQueuedEvent =
   | WebhookIssueOpenedEvent
   | WebhookPRCommentCreatedEvent
   | WebhookPullRequestOpenedEvent
@@ -337,4 +337,6 @@ export const publishGitHubEventToQueue = async (
   console.log(`publishGitHubEventToQueue: ${event.id} ${event.name}`);
 };
 
-initRabbitMQ();
+if (process.env.NODE_ENV !== "test") {
+  initRabbitMQ();
+}
