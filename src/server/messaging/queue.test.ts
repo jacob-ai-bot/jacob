@@ -16,6 +16,18 @@ import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.n
 import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
 import { onGitHubEvent, type WebhookIssueOpenedEvent } from "./queue";
 
+const mockedOctokitAuthApp = vi.hoisted(() => ({
+  createAppAuth: vi
+    .fn()
+    .mockImplementation(() =>
+      vi
+        .fn()
+        .mockImplementation(
+          () => new Promise((resolve) => resolve({ token: "fake-token" })),
+        ),
+    ),
+}));
+
 const mockedDb = vi.hoisted(() => ({
   db: {
     projects: {
@@ -61,6 +73,9 @@ const mockedEditFiles = vi.hoisted(() => ({
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
 
+vi.mock("@octokit/auth-app", () => ({
+  ...mockedOctokitAuthApp,
+}));
 vi.mock("../db/db", () => ({
   ...mockedDb,
 }));
