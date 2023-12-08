@@ -14,12 +14,17 @@ import "dotenv/config";
 
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
 import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
+import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_request_review.submitted.json";
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
+import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
+import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
 import {
   onGitHubEvent,
   type WebhookIssueOpenedEvent,
   type WebhookPRCommentCreatedEvent,
+  type WebhookPullRequestReviewWithCommentsSubmittedEvent,
 } from "./queue";
+import { mock } from "node:test";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
@@ -32,6 +37,7 @@ const mockedOctokitAuthApp = vi.hoisted(() => ({
         ),
     ),
 }));
+vi.mock("@octokit/auth-app", () => mockedOctokitAuthApp);
 
 const mockedDb = vi.hoisted(() => ({
   db: {
@@ -48,6 +54,7 @@ const mockedDb = vi.hoisted(() => ({
     },
   },
 }));
+vi.mock("../db/db", () => mockedDb);
 
 const mockedClone = vi.hoisted(() => ({
   cloneRepo: vi
@@ -59,52 +66,56 @@ const mockedClone = vi.hoisted(() => ({
         ),
     ),
 }));
+vi.mock("../git/clone", () => mockedClone);
 
 const mockedCheck = vi.hoisted(() => ({
   runBuildCheck: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
+vi.mock("../build/node/check", () => mockedCheck);
 
 const mockedNewFile = vi.hoisted(() => ({
   createNewFile: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
+vi.mock("../code/newFile", () => mockedNewFile);
 
 const mockedEditFiles = vi.hoisted(() => ({
   editFiles: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
+vi.mock("../code/editFiles", () => mockedEditFiles);
 
 const mockedCodeReview = vi.hoisted(() => ({
   codeReview: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
+vi.mock("../code/codeReview", () => mockedCodeReview);
 
-vi.mock("@octokit/auth-app", () => ({
-  ...mockedOctokitAuthApp,
+const mockedCreateStory = vi.hoisted(() => ({
+  createStory: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
-vi.mock("../db/db", () => ({
-  ...mockedDb,
+vi.mock("../code/createStory", () => mockedCreateStory);
+
+const mockedFixBuildError = vi.hoisted(() => ({
+  fixBuildError: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
-vi.mock("../git/clone", () => ({
-  ...mockedClone,
+vi.mock("../code/fixBuildError", () => mockedFixBuildError);
+
+const mockedRespondToCodeReview = vi.hoisted(() => ({
+  respondToCodeReview: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
-vi.mock("../build/node/check", () => ({
-  ...mockedCheck,
-}));
-vi.mock("../code/newFile", () => ({
-  ...mockedNewFile,
-}));
-vi.mock("../code/editFiles", () => ({
-  ...mockedEditFiles,
-}));
-vi.mock("../code/codeReview", () => ({
-  ...mockedCodeReview,
-}));
+vi.mock("../code/respondToCodeReview", () => mockedRespondToCodeReview);
 
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
@@ -151,7 +162,7 @@ describe("onGitHubEvent", () => {
     expect(vi.mocked(mockedNewFile.createNewFile)).toHaveBeenCalledTimes(1);
   });
 
-  test("PR comment created - code review command", async () => {
+  test("issue opened - edit files", async () => {
     server?.use(
       http.post(
         "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/49/comments",
@@ -170,7 +181,7 @@ describe("onGitHubEvent", () => {
     expect(vi.mocked(mockedEditFiles.editFiles)).toHaveBeenCalledTimes(1);
   });
 
-  test("issue opened - edit files", async () => {
+  test("PR comment created - code review command", async () => {
     server?.use(
       http.post(
         "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
@@ -192,5 +203,81 @@ describe("onGitHubEvent", () => {
 
     expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(mockedCodeReview.codeReview)).toHaveBeenCalledTimes(1);
+  });
+
+  test("PR comment created - create story command", async () => {
+    server?.use(
+      http.post(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
+        () => HttpResponse.json({}),
+      ),
+    );
+    server?.use(
+      http.get(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
+        () => HttpResponse.json({ head: { ref: "test-branch" } }),
+      ),
+    );
+
+    await onGitHubEvent({
+      id: "4",
+      name: "issue_comment",
+      payload: issueCommentCreatedPRCommandCreateStoryPayload,
+    } as WebhookPRCommentCreatedEvent);
+
+    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(mockedCreateStory.createStory)).toHaveBeenCalledTimes(1);
+  });
+
+  test("PR comment created - fix build error command", async () => {
+    server?.use(
+      http.post(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
+        () => HttpResponse.json({}),
+      ),
+    );
+    server?.use(
+      http.get(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
+        () => HttpResponse.json({ head: { ref: "test-branch" } }),
+      ),
+    );
+
+    await onGitHubEvent({
+      id: "5",
+      name: "issue_comment",
+      payload: issueCommentCreatedPRCommandFixBuildErrorPayload,
+    } as WebhookPRCommentCreatedEvent);
+
+    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(mockedFixBuildError.fixBuildError)).toHaveBeenCalledTimes(
+      1,
+    );
+  });
+
+  test("PR review submitted", async () => {
+    server?.use(
+      http.post(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
+        () => HttpResponse.json({}),
+      ),
+    );
+    server?.use(
+      http.get(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
+        () => HttpResponse.json({ head: { ref: "test-branch" } }),
+      ),
+    );
+
+    await onGitHubEvent({
+      id: "6",
+      name: "pull_request_review",
+      payload: pullRequestReviewSubmittedPayload,
+    } as WebhookPullRequestReviewWithCommentsSubmittedEvent);
+
+    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(mockedRespondToCodeReview.respondToCodeReview),
+    ).toHaveBeenCalledTimes(1);
   });
 });
