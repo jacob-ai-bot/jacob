@@ -24,7 +24,6 @@ import {
   type WebhookPRCommentCreatedEvent,
   type WebhookPullRequestReviewWithCommentsSubmittedEvent,
 } from "./queue";
-import { mock } from "node:test";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
