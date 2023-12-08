@@ -297,7 +297,7 @@ type WebhookPullRequestOpenedEvent = EmitterWebhookEvent<"pull_request"> & {
   };
 };
 
-type WebhookPullRequestReviewWithCommentsSubmittedEvent =
+export type WebhookPullRequestReviewWithCommentsSubmittedEvent =
   EmitterWebhookEvent<"pull_request_review"> & {
     payload: {
       action: "submitted";
