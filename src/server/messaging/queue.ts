@@ -281,14 +281,15 @@ export type WebhookIssueOpenedEvent = EmitterWebhookEvent<"issues"> & {
 type WebhookIssueCommentPullRequest =
   EmitterWebhookEvent<"issue_comment">["payload"]["issue"]["pull_request"];
 
-type WebhookPRCommentCreatedEvent = EmitterWebhookEvent<"issue_comment"> & {
-  payload: {
-    action: "created";
-    issue: {
-      pull_request: NonNullable<WebhookIssueCommentPullRequest>;
+export type WebhookPRCommentCreatedEvent =
+  EmitterWebhookEvent<"issue_comment"> & {
+    payload: {
+      action: "created";
+      issue: {
+        pull_request: NonNullable<WebhookIssueCommentPullRequest>;
+      };
     };
   };
-};
 
 type WebhookPullRequestOpenedEvent = EmitterWebhookEvent<"pull_request"> & {
   payload: {

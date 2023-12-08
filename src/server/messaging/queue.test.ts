@@ -14,7 +14,12 @@ import "dotenv/config";
 
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
 import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
-import { onGitHubEvent, type WebhookIssueOpenedEvent } from "./queue";
+import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
+import {
+  onGitHubEvent,
+  type WebhookIssueOpenedEvent,
+  type WebhookPRCommentCreatedEvent,
+} from "./queue";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
@@ -73,6 +78,12 @@ const mockedEditFiles = vi.hoisted(() => ({
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
 
+const mockedCodeReview = vi.hoisted(() => ({
+  codeReview: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+}));
+
 vi.mock("@octokit/auth-app", () => ({
   ...mockedOctokitAuthApp,
 }));
@@ -91,12 +102,20 @@ vi.mock("../code/newFile", () => ({
 vi.mock("../code/editFiles", () => ({
   ...mockedEditFiles,
 }));
+vi.mock("../code/codeReview", () => ({
+  ...mockedCodeReview,
+}));
 
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
   beforeAll(() => {
-    server = setupServer();
+    server = setupServer(
+      http.post(
+        "https://api.github.com/app/installations/42293588/access_tokens",
+        () => HttpResponse.json({}),
+      ),
+    );
     server.listen({ onUnhandledRequest: "error" });
   });
 
@@ -116,12 +135,6 @@ describe("onGitHubEvent", () => {
   test("issue opened - new file", async () => {
     server?.use(
       http.post(
-        "https://api.github.com/app/installations/42293588/access_tokens",
-        () => HttpResponse.json({}),
-      ),
-    );
-    server?.use(
-      http.post(
         "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/47/comments",
         () => HttpResponse.json({}),
       ),
@@ -138,13 +151,7 @@ describe("onGitHubEvent", () => {
     expect(vi.mocked(mockedNewFile.createNewFile)).toHaveBeenCalledTimes(1);
   });
 
-  test("issue opened - edit files", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/app/installations/42293588/access_tokens",
-        () => HttpResponse.json({}),
-      ),
-    );
+  test("PR comment created - code review command", async () => {
     server?.use(
       http.post(
         "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/49/comments",
@@ -153,7 +160,7 @@ describe("onGitHubEvent", () => {
     );
 
     await onGitHubEvent({
-      id: "1",
+      id: "2",
       name: "issues",
       payload: issuesOpenedEditFilesPayload,
     } as WebhookIssueOpenedEvent);
@@ -161,5 +168,29 @@ describe("onGitHubEvent", () => {
     expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(mockedCheck.runBuildCheck)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(mockedEditFiles.editFiles)).toHaveBeenCalledTimes(1);
+  });
+
+  test("issue opened - edit files", async () => {
+    server?.use(
+      http.post(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
+        () => HttpResponse.json({}),
+      ),
+    );
+    server?.use(
+      http.get(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
+        () => HttpResponse.json({ head: { ref: "test-branch" } }),
+      ),
+    );
+
+    await onGitHubEvent({
+      id: "3",
+      name: "issue_comment",
+      payload: issueCommentCreatedPRCommandCodeReviewPayload,
+    } as WebhookPRCommentCreatedEvent);
+
+    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(mockedCodeReview.codeReview)).toHaveBeenCalledTimes(1);
   });
 });
