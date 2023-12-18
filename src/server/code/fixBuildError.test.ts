@@ -1,6 +1,13 @@
-import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
+import {
+  describe,
+  test,
+  expect,
+  afterEach,
+  afterAll,
+  beforeEach,
+  vi,
+} from "vitest";
 import { Issue, Repository } from "@octokit/webhooks-types";
-import "dotenv/config";
 
 import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
 import { fixBuildError, type PullRequest } from "./fixBuildError";
@@ -75,8 +82,15 @@ const mockedAssessBuildError = vi.hoisted(() => ({
 }));
 vi.mock("./assessBuildError", () => mockedAssessBuildError);
 
+const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
+
 describe("fixBuildError", () => {
+  beforeEach(() => {
+    process.env.PROMPT_FOLDER = originalPromptsFolder;
+  });
+
   afterEach(() => {
+    delete process.env.PROMPT_FOLDER;
     vi.clearAllMocks();
   });
 
