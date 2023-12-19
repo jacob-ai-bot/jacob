@@ -112,8 +112,6 @@ describe("fixBuildError", () => {
       { number: 48 } as PullRequest,
     );
 
-    console.log(vi.mocked(mockedRequest.sendGptRequest).mock.calls);
-
     expect(
       vi.mocked(mockedAssessBuildError.assessBuildError),
     ).toHaveBeenCalledTimes(1);

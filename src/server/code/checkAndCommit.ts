@@ -17,9 +17,9 @@ import { getIssue } from "../github/issue";
 import { dynamicImport } from "../utils/dynamicImport";
 import stripAnsi from "strip-ansi";
 
-type PullRequest =
+export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
-type RetrievedIssue =
+export type RetrievedIssue =
   Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 
 interface CheckAndCommitOptions {
@@ -216,8 +216,8 @@ export async function checkAndCommit({
 
       1. Please review the PR carefully. Auto-generated code can and will contain subtle bugs and mistakes.
 
-      2. If you identify code that needs to be changed, please reject the PR with a specific reason. 
-      Be as detailed as possible in your comments. Otto will take these comments, make changes to the code and push up changes. 
+      2. If you identify code that needs to be changed, please reject the PR with a specific reason.
+      Be as detailed as possible in your comments. Otto will take these comments, make changes to the code and push up changes.
       Please note that this process will take a few minutes.
       
       3. Once the code looks good, approve the PR and merge the code.
@@ -227,18 +227,14 @@ export async function checkAndCommit({
       issue && !existingPr
         ? ` to address the issue [${issue.title}](${issue.html_url})`
         : "";
-    await addCommentToIssue(
-      repository,
-      prNumber,
-      token,
-      dedent`
-        Hello human! 👋
+    const prMessage = dedent`
+      Hello human! 👋
       
-        This PR was ${existingPr ? "updated" : "created"} by Otto${issueInfo}
-        
-        ${nextStepsMessage}
-      `,
-    );
+      This PR was ${existingPr ? "updated" : "created"} by Otto${issueInfo}
+      
+      ${nextStepsMessage}
+    `;
+    await addCommentToIssue(repository, prNumber, token, prMessage);
 
     if (issue) {
       const issueMessage = dedent`
