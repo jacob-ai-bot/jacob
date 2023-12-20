@@ -106,42 +106,44 @@ describe("fixBuildError", () => {
       { owner: { login: "test-login" }, name: "test-repo" } as Repository,
       "token",
       issue,
-      "## Error Message:\n\nbuild-error-info\n\n## Something else",
+      "## Error Message (Attempt #2):\n\nbuild-error-info\n\n## Something else",
       "/rootpath",
       "otto-issue-48-test",
       { number: 48 } as PullRequest,
     );
 
-    expect(
-      vi.mocked(mockedAssessBuildError.assessBuildError),
-    ).toHaveBeenCalledTimes(1);
-    expect(
-      vi.mocked(mockedAssessBuildError.assessBuildError),
-    ).toHaveBeenLastCalledWith("build-error-info\n\n");
+    expect(mockedAssessBuildError.assessBuildError).toHaveBeenCalledTimes(1);
+    expect(mockedAssessBuildError.assessBuildError).toHaveBeenLastCalledWith(
+      "build-error-info\n\n",
+    );
 
-    expect(vi.mocked(mockedPR.concatenatePRFiles)).toHaveBeenCalledTimes(1);
+    expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
 
-    expect(vi.mocked(mockedRequest.sendGptRequest)).toHaveBeenCalledTimes(1);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
-    expect(vi.mocked(systemPrompt)).toContain("-- Types\ntypes\n");
-    expect(vi.mocked(systemPrompt)).toContain(
+    expect(systemPrompt).toContain("-- Types\ntypes\n");
+    expect(systemPrompt).toContain(
       "-- Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n-- END Source Map\n",
     );
-    expect(vi.mocked(systemPrompt)).toContain(
+    expect(systemPrompt).toContain(
       "-- Cause Of Error\nsomething went wrong\n\n-- Ideas For Fixing Error\nchange something\n\n-- Suggested Fix\nnew code\n",
     );
-    expect(vi.mocked(systemPrompt)).toContain(
+    expect(systemPrompt).toContain(
       '-- Instructions\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__code-with-error\n',
     );
 
-    expect(vi.mocked(mockedFiles.reconstructFiles)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedFiles.reconstructFiles)).toHaveBeenLastCalledWith(
+    expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
+    expect(mockedFiles.reconstructFiles).toHaveBeenLastCalledWith(
       "__FILEPATH__file.txt__fixed-file-content",
       "/rootpath",
     );
 
-    expect(
-      vi.mocked(mockedCheckAndCommit.checkAndCommit),
-    ).toHaveBeenCalledTimes(1);
+    expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
+    const checkAndCommitOptions =
+      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0];
+    expect(checkAndCommitOptions.commitMessage).toBe(
+      "Otto commit: fix build error",
+    );
+    expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(2);
   });
 });

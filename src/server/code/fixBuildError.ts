@@ -33,8 +33,24 @@ export async function fixBuildError(
   );
   const issue = result.data;
 
-  const buildErrorSection = (body?.split("## Error Message:\n\n") ?? [])[1];
-  const buildError = (buildErrorSection ?? "").split("## ")[0];
+  const buildErrorSection = (body?.split("## Error Message") ?? [])[1];
+  const headingEndMarker = "\n\n";
+  const nextHeadingMarker = "## ";
+  const afterHeadingIndex = (buildErrorSection ?? "").indexOf(headingEndMarker);
+  const restOfHeading =
+    afterHeadingIndex === -1
+      ? ""
+      : buildErrorSection.slice(0, afterHeadingIndex);
+  const attemptNumber = parseInt(
+    restOfHeading.match(/Attempt\s+#(\d+)/)?.[1] ?? "",
+    10,
+  );
+  const buildError =
+    afterHeadingIndex === -1
+      ? ""
+      : buildErrorSection
+          .slice(afterHeadingIndex + headingEndMarker.length)
+          .split(nextHeadingMarker)[0];
 
   const assessment = await assessBuildError(buildError);
   console.log("Assessment of Error:", assessment);
@@ -53,6 +69,7 @@ export async function fixBuildError(
         commitMessage: "Otto commit: fix build error",
         existingPr,
         issue,
+        buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
       });
     } else {
       const code = await concatenatePRFiles(
@@ -118,6 +135,7 @@ export async function fixBuildError(
         commitMessage: "Otto commit: fix build error",
         existingPr,
         issue,
+        buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
       });
     }
   } catch (error) {

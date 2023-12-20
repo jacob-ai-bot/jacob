@@ -34,6 +34,7 @@ interface CheckAndCommitOptions {
   newPrBody?: string;
   newPrReviewers?: string[];
   creatingStory?: boolean;
+  buildErrorAttemptNumber?: number;
 }
 
 export async function checkAndCommit({
@@ -48,6 +49,7 @@ export async function checkAndCommit({
   newPrBody,
   newPrReviewers,
   creatingStory,
+  buildErrorAttemptNumber,
 }: CheckAndCommitOptions) {
   let buildErrorMessage: string | undefined;
 
@@ -96,10 +98,13 @@ export async function checkAndCommit({
 
   let prBodySuffix: string;
   if (buildErrorMessage) {
+    const errorAttemptInHeading = buildErrorAttemptNumber
+      ? ` (Attempt #${buildErrorAttemptNumber + 1})`
+      : "";
     prBodySuffix = dedent`\n
       ${PRCommand.FixBuildError}
       
-      ## Error Message:
+      ## Error Message${errorAttemptInHeading}:
       
       ${buildErrorMessage}
     `;

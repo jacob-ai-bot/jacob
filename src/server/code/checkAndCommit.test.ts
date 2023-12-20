@@ -182,6 +182,7 @@ describe("checkAndCommit", () => {
       branch: "otto-issue-48-test",
       issue,
       commitMessage: "test-commit-message",
+      buildErrorAttemptNumber: 1,
       existingPr: {
         number: 48,
         node_id: "PR_nodeid",
@@ -213,7 +214,7 @@ describe("checkAndCommit", () => {
         "## Next Steps\n\n" +
         "I am working to resolve a build error. I will update this PR with my progress.\n" +
         "@otto fix build error\n\n" +
-        "## Error Message:\n\n" +
+        "## Error Message (Attempt #2):\n\n" +
         "Command failed: npm run build --verbose\n" +
         "npm verb cli /opt/render/project/nodes/node-18.17.1/bin/node /opt/render/project/nodes/node-18.17.1/bin/npm\n" +
         "npm info using npm@9.6.7\n" +
