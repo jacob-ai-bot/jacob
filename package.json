@@ -8,6 +8,7 @@
     "preview": "tsc -p ./tsconfig.node.json && vite --config ./vite/vite.config.js preview",
     "start": "node dist/src/server/index.js",
     "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "create-project": "node dist/scripts/create_new_project.js",
     "db": "ts-node -O {\\\"module\\\":\\\"commonjs\\\"} src/server/db/dbScript.ts"
   },
@@ -60,6 +61,7 @@
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
     "@vitejs/plugin-react": "^4.0.3",
+    "@vitest/coverage-v8": "^1.1.0",
     "eslint": "^8.49.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",

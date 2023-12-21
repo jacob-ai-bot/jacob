@@ -5,6 +5,9 @@ dist/
 # Vite config build
 vite/
 
+# Vite coverage HTML report
+coverage/
+
 # Environment variables
 .env
 .env.local
