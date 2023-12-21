@@ -3,7 +3,11 @@ import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { Issue, Repository } from "@octokit/webhooks-types";
 
 import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
-import { checkAndCommit, type PullRequest } from "./checkAndCommit";
+import {
+  checkAndCommit,
+  MAX_ATTEMPTS_TO_FIX_BUILD_ERROR,
+  type PullRequest,
+} from "./checkAndCommit";
 
 const mockedDynamicImport = vi.hoisted(() => ({
   dynamicImport: vi
@@ -138,34 +142,13 @@ describe("checkAndCommit", () => {
   });
 
   test("checkAndCommit - with build error", async () => {
+    const fakeBuildError = dedent`
+      Command failed: npm run build --verbose
+      npm verb exit 1
+      npm verb code 1
+    `;
     mockedCheck.runBuildCheck.mockImplementation(
-      () =>
-        new Promise((_, reject) => {
-          const message = dedent`
-          Command failed: npm run build --verbose
-          npm verb cli /opt/render/project/nodes/node-18.17.1/bin/node /opt/render/project/nodes/node-18.17.1/bin/npm
-          npm info using npm@9.6.7
-          npm info using node@v18.17.1
-          npm verb title npm run build
-          npm verb argv "run" "build" "--loglevel" "verbose"
-          npm verb logfile logs-max:10 dir:/opt/render/.cache/_logs/2023-11-23T15_51_04_136Z-
-          npm verb logfile /opt/render/.cache/_logs/2023-11-23T15_51_04_136Z-debug-0.log
-          Failed to compile.
-
-          ./src/components/AnalyticCard.tsx:2:33
-          Type error: Cannot find module '@fortawesome/react-fontawesome' or its corresponding type declarations.
-
-            1 | import React from 'react';
-          > 2 | import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-              |                                 ^
-            3 | import { faWallet } from '@fortawesome/free-solid-svg-icons';
-            4 |
-            5 | interface AnalyticCardProps {
-          npm verb exit 1
-          npm verb code 1
-        `;
-          reject(new Error(message));
-        }),
+      () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
     const issue =
@@ -215,25 +198,7 @@ describe("checkAndCommit", () => {
         "I am working to resolve a build error. I will update this PR with my progress.\n" +
         "@otto fix build error\n\n" +
         "## Error Message (Attempt #2):\n\n" +
-        "Command failed: npm run build --verbose\n" +
-        "npm verb cli /opt/render/project/nodes/node-18.17.1/bin/node /opt/render/project/nodes/node-18.17.1/bin/npm\n" +
-        "npm info using npm@9.6.7\n" +
-        "npm info using node@v18.17.1\n" +
-        "npm verb title npm run build\n" +
-        'npm verb argv "run" "build" "--loglevel" "verbose"\n' +
-        "npm verb logfile logs-max:10 dir:/opt/render/.cache/_logs/2023-11-23T15_51_04_136Z-\n" +
-        "npm verb logfile /opt/render/.cache/_logs/2023-11-23T15_51_04_136Z-debug-0.log\n" +
-        "Failed to compile.\n\n" +
-        "./src/components/AnalyticCard.tsx:2:33\n" +
-        "Type error: Cannot find module '@fortawesome/react-fontawesome' or its corresponding type declarations.\n\n" +
-        "  1 | import React from 'react';\n" +
-        "> 2 | import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';\n" +
-        "    |                                 ^\n" +
-        "  3 | import { faWallet } from '@fortawesome/free-solid-svg-icons';\n" +
-        "  4 |\n" +
-        "  5 | interface AnalyticCardProps {\n" +
-        "npm verb exit 1\n" +
-        "npm verb code 1",
+        fakeBuildError,
     );
     expect(mockedIssue.addCommentToIssue).toHaveBeenLastCalledWith(
       repository,
@@ -243,5 +208,58 @@ describe("checkAndCommit", () => {
         "I've updated this pull request: [pr-title](https://github.com/pr-url).\n\n" +
         "The changes currently result in a build error, so I'll be making some additional changes before it is ready to merge.",
     );
+  });
+
+  test("checkAndCommit - build error after too many attempts", async () => {
+    const fakeBuildError = dedent`
+      Command failed: npm run build --verbose
+      npm verb exit 1
+      npm verb code 1
+    `;
+    mockedCheck.runBuildCheck.mockImplementation(
+      () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
+    );
+
+    const issue =
+      issueCommentCreatedPRCommandFixBuildErrorPayload.issue as Issue;
+    const repository = {
+      owner: { login: "test-login" },
+      name: "test-repo",
+    } as Repository;
+
+    await expect(() =>
+      checkAndCommit({
+        repository,
+        token: "token",
+        rootPath: "/rootpath",
+        branch: "otto-issue-48-test",
+        issue,
+        commitMessage: "test-commit-message",
+        buildErrorAttemptNumber: MAX_ATTEMPTS_TO_FIX_BUILD_ERROR - 1,
+        existingPr: {
+          number: 48,
+          node_id: "PR_nodeid",
+          title: "pr-title",
+          html_url: "https://github.com/pr-url",
+        } as PullRequest,
+      }),
+    ).rejects.toThrowError(
+      `Too many attempts to fix build errors.\n\nThe latest error:\n\n${fakeBuildError}`,
+    );
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith("/rootpath");
+
+    expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
+      "/rootpath",
+      "otto-issue-48-test",
+      "test-commit-message",
+    );
+
+    expect(mockedPR.markPRReadyForReview).not.toHaveBeenCalled();
+    expect(mockedPR.createPR).not.toHaveBeenCalled();
+
+    expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
   });
 });

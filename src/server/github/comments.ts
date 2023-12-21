@@ -91,8 +91,6 @@ export function addFailedWorkComment(
     
     Here is some error information:
     ${(error as { message?: string })?.message ?? error.toString()}
-    
-    I'll try again in a few minutes.
   `;
   return addCommentToIssue(repository, issueOrPRNumber, token, message);
 }

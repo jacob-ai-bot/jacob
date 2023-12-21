@@ -22,6 +22,8 @@ export type PullRequest =
 export type RetrievedIssue =
   Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 
+export const MAX_ATTEMPTS_TO_FIX_BUILD_ERROR = 8;
+
 interface CheckAndCommitOptions {
   repository: Repository;
   token: string;
@@ -154,6 +156,12 @@ export async function checkAndCommit({
   }
 
   if (buildErrorMessage) {
+    if ((buildErrorAttemptNumber ?? 0) >= MAX_ATTEMPTS_TO_FIX_BUILD_ERROR - 1) {
+      // Too many consecutive attempts to fix the build error. Give up.
+      throw new Error(
+        `Too many attempts to fix build errors.\n\nThe latest error:\n\n${buildErrorMessage}`,
+      );
+    }
     if (existingPr) {
       const nextStepsMessage = dedent`
         ## Next Steps
