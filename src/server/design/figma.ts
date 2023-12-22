@@ -67,11 +67,16 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
     }
 
     const { repo, fileName, figmaMap, additionalInstructions } = req.body as {
-      figmaMap: string;
-      fileName: string;
-      additionalInstructions: string;
-      repo: GitHubRepo;
+      figmaMap?: string;
+      fileName?: string;
+      additionalInstructions?: string;
+      repo?: GitHubRepo;
     };
+
+    if (!figmaMap || !fileName || !repo) {
+      res.status(400).send("Missing required parameters");
+      return;
+    }
 
     const codeTemplateParams = {
       figmaMap,
