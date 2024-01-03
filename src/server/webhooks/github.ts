@@ -89,7 +89,14 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const { payload } = event;
   console.log(`Received PR #${payload.pull_request.number} submitted event`);
+  const appUsername = process.env.GITHUB_APP_USERNAME;
+
+  const ottoShouldRespond =
+    payload.review.body?.includes("@otto") ||
+    (appUsername && payload.pull_request.user.login === appUsername);
+
   if (
+    ottoShouldRespond &&
     payload.action === "submitted" &&
     (payload.review.state === "changes_requested" ||
       payload.review.state === "commented")
