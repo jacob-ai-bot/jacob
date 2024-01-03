@@ -36,14 +36,14 @@ export async function postAccessToken(req: Request, res: Response) {
   const { writeKey } = req.params;
   const { accessToken } = req.body;
 
-  console.log({ writeKey, accessToken });
+  console.log(`postAccessToken: initiated with writeKey: ${writeKey}`);
 
   try {
     const rowsUpdated = await db.tokens
       .findBy({ writeKey, accessToken: null })
       .update({ accessToken });
 
-    console.log({ rowsUpdated });
+    console.log(`postAccessToken: updated rows: ${rowsUpdated}`);
 
     if (rowsUpdated === 0) {
       return res.status(404).json({ errors: ["Not Found"] });
