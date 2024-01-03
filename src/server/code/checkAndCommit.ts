@@ -70,7 +70,7 @@ export async function checkAndCommit({
 
   await addCommitAndPush(rootPath, branch, commitMessage);
 
-  let issue: Issue | RetrievedIssue;
+  let issue: Issue | RetrievedIssue | undefined;
 
   if (actingOnIssue) {
     issue = actingOnIssue;
@@ -78,14 +78,20 @@ export async function checkAndCommit({
     const regex = /otto-issue-(\d+)-.*/;
     const match = branch.match(regex);
     const issueNumber = parseInt(match?.[1] ?? "", 10);
-    const result = await getIssue(repository, token, issueNumber);
-    console.log(
-      `Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
-    );
-    issue = result.data;
+    if (isNaN(issueNumber)) {
+      console.log(
+        `No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
+      );
+    } else {
+      const result = await getIssue(repository, token, issueNumber);
+      console.log(
+        `Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+      );
+      issue = result.data;
+    }
   }
 
-  const newFileName = extractFilePathWithArrow(issue.title);
+  const newFileName = extractFilePathWithArrow(issue?.title);
   // if the new file name contains the word "component" or then it is a component
   const isComponent = newFileName?.toLowerCase().includes("component");
   const hasStorybook = fs.existsSync(path.join(rootPath, ".storybook"));
@@ -96,7 +102,11 @@ export async function checkAndCommit({
     );
 
   const requestStoryCreation =
-    !creatingStory && isComponent && hasStorybook && !hasAlreadyCreatedStory;
+    newFileName &&
+    !creatingStory &&
+    isComponent &&
+    hasStorybook &&
+    !hasAlreadyCreatedStory;
 
   let prBodySuffix: string;
   if (buildErrorMessage) {
