@@ -97,6 +97,13 @@ export async function codeReview(
           ${codeReview.minorIssues}
         `
       : "";
+    const appUsername = process.env.APP_USERNAME;
+    const ottoWillRespond =
+      appUsername && `${existingPr.user.id}` === appUsername;
+    const willAttemptSuffix = ottoWillRespond
+      ? "\nI will attempt to fix these issues and push up a new commit to the PR."
+      : "";
+
     const body = dedent`
       I have performed a code review on this PR and I've found a few issues that need to be addressed.
       
@@ -104,8 +111,7 @@ export async function codeReview(
 
       ${codeReview.majorIssues}
       ${minorIssues}
-
-      I will attempt to fix these issues and push up a new commit to the PR.
+      ${willAttemptSuffix}
     `;
     // Unfortunately, github does not allow a user/bot to "REQUEST_CHANGES" on a PR
     // created by the same user/bot. So we have to just create a review comment
