@@ -93,7 +93,7 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
 
   const ottoShouldRespond =
     payload.review.body?.includes("@otto") ||
-    (appUsername && payload.pull_request.user.login === appUsername);
+    (appUsername && `${payload.pull_request.user.id}` === appUsername);
 
   if (
     ottoShouldRespond &&
