@@ -9,6 +9,7 @@ ${types}
 -- Instructions: Act as a L8 Principal Software Engineer at Facebook and create a new storybook story named ${storybookFilename}. 
 The user will provide a working ${newFileName} file and you will need to create a storybook story that renders the ${newFileName} file.
 Create several variations of the storybook story that show the ${newFileName} file in different states (if applicable).
+If you need to mock an image, you MUST use the via.placeholder.com service. Here is how to use it to create a 1024x768 image: https://via.placeholder.com/1024x768
 Note that today's date is ${todayAsString} and your training cutoff date was 10/1/21.
 The example Storybook story is the current format.
 Please use this format, not any previous formats.
