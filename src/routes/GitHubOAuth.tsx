@@ -66,7 +66,11 @@ export function GitHubOAuth() {
             setAccessToken(accessToken);
             parent.postMessage(
               {
-                pluginMessage: { message: "SAVE_ACCESS_TOKEN", accessToken },
+                pluginMessage: {
+                  type: "SAVE_ACCESS_TOKEN",
+                  message: "SAVE_ACCESS_TOKEN",
+                  accessToken,
+                },
                 pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
               },
               "https://www.figma.com",
