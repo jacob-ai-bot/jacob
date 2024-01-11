@@ -17,7 +17,7 @@ const octokitOAuthApp = new Octokit({
     clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
   },
   log: console,
-  userAgent: "otto",
+  userAgent: "jacob",
 });
 
 const octokitApp = new Octokit({
@@ -27,7 +27,7 @@ const octokitApp = new Octokit({
     privateKey: process.env.GITHUB_PRIVATE_KEY ?? "",
   },
   log: console,
-  userAgent: "otto",
+  userAgent: "jacob",
 });
 
 export const newIssueForFigmaFile = async (req: Request, res: Response) => {
@@ -135,7 +135,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         installationId: installationData.id,
       },
       log: console,
-      userAgent: "otto",
+      userAgent: "jacob",
     });
 
     const { status: issueStatus, data: issueData } =

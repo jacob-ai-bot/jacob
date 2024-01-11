@@ -3,7 +3,7 @@ The design was converted into JSX. Here is what was provided:
 
 ${code}
 
-- @otto Here are your instructions for creating the new file:
+- @jacob Here are your instructions for creating the new file:
 1. Create a new file with the name ${fileName}.
 2. Copy the code above into the new file.
 3. Write additional code as needed to create the complete, working component or file. Note that the code is not guaranteed to be perfect, so you may need to make some adjustments. Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.

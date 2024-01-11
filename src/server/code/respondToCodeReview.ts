@@ -80,7 +80,7 @@ export async function respondToCodeReview(
     token,
     rootPath,
     branch,
-    commitMessage: "Otto commit: respond to PR feedback",
+    commitMessage: "JACoB commit: respond to PR feedback",
     existingPr,
   });
 }

@@ -38,7 +38,7 @@ export function addStartingWorkComment(options: AddStartingWorkCommentParams) {
     case "issueOpened": {
       const { issueOpenedNumber } = options;
       const message = dedent`
-        Otto here...
+        JACoB here...
           
         You mentioned me on this issue and I am busy taking a look at it.
           
@@ -49,7 +49,7 @@ export function addStartingWorkComment(options: AddStartingWorkCommentParams) {
     case "prReview": {
       const { prNumber } = options;
       const message = dedent`
-        Otto here...
+        JACoB here...
           
         I'm responding to a code review on this PR.
       `;
@@ -70,7 +70,7 @@ export function addStartingWorkComment(options: AddStartingWorkCommentParams) {
           updateMessage = "I'm starting a code review on this PR.";
           break;
       }
-      const message = dedent`Otto here...\n
+      const message = dedent`JACoB here...\n
         ${updateMessage}
         
         I'll continue to comment on this pull request with status as I make progress.

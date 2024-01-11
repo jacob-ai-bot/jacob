@@ -8,7 +8,7 @@ export interface Settings {
 export async function getSettings(rootPath: string) {
   try {
     const settingsContent = await fs.readFile(
-      path.join(rootPath, "otto.json"),
+      path.join(rootPath, "jacob.json"),
       "utf-8",
     );
     return JSON.parse(settingsContent) as Settings;

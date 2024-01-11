@@ -80,7 +80,7 @@ export async function createNewFile(
     ? code.split("```").slice(1).join("")
     : code;
 
-  const newBranch = `otto-issue-${issue.number}-${Date.now()}`;
+  const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
   await setNewBranch(rootPath, newBranch);
 
@@ -93,7 +93,7 @@ export async function createNewFile(
     token,
     rootPath,
     branch: newBranch,
-    commitMessage: `Otto commit for Issue ${issue.number}`,
+    commitMessage: `JACoB commit for Issue ${issue.number}`,
     issue,
     newPrTitle: `Create ${newFileName}`,
     newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${plan}`,

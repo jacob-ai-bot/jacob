@@ -43,26 +43,26 @@ ghApp.webhooks.onError(errorHandler);
 
 ghApp.webhooks.on("issues.opened", async (event) => {
   const { payload } = event;
-  // Only add a new issue to the queue if the issue body contains the @otto mention
+  // Only add a new issue to the queue if the issue body contains the @jacob mention
   console.log(`Received issue #${payload.issue.number} opened event`);
-  if (payload?.issue.body?.includes("@otto")) {
-    console.log(`Issue #${payload.issue.number} contains @otto mention`);
+  if (payload?.issue.body?.includes("@jacob")) {
+    console.log(`Issue #${payload.issue.number} contains @jacob mention`);
     publishGitHubEventToQueue(event);
   } else {
-    console.log(`Issue #${payload.issue.number} has no @otto mention`);
+    console.log(`Issue #${payload.issue.number} has no @jacob mention`);
   }
 });
 
 // add a new webhook event handler for when an issue is labeled
 // ghApp.webhooks.on("issues.labeled", async (event) => {
 //   const { payload } = event;
-//   // Only add the issue to the queue if it is labeled with the "otto" label
+//   // Only add the issue to the queue if it is labeled with the "jacob" label
 //   console.log(`Received issue #${payload.issue.number} labeled event`);
-//   if (payload?.label?.name === "otto") {
-//     console.log(`Received issue #${payload.issue.number} with label "otto"`);
+//   if (payload?.label?.name === "jacob") {
+//     console.log(`Received issue #${payload.issue.number} with label "jacob"`);
 //     publishGitHubEventToQueue(event);
 //   } else {
-//     console.log(`Received issue #${payload.issue.number} without label "otto"`);
+//     console.log(`Received issue #${payload.issue.number} without label "jacob"`);
 //   }
 // });
 
@@ -70,11 +70,11 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 // ghApp.webhooks.on("issues.edited", async (event) => {
 //   const { payload } = event;
 //   console.log(`Received issue #${payload.issue.number} edited event`);
-//   if (payload?.issue.body?.includes("@otto")) {
-//     console.log(`Issue #${payload.issue.number} contains @otto mention`);
+//   if (payload?.issue.body?.includes("@jacob")) {
+//     console.log(`Issue #${payload.issue.number} contains @jacob mention`);
 //     publishGitHubEventToQueue(event);
 //   } else {
-//     console.log(`Issue #${payload.issue.number} has no @otto mention`);
+//     console.log(`Issue #${payload.issue.number} has no @jacob mention`);
 //   }
 // });
 
@@ -92,7 +92,7 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const appUsername = process.env.GITHUB_APP_USERNAME;
 
   const ottoShouldRespond =
-    payload.review.body?.includes("@otto") ||
+    payload.review.body?.includes("@jacob") ||
     (appUsername && `${payload.pull_request.user.id}` === appUsername);
 
   if (
@@ -119,13 +119,13 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
     const prCommentCreatedEvent =
       event as WebhookPRCommentCreatedEventWithOctokit;
     console.log(
-      `Pull request comment body contains @otto <cmd> mention (PR #${issue.number})`,
+      `Pull request comment body contains @jacob <cmd> mention (PR #${issue.number})`,
     );
     console.log(event);
     publishGitHubEventToQueue(prCommentCreatedEvent);
   } else {
     console.log(
-      `Issue comment is not a PR comment or body has no @otto <cmd> mention (Issue #${issue.number})`,
+      `Issue comment is not a PR comment or body has no @jacob <cmd> mention (Issue #${issue.number})`,
     );
   }
 });
@@ -137,12 +137,12 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
 
   if (PR_COMMAND_VALUES.some((cmd) => pull_request.body?.includes(cmd))) {
     console.log(
-      `Pull request body contains @otto <cmd> mention (PR #${pull_request.number})`,
+      `Pull request body contains @jacob <cmd> mention (PR #${pull_request.number})`,
     );
     publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `Pull request body has no @otto fix <cmd> mention (Issue #${pull_request.number})`,
+      `Pull request body has no @jacob fix <cmd> mention (Issue #${pull_request.number})`,
     );
   }
 });

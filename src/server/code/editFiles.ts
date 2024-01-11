@@ -131,7 +131,7 @@ export async function editFiles(
     ? updatedCode.split("```").slice(1).join("")
     : updatedCode;
 
-  const newBranch = `otto-issue-${issue.number}-${Date.now()}`;
+  const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
   await setNewBranch(rootPath, newBranch);
 
@@ -142,9 +142,9 @@ export async function editFiles(
     token,
     rootPath,
     branch: newBranch,
-    commitMessage: `Otto PR for Issue ${issue.title}`,
+    commitMessage: `JACoB PR for Issue ${issue.title}`,
     issue,
-    newPrTitle: `Otto PR for Issue ${issue.title}`,
+    newPrTitle: `JACoB PR for Issue ${issue.title}`,
     newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
       extractedIssue.stepsToAddressIssue ?? ""
     }`,

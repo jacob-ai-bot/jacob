@@ -221,7 +221,7 @@ export function GitHubOAuth() {
 
   return (
     <div className={figma ? "figmacontainer" : ""}>
-      <h1>Otto</h1>
+      <h1>JACoB</h1>
       {!accessToken && !figma && (
         <div className="githubbutton">
           <GitHubButton href={`${githubOAuthURL}&state=${writeKey}`}>

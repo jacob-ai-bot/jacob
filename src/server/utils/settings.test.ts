@@ -6,7 +6,7 @@ import { getSettings } from "./settings";
 
 describe("getSettings", () => {
   const settingsPath = "./";
-  const settingsFilePath = path.join(settingsPath, "otto.json");
+  const settingsFilePath = path.join(settingsPath, "jacob.json");
 
   afterEach(async () => {
     try {
@@ -16,12 +16,12 @@ describe("getSettings", () => {
     }
   });
 
-  it("returns undefined when there is no otto.json file", async () => {
+  it("returns undefined when there is no jacob.json file", async () => {
     const settings = await getSettings(settingsPath);
     expect(settings).toBeUndefined();
   });
 
-  it("returns undefined when there is no otto.json file", async () => {
+  it("returns undefined when there is no jacob.json file", async () => {
     const fileContents = {
       env: { VAR1: "var1", VAR2: "var2" },
     };

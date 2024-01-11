@@ -10,7 +10,7 @@ export function addCommentToIssue(
   const octokit = new Octokit({
     auth: token,
     log: console,
-    userAgent: "otto",
+    userAgent: "jacob",
   });
 
   return octokit.issues.createComment({
@@ -29,7 +29,7 @@ export async function getIssue(
   const octokit = new Octokit({
     auth: token,
     log: console,
-    userAgent: "otto",
+    userAgent: "jacob",
   });
 
   return octokit.issues.get({

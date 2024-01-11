@@ -1,6 +1,6 @@
-# otto-mvp
+# jacob-mvp
 
-MVP version of the Otto codebase
+MVP version of the JACoB codebase
 
 # Architectural Plan
 

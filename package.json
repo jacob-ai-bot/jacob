@@ -1,4 +1,5 @@
 {
+  "name": "jacob-mvp",
   "type": "commonjs",
   "scripts": {
     "dev": "tsc -p ./tsconfig.node.json && vite",

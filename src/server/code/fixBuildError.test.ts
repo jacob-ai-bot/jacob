@@ -108,7 +108,7 @@ describe("fixBuildError", () => {
       issue,
       "## Error Message (Attempt #2):\n\nbuild-error-info\n\n## Something else",
       "/rootpath",
-      "otto-issue-48-test",
+      "jacob-issue-48-test",
       { number: 48 } as PullRequest,
     );
 
@@ -142,7 +142,7 @@ describe("fixBuildError", () => {
     const checkAndCommitOptions =
       mockedCheckAndCommit.checkAndCommit.mock.calls[0][0];
     expect(checkAndCommitOptions.commitMessage).toBe(
-      "Otto commit: fix build error",
+      "JACoB commit: fix build error",
     );
     expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(2);
   });

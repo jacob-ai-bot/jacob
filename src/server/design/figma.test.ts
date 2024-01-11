@@ -141,7 +141,7 @@ describe("newIssueForFigmaFile", () => {
       "A new design has been added to Figma for the file test-filename.tsx.",
     );
     expect(createIssueOptions.body).toContain(
-      "- @otto Here are your instructions for updating the codebase:",
+      "- @jacob Here are your instructions for updating the codebase:",
     );
     expect(createIssueOptions.body).toContain("code-converted-from-figma-map");
     expect(createIssueOptions.body).toContain("test-additional-instructions");
@@ -201,7 +201,7 @@ describe("newIssueForFigmaFile", () => {
       "A new design has been added to Figma for the file test-filename.tsx.",
     );
     expect(createIssueOptions.body).toContain(
-      "- @otto Here are your instructions for creating the new file:",
+      "- @jacob Here are your instructions for creating the new file:",
     );
     expect(createIssueOptions.body).toContain("code-converted-from-figma-map");
     expect(createIssueOptions.body).toContain("test-additional-instructions");

@@ -27,7 +27,7 @@ export async function codeReview(
   branch: string,
   existingPr: PullRequest,
 ) {
-  const regex = /otto-issue-(\d+)-.*/;
+  const regex = /jacob-issue-(\d+)-.*/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
   const result = await getIssue(repository, token, issueNumber);

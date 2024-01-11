@@ -24,7 +24,7 @@ export async function fixBuildError(
   branch: string,
   existingPr: PullRequest,
 ) {
-  const regex = /otto-issue-(\d+)-.*/;
+  const regex = /jacob-issue-(\d+)-.*/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
   const result = await getIssue(repository, token, issueNumber);
@@ -66,7 +66,7 @@ export async function fixBuildError(
         token,
         rootPath,
         branch,
-        commitMessage: "Otto commit: fix build error",
+        commitMessage: "JACoB commit: fix build error",
         existingPr,
         issue,
         buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
@@ -132,7 +132,7 @@ export async function fixBuildError(
         token,
         rootPath,
         branch,
-        commitMessage: "Otto commit: fix build error",
+        commitMessage: "JACoB commit: fix build error",
         existingPr,
         issue,
         buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
@@ -140,7 +140,7 @@ export async function fixBuildError(
     }
   } catch (error) {
     if (prIssue) {
-      const message = dedent`Otto here once again...
+      const message = dedent`JACoB here once again...
 
         Unfortunately, I wasn't able to resolve this build error.
 

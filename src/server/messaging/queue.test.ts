@@ -61,7 +61,7 @@ const mockedClone = vi.hoisted(() => ({
     .mockImplementation(
       () =>
         new Promise((resolve) =>
-          resolve({ path: "/tmp/otto/1", cleanup: vi.fn() }),
+          resolve({ path: "/tmp/jacob/1", cleanup: vi.fn() }),
         ),
     ),
 }));

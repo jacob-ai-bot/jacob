@@ -130,7 +130,7 @@ export async function createStory(
   branch: string,
   existingPr: PullRequest,
 ) {
-  const regex = /otto-issue-(\d+)-.*/;
+  const regex = /jacob-issue-(\d+)-.*/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
   const result = await getIssue(repository, token, issueNumber);
@@ -188,7 +188,7 @@ export async function createStory(
     token,
     rootPath,
     branch,
-    commitMessage: `Otto commit: add storybook story ${storybookFilename}`,
+    commitMessage: `JACoB commit: add storybook story ${storybookFilename}`,
     existingPr,
     creatingStory: true,
   });

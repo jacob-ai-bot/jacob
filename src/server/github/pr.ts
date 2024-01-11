@@ -22,7 +22,7 @@ export async function createPR(
   const octokit = new Octokit({
     auth: token,
     log: console,
-    userAgent: "otto",
+    userAgent: "jacob",
   });
 
   const result = await octokit.pulls.create({
@@ -65,7 +65,7 @@ export async function createPRReview({
   const octokit = new Octokit({
     auth: token,
     log: console,
-    userAgent: "otto",
+    userAgent: "jacob",
   });
 
   return octokit.pulls.createReview({
@@ -86,7 +86,7 @@ export async function getPR(
   const octokit = new Octokit({
     auth: token,
     log: console,
-    userAgent: "otto",
+    userAgent: "jacob",
   });
 
   return octokit.pulls.get({
@@ -104,7 +104,7 @@ export async function getPRFiles(
   const octokit = new Octokit({
     auth: token,
     log: console,
-    userAgent: "otto",
+    userAgent: "jacob",
   });
 
   return octokit.pulls.listFiles({
