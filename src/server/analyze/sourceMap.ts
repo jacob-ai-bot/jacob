@@ -104,6 +104,7 @@ export const getTypes = (rootPath: string): string => {
   try {
     // check the settings to see if the language is typescript
     const settings = getSettings(rootPath);
+
     if (settings && settings.language?.toLowerCase() !== "typescript") {
       return "";
     }

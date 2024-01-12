@@ -1,0 +1,5 @@
+Include website copy as needed.
+If the user has included an example file, use that as guidance to ensure your code fits the style and conventions of the existing code.
+Any code included in the GitHub issue is example code and may contain bugs or incorrect information or approaches. If text is provided as part of sample code, determine if the given text should be used as-is, or if this is placeholder text and needs to be replaced by variables.
+This output will be sent to a parser that will extract the code into the correct files.
+DO NOT include backticks or ANY comments in your response. ONLY respond with the full, complete working file.

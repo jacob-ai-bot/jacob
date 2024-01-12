@@ -1,0 +1,3 @@
+User-facing pages or components should use Tailwind CSS and have a responsive, clean, modern design.
+Do not import any css files directly.
+Only use Tailwind CSS classes, do not use custom CSS classes.

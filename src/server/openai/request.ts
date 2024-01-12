@@ -14,6 +14,7 @@ const openai = new OpenAI({
 
 const CONTEXT_WINDOW = {
   "gpt-4-0613": 8192,
+  "gpt-4-1106-preview": 4000,
 };
 type Model = keyof typeof CONTEXT_WINDOW;
 
@@ -56,6 +57,7 @@ export const sendGptRequest = async (
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   const model = "gpt-4-0613";
+  // const model = "gpt-4-1106-preview";
 
   try {
     const max_tokens = await getMaxTokensForResponse(

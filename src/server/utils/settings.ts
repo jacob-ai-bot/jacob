@@ -1,9 +1,21 @@
 import fs from "fs";
 import path from "path";
 
+export enum Language {
+  TypeScript = "TypeScript",
+  JavaScript = "JavaScript",
+}
+
+export enum Style {
+  CSS = "CSS",
+  Tailwind = "Tailwind",
+}
+
+// TODO: add more enums, all options are in the jacob-setup repo
+
 export interface Settings {
-  language?: string;
-  style?: string;
+  language?: Language;
+  style?: Style;
   iconSet?: string;
   componentExamples?: string;
   apiEndpointsExamples?: string;

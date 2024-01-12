@@ -1,0 +1,3 @@
+You MUST use the correct types and imports when creating the file.
+The source map and types above are from the actual live codebase and will always have the correct information.
+If provided, you should use the source map and types to write your final code.

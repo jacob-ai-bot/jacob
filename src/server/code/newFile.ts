@@ -55,12 +55,14 @@ export async function createNewFile(
     "code_new_file",
     "system",
     codeTemplateParams,
+    rootPath,
   );
   const codeUserPrompt = parseTemplate(
     "dev",
     "code_new_file",
     "user",
     codeTemplateParams,
+    rootPath,
   );
   const code = (await sendGptRequest(
     codeUserPrompt,

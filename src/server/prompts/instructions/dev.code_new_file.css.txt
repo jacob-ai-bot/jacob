@@ -1,0 +1,13 @@
+Do not import any css files directly.
+Create all styles using a "style" object and use the "style.{cssClass}" syntax to apply them to elements.
+Here is an example of how to use the style object:
+```
+const styles = {
+  root: {
+    background: '#000000',
+    color: '#ffffff',
+  },
+};
+
+return <div style={styles.root}>Hello World!</div>;
+```
