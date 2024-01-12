@@ -1,5 +1,6 @@
 import { Project, SourceFile } from "ts-morph";
 import fs from "fs";
+import { getSettings } from "../utils/settings";
 
 const FILES_TO_IGNORE = [
   "types.ts",
@@ -101,6 +102,12 @@ export const getSourceMap = (rootPath: string, targetFilePath?: string) => {
 
 export const getTypes = (rootPath: string): string => {
   try {
+    // check the settings to see if the language is typescript
+    const settings = getSettings(rootPath);
+    if (settings && settings.language?.toLowerCase() !== "typescript") {
+      return "";
+    }
+
     let sourceFile: SourceFile | undefined;
 
     const configPath = rootPath + "/tsconfig.json"; // Path to tsconfig.json
@@ -281,7 +288,7 @@ const getFiles = (rootPath: string, targetFilePath?: string): SourceMap[] => {
         type: typeAlias.getType().getText(),
       }));
       const exportedDeclarations = Array.from(
-        sourceFile.getExportedDeclarations(),
+        sourceFile.getExportedDeclarations()
       ).map(([name, declarations]) => ({
         name,
         declarations: declarations.map((declaration) => ({
