@@ -34,7 +34,7 @@ export function getSettings(rootPath: string) {
   try {
     const settingsContent = fs.readFileSync(
       path.join(rootPath, "jacob.json"),
-      "utf-8"
+      "utf-8",
     );
     return JSON.parse(settingsContent) as Settings;
   } catch (e) {

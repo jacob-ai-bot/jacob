@@ -288,7 +288,7 @@ const getFiles = (rootPath: string, targetFilePath?: string): SourceMap[] => {
         type: typeAlias.getType().getText(),
       }));
       const exportedDeclarations = Array.from(
-        sourceFile.getExportedDeclarations()
+        sourceFile.getExportedDeclarations(),
       ).map(([name, declarations]) => ({
         name,
         declarations: declarations.map((declaration) => ({
