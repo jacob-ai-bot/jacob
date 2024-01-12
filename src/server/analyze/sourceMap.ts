@@ -182,6 +182,11 @@ export const getImages = (rootPath: string): string => {
 };
 
 const getFiles = (rootPath: string, targetFilePath?: string): SourceMap[] => {
+  const settings = getSettings(rootPath);
+  if (settings && settings.language?.toLowerCase() !== "typescript") {
+    return [];
+  }
+
   const configPath = rootPath + "/tsconfig.json"; // Path to tsconfig.json
   const project = new Project({
     tsConfigFilePath: configPath,
