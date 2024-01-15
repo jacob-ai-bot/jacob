@@ -243,7 +243,8 @@ export function GitHubOAuth() {
       {accessToken && (
         <>
           <p>Signed in successfully</p>
-          <p>You can now close this browser window and return to Figma.</p>
+          (!figma && (
+          <p>You can now close this browser window and return to Figma.</p>))
         </>
       )}
       {error && <p>{error.message}</p>}
