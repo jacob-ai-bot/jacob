@@ -13,7 +13,7 @@ export enum Style {
 
 // TODO: add more enums, all options are in the jacob-setup repo
 
-export interface Settings {
+export interface RepoSettings {
   language?: Language;
   style?: Style;
   iconSet?: string;
@@ -42,13 +42,13 @@ export interface Settings {
   env?: Record<string, string>;
 }
 
-export function getSettings(rootPath: string) {
+export function getRepoSettings(rootPath: string) {
   try {
     const settingsContent = fs.readFileSync(
       path.join(rootPath, "jacob.json"),
       "utf-8",
     );
-    return JSON.parse(settingsContent) as Settings;
+    return JSON.parse(settingsContent) as RepoSettings;
   } catch (e) {
     return;
   }

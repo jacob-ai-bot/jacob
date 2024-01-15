@@ -2,7 +2,7 @@ import { Repository } from "@octokit/webhooks-types";
 import { Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { parseTemplate } from "../utils";
+import { parseTemplate, RepoSettings } from "../utils";
 import { reconstructFiles } from "../utils/files";
 import { sendGptRequest } from "../openai/request";
 import { concatenatePRFiles } from "../github/pr";
@@ -15,13 +15,14 @@ export async function respondToCodeReview(
   repository: Repository,
   token: string,
   rootPath: string,
+  repoSettings: RepoSettings | undefined,
   branch: string,
   existingPr: PullRequest,
   state: "changes_requested" | "commented",
   reviewBody: string | null,
 ) {
-  const sourceMap = getSourceMap(rootPath);
-  const types = getTypes(rootPath);
+  const sourceMap = getSourceMap(rootPath, repoSettings);
+  const types = getTypes(rootPath, repoSettings);
   const images = getImages(rootPath);
 
   const code = await concatenatePRFiles(
@@ -46,12 +47,14 @@ export async function respondToCodeReview(
     "code_respond_to_code_review",
     "system",
     respondToCodeReviewTemplateParams,
+    repoSettings,
   );
   const responseToCodeReviewUserPrompt = parseTemplate(
     "dev",
     "code_respond_to_code_review",
     "user",
     respondToCodeReviewTemplateParams,
+    repoSettings,
   );
 
   // Call sendGptRequest with the review text and concatenated code file

@@ -101,7 +101,10 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith("/rootpath");
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/rootpath",
+      undefined,
+    );
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
     expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
@@ -176,7 +179,10 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith("/rootpath");
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/rootpath",
+      undefined,
+    );
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
     expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
@@ -249,7 +255,10 @@ describe("checkAndCommit", () => {
     );
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith("/rootpath");
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/rootpath",
+      undefined,
+    );
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
     expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
@@ -285,7 +294,10 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith("/rootpath");
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/rootpath",
+      undefined,
+    );
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
     expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(

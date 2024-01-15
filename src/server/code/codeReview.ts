@@ -4,7 +4,7 @@ import { Endpoints } from "@octokit/types";
 import { z } from "zod";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { parseTemplate } from "../utils";
+import { parseTemplate, RepoSettings } from "../utils";
 import { sendGptRequestWithSchema } from "../openai/request";
 import { getIssue } from "../github/issue";
 import { concatenatePRFiles, createPRReview } from "../github/pr";
@@ -25,6 +25,7 @@ export async function codeReview(
   token: string,
   rootPath: string,
   branch: string,
+  repoSettings: RepoSettings | undefined,
   existingPr: PullRequest,
 ) {
   const regex = /jacob-issue-(\d+)-.*/;
@@ -36,8 +37,8 @@ export async function codeReview(
   );
   const issue = result.data;
 
-  const sourceMap = getSourceMap(rootPath);
-  const types = getTypes(rootPath);
+  const sourceMap = getSourceMap(rootPath, repoSettings);
+  const types = getTypes(rootPath, repoSettings);
   const images = getImages(rootPath);
 
   const code = await concatenatePRFiles(
@@ -60,12 +61,14 @@ export async function codeReview(
     "code_review",
     "system",
     codeReviewTemplateParams,
+    repoSettings,
   );
   const codeReviewUserPrompt = parseTemplate(
     "dev",
     "code_review",
     "user",
     codeReviewTemplateParams,
+    repoSettings,
   );
   const codeReview = (await sendGptRequestWithSchema(
     codeReviewUserPrompt,

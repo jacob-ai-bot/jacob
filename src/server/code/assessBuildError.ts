@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { parseTemplate } from "../utils";
+import { parseTemplate, RepoSettings } from "../utils";
 import { sendGptRequestWithSchema } from "../openai/request";
 
 export const AssessmentSchema = z.object({
@@ -15,7 +15,10 @@ export const AssessmentSchema = z.object({
 
 export type Assessment = z.infer<typeof AssessmentSchema>;
 
-export async function assessBuildError(buildError: string) {
+export async function assessBuildError(
+  buildError: string,
+  repoSettings?: RepoSettings,
+) {
   // TODO: handle multiple assessments
   // TODO: include code in user prompt
   const assessBuildErrorTemplateParams = {
@@ -27,12 +30,14 @@ export async function assessBuildError(buildError: string) {
     "code_assess_build_error",
     "system",
     assessBuildErrorTemplateParams,
+    repoSettings,
   );
   const assessBuildErrorUserPrompt = parseTemplate(
     "dev",
     "code_assess_build_error",
     "user",
     assessBuildErrorTemplateParams,
+    repoSettings,
   );
   const assessment = (await sendGptRequestWithSchema(
     assessBuildErrorUserPrompt,

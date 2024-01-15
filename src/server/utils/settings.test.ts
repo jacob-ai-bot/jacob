@@ -2,9 +2,9 @@ import { describe, afterEach, it, expect } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
 
-import { getSettings } from "./settings";
+import { getRepoSettings } from "./settings";
 
-describe("getSettings", () => {
+describe("getRepoSettings", () => {
   const settingsPath = "./";
   const settingsFilePath = path.join(settingsPath, "jacob.json");
 
@@ -16,8 +16,8 @@ describe("getSettings", () => {
     }
   });
 
-  it("returns undefined when there is no jacob.json file", async () => {
-    const settings = await getSettings(settingsPath);
+  it("returns undefined when there is no jacob.json file", () => {
+    const settings = getRepoSettings(settingsPath);
     expect(settings).toBeUndefined();
   });
 
@@ -26,7 +26,7 @@ describe("getSettings", () => {
       env: { VAR1: "var1", VAR2: "var2" },
     };
     await fs.writeFile(settingsFilePath, JSON.stringify(fileContents, null, 2));
-    const settings = await getSettings(settingsPath);
+    const settings = getRepoSettings(settingsPath);
     expect(settings).toMatchObject(fileContents);
   });
 });

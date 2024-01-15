@@ -18,6 +18,7 @@ import {
   PRCommand,
   PR_COMMAND_VALUES,
   enumFromStringValue,
+  getRepoSettings,
 } from "../utils";
 import {
   addFailedWorkComment,
@@ -175,9 +176,11 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
     console.log(`repo cloned to ${path}`);
 
+    const repoSettings = getRepoSettings(path);
+
     try {
       if (issueOpened) {
-        await runBuildCheck(path);
+        await runBuildCheck(path, repoSettings);
 
         const issueTitle = event.payload.issue.title;
 
@@ -189,6 +192,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             installationAuthentication.token,
             event.payload.issue,
             path,
+            repoSettings,
           );
         } else {
           await editFiles(
@@ -196,6 +200,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             installationAuthentication.token,
             event.payload.issue,
             path,
+            repoSettings,
           );
         }
       } else if (prReview) {
@@ -206,6 +211,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           repository,
           installationAuthentication.token,
           path,
+          repoSettings,
           prBranch,
           existingPr,
           event.payload.review.state,
@@ -222,6 +228,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               installationAuthentication.token,
               path,
               prBranch,
+              repoSettings,
               existingPr,
             );
             break;
@@ -231,6 +238,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               installationAuthentication.token,
               path,
               prBranch,
+              repoSettings,
               existingPr,
             );
             break;
@@ -244,6 +252,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 : event.payload.comment.body,
               path,
               prBranch,
+              repoSettings,
               existingPr,
             );
             break;

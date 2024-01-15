@@ -11,6 +11,7 @@ import {
   ExecAsyncException,
   extractFilePathWithArrow,
   PRCommand,
+  RepoSettings,
 } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
@@ -29,6 +30,7 @@ interface CheckAndCommitOptions {
   token: string;
   rootPath: string;
   branch: string;
+  repoSettings?: RepoSettings;
   commitMessage: string;
   issue?: Issue | RetrievedIssue;
   existingPr?: PullRequest;
@@ -44,6 +46,7 @@ export async function checkAndCommit({
   token,
   rootPath,
   branch,
+  repoSettings,
   commitMessage,
   issue: actingOnIssue,
   existingPr,
@@ -56,7 +59,7 @@ export async function checkAndCommit({
   let buildErrorMessage: string | undefined;
 
   try {
-    await runBuildCheck(rootPath);
+    await runBuildCheck(rootPath, repoSettings);
   } catch (error) {
     const { message } = error as ExecAsyncException;
     // Awkward workaround to dynamically import an ESM module

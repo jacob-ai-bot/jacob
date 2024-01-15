@@ -11,6 +11,7 @@ import {
   extractFilePathWithArrow,
   parseTemplate,
   todayAsString,
+  RepoSettings,
 } from "../utils";
 import { sendGptRequest } from "../openai/request";
 
@@ -128,6 +129,7 @@ export async function createStory(
   token: string,
   rootPath: string,
   branch: string,
+  repoSettings: RepoSettings | undefined,
   existingPr: PullRequest,
 ) {
   const regex = /jacob-issue-(\d+)-.*/;
@@ -150,7 +152,7 @@ export async function createStory(
     path.join(rootPath, newFileName),
     "utf8",
   );
-  const types = getTypes(rootPath);
+  const types = getTypes(rootPath, repoSettings);
 
   const storyTemplateParams = {
     newFileName,
@@ -166,12 +168,14 @@ export async function createStory(
     "create_story",
     "system",
     storyTemplateParams,
+    repoSettings,
   );
   const planUserPrompt = parseTemplate(
     "dev",
     "create_story",
     "user",
     storyTemplateParams,
+    repoSettings,
   );
   const storybookCode = (await sendGptRequest(
     planUserPrompt,

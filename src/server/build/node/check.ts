@@ -3,7 +3,7 @@ import {
   getSanitizedEnv,
   type ExecPromise,
 } from "../../utils";
-import { getSettings } from "../../utils/settings";
+import { RepoSettings } from "../../utils";
 
 // From package-name-regexp 3.0.0 (without importing the ESM module)
 const packageNameRegex =
@@ -23,11 +23,13 @@ const NEXT_JS_ENV = {
   NEXTAUTH_URL: "http://localhost:3000",
 };
 
-export async function runBuildCheck(path: string): ExecPromise {
-  const settings = await getSettings(path);
+export async function runBuildCheck(
+  path: string,
+  repoSettings?: RepoSettings,
+): ExecPromise {
   const env = {
     ...getSanitizedEnv(),
-    ...(settings?.env ?? NEXT_JS_ENV),
+    ...(repoSettings?.env ?? NEXT_JS_ENV),
   };
   await executeWithLogRequiringSuccess(path, "npm install", { env });
   return executeWithLogRequiringSuccess(path, "npm run build --verbose", {

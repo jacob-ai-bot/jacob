@@ -109,12 +109,14 @@ describe("fixBuildError", () => {
       "## Error Message (Attempt #2):\n\nbuild-error-info\n\n## Something else",
       "/rootpath",
       "jacob-issue-48-test",
+      undefined,
       { number: 48 } as PullRequest,
     );
 
     expect(mockedAssessBuildError.assessBuildError).toHaveBeenCalledTimes(1);
     expect(mockedAssessBuildError.assessBuildError).toHaveBeenLastCalledWith(
       "build-error-info\n\n",
+      undefined,
     );
 
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);

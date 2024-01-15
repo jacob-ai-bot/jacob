@@ -3,7 +3,9 @@ import path from "path";
 
 import { exec, ExecException } from "child_process";
 import { promisify } from "util";
-import { getSettings } from "./settings";
+import { RepoSettings, Language, Style } from "./settings";
+
+export * from "./settings";
 
 export type TemplateParams = {
   [key: string]: string;
@@ -24,7 +26,7 @@ export const parseTemplate = (
   action: string,
   type: string,
   params: TemplateParams,
-  rootPath?: string,
+  repoSettings?: RepoSettings,
 ): string => {
   // Get the folder path from the environment variable
   const folder = process.env.PROMPT_FOLDER;
@@ -45,7 +47,7 @@ export const parseTemplate = (
 
   // Add custom system instructions and replace variables
   if (type === "system") {
-    content = addCustomInstructions(agent, action, content, rootPath);
+    content = addCustomInstructions(agent, action, content, repoSettings);
   }
   content = replaceParams(content, params);
 
@@ -82,22 +84,12 @@ export const addCustomInstructions = (
   agent: string,
   action: string,
   content: string,
-  rootPath: string | undefined,
+  repoSettings?: RepoSettings,
 ) => {
   // Get the folder path from the environment variable
   const folder = process.env.PROMPT_FOLDER;
   if (!folder) {
     throw new Error(`Environment variable PROMPT_FOLDER is not set`);
-  }
-  if (!rootPath) {
-    // just return the content if no rootPath is provided
-    return content;
-  }
-  // Get the settings to customize the system prompts
-  const settings = getSettings(rootPath);
-  if (!settings) {
-    // This is OK for now, but in the future we may want to require a settings file
-    return content;
   }
 
   // Construct the file path
@@ -105,8 +97,16 @@ export const addCustomInstructions = (
 
   // Then get the custom instructions based on the settings
   content = appendInstructions(content, filePathRoot, "default");
-  content = appendInstructions(content, filePathRoot, settings.language);
-  content = appendInstructions(content, filePathRoot, settings.style);
+  content = appendInstructions(
+    content,
+    filePathRoot,
+    repoSettings?.language ?? Language.TypeScript,
+  );
+  content = appendInstructions(
+    content,
+    filePathRoot,
+    repoSettings?.style ?? Style.Tailwind,
+  );
 
   // TODO: add more customizations here
   return content;

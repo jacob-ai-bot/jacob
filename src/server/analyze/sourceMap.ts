@@ -1,6 +1,6 @@
 import { Project, SourceFile } from "ts-morph";
 import fs from "fs";
-import { getSettings } from "../utils/settings";
+import { RepoSettings, Language } from "../utils";
 
 const FILES_TO_IGNORE = [
   "types.ts",
@@ -94,18 +94,25 @@ type SourceMap = {
   }[];
 };
 
-export const getSourceMap = (rootPath: string, targetFilePath?: string) => {
-  const files = getFiles(rootPath, targetFilePath);
+export const getSourceMap = (
+  rootPath: string,
+  repoSettings?: RepoSettings,
+  targetFilePath?: string,
+) => {
+  const files = getFiles(rootPath, repoSettings, targetFilePath);
   const sourceMap = generateMapFromFiles(files);
   return sourceMap;
 };
 
-export const getTypes = (rootPath: string): string => {
+export const getTypes = (
+  rootPath: string,
+  repoSettings?: RepoSettings,
+): string => {
   try {
-    // check the settings to see if the language is typescript
-    const settings = getSettings(rootPath);
-
-    if (settings && settings.language?.toLowerCase() !== "typescript") {
+    if (
+      (repoSettings?.language ?? Language.TypeScript).toLowerCase() !==
+      "typescript"
+    ) {
       return "";
     }
 
@@ -182,9 +189,15 @@ export const getImages = (rootPath: string): string => {
   return imagesString;
 };
 
-const getFiles = (rootPath: string, targetFilePath?: string): SourceMap[] => {
-  const settings = getSettings(rootPath);
-  if (settings && settings.language?.toLowerCase() !== "typescript") {
+const getFiles = (
+  rootPath: string,
+  repoSettings?: RepoSettings,
+  targetFilePath?: string,
+): SourceMap[] => {
+  if (
+    (repoSettings?.language ?? Language.TypeScript)?.toLowerCase() !==
+    "typescript"
+  ) {
     return [];
   }
 

@@ -3,7 +3,7 @@ import { Endpoints } from "@octokit/types";
 import dedent from "ts-dedent";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { parseTemplate } from "../utils";
+import { RepoSettings, parseTemplate } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
@@ -22,6 +22,7 @@ export async function fixBuildError(
   body: string | null,
   rootPath: string,
   branch: string,
+  repoSettings: RepoSettings | undefined,
   existingPr: PullRequest,
 ) {
   const regex = /jacob-issue-(\d+)-.*/;
@@ -52,7 +53,7 @@ export async function fixBuildError(
           .slice(afterHeadingIndex + headingEndMarker.length)
           .split(nextHeadingMarker)[0];
 
-  const assessment = await assessBuildError(buildError);
+  const assessment = await assessBuildError(buildError, repoSettings);
   console.log("Assessment of Error:", assessment);
 
   try {
@@ -80,8 +81,8 @@ export async function fixBuildError(
       );
 
       const { causeOfError, ideasForFixingError, suggestedFix } = assessment;
-      const sourceMap = getSourceMap(rootPath);
-      const types = getTypes(rootPath);
+      const sourceMap = getSourceMap(rootPath, repoSettings);
+      const types = getTypes(rootPath, repoSettings);
       const images = getImages(rootPath);
 
       const codeTemplateParams = {
@@ -100,12 +101,14 @@ export async function fixBuildError(
         "code_fix_error",
         "system",
         codeTemplateParams,
+        repoSettings,
       );
       const codeUserPrompt = parseTemplate(
         "dev",
         "code_fix_error",
         "user",
         codeTemplateParams,
+        repoSettings,
       );
       const updatedCode = (await sendGptRequest(
         codeUserPrompt,
