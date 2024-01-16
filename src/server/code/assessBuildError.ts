@@ -15,10 +15,7 @@ export const AssessmentSchema = z.object({
 
 export type Assessment = z.infer<typeof AssessmentSchema>;
 
-export async function assessBuildError(
-  buildError: string,
-  repoSettings?: RepoSettings,
-) {
+export async function assessBuildError(buildError: string) {
   // TODO: handle multiple assessments
   // TODO: include code in user prompt
   const assessBuildErrorTemplateParams = {
@@ -30,14 +27,12 @@ export async function assessBuildError(
     "code_assess_build_error",
     "system",
     assessBuildErrorTemplateParams,
-    repoSettings,
   );
   const assessBuildErrorUserPrompt = parseTemplate(
     "dev",
     "code_assess_build_error",
     "user",
     assessBuildErrorTemplateParams,
-    repoSettings,
   );
   const assessment = (await sendGptRequestWithSchema(
     assessBuildErrorUserPrompt,

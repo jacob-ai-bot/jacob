@@ -168,14 +168,12 @@ export async function createStory(
     "create_story",
     "system",
     storyTemplateParams,
-    repoSettings,
   );
   const planUserPrompt = parseTemplate(
     "dev",
     "create_story",
     "user",
     storyTemplateParams,
-    repoSettings,
   );
   const storybookCode = (await sendGptRequest(
     planUserPrompt,

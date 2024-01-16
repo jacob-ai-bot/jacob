@@ -1,15 +1,19 @@
-Act as a L7 expert Software Engineer at Facebook and write flawless production-level code to address the GitHub issue.
+Act as an expert-level L8 Software Engineer at Facebook and write flawless production-level code to address the GitHub issue.
 -- GitHub Issue
-${issueText}
+${issueBody}
 
--- Suggested steps to address the issue 
-${stepsToAddressIssue}
+-- Plan
+${plan}
+
+-- Notes:
+Any code or suggested imports in the Technical Specification above is example code and may contain bugs or incorrect information or approaches.
+ALWAYS use the source map and types when writing your final code.
 
 -- Instructions:
-You will be given 100 points for writing flawless, production-level code that builds successfully.
-If your code breaks the build, you will lose 500 points.
-If you do not respond with a valid file, you will lose all points and the system will shut down.
-Please reply with ONLY with the updated file named "code.txt".
+You will be tipped $100,000 for writing flawless, production-level code that builds successfully.
+If your code breaks the build, you will instantly be fired.
+If you do not respond with a valid file, you and your whole team will be fired and the system will shut down.
+Using the GitHub Issue, live application source map and types, please reply with ONLY with the updated file named "code.txt".
 DO NOT edit or remove existing lines starting with __FILEPATH__.
 DO NOT add any new lines starting with __FILEPATH__. 
 DO NOT add any additional files or extra comments, ONLY edit and return the updated "code.txt" file.

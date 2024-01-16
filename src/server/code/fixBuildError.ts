@@ -53,7 +53,7 @@ export async function fixBuildError(
           .slice(afterHeadingIndex + headingEndMarker.length)
           .split(nextHeadingMarker)[0];
 
-  const assessment = await assessBuildError(buildError, repoSettings);
+  const assessment = await assessBuildError(buildError);
   console.log("Assessment of Error:", assessment);
 
   try {
@@ -101,14 +101,12 @@ export async function fixBuildError(
         "code_fix_error",
         "system",
         codeTemplateParams,
-        repoSettings,
       );
       const codeUserPrompt = parseTemplate(
         "dev",
         "code_fix_error",
         "user",
         codeTemplateParams,
-        repoSettings,
       );
       const updatedCode = (await sendGptRequest(
         codeUserPrompt,

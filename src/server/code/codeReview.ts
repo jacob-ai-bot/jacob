@@ -61,14 +61,12 @@ export async function codeReview(
     "code_review",
     "system",
     codeReviewTemplateParams,
-    repoSettings,
   );
   const codeReviewUserPrompt = parseTemplate(
     "dev",
     "code_review",
     "user",
     codeReviewTemplateParams,
-    repoSettings,
   );
   const codeReview = (await sendGptRequestWithSchema(
     codeReviewUserPrompt,

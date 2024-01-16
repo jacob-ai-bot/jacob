@@ -3,7 +3,11 @@ import { z } from "zod";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
-import { parseTemplate, RepoSettings } from "../utils";
+import {
+  parseTemplate,
+  constructNewOrEditSystemPrompt,
+  RepoSettings,
+} from "../utils";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
 import { sendGptRequest, sendGptRequestWithSchema } from "../openai/request";
 import { setNewBranch } from "../git/branch";
@@ -49,7 +53,8 @@ export async function editFiles(
 ) {
   const projectFiles = await traverseCodebase(rootPath);
   // When we start processing PRs, need to handle appending additionalComments
-  const issueText = `${issue.title} ${issue.body}`;
+  const issueBody = issue.body ?? "";
+  const issueText = `${issue.title} ${issueBody}`;
 
   const extractedIssueTemplateParams = {
     projectFiles,
@@ -61,14 +66,12 @@ export async function editFiles(
     "extracted_issue",
     "system",
     extractedIssueTemplateParams,
-    repoSettings,
   );
   const extractedIssueUserPrompt = parseTemplate(
     "dev",
     "extracted_issue",
     "user",
     extractedIssueTemplateParams,
-    repoSettings,
   );
   const extractedIssue = (await sendGptRequestWithSchema(
     extractedIssueUserPrompt,
@@ -98,14 +101,12 @@ export async function editFiles(
     types,
     images,
     code,
-    issueText,
-    stepsToAddressIssue: extractedIssue.stepsToAddressIssue ?? "",
+    issueBody,
+    plan: extractedIssue.stepsToAddressIssue ?? "",
   };
 
-  const codeSystemPrompt = parseTemplate(
-    "dev",
+  const codeSystemPrompt = constructNewOrEditSystemPrompt(
     "code_edit_files",
-    "system",
     codeTemplateParams,
     repoSettings,
   );
@@ -114,7 +115,6 @@ export async function editFiles(
     "code_edit_files",
     "user",
     codeTemplateParams,
-    repoSettings,
   );
 
   // Call sendGptRequest with the issue and concatenated code file

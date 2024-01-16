@@ -3,7 +3,11 @@ import fs from "fs";
 import path from "path";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { parseTemplate, RepoSettings } from "../utils";
+import {
+  parseTemplate,
+  constructNewOrEditSystemPrompt,
+  RepoSettings,
+} from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
@@ -26,14 +30,12 @@ export async function createNewFile(
     "plan_new_file",
     "system",
     planTemplateParams,
-    repoSettings,
   );
   const planUserPrompt = parseTemplate(
     "dev",
     "plan_new_file",
     "user",
     planTemplateParams,
-    repoSettings,
   );
   const plan = (await sendGptRequest(
     planUserPrompt,
@@ -53,10 +55,8 @@ export async function createNewFile(
     images,
   };
 
-  const codeSystemPrompt = parseTemplate(
-    "dev",
+  const codeSystemPrompt = constructNewOrEditSystemPrompt(
     "code_new_file",
-    "system",
     codeTemplateParams,
     repoSettings,
   );
@@ -65,7 +65,6 @@ export async function createNewFile(
     "code_new_file",
     "user",
     codeTemplateParams,
-    repoSettings,
   );
   const code = (await sendGptRequest(
     codeUserPrompt,

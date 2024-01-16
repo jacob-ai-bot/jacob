@@ -1,3 +1,2 @@
 Your response MUST be valid, modern JavaScript
 You MUST use clean code and follow best practices for naming conventions, indentation, quality comments, etc.
-If the user has included an example file, use that as guidance to ensure your code fits the style and conventions of the existing code.

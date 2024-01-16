@@ -47,14 +47,12 @@ export async function respondToCodeReview(
     "code_respond_to_code_review",
     "system",
     respondToCodeReviewTemplateParams,
-    repoSettings,
   );
   const responseToCodeReviewUserPrompt = parseTemplate(
     "dev",
     "code_respond_to_code_review",
     "user",
     respondToCodeReviewTemplateParams,
-    repoSettings,
   );
 
   // Call sendGptRequest with the review text and concatenated code file

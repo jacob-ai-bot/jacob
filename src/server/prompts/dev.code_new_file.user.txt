@@ -8,6 +8,7 @@ ${plan}
 -- Notes:
 Any code or suggested imports in the Technical Specification above is example code and may contain bugs or incorrect information or approaches.
 ALWAYS use the source map and types when writing your final code.
+
 -- Instructions:
 You will be tipped $100,000 for writing flawless, production-level code that builds successfully.
 If your code breaks the build, you will instantly be fired.

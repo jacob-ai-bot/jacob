@@ -1,3 +1,4 @@
+import dedent from "ts-dedent";
 import fs from "fs";
 import path from "path";
 
@@ -26,7 +27,6 @@ export const parseTemplate = (
   action: string,
   type: string,
   params: TemplateParams,
-  repoSettings?: RepoSettings,
 ): string => {
   // Get the folder path from the environment variable
   const folder = process.env.PROMPT_FOLDER;
@@ -42,16 +42,11 @@ export const parseTemplate = (
     throw new Error(`File not found: ${filePath}`);
   }
 
-  // Read the file content
-  let content = fs.readFileSync(filePath, "utf-8");
+  // Read the template file content
+  const template = fs.readFileSync(filePath, "utf-8");
 
-  // Add custom system instructions and replace variables
-  if (type === "system") {
-    content = addCustomInstructions(agent, action, content, repoSettings);
-  }
-  content = replaceParams(content, params);
-
-  return content;
+  // Replace the parameters in the template
+  return replaceParams(template, params);
 };
 
 const replaceParams = (content: string, params: TemplateParams) => {
@@ -80,57 +75,51 @@ const replaceParams = (content: string, params: TemplateParams) => {
   return content;
 };
 
-export const addCustomInstructions = (
-  agent: string,
+export function constructNewOrEditSystemPrompt(
   action: string,
-  content: string,
+  templateParams: TemplateParams,
   repoSettings?: RepoSettings,
-) => {
-  // Get the folder path from the environment variable
-  const folder = process.env.PROMPT_FOLDER;
-  if (!folder) {
-    throw new Error(`Environment variable PROMPT_FOLDER is not set`);
-  }
-
-  // Construct the file path
-  const filePathRoot = path.join(folder, "instructions", `${agent}.${action}`);
-
-  // Then get the custom instructions based on the settings
-  content = appendInstructions(content, filePathRoot, "default");
-  content = appendInstructions(
-    content,
-    filePathRoot,
-    repoSettings?.language ?? Language.TypeScript,
+) {
+  const baseSystemPrompt = parseTemplate(
+    "dev",
+    "code_new_or_edit",
+    "system",
+    templateParams,
   );
-  content = appendInstructions(
-    content,
-    filePathRoot,
-    repoSettings?.style ?? Style.Tailwind,
+  const specificInstructions = parseTemplate(
+    "dev",
+    action,
+    "system",
+    templateParams,
   );
-
-  // TODO: add more customizations here
-  return content;
-};
-
-const appendInstructions = (
-  content: string,
-  filePathRoot: string,
-  setting: string | undefined,
-) => {
-  if (!setting) {
-    return content;
-  }
-  try {
-    const instructions = fs.readFileSync(
-      `${filePathRoot}.${setting.toLowerCase()}.txt`,
-      "utf-8",
-    );
-    content = `${content}\n${instructions}`;
-  } catch (e) {
-    // No custom instructions found - that's OK
-  }
-  return content;
-};
+  const instructionsDefault = parseTemplate(
+    "dev",
+    "code_new_or_edit",
+    "default",
+    templateParams,
+  );
+  const instructionsLanguage = parseTemplate(
+    "dev",
+    "code_new_or_edit",
+    repoSettings?.language === Language.JavaScript
+      ? "javascript"
+      : "typescript",
+    templateParams,
+  );
+  const instructionsStyle = parseTemplate(
+    "dev",
+    "code_new_or_edit",
+    repoSettings?.style === Style.CSS ? "css" : "tailwind",
+    templateParams,
+  );
+  return dedent`
+      ${baseSystemPrompt}
+      ${specificInstructions}
+      ${instructionsDefault}
+      ${instructionsLanguage}
+      ${instructionsStyle}
+    `;
+}
 
 const execAsync = promisify(exec);
 

@@ -116,7 +116,6 @@ describe("fixBuildError", () => {
     expect(mockedAssessBuildError.assessBuildError).toHaveBeenCalledTimes(1);
     expect(mockedAssessBuildError.assessBuildError).toHaveBeenLastCalledWith(
       "build-error-info\n\n",
-      undefined,
     );
 
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
