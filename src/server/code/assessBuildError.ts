@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { parseTemplate, RepoSettings } from "../utils";
+import { parseTemplate } from "../utils";
 import { sendGptRequestWithSchema } from "../openai/request";
 
 export const AssessmentSchema = z.object({

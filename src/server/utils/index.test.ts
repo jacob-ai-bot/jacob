@@ -3,7 +3,6 @@ import dedent from "ts-dedent";
 import { describe, beforeEach, afterEach, it, expect } from "vitest";
 
 import {
-  parseTemplate,
   constructNewOrEditSystemPrompt,
   TemplateParams,
   Language,
