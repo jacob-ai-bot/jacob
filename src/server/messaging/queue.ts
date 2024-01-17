@@ -76,13 +76,15 @@ async function initRabbitMQ() {
 }
 
 export async function onGitHubEvent(event: WebhookQueuedEvent) {
-  const eventName = event.name;
-  const start = Date.now();
-  console.log(`onGitHubEvent: ${event.id} ${eventName}`);
-
   const {
+    name: eventName,
     payload: { repository, installation },
   } = event;
+  const start = Date.now();
+  console.log(
+    `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName}`,
+  );
+
   const projectUpdate = {
     repoName: repository.name,
     repoFullName: repository.full_name,
@@ -96,7 +98,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     .onConflict("repoId")
     .merge(projectUpdate);
   console.log(
-    `onGitHubEvent: ${event.id} ${eventName} : DB project ID: ${project.id}`,
+    `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName} : DB project ID: ${project.id}`,
   );
 
   const installationId = installation?.id;
@@ -174,7 +176,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       installationAuthentication.token,
     );
 
-    console.log(`repo cloned to ${path}`);
+    console.log(`[${repository.full_name}] repo cloned to ${path}`);
 
     const repoSettings = getRepoSettings(path);
 
@@ -266,18 +268,20 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         error as Error,
       );
     } finally {
-      console.log(`cleaning up repo cloned to ${path}`);
+      console.log(
+        `[${repository.full_name}] cleaning up repo cloned to ${path}`,
+      );
       cleanup();
     }
   } else {
     console.error(
-      `onGitHubEvent: ${event.id} ${eventName} : no installationId`,
+      `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName} : no installationId`,
     );
   }
   console.log(
-    `onGitHubEvent: ${event.id} ${eventName} : complete after ${
-      Date.now() - start
-    }ms`,
+    `[${repository.full_name}] onGitHubEvent: ${
+      event.id
+    } ${eventName} : complete after ${Date.now() - start}ms`,
   );
 }
 
@@ -344,7 +348,9 @@ export const publishGitHubEventToQueue = async (
       persistent: true,
     },
   );
-  console.log(`publishGitHubEventToQueue: ${event.id} ${event.name}`);
+  console.log(
+    `[${event.payload.repository.full_name}] publishGitHubEventToQueue: ${event.id} ${event.name}`,
+  );
 };
 
 if (process.env.NODE_ENV !== "test") {

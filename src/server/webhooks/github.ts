@@ -43,13 +43,20 @@ ghApp.webhooks.onError(errorHandler);
 
 ghApp.webhooks.on("issues.opened", async (event) => {
   const { payload } = event;
+  const { repository } = payload;
   // Only add a new issue to the queue if the issue body contains the @jacob mention
-  console.log(`Received issue #${payload.issue.number} opened event`);
+  console.log(
+    `[${repository.full_name}] Received issue #${payload.issue.number} opened event`,
+  );
   if (payload?.issue.body?.includes("@jacob")) {
-    console.log(`Issue #${payload.issue.number} contains @jacob mention`);
+    console.log(
+      `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob mention`,
+    );
     publishGitHubEventToQueue(event);
   } else {
-    console.log(`Issue #${payload.issue.number} has no @jacob mention`);
+    console.log(
+      `[${repository.full_name}] Issue #${payload.issue.number} has no @jacob mention`,
+    );
   }
 });
 
@@ -88,7 +95,10 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 
 ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const { payload } = event;
-  console.log(`Received PR #${payload.pull_request.number} submitted event`);
+  const { repository } = payload;
+  console.log(
+    `[${repository.full_name}] Received PR #${payload.pull_request.number} submitted event`,
+  );
   const appUsername = process.env.GITHUB_APP_USERNAME;
 
   const ottoShouldRespond =
@@ -101,7 +111,9 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
     (payload.review.state === "changes_requested" ||
       payload.review.state === "commented")
   ) {
-    console.log(`PR #${payload.pull_request.number} should be processed`);
+    console.log(
+      `[${repository.full_name}] PR #${payload.pull_request.number} should be processed`,
+    );
     publishGitHubEventToQueue(
       event as WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit,
     );
@@ -110,8 +122,10 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
 
 ghApp.webhooks.on("issue_comment.created", async (event) => {
   const { payload } = event;
-  const { comment, issue } = payload;
-  console.log(`Received issue #${issue.number} comment created event`);
+  const { comment, issue, repository } = payload;
+  console.log(
+    `[${repository.full_name}] Received issue #${issue.number} comment created event`,
+  );
   if (
     issue.pull_request &&
     PR_COMMAND_VALUES.some((cmd) => comment.body?.includes(cmd))
@@ -119,30 +133,32 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
     const prCommentCreatedEvent =
       event as WebhookPRCommentCreatedEventWithOctokit;
     console.log(
-      `Pull request comment body contains @jacob <cmd> mention (PR #${issue.number})`,
+      `[${repository.full_name}] Pull request comment body contains @jacob <cmd> mention (PR #${issue.number})`,
     );
     console.log(event);
     publishGitHubEventToQueue(prCommentCreatedEvent);
   } else {
     console.log(
-      `Issue comment is not a PR comment or body has no @jacob <cmd> mention (Issue #${issue.number})`,
+      `[${repository.full_name}] Issue comment is not a PR comment or body has no @jacob <cmd> mention (Issue #${issue.number})`,
     );
   }
 });
 
 ghApp.webhooks.on("pull_request.opened", async (event) => {
   const { payload } = event;
-  const { pull_request } = payload;
-  console.log(`Received PR #${pull_request.number} comment created event`);
+  const { pull_request, repository } = payload;
+  console.log(
+    `[${repository.full_name}] Received PR #${pull_request.number} comment created event`,
+  );
 
   if (PR_COMMAND_VALUES.some((cmd) => pull_request.body?.includes(cmd))) {
     console.log(
-      `Pull request body contains @jacob <cmd> mention (PR #${pull_request.number})`,
+      `[${repository.full_name}] Pull request body contains @jacob <cmd> mention (PR #${pull_request.number})`,
     );
     publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `Pull request body has no @jacob fix <cmd> mention (Issue #${pull_request.number})`,
+      `[${repository.full_name}] Pull request body has no @jacob fix <cmd> mention (Issue #${pull_request.number})`,
     );
   }
 });

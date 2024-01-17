@@ -2,9 +2,11 @@ import { executeWithLogRequiringSuccess } from "../utils";
 
 export async function setNewBranch(rootPath: string, branchName: string) {
   // first check to see if we're already on that branch. If not, create it.
-  const currentBranch = await executeWithLogRequiringSuccess(
-    rootPath,
-    "git rev-parse --abbrev-ref HEAD",
+  const currentBranch = (
+    await executeWithLogRequiringSuccess(
+      rootPath,
+      "git rev-parse --abbrev-ref HEAD",
+    )
   )
     .toString()
     .trim();
@@ -14,7 +16,9 @@ export async function setNewBranch(rootPath: string, branchName: string) {
   }
 
   // now check to see if the branch already exists
-  const branches = await executeWithLogRequiringSuccess(rootPath, "git branch")
+  const branches = (
+    await executeWithLogRequiringSuccess(rootPath, "git branch")
+  )
     .toString()
     .trim();
   if (branches.includes(branchName)) {

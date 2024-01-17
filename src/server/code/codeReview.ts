@@ -33,7 +33,7 @@ export async function codeReview(
   const issueNumber = parseInt(match?.[1] ?? "", 10);
   const result = await getIssue(repository, token, issueNumber);
   console.log(
-    `Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+    `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
   );
   const issue = result.data;
 

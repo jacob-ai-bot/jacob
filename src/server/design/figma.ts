@@ -154,7 +154,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       throw new Error(`Error ${issueStatus} creating issue`);
     }
 
-    console.log(`Created issue ${issueData.number} in ${repo.full_name}`);
+    console.log(`[${repo.full_name}] Created issue ${issueData.number}`);
 
     res.status(200).send(JSON.stringify({ data: { success: true } }));
   } catch (error) {

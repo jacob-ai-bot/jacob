@@ -30,7 +30,7 @@ export async function fixBuildError(
   const issueNumber = parseInt(match?.[1] ?? "", 10);
   const result = await getIssue(repository, token, issueNumber);
   console.log(
-    `Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+    `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
   );
   const issue = result.data;
 
@@ -54,11 +54,11 @@ export async function fixBuildError(
           .split(nextHeadingMarker)[0];
 
   const assessment = await assessBuildError(buildError);
-  console.log("Assessment of Error:", assessment);
+  console.log(`[${repository.full_name}] Assessment of Error:`, assessment);
 
   try {
     if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
-      console.log("Needs npm install");
+      console.log(`[${repository.full_name}] Needs npm install`);
 
       await runNpmInstall(rootPath, assessment.npmPackageToInstall.trim());
 
@@ -115,8 +115,8 @@ export async function fixBuildError(
       )) as string;
 
       if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
-        console.log("code", code);
-        console.log("No code generated. Exiting...");
+        console.log(`[${repository.full_name}] code`, code);
+        console.log(`[${repository.full_name}] No code generated. Exiting...`);
         throw new Error("No code generated");
       }
 

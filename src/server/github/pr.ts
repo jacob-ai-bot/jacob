@@ -151,7 +151,9 @@ export async function concatenatePRFiles(
     .filter((filename) => !(path.basename(filename) === "package-lock.json"));
 
   if (relevantFileNames.length === 0) {
-    console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files changed in PR\n\n\n\n");
+    console.log(
+      "\n\n\n\n^^^^^^\n\n\n\n[${repository.full_name}] ERROR: No files changed in PR\n\n\n\n",
+    );
     throw new Error("No relevant files changed in PR");
   }
   return concatenateFiles(rootPath, relevantFileNames);

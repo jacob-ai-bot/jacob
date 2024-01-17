@@ -83,13 +83,13 @@ export async function editFiles(
   // TODO: handle previousAssessments
   const filesToUpdate = extractedIssue.filesToUpdate || [];
 
-  console.log("Files to update:", filesToUpdate);
+  console.log(`[${repository.full_name}] Files to update:`, filesToUpdate);
   if (!filesToUpdate?.length) {
     console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files to update\n\n\n\n");
     throw new Error("No files to update");
   }
   const code = concatenateFiles(rootPath, filesToUpdate);
-  console.log("Concatenated code:\n\n", code);
+  console.log(`[${repository.full_name}] Concatenated code:\n\n`, code);
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
@@ -125,8 +125,8 @@ export async function editFiles(
   )) as string;
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
-    console.log("code", code);
-    console.log("No code generated. Exiting...");
+    console.log(`[${repository.full_name}] code`, code);
+    console.log(`[${repository.full_name}] No code generated. Exiting...`);
     throw new Error("No code generated");
   }
 

@@ -63,8 +63,8 @@ export async function respondToCodeReview(
   )) as string;
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
-    console.log("code", code);
-    console.log("No code generated. Exiting...");
+    console.log(`[${repository.full_name}] code`, code);
+    console.log(`[${repository.full_name}] No code generated. Exiting...`);
     throw new Error("No code generated");
   }
 

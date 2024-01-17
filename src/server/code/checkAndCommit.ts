@@ -83,12 +83,12 @@ export async function checkAndCommit({
     const issueNumber = parseInt(match?.[1] ?? "", 10);
     if (isNaN(issueNumber)) {
       console.log(
-        `No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
+        `[${repository.full_name}] No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
       );
     } else {
       const result = await getIssue(repository, token, issueNumber);
       console.log(
-        `Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+        `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
       );
       issue = result.data;
     }
@@ -165,7 +165,7 @@ export async function checkAndCommit({
     prTitle = pullRequest.title;
     prUrl = pullRequest.html_url;
 
-    console.log(`Created PR #${prNumber}: ${prUrl}`);
+    console.log(`[${repository.full_name}] Created PR #${prNumber}: ${prUrl}`);
   }
 
   if (buildErrorMessage) {
