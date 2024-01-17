@@ -43,7 +43,7 @@ export async function fixBuildError(
       ? ""
       : buildErrorSection.slice(0, afterHeadingIndex);
   const attemptNumber = parseInt(
-    restOfHeading.match(/Attempt\s+#(\d+)/)?.[1] ?? "",
+    restOfHeading.match(/Attempt\s+Number\s+(\d+)/)?.[1] ?? "",
     10,
   );
   const buildError =

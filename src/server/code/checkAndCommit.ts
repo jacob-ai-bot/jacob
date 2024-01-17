@@ -114,7 +114,7 @@ export async function checkAndCommit({
   let prBodySuffix: string;
   if (buildErrorMessage) {
     const errorAttemptInHeading = buildErrorAttemptNumber
-      ? ` (Attempt #${buildErrorAttemptNumber + 1})`
+      ? ` (Attempt Number ${buildErrorAttemptNumber + 1})`
       : "";
     prBodySuffix = dedent`\n
       ${PRCommand.FixBuildError}
