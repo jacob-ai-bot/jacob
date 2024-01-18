@@ -78,11 +78,8 @@ export async function createNewFile(
     throw new Error("No code generated");
   }
 
-  // if the first line of the diff starts with ``` then it is a code block. Remove the first line.
-  // TODO: move this to the prompt and accept an answer that can be parsed with Zod. If it fails validation, try again with the validation error message.
-  const realCode = code.startsWith("```")
-    ? code.split("```").slice(1).join("")
-    : code;
+  // if a line of the code starts with ``` then it is a code block delimiter from GPT. Remove these lines.
+  const realCode = code.replace(/^```.*\n?/gm, "");
 
   const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
