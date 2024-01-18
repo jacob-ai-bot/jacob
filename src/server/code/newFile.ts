@@ -18,7 +18,7 @@ export async function createNewFile(
   token: string,
   issue: Issue,
   rootPath: string,
-  repoSettings?: RepoSettings,
+  repoSettings?: RepoSettings
 ) {
   const planTemplateParams = {
     newFileName,
@@ -29,18 +29,18 @@ export async function createNewFile(
     "dev",
     "plan_new_file",
     "system",
-    planTemplateParams,
+    planTemplateParams
   );
   const planUserPrompt = parseTemplate(
     "dev",
     "plan_new_file",
     "user",
-    planTemplateParams,
+    planTemplateParams
   );
   const plan = (await sendGptRequest(
     planUserPrompt,
     planSystemPrompt,
-    0.2,
+    0.2
   )) as string;
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
@@ -58,18 +58,18 @@ export async function createNewFile(
   const codeSystemPrompt = constructNewOrEditSystemPrompt(
     "code_new_file",
     codeTemplateParams,
-    repoSettings,
+    repoSettings
   );
   const codeUserPrompt = parseTemplate(
     "dev",
     "code_new_file",
     "user",
-    codeTemplateParams,
+    codeTemplateParams
   );
   const code = (await sendGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
-    0.2,
+    0.2
   )) as string;
 
   if (code.length < 10) {
@@ -78,11 +78,8 @@ export async function createNewFile(
     throw new Error("No code generated");
   }
 
-  // if the first line of the diff starts with ``` then it is a code block. Remove the first line.
-  // TODO: move this to the prompt and accept an answer that can be parsed with Zod. If it fails validation, try again with the validation error message.
-  const realCode = code.startsWith("```")
-    ? code.split("```").slice(1).join("")
-    : code;
+  // if a line of the code starts with ``` then it is a code block delimiter from GPT. Remove these lines.
+  const realCode = code.replace(/^\`\`\`.*$/gm, "");
 
   const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
