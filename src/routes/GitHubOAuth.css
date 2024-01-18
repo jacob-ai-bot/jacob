@@ -76,9 +76,9 @@ p {
 }
 
 .logo {
-  width: auto; /* Adjust width according to the actual size of the logo */
-  height: 100px; /* Adjust height to maintain aspect ratio */
-  margin-bottom: 1rem; /* Space between logo and the button */
+  width: auto;
+  height: 100px;
+  margin-bottom: 1rem;
 }
 
 .success-message {
