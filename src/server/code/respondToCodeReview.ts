@@ -81,6 +81,7 @@ export async function respondToCodeReview(
     token,
     rootPath,
     branch,
+    repoSettings,
     commitMessage: "JACoB commit: respond to PR feedback",
     existingPr,
   });

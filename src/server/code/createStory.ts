@@ -192,6 +192,7 @@ export async function createStory(
     branch,
     commitMessage: `JACoB commit: add storybook story ${storybookFilename}`,
     existingPr,
+    repoSettings,
     creatingStory: true,
   });
 }

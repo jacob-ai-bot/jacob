@@ -147,6 +147,7 @@ export async function editFiles(
     token,
     rootPath,
     branch: newBranch,
+    repoSettings,
     commitMessage: `JACoB PR for Issue ${issue.title}`,
     issue,
     newPrTitle: `JACoB PR for Issue ${issue.title}`,

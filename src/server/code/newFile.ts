@@ -97,6 +97,7 @@ export async function createNewFile(
     token,
     rootPath,
     branch: newBranch,
+    repoSettings,
     commitMessage: `JACoB commit for Issue ${issue.number}`,
     issue,
     newPrTitle: `Create ${newFileName}`,
