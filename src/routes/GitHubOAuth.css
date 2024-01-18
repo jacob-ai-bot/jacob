@@ -37,7 +37,7 @@ body {
   right: 0;
   background-color: #f7f7f7;
   margin: 30px;
-  padding-top: 4rem;
+  padding: 4rem 2rem;
   color: black;
 }
 
@@ -73,20 +73,6 @@ h1 {
   font-family: "Gooper", "Poppins", sans-serif; /* Fallback to Poppins if Gooper is not available */
   color: #0043ff;
   margin-bottom: 1rem;
-}
-
-a.figmalink {
-  color: #0043ff;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 5px;
-  border: 2px solid #0043ff;
-  margin-top: 1rem;
-}
-
-a.figmalink:hover {
-  background-color: #0043ff;
-  color: #fff;
 }
 
 p {
