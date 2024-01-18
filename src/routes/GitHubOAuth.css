@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
 body > #root {
   height: 100vh;
   width: 100vw;
@@ -5,31 +7,124 @@ body > #root {
 }
 
 body {
-  font: 16px sans-serif;
-  font-weight: 500;
-  line-height: 2rem;
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
   text-align: center;
-  background: linear-gradient(to bottom, #4b0082, #1a001f);
+  background: #1d265d;
+  color: #ffffff;
+}
+
+.webcontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f8e8e0;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 6rem 10rem;
+  max-width: 500px;
+  width: 100%;
+  margin: 3rem auto;
 }
 
 .figmacontainer {
   position: absolute;
+  border-radius: 10px;
   top: 0;
   left: 0;
   bottom: 0;
   right: 0;
   background-color: #f7f7f7;
   margin: 30px;
-  border-radius: 10px;
   padding-top: 4rem;
   color: black;
 }
 
 .figmalink {
-  color:cornflowerblue;
+  color: cornflowerblue;
   cursor: pointer;
 }
 
+.description {
+  color: #1d265d;
+  font-family: "Poppins", sans-serif;
+  font-size: 22px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.instruction {
+  color: #191818;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  margin-top: 24px;
+  text-align: center;
+  font-style: italic;
+}
+
 .githubbutton {
-  transform: scale(2.0);
+  display: flex;
+  margin-top: 1rem;
+  transform: scale(2);
+}
+
+h1 {
+  font-family: "Gooper", "Poppins", sans-serif; /* Fallback to Poppins if Gooper is not available */
+  color: #0043ff;
+  margin-bottom: 1rem;
+}
+
+a.figmalink {
+  color: #0043ff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  border: 2px solid #0043ff;
+  margin-top: 1rem;
+}
+
+a.figmalink:hover {
+  background-color: #0043ff;
+  color: #fff;
+}
+
+p {
+  color: #191818;
+}
+
+.logo {
+  width: auto;
+  height: 100px;
+  margin-bottom: 1rem;
+}
+
+.success-message {
+  color: #00acff;
+}
+
+.error-message {
+  color: #ff7bff;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  .webcontainer {
+    padding: 1rem;
+    margin: 10px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .logo {
+    height: 50px; /* Adjust for smaller screens */
+  }
+
+  .githubbutton {
+    transform: scale(
+      1
+    ); /* Avoid scaling on mobile to prevent oversized button */
+  }
 }

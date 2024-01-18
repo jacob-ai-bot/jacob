@@ -220,23 +220,35 @@ export function GitHubOAuth() {
   };
 
   return (
-    <div className={figma ? "figmacontainer" : ""}>
-      <h1>JACoB</h1>
+    <div className={figma ? "figmacontainer" : "webcontainer"}>
+      <img src="/images/logo.svg" alt="JACoB Logo" className="logo" />
       {!accessToken && !figma && (
-        <div className="githubbutton">
-          <GitHubButton href={`${githubOAuthURL}&state=${writeKey}`}>
-            Sign in with GitHub
-          </GitHubButton>
-        </div>
+        <>
+          <p className="description">
+            JACoB, your AI coding assistant, bridges design and development by
+            translating Figma designs into GitHub issues and PRs.
+          </p>
+          <div className="githubbutton">
+            <GitHubButton href={`${githubOAuthURL}&state=${writeKey}`}>
+              Sign in with GitHub
+            </GitHubButton>
+          </div>
+
+          <p className="instruction">
+            Connect your design to code with one click. Authenticate with GitHub
+            to enable seamless issue and PR creation in your repository.
+          </p>
+        </>
       )}
       {!accessToken && figma && (
         <>
-          <div>
-            In order to get started, you need to connect Figma to your GitHub
-            account.
-          </div>
+          <p>
+            To link your Figma designs directly to code, start by connecting to
+            GitHub.
+          </p>
           <a className="figmalink" onClick={handleFigmaSignin}>
-            Click here to open a browser window to continue
+            Click here to authenticate in your browser and begin the
+            integration.
           </a>
         </>
       )}
