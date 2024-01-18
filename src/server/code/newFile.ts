@@ -79,7 +79,7 @@ export async function createNewFile(
   }
 
   // if a line of the code starts with ``` then it is a code block delimiter from GPT. Remove these lines.
-  const realCode = code.replace(/^\`\`\`.*$/gm, "");
+  const realCode = code.replace(/^```.*$/gm, "");
 
   const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 

@@ -156,7 +156,8 @@ export const sendGptRequestWithSchema = async (
     try {
       gptResponse = (await sendGptRequest(
         userPrompt,
-        systemPrompt,
+        systemPrompt +
+          "IMPORTANT! YOU MUST enclose ALL code in ``` TypeScript code blocks ```",
         temperature // Use a lower temperature for retries
       )) as string;
 
@@ -165,7 +166,7 @@ export const sendGptRequestWithSchema = async (
       }
 
       // Remove lines that start with ```
-      gptResponse = gptResponse.replace(/^\`\`\`.*$/gm, "");
+      gptResponse = gptResponse.replace(/^```.*$/gm, "");
 
       extractedInfo = parse(gptResponse);
 
