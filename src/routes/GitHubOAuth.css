@@ -28,6 +28,23 @@ body {
   margin: 3rem auto;
 }
 
+.figmacontainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background-color: #f7f7f7;
+  margin: 30px;
+  padding-top: 4rem;
+  color: black;
+}
+
+.figmalink {
+  color: cornflowerblue;
+  cursor: pointer;
+}
+
 .description {
   color: #1d265d;
   font-family: "Poppins", sans-serif;

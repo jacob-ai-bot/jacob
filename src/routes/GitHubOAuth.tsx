@@ -69,10 +69,10 @@ export function GitHubOAuth() {
                 pluginMessage: ["SAVE_ACCESS_TOKEN", accessToken],
                 pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
               },
-              "https://www.figma.com"
+              "https://www.figma.com",
             );
             console.log(
-              "access token found, posted message to parent, stopping polling loop"
+              "access token found, posted message to parent, stopping polling loop",
             );
             clearInterval(intervalId);
             setReadKey(undefined);
@@ -80,12 +80,12 @@ export function GitHubOAuth() {
             console.error(
               `read key found, but no access token: ${errors
                 ?.map((e) => e.message)
-                .join(",")}`
+                .join(",")}`,
             );
           }
         } else {
           console.log(
-            `read key not found ${response.status} ${response.statusText}, will try again`
+            `read key not found ${response.status} ${response.statusText}, will try again`,
           );
         }
       } catch (error) {
@@ -110,7 +110,7 @@ export function GitHubOAuth() {
             headers: {
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (accessTokenResponse.ok) {
@@ -125,8 +125,8 @@ export function GitHubOAuth() {
           if (state !== cookies["writeKey"]) {
             setError(
               new Error(
-                `State does not match writeKey cookie: ${state} ${cookies["writeKey"]}`
-              )
+                `State does not match writeKey cookie: ${state} ${cookies["writeKey"]}`,
+              ),
             );
             return;
           }
@@ -138,7 +138,7 @@ export function GitHubOAuth() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ accessToken }),
-            }
+            },
           );
 
           if (
@@ -149,15 +149,15 @@ export function GitHubOAuth() {
           } else {
             setError(
               new Error(
-                `Failed to post access token: ${postAccessTokenResponse.status} ${postAccessTokenResponse.statusText}`
-              )
+                `Failed to post access token: ${postAccessTokenResponse.status} ${postAccessTokenResponse.statusText}`,
+              ),
             );
           }
         } else {
           setError(
             new Error(
-              `Failed to fetch access token: ${accessTokenResponse.status} ${accessTokenResponse.statusText}`
-            )
+              `Failed to fetch access token: ${accessTokenResponse.status} ${accessTokenResponse.statusText}`,
+            ),
           );
         }
       } catch (error) {
@@ -199,22 +199,22 @@ export function GitHubOAuth() {
         window.open(
           `${location.origin}${location.pathname}?writeKey=${writeKey}`,
           "_blank",
-          "popup"
+          "popup",
         );
       } else {
         setError(
           new Error(
             `Error creating access token keys: ${(errors ?? [])
               .map(({ message }) => message)
-              .join(",")}`
-          )
+              .join(",")}`,
+          ),
         );
       }
     } else {
       setError(
         new Error(
-          `Error creating access token keys: ${response.status} ${response.statusText}`
-        )
+          `Error creating access token keys: ${response.status} ${response.statusText}`,
+        ),
       );
     }
   };
@@ -247,7 +247,8 @@ export function GitHubOAuth() {
             GitHub.
           </p>
           <a className="figmalink" onClick={handleFigmaSignin}>
-            Click here to authenticate and begin the integration.
+            Click here to authenticate in your browser and begin the
+            integration.
           </a>
         </>
       )}
