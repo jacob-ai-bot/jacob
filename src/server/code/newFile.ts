@@ -17,7 +17,7 @@ export async function createNewFile(
   token: string,
   issue: Issue,
   rootPath: string,
-  repoSettings?: RepoSettings
+  repoSettings?: RepoSettings,
 ) {
   const planTemplateParams = {
     newFileName,
@@ -28,18 +28,18 @@ export async function createNewFile(
     "dev",
     "plan_new_file",
     "system",
-    planTemplateParams
+    planTemplateParams,
   );
   const planUserPrompt = parseTemplate(
     "dev",
     "plan_new_file",
     "user",
-    planTemplateParams
+    planTemplateParams,
   );
   const plan = (await sendGptRequest(
     planUserPrompt,
     planSystemPrompt,
-    0.2
+    0.2,
   )) as string;
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
@@ -57,18 +57,18 @@ export async function createNewFile(
   const codeSystemPrompt = constructNewOrEditSystemPrompt(
     "code_new_file",
     codeTemplateParams,
-    repoSettings
+    repoSettings,
   );
   const codeUserPrompt = parseTemplate(
     "dev",
     "code_new_file",
     "user",
-    codeTemplateParams
+    codeTemplateParams,
   );
   const code = (await sendGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
-    0.2
+    0.2,
   )) as string;
 
   if (code.length < 10) {

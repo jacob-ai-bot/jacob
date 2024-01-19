@@ -21,7 +21,7 @@ type Model = keyof typeof CONTEXT_WINDOW;
 
 export const getMaxTokensForResponse = async (
   inputText: string,
-  model: Model
+  model: Model,
 ): Promise<number> => {
   try {
     const enc = encodingForModel(model);
@@ -36,7 +36,7 @@ export const getMaxTokensForResponse = async (
 
     if (maxTokensForResponse <= 0) {
       throw new Error(
-        "Input text is too large to fit within the context window."
+        "Input text is too large to fit within the context window.",
       );
     }
 
@@ -52,7 +52,7 @@ export const sendGptRequest = async (
   systemPrompt = "You are a helpful assistant.",
   temperature = 0.2,
   retries = 10,
-  delay = 60000 // rate limit is 40K tokens per minute, so by default start with 60 seconds
+  delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
 ): Promise<string | null> => {
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
@@ -63,7 +63,7 @@ export const sendGptRequest = async (
   try {
     const max_tokens = await getMaxTokensForResponse(
       userPrompt + systemPrompt,
-      model
+      model,
     );
 
     console.log(`\n +++ Calling ${model} with max_tokens: ${max_tokens} `);
@@ -91,7 +91,7 @@ export const sendGptRequest = async (
       throw error;
     } else {
       console.log(
-        `Received 429, retries remaining: ${retries}. Retrying in ${delay} ms...`
+        `Received 429, retries remaining: ${retries}. Retrying in ${delay} ms...`,
       );
       return new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -100,7 +100,7 @@ export const sendGptRequest = async (
             systemPrompt,
             temperature,
             retries - 1,
-            delay * 2
+            delay * 2,
           )
             .then(resolve)
             .catch(reject);
@@ -117,7 +117,7 @@ export const sendGptRequestWithSchema = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   zodSchema: ZodSchema<any>,
   maxRetries: number = 3,
-  temperature: number = 0.2
+  temperature: number = 0.2,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;
@@ -131,7 +131,7 @@ export const sendGptRequestWithSchema = async (
       gptResponse = await sendGptRequest(
         userPrompt,
         systemPrompt,
-        temperature // Use a lower temperature for retries
+        temperature, // Use a lower temperature for retries
       );
 
       if (!gptResponse) {
@@ -145,30 +145,30 @@ export const sendGptRequestWithSchema = async (
       // if the response is an array of objects, validate each object individually and return the full array if successful
       if (Array.isArray(extractedInfo)) {
         const validatedInfo = extractedInfo.map(
-          (info) => zodSchema.safeParse(info) // as SafeParseReturnType<any, any>,
+          (info) => zodSchema.safeParse(info), // as SafeParseReturnType<any, any>,
         );
 
         const failedValidations = validatedInfo.filter(
-          (result) => result.success === false
+          (result) => result.success === false,
         );
 
         if (failedValidations.length > 0) {
           throw new Error(
             `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
-              failedValidations
-            )}`
+              failedValidations,
+            )}`,
           );
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (validatedInfo as SafeParseSuccess<any>[]).map(
-          (result) => result.data
+          (result) => result.data,
         );
       }
 
       // if the response is a single object, validate it and return it if successful
       const validationResult = zodSchema.safeParse(
-        extractedInfo
+        extractedInfo,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as SafeParseReturnType<any, any>;
 
@@ -179,13 +179,13 @@ export const sendGptRequestWithSchema = async (
       throw new Error(
         `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (validationResult as SafeParseError<any>).error
-        )}`
+          (validationResult as SafeParseError<any>).error,
+        )}`,
       );
     } catch (error) {
       console.log(
         `Error occurred during GPT request: ${(error as { message?: string })
-          ?.message}`
+          ?.message}`,
       );
       retries++;
     }
