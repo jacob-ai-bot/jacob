@@ -236,6 +236,4 @@ describe("removeMarkdown utility function", () => {
 
     expect(removeMarkdownCodeblocks(markdownCodeBlock)).toEqual(expectedOutput);
   });
-
-  // Additional test cases can be added here for different markdown features
 });
