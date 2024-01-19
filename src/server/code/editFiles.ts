@@ -49,7 +49,7 @@ export async function editFiles(
   token: string,
   issue: Issue,
   rootPath: string,
-  repoSettings?: RepoSettings,
+  repoSettings?: RepoSettings
 ) {
   const projectFiles = await traverseCodebase(rootPath);
   // When we start processing PRs, need to handle appending additionalComments
@@ -65,19 +65,19 @@ export async function editFiles(
     "dev",
     "extracted_issue",
     "system",
-    extractedIssueTemplateParams,
+    extractedIssueTemplateParams
   );
   const extractedIssueUserPrompt = parseTemplate(
     "dev",
     "extracted_issue",
     "user",
-    extractedIssueTemplateParams,
+    extractedIssueTemplateParams
   );
   const extractedIssue = (await sendGptRequestWithSchema(
     extractedIssueUserPrompt,
     extractedIssueSystemPrompt,
     ExtractedIssueInfoSchema,
-    0.2,
+    0.2
   )) as ExtractedIssueInfo;
 
   // TODO: handle previousAssessments
@@ -108,20 +108,20 @@ export async function editFiles(
   const codeSystemPrompt = constructNewOrEditSystemPrompt(
     "code_edit_files",
     codeTemplateParams,
-    repoSettings,
+    repoSettings
   );
   const codeUserPrompt = parseTemplate(
     "dev",
     "code_edit_files",
     "user",
-    codeTemplateParams,
+    codeTemplateParams
   );
 
   // Call sendGptRequest with the issue and concatenated code file
   const updatedCode = (await sendGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
-    0.2,
+    0.2
   )) as string;
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
@@ -129,18 +129,11 @@ export async function editFiles(
     console.log(`[${repository.full_name}] No code generated. Exiting...`);
     throw new Error("No code generated");
   }
-
-  // if the first line of the diff starts with ``` then it is a code block. Remove the first line.
-  // TODO: move this to the prompt and accept an answer that can be parsed with Zod. If it fails validation, try again with the validation error message.
-  const realCode = updatedCode.startsWith("```")
-    ? updatedCode.split("```").slice(1).join("")
-    : updatedCode;
-
   const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
   await setNewBranch(rootPath, newBranch);
 
-  reconstructFiles(realCode, rootPath);
+  reconstructFiles(updatedCode, rootPath);
 
   await checkAndCommit({
     repository,

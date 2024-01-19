@@ -14,6 +14,7 @@ import {
   RepoSettings,
 } from "../utils";
 import { sendGptRequest } from "../openai/request";
+import { saveNewFile } from "../utils/files";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -181,9 +182,7 @@ export async function createStory(
     0.2,
   )) as string;
 
-  const targetPath = path.join(rootPath, storybookFilename);
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.writeFileSync(targetPath, storybookCode);
+  saveNewFile(rootPath, storybookFilename, storybookCode);
 
   await checkAndCommit({
     repository,

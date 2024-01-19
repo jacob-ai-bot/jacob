@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import ignore, { Ignore } from "ignore";
+import { removeMarkdownCodeblocks } from ".";
 
 export const concatenateFiles = (
   rootDir: string,
@@ -89,6 +90,23 @@ export const reconstructFiles = (
     ) {
       fileContent = fileContent.split("\n").slice(1).join("\n");
     }
+
+    // if the code is wrapped in a code block, remove the code block
+    fileContent = removeMarkdownCodeblocks(fileContent);
     fs.writeFileSync(targetPath, fileContent);
   }
+};
+
+export const saveNewFile = (
+  rootDir: string,
+  filePath: string,
+  fileContent: string,
+) => {
+  // if the code is wrapped in a code block, remove the code block
+  fileContent = removeMarkdownCodeblocks(fileContent);
+
+  // save the file to the target path
+  const targetPath = path.join(rootDir, filePath);
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, fileContent);
 };
