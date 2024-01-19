@@ -11,12 +11,28 @@ import { removeMarkdownCodeblocks } from "../utils";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://api.portkey.ai/v1/proxy",
+  defaultHeaders: {
+    "x-portkey-api-key": process.env.PORTKEY_API_KEY,
+    "x-portkey-mode": "proxy openai",
+    "x-portkey-cache": "simple",
+    "x-portkey-retry-count": "3",
+  },
 });
 
 const CONTEXT_WINDOW = {
   "gpt-4-0613": 8192,
-  "gpt-4-1106-preview": 4000,
+  "gpt-4-vision-preview": 128000,
+  "gpt-4-1106-preview": 128000,
 };
+
+// Note that gpt-4-1106-preview has a max_tokens limit of 4K, despite having a context window of 128K
+const MAX_OUTPUT = {
+  "gpt-4-0613": 8192,
+  "gpt-4-vision-preview": 4096,
+  "gpt-4-1106-preview": 4096,
+};
+
 type Model = keyof typeof CONTEXT_WINDOW;
 
 export const getMaxTokensForResponse = async (
@@ -40,7 +56,7 @@ export const getMaxTokensForResponse = async (
       );
     }
 
-    return maxTokensForResponse;
+    return Math.min(maxTokensForResponse, MAX_OUTPUT[model]);
   } catch (error) {
     console.log("Error in getMaxTokensForResponse: ", error);
     return Math.round(CONTEXT_WINDOW[model] / 2);
@@ -57,7 +73,7 @@ export const sendGptRequest = async (
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
-  const model = "gpt-4-0613";
+  const model = "gpt-4-1106-preview";
   // const model = "gpt-4-1106-preview";
 
   try {
