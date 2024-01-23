@@ -208,3 +208,17 @@ export function enumFromStringValue<T>(
     ? (value as unknown as T)
     : undefined;
 }
+
+export function removeMarkdownCodeblocks(text: string) {
+  return (
+    text
+      .split("\n")
+      // Filter out lines that start with optional whitespace followed by ```
+      // Explanation of the regex:
+      // ^ - Matches the start of a line
+      // \s* - Matches zero or more whitespace characters
+      // ``` - Matches the literal string ```
+      .filter((line) => !line.match(/^\s*```/))
+      .join("\n")
+  );
+}

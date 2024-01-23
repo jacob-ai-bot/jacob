@@ -1,6 +1,4 @@
 import { Issue, Repository } from "@octokit/webhooks-types";
-import fs from "fs";
-import path from "path";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import {
@@ -11,6 +9,7 @@ import {
 import { sendGptRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
+import { saveNewFile } from "../utils/files";
 
 export async function createNewFile(
   newFileName: string,
@@ -78,19 +77,11 @@ export async function createNewFile(
     throw new Error("No code generated");
   }
 
-  // if the first line of the diff starts with ``` then it is a code block. Remove the first line.
-  // TODO: move this to the prompt and accept an answer that can be parsed with Zod. If it fails validation, try again with the validation error message.
-  const realCode = code.startsWith("```")
-    ? code.split("```").slice(1).join("")
-    : code;
-
   const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
   await setNewBranch(rootPath, newBranch);
 
-  const targetPath = path.join(rootPath, newFileName);
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.writeFileSync(targetPath, realCode);
+  saveNewFile(rootPath, newFileName, code);
 
   await checkAndCommit({
     repository,
