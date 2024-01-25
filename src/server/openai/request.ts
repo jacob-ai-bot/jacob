@@ -23,14 +23,14 @@ const openai = new OpenAI({
 const CONTEXT_WINDOW = {
   "gpt-4-0613": 8192,
   "gpt-4-vision-preview": 128000,
-  "gpt-4-1106-preview": 128000,
+  "gpt-4-turbo-preview": 128000,
 };
 
-// Note that gpt-4-1106-preview has a max_tokens limit of 4K, despite having a context window of 128K
+// Note that gpt-4-turbo-preview has a max_tokens limit of 4K, despite having a context window of 128K
 const MAX_OUTPUT = {
   "gpt-4-0613": 8192,
   "gpt-4-vision-preview": 4096,
-  "gpt-4-1106-preview": 4096,
+  "gpt-4-turbo-preview": 4096,
 };
 
 type Model = keyof typeof CONTEXT_WINDOW;
@@ -73,8 +73,7 @@ export const sendGptRequest = async (
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
-  const model = "gpt-4-1106-preview";
-  // const model = "gpt-4-1106-preview";
+  const model = "gpt-4-turbo-preview";
 
   try {
     const max_tokens = await getMaxTokensForResponse(
