@@ -16,6 +16,8 @@ export enum Style {
 export interface RepoSettings {
   language?: Language;
   style?: Style;
+  installCommand?: string;
+  buildCommand?: string;
   iconSet?: string;
   componentExamples?: string;
   apiEndpointsExamples?: string;

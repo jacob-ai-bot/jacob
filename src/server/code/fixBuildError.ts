@@ -60,7 +60,11 @@ export async function fixBuildError(
     if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
       console.log(`[${repository.full_name}] Needs npm install`);
 
-      await runNpmInstall(rootPath, assessment.npmPackageToInstall.trim());
+      await runNpmInstall(
+        rootPath,
+        assessment.npmPackageToInstall.trim(),
+        repoSettings,
+      );
 
       await checkAndCommit({
         repository,

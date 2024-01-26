@@ -31,17 +31,37 @@ export async function runBuildCheck(
     ...getSanitizedEnv(),
     ...(repoSettings?.env ?? NEXT_JS_ENV),
   };
-  await executeWithLogRequiringSuccess(path, "npm install", { env });
-  return executeWithLogRequiringSuccess(path, "npm run build --verbose", {
+  const {
+    installCommand = "npm install",
+    buildCommand = "npm run build --verbose",
+  } = repoSettings ?? {};
+
+  await executeWithLogRequiringSuccess(path, installCommand, { env });
+  return executeWithLogRequiringSuccess(path, buildCommand, {
     env,
   });
 }
 
-export async function runNpmInstall(path: string, packageName: string) {
+export async function runNpmInstall(
+  path: string,
+  packageName: string,
+  repoSettings?: RepoSettings,
+) {
+  const env = {
+    ...getSanitizedEnv(),
+    ...(repoSettings?.env ?? NEXT_JS_ENV),
+  };
+  const { installCommand = "npm install" } = repoSettings ?? {};
   // do some quick validation to ensure the package name is valid and does not include an injection attack
   if (!packageNameRegex.test(packageName)) {
     // This regex matches any word character or dash
     throw new Error(`runNpmInstall: Invalid package name: ${packageName}`);
   }
-  return executeWithLogRequiringSuccess(path, `npm install ${packageName}`);
+  // TODO: do we need an addCommand in jacob.json to better handle this generically?
+  const command = installCommand.startsWith("yarn")
+    ? "yarn add"
+    : installCommand;
+  return executeWithLogRequiringSuccess(path, `${command} ${packageName}`, {
+    env,
+  });
 }
