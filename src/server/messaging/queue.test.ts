@@ -18,11 +18,13 @@ import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_req
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
 import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
+import installationRepositoriesAddedPayload from "../../data/test/webhooks/installation_repositories.added.json";
 import {
   onGitHubEvent,
   type WebhookIssueOpenedEvent,
   type WebhookPRCommentCreatedEvent,
   type WebhookPullRequestReviewWithCommentsSubmittedEvent,
+  type WebhookInstallationRepositoriesAddedEvent,
 } from "./queue";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
@@ -278,5 +280,23 @@ describe("onGitHubEvent", () => {
     expect(
       vi.mocked(mockedRespondToCodeReview.respondToCodeReview),
     ).toHaveBeenCalledTimes(1);
+  });
+
+  test("repo added - one repo", async () => {
+    server?.use(
+      http.post(
+        "https://api.github.com/repos/PioneerSquareLabs/jacob-setup/issues",
+        () => HttpResponse.json({}),
+      ),
+    );
+
+    await onGitHubEvent({
+      id: "7",
+      name: "installation_repositories",
+      payload: installationRepositoriesAddedPayload,
+    } as unknown as WebhookInstallationRepositoriesAddedEvent);
+
+    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(mockedCheck.runBuildCheck)).toHaveBeenCalledTimes(1);
   });
 });

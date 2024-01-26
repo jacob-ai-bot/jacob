@@ -1,6 +1,7 @@
 import ampq from "amqplib";
 import { Octokit } from "@octokit/core";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
+import { Repository } from "@octokit/webhooks-types";
 import { createAppAuth } from "@octokit/auth-app";
 
 import { db } from "../db/db";
@@ -24,6 +25,7 @@ import {
   addFailedWorkComment,
   addStartingWorkComment,
 } from "../github/comments";
+import { createRepoInstalledIssue } from "../github/issue";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -75,16 +77,11 @@ async function initRabbitMQ() {
   }
 }
 
-export async function onGitHubEvent(event: WebhookQueuedEvent) {
-  const {
-    name: eventName,
-    payload: { repository, installation },
-  } = event;
-  const start = Date.now();
-  console.log(
-    `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName}`,
-  );
-
+async function addProjectToDB(
+  repository: Pick<Repository, "id" | "node_id" | "name" | "full_name">,
+  eventId: string,
+  eventName: string,
+) {
   const projectUpdate = {
     repoName: repository.name,
     repoFullName: repository.full_name,
@@ -98,16 +95,89 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     .onConflict("repoId")
     .merge(projectUpdate);
   console.log(
-    `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName} : DB project ID: ${project.id}`,
+    `[${repository.full_name}] onGitHubEvent: ${eventId} ${eventName} : DB project ID: ${project.id}`,
   );
+}
 
-  const installationId = installation?.id;
+async function authInstallation(installationId?: number) {
   if (installationId) {
-    const installationAuthentication = await auth({
+    return auth({
       type: "installation",
       installationId,
     });
+  }
+}
 
+async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
+  const { repositories_added: repos, installation, sender } = event.payload;
+
+  const installationAuthentication = await authInstallation(installation?.id);
+  if (!installationAuthentication) {
+    console.error(
+      `onReposAdded: ${event.id} ${event.name} : no installationId`,
+    );
+    return;
+  }
+  return Promise.all(
+    repos.map(async (repo) => {
+      console.log(
+        `onReposAdded: ${event.id} ${event.name} : ${repo.full_name} ${repo.id}`,
+      );
+      const repository = { ...repo, owner: installation.account };
+
+      try {
+        await addProjectToDB(repo, event.id, event.name);
+        const { path, cleanup } = await cloneRepo(
+          repo.full_name,
+          undefined,
+          installationAuthentication.token,
+        );
+
+        console.log(`[${repo.full_name}] repo cloned to ${path}`);
+
+        const repoSettings = getRepoSettings(path);
+
+        try {
+          await runBuildCheck(path, repoSettings);
+          await createRepoInstalledIssue(
+            repository,
+            installationAuthentication.token,
+            sender.login,
+          );
+        } finally {
+          console.log(`[${repo.full_name}] cleaning up repo cloned to ${path}`);
+          cleanup();
+        }
+      } catch (error) {
+        await createRepoInstalledIssue(
+          repository,
+          installationAuthentication.token,
+          sender.login,
+          error as Error,
+        );
+      }
+    }),
+  );
+}
+
+export async function onGitHubEvent(event: WebhookQueuedEvent) {
+  if (event.name === "installation_repositories") {
+    console.log(`onGitHubEvent: ${event.id} ${event.name}`);
+    return onReposAdded(event);
+  }
+  const {
+    name: eventName,
+    payload: { repository, installation },
+  } = event;
+  const start = Date.now();
+  console.log(
+    `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName}`,
+  );
+
+  await addProjectToDB(repository, event.id, eventName);
+
+  const installationAuthentication = await authInstallation(installation?.id);
+  if (installationAuthentication) {
     const issueOpened = eventName === "issues";
     const prOpened = eventName === "pull_request";
     const prComment = eventName === "issue_comment";
@@ -320,11 +390,19 @@ export type WebhookPullRequestReviewWithCommentsSubmittedEvent =
     };
   };
 
+export type WebhookInstallationRepositoriesAddedEvent =
+  EmitterWebhookEvent<"installation_repositories"> & {
+    payload: {
+      action: "added";
+    };
+  };
+
 export type WebhookQueuedEvent =
   | WebhookIssueOpenedEvent
   | WebhookPRCommentCreatedEvent
   | WebhookPullRequestOpenedEvent
-  | WebhookPullRequestReviewWithCommentsSubmittedEvent;
+  | WebhookPullRequestReviewWithCommentsSubmittedEvent
+  | WebhookInstallationRepositoriesAddedEvent;
 
 type WithOctokit<T> = T & {
   octokit: Octokit;
@@ -348,8 +426,14 @@ export const publishGitHubEventToQueue = async (
       persistent: true,
     },
   );
+  const repoName =
+    "repository" in event.payload
+      ? event.payload.repository.full_name
+      : event.payload.repositories_added
+          .map(({ full_name }) => full_name)
+          .join(",");
   console.log(
-    `[${event.payload.repository.full_name}] publishGitHubEventToQueue: ${event.id} ${event.name}`,
+    `[${repoName}] publishGitHubEventToQueue: ${event.id} ${event.name}`,
   );
 };
 

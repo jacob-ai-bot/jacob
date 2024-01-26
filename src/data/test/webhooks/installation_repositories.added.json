@@ -1,0 +1,91 @@
+{
+  "action": "added",
+  "installation": {
+    "id": 46059308,
+    "account": {
+      "login": "PioneerSquareLabs",
+      "id": 14079113,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjE0MDc5MTEz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/14079113?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/PioneerSquareLabs",
+      "html_url": "https://github.com/PioneerSquareLabs",
+      "followers_url": "https://api.github.com/users/PioneerSquareLabs/followers",
+      "following_url": "https://api.github.com/users/PioneerSquareLabs/following{/other_user}",
+      "gists_url": "https://api.github.com/users/PioneerSquareLabs/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/PioneerSquareLabs/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/PioneerSquareLabs/subscriptions",
+      "organizations_url": "https://api.github.com/users/PioneerSquareLabs/orgs",
+      "repos_url": "https://api.github.com/users/PioneerSquareLabs/repos",
+      "events_url": "https://api.github.com/users/PioneerSquareLabs/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/PioneerSquareLabs/received_events",
+      "type": "Organization",
+      "site_admin": false
+    },
+    "repository_selection": "selected",
+    "access_tokens_url": "https://api.github.com/app/installations/46059308/access_tokens",
+    "repositories_url": "https://api.github.com/installation/repositories",
+    "html_url": "https://github.com/organizations/PioneerSquareLabs/settings/installations/46059308",
+    "app_id": 794418,
+    "app_slug": "jacob-ai-bot",
+    "target_id": 14079113,
+    "target_type": "Organization",
+    "permissions": {
+      "issues": "write",
+      "contents": "write",
+      "metadata": "read",
+      "pull_requests": "write"
+    },
+    "events": [
+      "issues",
+      "issue_comment",
+      "pull_request",
+      "pull_request_review",
+      "pull_request_review_comment",
+      "pull_request_review_thread"
+    ],
+    "created_at": "2024-01-12T10:09:38.000-08:00",
+    "updated_at": "2024-01-23T18:10:04.000-08:00",
+    "single_file_name": null,
+    "has_multiple_single_files": false,
+    "single_file_paths": [
+
+    ],
+    "suspended_by": null,
+    "suspended_at": null
+  },
+  "repository_selection": "selected",
+  "repositories_added": [
+    {
+      "id": 742121510,
+      "node_id": "R_kgDOLDvgJg",
+      "name": "jacob-setup",
+      "full_name": "PioneerSquareLabs/jacob-setup",
+      "private": true
+    }
+  ],
+  "repositories_removed": [
+
+  ],
+  "requester": null,
+  "sender": {
+    "login": "cpirich",
+    "id": 5429146,
+    "node_id": "MDQ6VXNlcjU0MjkxNDY=",
+    "avatar_url": "https://avatars.githubusercontent.com/u/5429146?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/cpirich",
+    "html_url": "https://github.com/cpirich",
+    "followers_url": "https://api.github.com/users/cpirich/followers",
+    "following_url": "https://api.github.com/users/cpirich/following{/other_user}",
+    "gists_url": "https://api.github.com/users/cpirich/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/cpirich/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/cpirich/subscriptions",
+    "organizations_url": "https://api.github.com/users/cpirich/orgs",
+    "repos_url": "https://api.github.com/users/cpirich/repos",
+    "events_url": "https://api.github.com/users/cpirich/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/cpirich/received_events",
+    "type": "User",
+    "site_admin": false
+  }
+}
