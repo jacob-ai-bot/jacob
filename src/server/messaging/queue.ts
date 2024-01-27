@@ -240,95 +240,102 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       prBranch = existingPr.head.ref;
     }
 
-    const { path, cleanup } = await cloneRepo(
-      repository.full_name,
-      prBranch,
-      installationAuthentication.token,
-    );
-
-    console.log(`[${repository.full_name}] repo cloned to ${path}`);
-
-    const repoSettings = getRepoSettings(path);
-
     try {
-      if (issueOpened) {
-        await runBuildCheck(path, repoSettings);
+      const { path, cleanup } = await cloneRepo(
+        repository.full_name,
+        prBranch,
+        installationAuthentication.token,
+      );
 
-        const issueTitle = event.payload.issue.title;
+      console.log(`[${repository.full_name}] repo cloned to ${path}`);
 
-        const newFileName = extractFilePathWithArrow(issueTitle);
-        if (newFileName) {
-          await createNewFile(
-            newFileName,
+      const repoSettings = getRepoSettings(path);
+
+      try {
+        if (issueOpened) {
+          await runBuildCheck(path, repoSettings);
+
+          const issueTitle = event.payload.issue.title;
+
+          const newFileName = extractFilePathWithArrow(issueTitle);
+          if (newFileName) {
+            await createNewFile(
+              newFileName,
+              repository,
+              installationAuthentication.token,
+              event.payload.issue,
+              path,
+              repoSettings,
+            );
+          } else {
+            await editFiles(
+              repository,
+              installationAuthentication.token,
+              event.payload.issue,
+              path,
+              repoSettings,
+            );
+          }
+        } else if (prReview) {
+          if (!prBranch || !existingPr) {
+            throw new Error("prBranch and existingPr when handling prReview");
+          }
+          await respondToCodeReview(
             repository,
             installationAuthentication.token,
-            event.payload.issue,
             path,
             repoSettings,
+            prBranch,
+            existingPr,
+            event.payload.review.state,
+            body,
           );
-        } else {
-          await editFiles(
-            repository,
-            installationAuthentication.token,
-            event.payload.issue,
-            path,
-            repoSettings,
-          );
+        } else if (prCommand) {
+          if (!prBranch || !existingPr) {
+            throw new Error("prBranch and existingPr when handling prCommand");
+          }
+          switch (prCommand) {
+            case PRCommand.CreateStory:
+              await createStory(
+                repository,
+                installationAuthentication.token,
+                path,
+                prBranch,
+                repoSettings,
+                existingPr,
+              );
+              break;
+            case PRCommand.CodeReview:
+              await codeReview(
+                repository,
+                installationAuthentication.token,
+                path,
+                prBranch,
+                repoSettings,
+                existingPr,
+              );
+              break;
+            case PRCommand.FixBuildError:
+              await fixBuildError(
+                repository,
+                installationAuthentication.token,
+                eventName === "pull_request" ? null : event.payload.issue,
+                eventName === "pull_request"
+                  ? event.payload.pull_request.body
+                  : event.payload.comment.body,
+                path,
+                prBranch,
+                repoSettings,
+                existingPr,
+              );
+              break;
+          }
         }
-      } else if (prReview) {
-        if (!prBranch || !existingPr) {
-          throw new Error("prBranch and existingPr when handling prReview");
-        }
-        await respondToCodeReview(
-          repository,
-          installationAuthentication.token,
-          path,
-          repoSettings,
-          prBranch,
-          existingPr,
-          event.payload.review.state,
-          body,
+      } finally {
+        console.log(
+          `[${repository.full_name}] cleaning up repo cloned to ${path}`,
         );
-      } else if (prCommand) {
-        if (!prBranch || !existingPr) {
-          throw new Error("prBranch and existingPr when handling prCommand");
-        }
-        switch (prCommand) {
-          case PRCommand.CreateStory:
-            await createStory(
-              repository,
-              installationAuthentication.token,
-              path,
-              prBranch,
-              repoSettings,
-              existingPr,
-            );
-            break;
-          case PRCommand.CodeReview:
-            await codeReview(
-              repository,
-              installationAuthentication.token,
-              path,
-              prBranch,
-              repoSettings,
-              existingPr,
-            );
-            break;
-          case PRCommand.FixBuildError:
-            await fixBuildError(
-              repository,
-              installationAuthentication.token,
-              eventName === "pull_request" ? null : event.payload.issue,
-              eventName === "pull_request"
-                ? event.payload.pull_request.body
-                : event.payload.comment.body,
-              path,
-              prBranch,
-              repoSettings,
-              existingPr,
-            );
-            break;
-        }
+        cleanup();
       }
     } catch (error) {
       await addFailedWorkComment(
@@ -337,11 +344,6 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         installationAuthentication.token,
         error as Error,
       );
-    } finally {
-      console.log(
-        `[${repository.full_name}] cleaning up repo cloned to ${path}`,
-      );
-      cleanup();
     }
   } else {
     console.error(

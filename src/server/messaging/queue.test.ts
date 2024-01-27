@@ -118,6 +118,16 @@ const mockedRespondToCodeReview = vi.hoisted(() => ({
 }));
 vi.mock("../code/respondToCodeReview", () => mockedRespondToCodeReview);
 
+const mockedComments = vi.hoisted(() => ({
+  addStartingWorkComment: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  addFailedWorkComment: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+}));
+vi.mock("../github/comments", () => mockedComments);
+
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
@@ -158,9 +168,43 @@ describe("onGitHubEvent", () => {
       payload: issuesOpenedNewFilePayload,
     } as WebhookIssueOpenedEvent);
 
-    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedCheck.runBuildCheck)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedNewFile.createNewFile)).toHaveBeenCalledTimes(1);
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedNewFile.createNewFile).toHaveBeenCalledTimes(1);
+  });
+
+  test("issue opened - when clone repo fails", async () => {
+    server?.use(
+      http.post(
+        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/47/comments",
+        () => HttpResponse.json({}),
+      ),
+    );
+
+    mockedClone.cloneRepo.mockImplementationOnce(
+      () => new Promise((_, reject) => reject(new Error("test error"))),
+    );
+
+    await onGitHubEvent({
+      id: "1",
+      name: "issues",
+      payload: issuesOpenedNewFilePayload,
+    } as WebhookIssueOpenedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedComments.addFailedWorkComment.mock.calls[0][1]).toBe(47);
+    expect(mockedComments.addFailedWorkComment.mock.calls[0][2]).toBe(
+      "fake-token",
+    );
+    expect(
+      mockedComments.addFailedWorkComment.mock.calls[0][3].toString(),
+    ).toBe("Error: test error");
+
+    expect(mockedCheck.runBuildCheck).not.toHaveBeenCalled();
+    expect(mockedNewFile.createNewFile).not.toHaveBeenCalled();
   });
 
   test("issue opened - edit files", async () => {
@@ -177,9 +221,10 @@ describe("onGitHubEvent", () => {
       payload: issuesOpenedEditFilesPayload,
     } as WebhookIssueOpenedEvent);
 
-    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedCheck.runBuildCheck)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedEditFiles.editFiles)).toHaveBeenCalledTimes(1);
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
   });
 
   test("PR comment created - code review command", async () => {
@@ -202,8 +247,9 @@ describe("onGitHubEvent", () => {
       payload: issueCommentCreatedPRCommandCodeReviewPayload,
     } as WebhookPRCommentCreatedEvent);
 
-    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedCodeReview.codeReview)).toHaveBeenCalledTimes(1);
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCodeReview.codeReview).toHaveBeenCalledTimes(1);
   });
 
   test("PR comment created - create story command", async () => {
@@ -226,8 +272,9 @@ describe("onGitHubEvent", () => {
       payload: issueCommentCreatedPRCommandCreateStoryPayload,
     } as WebhookPRCommentCreatedEvent);
 
-    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedCreateStory.createStory)).toHaveBeenCalledTimes(1);
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCreateStory.createStory).toHaveBeenCalledTimes(1);
   });
 
   test("PR comment created - fix build error command", async () => {
@@ -250,10 +297,9 @@ describe("onGitHubEvent", () => {
       payload: issueCommentCreatedPRCommandFixBuildErrorPayload,
     } as WebhookPRCommentCreatedEvent);
 
-    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedFixBuildError.fixBuildError)).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedFixBuildError.fixBuildError).toHaveBeenCalledTimes(1);
   });
 
   test("PR review submitted", async () => {
@@ -276,10 +322,10 @@ describe("onGitHubEvent", () => {
       payload: pullRequestReviewSubmittedPayload,
     } as WebhookPullRequestReviewWithCommentsSubmittedEvent);
 
-    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
-    expect(
-      vi.mocked(mockedRespondToCodeReview.respondToCodeReview),
-    ).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedRespondToCodeReview.respondToCodeReview).toHaveBeenCalledTimes(
+      1,
+    );
   });
 
   test("repo added - one repo", async () => {
@@ -296,7 +342,7 @@ describe("onGitHubEvent", () => {
       payload: installationRepositoriesAddedPayload,
     } as unknown as WebhookInstallationRepositoriesAddedEvent);
 
-    expect(vi.mocked(mockedClone.cloneRepo)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(mockedCheck.runBuildCheck)).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
   });
 });
