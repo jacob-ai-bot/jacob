@@ -193,9 +193,9 @@ export const todayAsString = () => {
 };
 
 export enum PRCommand {
-  FixBuildError = "@jacob fix build error",
-  CreateStory = "@jacob create story",
-  CodeReview = "@jacob code review",
+  FixBuildError = "@jacob-ai-bot fix build error",
+  CreateStory = "@jacob-ai-bot create story",
+  CodeReview = "@jacob-ai-bot code review",
 }
 
 export const PR_COMMAND_VALUES = Object.values(PRCommand);

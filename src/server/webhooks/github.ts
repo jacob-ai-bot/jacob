@@ -44,18 +44,18 @@ ghApp.webhooks.onError(errorHandler);
 ghApp.webhooks.on("issues.opened", async (event) => {
   const { payload } = event;
   const { repository } = payload;
-  // Only add a new issue to the queue if the issue body contains the @jacob mention
+  // Only add a new issue to the queue if the issue body contains the @jacob-ai-bot mention
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} opened event`,
   );
-  if (payload?.issue.body?.includes("@jacob")) {
+  if (payload?.issue.body?.includes("@jacob-ai-bot")) {
     console.log(
-      `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob mention`,
+      `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob-ai-bot mention`,
     );
     publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `[${repository.full_name}] Issue #${payload.issue.number} has no @jacob mention`,
+      `[${repository.full_name}] Issue #${payload.issue.number} has no @jacob-ai-bot mention`,
     );
   }
 });
@@ -77,11 +77,11 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 // ghApp.webhooks.on("issues.edited", async (event) => {
 //   const { payload } = event;
 //   console.log(`Received issue #${payload.issue.number} edited event`);
-//   if (payload?.issue.body?.includes("@jacob")) {
-//     console.log(`Issue #${payload.issue.number} contains @jacob mention`);
+//   if (payload?.issue.body?.includes("@jacob-ai-bot")) {
+//     console.log(`Issue #${payload.issue.number} contains @jacob-ai-bot mention`);
 //     publishGitHubEventToQueue(event);
 //   } else {
-//     console.log(`Issue #${payload.issue.number} has no @jacob mention`);
+//     console.log(`Issue #${payload.issue.number} has no @jacob-ai-bot mention`);
 //   }
 // });
 
@@ -102,7 +102,7 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const appUsername = process.env.GITHUB_APP_USERNAME;
 
   const ottoShouldRespond =
-    payload.review.body?.includes("@jacob") ||
+    payload.review.body?.includes("@jacob-ai-bot") ||
     (appUsername && `${payload.pull_request.user.id}` === appUsername);
 
   if (
@@ -133,17 +133,17 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
     const prCommentCreatedEvent =
       event as WebhookPRCommentCreatedEventWithOctokit;
     console.log(
-      `[${repository.full_name}] Pull request comment body contains @jacob <cmd> mention (PR #${issue.number})`,
+      `[${repository.full_name}] Pull request comment body contains @jacob-ai-bot <cmd> mention (PR #${issue.number})`,
     );
     publishGitHubEventToQueue(prCommentCreatedEvent);
-  } else if (comment.body?.includes("@jacob build")) {
+  } else if (comment.body?.includes("@jacob-ai-bot build")) {
     console.log(
-      `[${repository.full_name}] Issue comment body contains @jacob build mention (Issue #${issue.number})`,
+      `[${repository.full_name}] Issue comment body contains @jacob-ai-bot build mention (Issue #${issue.number})`,
     );
     publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `[${repository.full_name}] Issue comment is not a PR comment or body has no @jacob <cmd> mention (Issue #${issue.number})`,
+      `[${repository.full_name}] Issue comment is not a PR comment or body has no @jacob-ai-bot <cmd> mention (Issue #${issue.number})`,
     );
   }
 });
@@ -157,12 +157,12 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
 
   if (PR_COMMAND_VALUES.some((cmd) => pull_request.body?.includes(cmd))) {
     console.log(
-      `[${repository.full_name}] Pull request body contains @jacob <cmd> mention (PR #${pull_request.number})`,
+      `[${repository.full_name}] Pull request body contains @jacob-ai-bot <cmd> mention (PR #${pull_request.number})`,
     );
     publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `[${repository.full_name}] Pull request body has no @jacob fix <cmd> mention (Issue #${pull_request.number})`,
+      `[${repository.full_name}] Pull request body has no @jacob-ai-bot fix <cmd> mention (Issue #${pull_request.number})`,
     );
   }
 });

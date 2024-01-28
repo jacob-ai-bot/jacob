@@ -203,7 +203,7 @@ describe("checkAndCommit", () => {
       "This PR has been updated with a new commit.\n\n" +
         "## Next Steps\n\n" +
         "I am working to resolve a build error. I will update this PR with my progress.\n" +
-        "@jacob fix build error\n\n" +
+        "@jacob-ai-bot fix build error\n\n" +
         "## Error Message (Attempt Number 2):\n\n" +
         fakeBuildError,
     );
