@@ -18,6 +18,7 @@ import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_req
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
 import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
+import issueCommentCreatedIssueComandBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.build.json";
 import installationRepositoriesAddedPayload from "../../data/test/webhooks/installation_repositories.added.json";
 import {
   onGitHubEvent,
@@ -25,6 +26,7 @@ import {
   type WebhookPRCommentCreatedEvent,
   type WebhookPullRequestReviewWithCommentsSubmittedEvent,
   type WebhookInstallationRepositoriesAddedEvent,
+  WebhookIssueCommentCreatedEvent,
 } from "./queue";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
@@ -128,6 +130,28 @@ const mockedComments = vi.hoisted(() => ({
 }));
 vi.mock("../github/comments", () => mockedComments);
 
+const mockedIssue = vi.hoisted(() => ({
+  addCommentToIssue: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  createRepoInstalledIssue: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+}));
+vi.mock("../github/issue", () => mockedIssue);
+
+const mockedPR = vi.hoisted(() => ({
+  getPR: vi
+    .fn()
+    .mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          resolve({ data: { head: { ref: "test-branch" } } }),
+        ),
+    ),
+}));
+vi.mock("../github/pr", () => mockedPR);
+
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
@@ -155,13 +179,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("issue opened - new file", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/47/comments",
-        () => HttpResponse.json({}),
-      ),
-    );
-
     await onGitHubEvent({
       id: "1",
       name: "issues",
@@ -175,13 +192,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("issue opened - when clone repo fails", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/47/comments",
-        () => HttpResponse.json({}),
-      ),
-    );
-
     mockedClone.cloneRepo.mockImplementationOnce(
       () => new Promise((_, reject) => reject(new Error("test error"))),
     );
@@ -208,13 +218,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("issue opened - edit files", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/49/comments",
-        () => HttpResponse.json({}),
-      ),
-    );
-
     await onGitHubEvent({
       id: "2",
       name: "issues",
@@ -228,19 +231,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("PR comment created - code review command", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
-        () => HttpResponse.json({}),
-      ),
-    );
-    server?.use(
-      http.get(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
-        () => HttpResponse.json({ head: { ref: "test-branch" } }),
-      ),
-    );
-
     await onGitHubEvent({
       id: "3",
       name: "issue_comment",
@@ -253,19 +243,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("PR comment created - create story command", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
-        () => HttpResponse.json({}),
-      ),
-    );
-    server?.use(
-      http.get(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
-        () => HttpResponse.json({ head: { ref: "test-branch" } }),
-      ),
-    );
-
     await onGitHubEvent({
       id: "4",
       name: "issue_comment",
@@ -278,19 +255,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("PR comment created - fix build error command", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
-        () => HttpResponse.json({}),
-      ),
-    );
-    server?.use(
-      http.get(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
-        () => HttpResponse.json({ head: { ref: "test-branch" } }),
-      ),
-    );
-
     await onGitHubEvent({
       id: "5",
       name: "issue_comment",
@@ -303,19 +267,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("PR review submitted", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/issues/48/comments",
-        () => HttpResponse.json({}),
-      ),
-    );
-    server?.use(
-      http.get(
-        "https://api.github.com/repos/PioneerSquareLabs/t3-starter-template/pulls/48",
-        () => HttpResponse.json({ head: { ref: "test-branch" } }),
-      ),
-    );
-
     await onGitHubEvent({
       id: "6",
       name: "pull_request_review",
@@ -329,13 +280,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("repo added - one repo", async () => {
-    server?.use(
-      http.post(
-        "https://api.github.com/repos/PioneerSquareLabs/jacob-setup/issues",
-        () => HttpResponse.json({}),
-      ),
-    );
-
     await onGitHubEvent({
       id: "7",
       name: "installation_repositories",
@@ -344,5 +288,42 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
+  });
+
+  test("issue command - build", async () => {
+    await onGitHubEvent({
+      id: "8",
+      name: "issue_comment",
+      payload: issueCommentCreatedIssueComandBuildPayload,
+    } as WebhookIssueCommentCreatedEvent);
+
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
+  });
+
+  test("issue command - build - handles build failure", async () => {
+    mockedCheck.runBuildCheck.mockImplementationOnce(
+      () => new Promise((_, reject) => reject(new Error("build error"))),
+    );
+
+    await onGitHubEvent({
+      id: "8",
+      name: "issue_comment",
+      payload: issueCommentCreatedIssueComandBuildPayload,
+    } as WebhookIssueCommentCreatedEvent);
+
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
+    expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedComments.addFailedWorkComment.mock.calls[0][1]).toBe(125);
+    expect(mockedComments.addFailedWorkComment.mock.calls[0][2]).toBe(
+      "fake-token",
+    );
+    expect(
+      mockedComments.addFailedWorkComment.mock.calls[0][3].toString(),
+    ).toBe("Error: build error");
   });
 });

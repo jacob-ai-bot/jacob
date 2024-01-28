@@ -11,7 +11,7 @@ interface AddStartingWorkCommentBaseParams {
 
 interface AddStartingWorkCommentIssueOpenedParams {
   task: "issueOpened";
-  issueOpenedNumber: number;
+  issueNumber: number;
 }
 
 interface AddStartingWorkCommentPRReviewParams {
@@ -25,18 +25,33 @@ interface AddStartingWorkCommentPRCommandParams {
   prCommand: PRCommand;
 }
 
+interface AddStartingWorkCommentIssueCommandParams {
+  task: "issueCommand";
+  issueNumber: number;
+}
+
 type AddStartingWorkCommentParams = AddStartingWorkCommentBaseParams &
   (
     | AddStartingWorkCommentIssueOpenedParams
     | AddStartingWorkCommentPRReviewParams
     | AddStartingWorkCommentPRCommandParams
+    | AddStartingWorkCommentIssueCommandParams
   );
 
 export function addStartingWorkComment(options: AddStartingWorkCommentParams) {
   const { repository, token, task } = options;
   switch (task) {
+    case "issueCommand": {
+      const { issueNumber } = options;
+      const message = dedent`
+        JACoB here...
+          
+        I will attempt to build this repository and will comment on this issue once I'm done.
+      `;
+      return addCommentToIssue(repository, issueNumber, token, message);
+    }
     case "issueOpened": {
-      const { issueOpenedNumber } = options;
+      const { issueNumber } = options;
       const message = dedent`
         JACoB here...
           
@@ -44,7 +59,7 @@ export function addStartingWorkComment(options: AddStartingWorkCommentParams) {
           
         I'll continue to comment on this issue with status as I make progress.
       `;
-      return addCommentToIssue(repository, issueOpenedNumber, token, message);
+      return addCommentToIssue(repository, issueNumber, token, message);
     }
     case "prReview": {
       const { prNumber } = options;

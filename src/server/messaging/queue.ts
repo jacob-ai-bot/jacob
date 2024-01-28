@@ -10,6 +10,7 @@ import { runBuildCheck } from "../build/node/check";
 import { createNewFile } from "../code/newFile";
 import { editFiles } from "../code/editFiles";
 import { getPR } from "../github/pr";
+import { addCommentToIssue } from "../github/issue";
 import { fixBuildError } from "../code/fixBuildError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
@@ -180,7 +181,9 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
   if (installationAuthentication) {
     const issueOpened = eventName === "issues";
     const prOpened = eventName === "pull_request";
-    const prComment = eventName === "issue_comment";
+    const prComment =
+      eventName === "issue_comment" && event.payload.issue?.pull_request;
+    const issueComment = eventName === "issue_comment" && !prComment;
     const prReview = eventName === "pull_request_review";
     const eventIssueOrPRNumber =
       eventName === "pull_request" || eventName === "pull_request_review"
@@ -222,9 +225,11 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           }
         : prReview
         ? { task: "prReview", prNumber: eventIssueOrPRNumber }
+        : issueComment
+        ? { task: "issueCommand", issueNumber: eventIssueOrPRNumber }
         : {
             task: "issueOpened",
-            issueOpenedNumber: eventIssueOrPRNumber,
+            issueNumber: eventIssueOrPRNumber,
           }),
     });
 
@@ -276,6 +281,15 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               repoSettings,
             );
           }
+        } else if (issueComment) {
+          // NOTE: The only command we support on issue comments is to run a build check
+          await runBuildCheck(path, repoSettings);
+          await addCommentToIssue(
+            repository,
+            eventIssueOrPRNumber,
+            installationAuthentication.token,
+            "Good news!\n\nThe build was successful! :tada:",
+          );
         } else if (prReview) {
           if (!prBranch || !existingPr) {
             throw new Error("prBranch and existingPr when handling prReview");
@@ -363,6 +377,13 @@ export type WebhookIssueOpenedEvent = EmitterWebhookEvent<"issues"> & {
   };
 };
 
+export type WebhookIssueCommentCreatedEvent =
+  EmitterWebhookEvent<"issue_comment"> & {
+    payload: {
+      action: "created";
+    };
+  };
+
 type WebhookIssueCommentPullRequest =
   EmitterWebhookEvent<"issue_comment">["payload"]["issue"]["pull_request"];
 
@@ -401,6 +422,7 @@ export type WebhookInstallationRepositoriesAddedEvent =
 
 export type WebhookQueuedEvent =
   | WebhookIssueOpenedEvent
+  | WebhookIssueCommentCreatedEvent
   | WebhookPRCommentCreatedEvent
   | WebhookPullRequestOpenedEvent
   | WebhookPullRequestReviewWithCommentsSubmittedEvent

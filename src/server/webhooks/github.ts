@@ -135,8 +135,12 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
     console.log(
       `[${repository.full_name}] Pull request comment body contains @jacob <cmd> mention (PR #${issue.number})`,
     );
-    console.log(event);
     publishGitHubEventToQueue(prCommentCreatedEvent);
+  } else if (comment.body?.includes("@jacob build")) {
+    console.log(
+      `[${repository.full_name}] Issue comment body contains @jacob build mention (Issue #${issue.number})`,
+    );
+    publishGitHubEventToQueue(event);
   } else {
     console.log(
       `[${repository.full_name}] Issue comment is not a PR comment or body has no @jacob <cmd> mention (Issue #${issue.number})`,
