@@ -156,7 +156,7 @@ describe("codeReview", () => {
 
         major issues
 
-        I also found a few minor issues that I'll try to address as well:
+        I also found a few minor issues:
 
         minor issues
 

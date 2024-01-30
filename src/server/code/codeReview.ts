@@ -103,7 +103,7 @@ export async function codeReview(
   } else {
     const minorIssues = codeReview.minorIssues
       ? dedent`\n
-          I also found a few minor issues that I'll try to address as well:
+          I also found a few minor issues:
 
           ${codeReview.minorIssues}
         `
