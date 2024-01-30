@@ -9,8 +9,10 @@ import { sendGptRequestWithSchema } from "../openai/request";
 import { getIssue } from "../github/issue";
 import { concatenatePRFiles, createPRReview } from "../github/pr";
 
-type PullRequest =
+export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
+type Issue =
+  Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 
 export const CodeReviewSchema = z.object({
   majorIssues: z.string().optional().nullable(), // A *very* detailed code review. Include major issues here such as bugs, incorrect imports or file names, missing functionality such as click handlers, or functions with the functionality commented out. Do not include minor issues here. If there are no major issues, do not include this key.
@@ -31,11 +33,15 @@ export async function codeReview(
   const regex = /jacob-issue-(\d+)-.*/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
-  const result = await getIssue(repository, token, issueNumber);
-  console.log(
-    `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
-  );
-  const issue = result.data;
+  let issue: Issue | undefined;
+  try {
+    const result = await getIssue(repository, token, issueNumber);
+    issue = result.data;
+    console.log(
+      `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+    );
+    // eslint-disable-next-line no-empty
+  } catch (e) {}
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
@@ -53,7 +59,11 @@ export async function codeReview(
     types,
     images,
     code,
-    issueText: issue.body ?? "",
+    issueText: issue?.body ?? "",
+    issueHeading: issue?.body ? "-- GitHub Issue:" : "",
+    issueInstruction: issue?.body
+      ? "Your job is to review a GitHub issue and the code written to address the issue."
+      : "",
   };
 
   const codeReviewSystemPrompt = parseTemplate(
