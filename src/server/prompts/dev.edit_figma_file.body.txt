@@ -4,7 +4,7 @@ The design was converted into JSX. Here is what was provided:
 ${code}
 
 - @jacob-ai-bot Here are your instructions for updating the codebase:
-1. Use the details in the code above to update the file. Note that the code is not guaranteed to be perfect, so you may need to make some adjustments. Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.
+1. Use the details in the code above to update the file. Note that the code is not guaranteed to be perfect, so you may need to make some adjustments. ${tailwindInstructions}
 2. The code above is from the design team and will likely have placeholder text. Find the places where the placeholder text will need to be replaced by the real data from the code.
 3. There may be some data or features that are shown in the designs that are not in the existing code. These are likely new features that need to be added but they might just be from the design and not needed.
 4. Do your best to make the code match the design as closely as possible. Bias towards using flexbox and other modern TailwindCSS features vs hardcoding widths or heights.

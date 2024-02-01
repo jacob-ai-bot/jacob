@@ -11,6 +11,29 @@ import { createMocks } from "node-mocks-http";
 
 import { newIssueForFigmaFile } from "./figma";
 
+const mockedOctokitAuthApp = vi.hoisted(() => ({
+  createAppAuth: vi
+    .fn()
+    .mockImplementation(() =>
+      vi
+        .fn()
+        .mockImplementation(
+          () => new Promise((resolve) => resolve({ token: "fake-token" })),
+        ),
+    ),
+}));
+vi.mock("@octokit/auth-app", () => mockedOctokitAuthApp);
+
+const mockedRepo = vi.hoisted(() => ({
+  getFile: vi
+    .fn()
+    .mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => reject(new Error("File not found"))),
+    ),
+}));
+vi.mock("../github/repo", () => mockedRepo);
+
 const mockedCheckToken = vi.hoisted(() =>
   vi.fn().mockImplementation(
     () =>
@@ -203,7 +226,48 @@ describe("newIssueForFigmaFile", () => {
     expect(createIssueOptions.body).toContain(
       "- @jacob-ai-bot Here are your instructions for creating the new file:",
     );
+    expect(createIssueOptions.body).toContain(
+      "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
+    );
     expect(createIssueOptions.body).toContain("code-converted-from-figma-map");
     expect(createIssueOptions.body).toContain("test-additional-instructions");
+  });
+
+  test("new with jason.config set to Style.CSS", async () => {
+    mockedRepo.getFile.mockImplementationOnce(
+      () =>
+        new Promise((resolve) =>
+          resolve({
+            data: {
+              type: "file",
+              content: btoa(JSON.stringify({ style: "CSS" })),
+            },
+          }),
+        ),
+    );
+
+    const { req, res } = createMocks({
+      params: { verb: "new" },
+      body: {
+        figmaMap: "test-figma-map",
+        fileName: "test-filename.tsx",
+        additionalInstructions: "test-additional-instructions",
+        repo: {
+          name: "test-repo",
+          full_name: "test-login/test-repo",
+          owner: { login: "test-login" },
+        },
+      },
+    });
+
+    await newIssueForFigmaFile(req, res);
+
+    expect(res.statusCode).toBe(200);
+
+    expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    expect(createIssueOptions.body).not.toContain(
+      "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
+    );
   });
 });

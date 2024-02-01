@@ -8,7 +8,7 @@ ${code}
 - @jacob-ai-bot Here are your instructions for creating the new file:
 1. Create a new file with the name ${fileName}.
 2. Copy the code above into the new file.
-3. Write additional code as needed to create the complete, working component or file. Note that the code is not guaranteed to be perfect, so you may need to make some adjustments. Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.
+3. Write additional code as needed to create the complete, working component or file. Note that the code is not guaranteed to be perfect, so you may need to make some adjustments. ${tailwindInstructions}
 4. The code above is from the design team and will likely have placeholder text. Find the places where the placeholder text will need to be replaced by the real data from the code.
 5. Be sure to create any functions or other code that is needed to make the component work.
 6. Do your best to make the code match the design as closely as possible. Bias towards using flexbox and other modern TailwindCSS features vs hardcoding widths or heights.

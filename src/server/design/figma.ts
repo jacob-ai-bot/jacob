@@ -4,8 +4,10 @@ import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Endpoints } from "@octokit/types";
 
-import { parseTemplate } from "../utils";
+import { RepoSettings, parseTemplate } from "../utils";
 import { sendGptRequest } from "../openai/request";
+import { getFile } from "../github/repo";
+import { Style } from "../utils/settings";
 
 type GetUserReposResponse = Endpoints["GET /user/repos"]["response"]["data"];
 type GitHubRepo = GetUserReposResponse[0];
@@ -28,6 +30,11 @@ const octokitApp = new Octokit({
   },
   log: console,
   userAgent: "jacob",
+});
+
+const auth = createAppAuth({
+  appId: process.env.GITHUB_APP_ID ?? "",
+  privateKey: process.env.GITHUB_PRIVATE_KEY ?? "",
 });
 
 export const newIssueForFigmaFile = async (req: Request, res: Response) => {
@@ -103,20 +110,6 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       0.5,
     )) as string;
 
-    const issueTemplateParams = {
-      fileName,
-      code,
-      additionalInstructions: additionalInstructions
-        ? `Here are some important additional instructions from the product owner. You MUST follow these instructions, even if it means adjusting the JSX code provided above: \n ${additionalInstructions}`
-        : "",
-    };
-    const body = parseTemplate(
-      "dev",
-      verb === "new" ? "new_figma_file" : "edit_figma_file",
-      "body",
-      issueTemplateParams,
-    );
-
     const { status: installationStatus, data: installationData } =
       await octokitApp.rest.apps.getRepoInstallation({
         owner: repo.owner.login,
@@ -137,6 +130,51 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       log: console,
       userAgent: "jacob",
     });
+
+    const installationAuthentication = await auth({
+      type: "installation",
+      installationId: installationData.id,
+    });
+
+    let repoSettings: RepoSettings | undefined;
+    try {
+      const { data } = await getFile(
+        {
+          ...repo,
+          owner: {
+            ...repo.owner,
+            name: repo.owner?.name ?? undefined,
+            gravatar_id: repo.owner?.gravatar_id ?? "",
+            type: repo.owner?.type as "Bot" | "User" | "Organization",
+          },
+        },
+        installationAuthentication.token,
+        "jacob.json",
+      );
+      if (!(data instanceof Array) && data.type === "file") {
+        repoSettings = JSON.parse(atob(data.content));
+      }
+    } catch (e) {
+      /* empty */
+    }
+
+    const issueTemplateParams = {
+      fileName,
+      code,
+      tailwindInstructions:
+        repoSettings?.style === Style.CSS
+          ? ""
+          : "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
+      additionalInstructions: additionalInstructions
+        ? `Here are some important additional instructions from the product owner. You MUST follow these instructions, even if it means adjusting the JSX code provided above: \n ${additionalInstructions}`
+        : "",
+    };
+    const body = parseTemplate(
+      "dev",
+      verb === "new" ? "new_figma_file" : "edit_figma_file",
+      "body",
+      issueTemplateParams,
+    );
 
     const { status: issueStatus, data: issueData } =
       await octokitAppInstallation.rest.issues.create({
