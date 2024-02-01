@@ -8,6 +8,7 @@ import {
 import { newIssueForFigmaFile } from "./design/figma";
 import express from "express";
 import cors from "cors";
+import { uploadSnapshot } from "./image/upload";
 
 const port = process.env["PORT"] ?? 4000;
 
@@ -22,6 +23,7 @@ app.get("/api/auth/accessToken/:readKey", getAccessToken);
 app.post("/api/auth/accessToken/:writeKey", express.json(), postAccessToken);
 app.options("/api/design/:verb", cors());
 app.post("/api/design/:verb", cors(), express.json(), newIssueForFigmaFile);
+app.post("/api/image/upload", express.json(), uploadSnapshot);
 
 setupGitHubWebhook(app);
 
