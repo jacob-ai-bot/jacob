@@ -7,6 +7,7 @@ ${figmaMap}
 === END FigML ===
 
 ${additionalInstructions}
+${snapshotInstructions}
 
 Write the JSX code for the FigML file.
 This JSX code will be used in a React functional component.

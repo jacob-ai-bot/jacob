@@ -7,7 +7,7 @@ import {
   ZodSchema,
 } from "zod";
 import { parse } from "jsonc-parser";
-import { removeMarkdownCodeblocks } from "../utils";
+import { parseTemplate, removeMarkdownCodeblocks } from "../utils";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -69,11 +69,11 @@ export const sendGptRequest = async (
   temperature = 0.2,
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
+  imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
+  model: Model = "gpt-4-turbo-preview",
 ): Promise<string | null> => {
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
-
-  const model = "gpt-4-turbo-preview";
 
   try {
     const max_tokens = await getMaxTokensForResponse(
@@ -81,14 +81,20 @@ export const sendGptRequest = async (
       model,
     );
 
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ] as OpenAI.Chat.ChatCompletionMessageParam[];
+
+    if (imagePrompt) {
+      messages.unshift(imagePrompt);
+    }
+
     console.log(`\n +++ Calling ${model} with max_tokens: ${max_tokens} `);
     const startTime = Date.now();
     const response = await openai.chat.completions.create({
       model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      messages,
       max_tokens,
       temperature,
     });
@@ -207,4 +213,48 @@ export const sendGptRequestWithSchema = async (
   }
 
   throw new Error(`Max retries exceeded for GPT request: ${userPrompt}`);
+};
+
+export const sendGptVisionRequest = async (
+  userPrompt: string,
+  systemPrompt = "You are a helpful assistant.",
+  snapshotUrl: string = "",
+  temperature = 0.2,
+  retries = 10,
+  delay = 60000,
+): Promise<string | null> => {
+  let model: Model = "gpt-4-turbo-preview";
+  let imagePrompt = null;
+  if (snapshotUrl?.length > 0) {
+    model = "gpt-4-vision-preview";
+
+    const prompt = parseTemplate("dev", "vision", "user", {});
+
+    imagePrompt = {
+      role: "user",
+      content: [
+        {
+          type: "image_url",
+          image_url: {
+            url: snapshotUrl,
+            detail: "high",
+          },
+        },
+        {
+          type: "text",
+          text: prompt,
+        },
+      ],
+    } as OpenAI.Chat.ChatCompletionMessageParam;
+  }
+
+  return sendGptRequest(
+    userPrompt,
+    systemPrompt,
+    temperature,
+    retries,
+    delay,
+    imagePrompt,
+    model,
+  );
 };

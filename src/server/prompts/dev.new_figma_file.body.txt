@@ -25,3 +25,4 @@ const element = <FontAwesomeIcon icon={faEnvelope} />
 10. IMPORTANT: The design team did not wire up any of the buttons or links, they assigned that critical task to you. You MUST implement the code to handle the click events.
 
 ${additionalInstructions}
+${snapshotUrl}

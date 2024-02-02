@@ -23,7 +23,7 @@ app.get("/api/auth/accessToken/:readKey", getAccessToken);
 app.post("/api/auth/accessToken/:writeKey", express.json(), postAccessToken);
 app.options("/api/design/:verb", cors());
 app.post("/api/design/:verb", cors(), express.json(), newIssueForFigmaFile);
-app.post("/api/image/upload", express.json(), uploadSnapshot);
+app.post("/api/image/upload", cors(), express.json(), uploadSnapshot);
 
 setupGitHubWebhook(app);
 
