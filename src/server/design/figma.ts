@@ -177,7 +177,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         ? `Here are some important additional instructions from the product owner. You MUST follow these instructions, even if it means adjusting the JSX code provided above: \n ${additionalInstructions}`
         : "",
       snapshotUrl: snapshotUrl
-        ? `Here is a temporary snapshot of your design. It will expire in 60 minutes for security purposes. ![snapshot](${snapshotUrl})`
+        ? `Here is a temporary snapshot of your design. It will expire in 60 minutes for security purposes. \`\`\`![snapshot](${snapshotUrl})\`\`\``
         : "",
     };
     const body = parseTemplate(
