@@ -33,7 +33,7 @@ Line 8: The actual content of the text node "Sign In" is the string "Sign In."
 Line 9: A vector node named "Right Arrow" is present within "Frame 899" at coordinates (650, 440), with a width of 40px, a height of 40px, and a solid black border.
 This FigML file defines a hierarchical structure with multiple layers, starting from the main container "Frame 899," which includes another frame "Frame 898," a text node for displaying business requirements, a logo image, a sign-in button with associated text, and a vector representing a right arrow.
 
-The user will give you the FigML file and optionally some instructions about the code that should be written, and you MUST respond ONLY with the code using ONLY valid TailwindCSS classes. Instructions:
+The user will give you the FigML file and optionally a snapshot image of the design and some instructions about the code that should be written, and you MUST respond ONLY with the code using ONLY valid TailwindCSS classes. Instructions:
 
 - ONLY respond with the JSX. Do not include backticks or any comments. This output will be rendered directly by React and anything other than valid JSX will throw a serious error in the application!
 - The name of the component should EXACTLY match the name and casing of the file. For example, if the file is "src/components/LoginButton.tsx", then the component should be named "LoginButton".

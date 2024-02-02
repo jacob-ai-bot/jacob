@@ -73,12 +73,14 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       return;
     }
 
-    const { repo, fileName, figmaMap, additionalInstructions } = req.body as {
-      figmaMap?: string;
-      fileName?: string;
-      additionalInstructions?: string;
-      repo?: GitHubRepo;
-    };
+    const { repo, fileName, figmaMap, additionalInstructions, snapshotUrl } =
+      req.body as {
+        figmaMap?: string;
+        fileName?: string;
+        additionalInstructions?: string;
+        repo?: GitHubRepo;
+        snapshotUrl?: string;
+      };
 
     if (!figmaMap || !fileName || !repo) {
       res.status(400).send("Missing required parameters");
@@ -90,6 +92,9 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       additionalInstructions: additionalInstructions
         ? `Here are some additional instructions: ${additionalInstructions}`
         : "",
+      snapshotUrl: snapshotUrl
+        ? "The attached image is a snapshot of the Figma design. Use a combination of the FigML file and the image to produce a pixel-perfect reproduction of this design."
+        : "",
     };
 
     const systemPrompt = parseTemplate(
@@ -98,6 +103,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       "system",
       codeTemplateParams,
     );
+
     const userPrompt = parseTemplate(
       "dev",
       "new_figma_file",

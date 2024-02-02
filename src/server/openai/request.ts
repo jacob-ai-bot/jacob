@@ -63,17 +63,38 @@ export const getMaxTokensForResponse = async (
   }
 };
 
+export const sendGptVisionRequest = async (
+  userPrompt: string,
+  systemPrompt = "You are a helpful assistant.",
+  snapshotUrl: string = "",
+  temperature = 0.2,
+  retries = 10,
+  delay = 60000,
+): Promise<string | null> => {
+  const model =
+    snapshotUrl?.length > 0 ? "gpt-4-vision-preview" : "gpt-4-turbo-preview";
+  return sendGptRequest(
+    userPrompt,
+    systemPrompt,
+    temperature,
+    retries,
+    delay,
+    snapshotUrl,
+    model,
+  );
+};
+
 export const sendGptRequest = async (
   userPrompt: string,
   systemPrompt = "You are a helpful assistant.",
   temperature = 0.2,
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
+  snapshotUrl: string = "",
+  model: Model = "gpt-4-turbo-preview",
 ): Promise<string | null> => {
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
-
-  const model = "gpt-4-turbo-preview";
 
   try {
     const max_tokens = await getMaxTokensForResponse(
