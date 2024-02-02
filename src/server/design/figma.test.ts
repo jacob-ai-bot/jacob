@@ -91,6 +91,11 @@ const mockedRequest = vi.hoisted(() => ({
     .mockImplementation(
       () => new Promise((resolve) => resolve("code-converted-from-figma-map")),
     ),
+  sendGptVisionRequest: vi
+    .fn()
+    .mockImplementation(
+      () => new Promise((resolve) => resolve("code-converted-from-figma-map")),
+    ),
 }));
 vi.mock("../openai/request", () => mockedRequest);
 
@@ -125,6 +130,7 @@ describe("newIssueForFigmaFile", () => {
         figmaMap: "test-figma-map",
         fileName: "test-filename.tsx",
         additionalInstructions: "test-additional-instructions",
+        snapshotUrl: "https://example.com/snapshot.png",
         repo: {
           name: "test-repo",
           full_name: "test-login/test-repo",
@@ -137,17 +143,20 @@ describe("newIssueForFigmaFile", () => {
 
     expect(res.statusCode).toBe(200);
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
       "=== START FigML ===\ntest-figma-map\n=== END FigML ===\n",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
       "test-additional-instructions",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
       "Your job is to take a representation of a Figma design and convert it into JSX to be used in a React functional component.",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0][2]).toBe(0.5);
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toContain(
+      "https://example.com/snapshot.png",
+    );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][3]).toBe(0.5);
 
     expect(mockedGetRepoInstallation).toHaveBeenCalledOnce();
     expect(mockedOctokitRest.Octokit).toHaveBeenCalledOnce();
@@ -190,6 +199,7 @@ describe("newIssueForFigmaFile", () => {
           full_name: "test-login/test-repo",
           owner: { login: "test-login" },
         },
+        snapshotUrl: "https://example.com/snapshot.png",
       },
     });
 
@@ -197,17 +207,20 @@ describe("newIssueForFigmaFile", () => {
 
     expect(res.statusCode).toBe(200);
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
       "=== START FigML ===\ntest-figma-map\n=== END FigML ===\n",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
       "test-additional-instructions",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
       "Your job is to take a representation of a Figma design and convert it into JSX to be used in a React functional component.",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0][2]).toBe(0.5);
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toContain(
+      "https://example.com/snapshot.png",
+    );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][3]).toBe(0.5);
 
     expect(mockedGetRepoInstallation).toHaveBeenCalledOnce();
     expect(mockedOctokitRest.Octokit).toHaveBeenCalledOnce();
@@ -252,6 +265,7 @@ describe("newIssueForFigmaFile", () => {
         figmaMap: "test-figma-map",
         fileName: "test-filename.tsx",
         additionalInstructions: "test-additional-instructions",
+        snapshotUrl: "https://example.com/snapshot.png",
         repo: {
           name: "test-repo",
           full_name: "test-login/test-repo",

@@ -5,7 +5,7 @@ import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Endpoints } from "@octokit/types";
 
 import { RepoSettings, parseTemplate } from "../utils";
-import { sendGptRequest } from "../openai/request";
+import { sendGptVisionRequest } from "../openai/request";
 import { getFile } from "../github/repo";
 import { Style } from "../utils/settings";
 
@@ -92,7 +92,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       additionalInstructions: additionalInstructions
         ? `Here are some additional instructions: ${additionalInstructions}`
         : "",
-      snapshotUrl: snapshotUrl
+      snapshotInstructions: snapshotUrl
         ? "The attached image is a snapshot of the Figma design. Use a combination of the FigML file and the image to produce a pixel-perfect reproduction of this design."
         : "",
     };
@@ -110,9 +110,11 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       "user",
       codeTemplateParams,
     );
-    const code = (await sendGptRequest(
+
+    const code = (await sendGptVisionRequest(
       userPrompt,
       systemPrompt,
+      snapshotUrl,
       0.5,
     )) as string;
 
@@ -173,6 +175,9 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
           : "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
       additionalInstructions: additionalInstructions
         ? `Here are some important additional instructions from the product owner. You MUST follow these instructions, even if it means adjusting the JSX code provided above: \n ${additionalInstructions}`
+        : "",
+      snapshotUrl: snapshotUrl
+        ? `Here is a temporary snapshot of your design. It will expire in 60 minutes for security purposes. ![snapshot](${snapshotUrl})`
         : "",
     };
     const body = parseTemplate(
