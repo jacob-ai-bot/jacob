@@ -15,7 +15,7 @@ const port = process.env["PORT"] ?? 4000;
 // set up the server
 export const app = express();
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ limit: "10mb" }));
+// app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/auth/github/callback", gitHubOAuthCallback);
 
