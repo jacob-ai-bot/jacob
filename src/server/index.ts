@@ -15,18 +15,20 @@ const port = process.env["PORT"] ?? 4000;
 // set up the server
 export const app = express();
 app.use(express.urlencoded({ extended: true }));
-// app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/auth/github/callback", gitHubOAuthCallback);
-
 app.post("/api/auth/accessToken/", createAccessTokenKeys);
 app.get("/api/auth/accessToken/:readKey", getAccessToken);
 app.post("/api/auth/accessToken/:writeKey", express.json(), postAccessToken);
 app.options("/api/design/:verb", cors());
 app.post("/api/design/:verb", cors(), express.json(), newIssueForFigmaFile);
 app.options("/api/image/upload", cors());
-app.post("/api/image/upload", cors(), express.json(), uploadSnapshot);
-
+app.post(
+  "/api/image/upload",
+  cors(),
+  express.json({ limit: "10mb" }),
+  uploadSnapshot,
+);
 setupGitHubWebhook(app);
 
 if (!process.env["VITE"]) {
