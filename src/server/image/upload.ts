@@ -28,10 +28,7 @@ export async function uploadSnapshot(req: Request, res: Response) {
   }
 }
 
-const uploadToS3 = async (image: string, imageType: IMAGE_TYPE) => {
-  // Remove the data URL prefix if present
-  const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
-  const buffer = Buffer.from(base64Data, "base64");
+const uploadToS3 = async (buffer: Buffer, imageType: IMAGE_TYPE) => {
   const key = `uploads/${Date.now()}.png`;
 
   // Upload to S3
@@ -55,8 +52,12 @@ const uploadToS3 = async (image: string, imageType: IMAGE_TYPE) => {
 };
 
 // Resize the image to optimize them for cost and performance as per OpenAI's vision API requirements (https://platform.openai.com/docs/guides/vision)
-// Images are first scaled to fit within a 2048 x 2048 square, maintaining their aspect ratio. Then, they are scaled such that the shortest side of the image is 768px long.
-const resizeImage = async (image: string, imageType: IMAGE_TYPE) => {
+// Images are first scaled to fit within a 2048 x 2048 square, maintaining their aspect ratio.
+// Then, they are scaled such that the shortest side of the image is 768px long, while the longest side must be less than 2000px.
+const resizeImage = async (
+  image: string,
+  imageType: IMAGE_TYPE,
+): Promise<Buffer> => {
   try {
     const jimpImageType =
       imageType === IMAGE_TYPE.JPEG ? Jimp.MIME_JPEG : Jimp.MIME_PNG;
@@ -81,11 +82,22 @@ const resizeImage = async (image: string, imageType: IMAGE_TYPE) => {
       imageJimp.resize(Jimp.AUTO, 768);
     }
 
-    const imageResized = await imageJimp.getBase64Async(jimpImageType);
+    // make sure that the largest side is less than 2000px
+    width = imageJimp.getWidth();
+    height = imageJimp.getHeight();
+    if (width > 2000 || height > 2000) {
+      if (width > height) {
+        imageJimp.resize(2000, Jimp.AUTO);
+      } else {
+        imageJimp.resize(Jimp.AUTO, 2000);
+      }
+    }
+
+    const imageResized = await imageJimp.getBufferAsync(jimpImageType);
 
     return imageResized;
   } catch (error) {
     console.log("error resizing image", error);
-    return image;
+    return Buffer.from(image, "base64");
   }
 };
