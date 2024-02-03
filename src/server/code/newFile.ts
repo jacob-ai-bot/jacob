@@ -5,8 +5,9 @@ import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
   RepoSettings,
+  getSnapshotUrl,
 } from "../utils";
-import { sendGptRequest } from "../openai/request";
+import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveNewFile } from "../utils/files";
@@ -19,6 +20,7 @@ export async function createNewFile(
   rootPath: string,
   repoSettings?: RepoSettings,
 ) {
+  const snapshotUrl = getSnapshotUrl(issue.body);
   const planTemplateParams = {
     newFileName,
     issueBody: issue.body ?? "",
@@ -36,9 +38,10 @@ export async function createNewFile(
     "user",
     planTemplateParams,
   );
-  const plan = (await sendGptRequest(
+  const plan = (await sendGptVisionRequest(
     planUserPrompt,
     planSystemPrompt,
+    snapshotUrl,
     0.2,
   )) as string;
 
@@ -52,6 +55,7 @@ export async function createNewFile(
     sourceMap,
     types,
     images,
+    snapshotUrl: snapshotUrl ?? "",
   };
 
   const codeSystemPrompt = constructNewOrEditSystemPrompt(
@@ -65,9 +69,10 @@ export async function createNewFile(
     "user",
     codeTemplateParams,
   );
-  const code = (await sendGptRequest(
+  const code = (await sendGptVisionRequest(
     codeUserPrompt,
     codeSystemPrompt,
+    snapshotUrl,
     0.2,
   )) as string;
 

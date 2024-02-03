@@ -7,9 +7,13 @@ import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
   RepoSettings,
+  getSnapshotUrl,
 } from "../utils";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
-import { sendGptRequest, sendGptRequestWithSchema } from "../openai/request";
+import {
+  sendGptRequestWithSchema,
+  sendGptVisionRequest,
+} from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 
@@ -51,6 +55,7 @@ export async function editFiles(
   rootPath: string,
   repoSettings?: RepoSettings,
 ) {
+  const snapshotUrl = getSnapshotUrl(issue.body);
   const projectFiles = await traverseCodebase(rootPath);
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ?? "";
@@ -103,6 +108,7 @@ export async function editFiles(
     code,
     issueBody,
     plan: extractedIssue.stepsToAddressIssue ?? "",
+    snapshotUrl: snapshotUrl ?? "",
   };
 
   const codeSystemPrompt = constructNewOrEditSystemPrompt(
@@ -118,9 +124,10 @@ export async function editFiles(
   );
 
   // Call sendGptRequest with the issue and concatenated code file
-  const updatedCode = (await sendGptRequest(
+  const updatedCode = (await sendGptVisionRequest(
     codeUserPrompt,
     codeSystemPrompt,
+    snapshotUrl,
     0.2,
   )) as string;
 
