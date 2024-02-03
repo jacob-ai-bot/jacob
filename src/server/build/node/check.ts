@@ -33,7 +33,7 @@ export async function runBuildCheck(
   };
   const {
     installCommand = "npm install",
-    buildCommand = "npm run build --verbose",
+    buildCommand = "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
   } = repoSettings ?? {};
 
   await executeWithLogRequiringSuccess(path, installCommand, { env });

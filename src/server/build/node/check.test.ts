@@ -46,21 +46,25 @@ describe("runBuildCheck and runNpmInstall", () => {
     });
     expect(
       mockedExecute.executeWithLogRequiringSuccess,
-    ).toHaveBeenLastCalledWith(".", "npm run build --verbose", {
-      env: {
-        DATABASE_URL: "file:./db.sqlite",
-        EMAIL_FROM: "EMAIL_FROM",
-        EMAIL_SERVER_HOST: "EMAIL_SERVER_HOST",
-        EMAIL_SERVER_PASSWORD: "EMAIL_SERVER_PASSWORD",
-        EMAIL_SERVER_PORT: "EMAIL_SERVER_PORT",
-        EMAIL_SERVER_USER: "EMAIL_SERVER_USER",
-        GITHUB_ID: "GITHUB_ID",
-        GITHUB_SECRET: "GITHUB_SECRET",
-        NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
-        NEXTAUTH_URL: "http://localhost:3000",
-        NODE_ENV: "",
+    ).toHaveBeenLastCalledWith(
+      ".",
+      "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+      {
+        env: {
+          DATABASE_URL: "file:./db.sqlite",
+          EMAIL_FROM: "EMAIL_FROM",
+          EMAIL_SERVER_HOST: "EMAIL_SERVER_HOST",
+          EMAIL_SERVER_PASSWORD: "EMAIL_SERVER_PASSWORD",
+          EMAIL_SERVER_PORT: "EMAIL_SERVER_PORT",
+          EMAIL_SERVER_USER: "EMAIL_SERVER_USER",
+          GITHUB_ID: "GITHUB_ID",
+          GITHUB_SECRET: "GITHUB_SECRET",
+          NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
+          NEXTAUTH_URL: "http://localhost:3000",
+          NODE_ENV: "",
+        },
       },
-    });
+    );
   });
 
   test("runBuildCheck uses env from settings", async () => {
@@ -75,7 +79,11 @@ describe("runBuildCheck and runNpmInstall", () => {
     ).toHaveBeenNthCalledWith(1, ".", "npm install", { env: {} });
     expect(
       mockedExecute.executeWithLogRequiringSuccess,
-    ).toHaveBeenLastCalledWith(".", "npm run build --verbose", { env: {} });
+    ).toHaveBeenLastCalledWith(
+      ".",
+      "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+      { env: {} },
+    );
   });
 
   test("runBuildCheck uses installCommand and buildCommand from settings", async () => {
