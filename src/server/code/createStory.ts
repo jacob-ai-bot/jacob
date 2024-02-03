@@ -12,8 +12,9 @@ import {
   parseTemplate,
   todayAsString,
   RepoSettings,
+  getSnapshotUrl,
 } from "../utils";
-import { sendGptRequest } from "../openai/request";
+import { sendGptVisionRequest } from "../openai/request";
 import { saveNewFile } from "../utils/files";
 
 type PullRequest =
@@ -163,6 +164,7 @@ export async function createStory(
     componentCode,
     todayAsString: todayAsString(),
   };
+  const snapshotUrl = getSnapshotUrl(issue.body);
 
   const planSystemPrompt = parseTemplate(
     "dev",
@@ -176,9 +178,10 @@ export async function createStory(
     "user",
     storyTemplateParams,
   );
-  const storybookCode = (await sendGptRequest(
+  const storybookCode = (await sendGptVisionRequest(
     planUserPrompt,
     planSystemPrompt,
+    snapshotUrl,
     0.2,
   )) as string;
 

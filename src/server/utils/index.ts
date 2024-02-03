@@ -112,13 +112,23 @@ export function constructNewOrEditSystemPrompt(
     repoSettings?.style === Style.CSS ? "css" : "tailwind",
     templateParams,
   );
+  let snapshotInstructions = "";
+  if (templateParams.snapshotUrl) {
+    snapshotInstructions = parseTemplate(
+      "dev",
+      "code_new_or_edit",
+      "snapshot",
+      templateParams,
+    );
+  }
   return dedent`
       ${baseSystemPrompt}
       ${specificInstructions}
       ${instructionsDefault}
       ${instructionsLanguage}
       ${instructionsStyle}
-    `;
+      ${snapshotInstructions}
+    `.trim();
 }
 
 const execAsync = promisify(exec);
@@ -221,4 +231,16 @@ export function removeMarkdownCodeblocks(text: string) {
       .filter((line) => !line.match(/^\s*```/))
       .join("\n")
   );
+}
+
+// The snapshot url of a Figma design might be found in the issue body. If so, we want to extract it.
+// Here is the specific format that a snapshot url will be in:  \`\`\`![snapshot](${snapshotUrl})\`\`\``
+// This function will extract the snapshotUrl from the issue body
+export function getSnapshotUrl(
+  issueBody: string | null | undefined,
+): string | undefined {
+  if (!issueBody) return undefined;
+  const regex = /\[snapshot\]\((.+)\)/;
+  const match = issueBody.match(regex);
+  return match ? match[1]?.trim() : undefined;
 }
