@@ -322,7 +322,7 @@ describe("getSnapshotUrl", () => {
     expect(getSnapshotUrl(issueBody)).toEqual(expectedOutput);
   });
 
-  it("should return null if the issue body doesn't contain a snapshot url", () => {
+  it("should return undefined if the issue body doesn't contain a snapshot url", () => {
     const issueBody = "This issue doesn't contain a snapshot url";
     expect(getSnapshotUrl(issueBody)).toEqual(undefined);
   });
