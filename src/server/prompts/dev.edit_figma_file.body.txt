@@ -1,7 +1,9 @@
 A new design has been added to Figma for the file ${fileName}.
 The design was converted into JSX. Here is what was provided:
 
+```
 ${code}
+```
 
 - @jacob-ai-bot Here are your instructions for updating the codebase:
 1. Use the details in the code above to update the file. Note that the code is not guaranteed to be perfect, so you may need to make some adjustments. ${tailwindInstructions}
@@ -9,11 +11,9 @@ ${code}
 3. There may be some data or features that are shown in the designs that are not in the existing code. These are likely new features that need to be added but they might just be from the design and not needed.
 4. Do your best to make the code match the design as closely as possible. Bias towards using flexbox ${tailwindBiasInstructions} vs hardcoding widths or heights.
 5. There may be icons or images in the design. These will need to be replaced with the real icons or images.
-6. You can use the FontAwesome icon kit to add icons. Here is some example code of how to use it:
+6. You can use the ${iconSet} icon kit to add icons. Here is some example code of how to use it:
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
-const element = <FontAwesomeIcon icon={faEnvelope} />
+${iconSetExample}
 
 9. For images, the figma code will likely list the image name. This image has already been saved to the public folder. You must use that image as the source for the image tag. <img src="[image name]" />
 10. IMPORTANT: The design team did not wire up any of the buttons or links, they assigned that critical task to you. You MUST implement the code to handle the click events.

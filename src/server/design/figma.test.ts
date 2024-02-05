@@ -248,6 +248,9 @@ describe("newIssueForFigmaFile", () => {
     expect(createIssueOptions.body).toContain(
       "and other modern TailwindCSS features",
     );
+    expect(createIssueOptions.body).toContain(
+      "const element = <FontAwesomeIcon icon={faEnvelope} />",
+    );
     expect(createIssueOptions.body).toContain("code-converted-from-figma-map");
     expect(createIssueOptions.body).toContain("test-additional-instructions");
   });
@@ -298,6 +301,9 @@ describe("newIssueForFigmaFile", () => {
     );
     expect(createIssueOptions.body).not.toContain(
       "and other modern TailwindCSS features",
+    );
+    expect(createIssueOptions.body).toContain(
+      `const element = <BeakerIcon className="h-6 w-6 text-blue-500"/>`,
     );
   });
 });

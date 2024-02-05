@@ -1,3 +1,4 @@
+import dedent from "ts-dedent";
 import { Request, Response } from "express";
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
@@ -35,6 +36,65 @@ const auth = createAppAuth({
   appId: process.env.GITHUB_APP_ID ?? "",
   privateKey: process.env.GITHUB_PRIVATE_KEY ?? "",
 });
+
+const iconSetExamples = {
+  [IconSet.FontAwesome]: dedent`
+    \`\`\`
+    import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+    import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+    const element = <FontAwesomeIcon icon={faEnvelope} />
+    \`\`\`
+  `,
+  [IconSet.Heroicons]: dedent`
+    \`\`\`
+    import { BeakerIcon } from '@heroicons/react/24/solid'
+    const element = <BeakerIcon className="h-6 w-6 text-blue-500"/>
+    \`\`\`
+  `,
+  [IconSet.Unicons]: dedent`
+    \`\`\`
+    import { UilEnvelope } from '@iconscout/react-unicons'
+    const element = <UilEnvelope size="24" color="#000"/>
+    \`\`\`
+  `,
+  [IconSet.ReactFeather]: dedent`
+    \`\`\`
+    import { Camera } from 'react-feather'
+    const element = <Camera />
+    \`\`\`
+  `,
+  [IconSet.MaterialUI]: dedent`
+    \`\`\`
+    import { AccessAlarm } from '@material-ui/icons';
+    const element = <AccessAlarm />
+    \`\`\`
+  `,
+  [IconSet.StyledIcons]: dedent`
+    \`\`\`
+    import { Lock } from '@styled-icons/material'
+    const element = <Lock />
+    \`\`\`
+  `,
+  [IconSet.IconPark]: dedent`
+    \`\`\`
+    import { Email } from '@icon-park/react'
+    const element = <Email />
+    \`\`\`
+  `,
+  [IconSet.CoreUI]: dedent`
+    \`\`\`
+    import { CilEnvelopeOpen } from '@coreui/icons-react'
+    const element = <CilEnvelopeOpen />
+    \`\`\`
+  `,
+  [IconSet.Iconify]: dedent`
+    \`\`\`
+    import { Icon } from '@iconify/react'
+    import envelopeIcon from '@iconify-icons/mdi/envelope'
+    const element = <Icon icon={envelopeIcon} />
+    \`\`\`
+  `,
+};
 
 export const newIssueForFigmaFile = async (req: Request, res: Response) => {
   const { verb } = req.params;
@@ -134,9 +194,12 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       /* empty */
     }
 
+    const iconSet = repoSettings?.iconSet ?? IconSet.FontAwesome;
+    const iconSetExample = iconSetExamples[iconSet];
+
     const codeTemplateParams = {
       figmaMap,
-      iconSet: repoSettings?.iconSet ?? IconSet.FontAwesome,
+      iconSet,
       additionalInstructions: additionalInstructions
         ? `Here are some additional instructions: ${additionalInstructions}`
         : "",
@@ -169,6 +232,8 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
     const issueTemplateParams = {
       fileName,
       code,
+      iconSet,
+      iconSetExample,
       tailwindInstructions:
         repoSettings?.style === Style.CSS
           ? ""
