@@ -242,6 +242,9 @@ describe("newIssueForFigmaFile", () => {
     expect(createIssueOptions.body).toContain(
       "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
     );
+    expect(createIssueOptions.body).toContain(
+      "and other modern TailwindCSS features",
+    );
     expect(createIssueOptions.body).toContain("code-converted-from-figma-map");
     expect(createIssueOptions.body).toContain("test-additional-instructions");
   });
@@ -282,6 +285,9 @@ describe("newIssueForFigmaFile", () => {
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
     expect(createIssueOptions.body).not.toContain(
       "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
+    );
+    expect(createIssueOptions.body).not.toContain(
+      "and other modern TailwindCSS features",
     );
   });
 });

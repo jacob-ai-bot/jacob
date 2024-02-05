@@ -173,6 +173,10 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         repoSettings?.style === Style.CSS
           ? ""
           : "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
+      tailwindBiasInstructions:
+        repoSettings?.style === Style.CSS
+          ? ""
+          : "and other modern TailwindCSS features",
       additionalInstructions: additionalInstructions
         ? `Here are some important additional instructions from the product owner. You MUST follow these instructions, even if it means adjusting the JSX code provided above: \n ${additionalInstructions}`
         : "",
