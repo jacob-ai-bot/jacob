@@ -4,10 +4,9 @@ import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Endpoints } from "@octokit/types";
 
-import { RepoSettings, parseTemplate } from "../utils";
+import { RepoSettings, IconSet, Style, parseTemplate } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
 import { getFile } from "../github/repo";
-import { Style } from "../utils/settings";
 
 type GetUserReposResponse = Endpoints["GET /user/repos"]["response"]["data"];
 type GitHubRepo = GetUserReposResponse[0];
@@ -87,37 +86,6 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       return;
     }
 
-    const codeTemplateParams = {
-      figmaMap,
-      additionalInstructions: additionalInstructions
-        ? `Here are some additional instructions: ${additionalInstructions}`
-        : "",
-      snapshotInstructions: snapshotUrl
-        ? "The attached image is a snapshot of the Figma design. Use a combination of the FigML file and the image to produce a pixel-perfect reproduction of this design."
-        : "",
-    };
-
-    const systemPrompt = parseTemplate(
-      "dev",
-      "new_figma_file",
-      "system",
-      codeTemplateParams,
-    );
-
-    const userPrompt = parseTemplate(
-      "dev",
-      "new_figma_file",
-      "user",
-      codeTemplateParams,
-    );
-
-    const code = (await sendGptVisionRequest(
-      userPrompt,
-      systemPrompt,
-      snapshotUrl,
-      0.5,
-    )) as string;
-
     const { status: installationStatus, data: installationData } =
       await octokitApp.rest.apps.getRepoInstallation({
         owner: repo.owner.login,
@@ -165,6 +133,38 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
     } catch (e) {
       /* empty */
     }
+
+    const codeTemplateParams = {
+      figmaMap,
+      iconSet: repoSettings?.iconSet ?? IconSet.FontAwesome,
+      additionalInstructions: additionalInstructions
+        ? `Here are some additional instructions: ${additionalInstructions}`
+        : "",
+      snapshotInstructions: snapshotUrl
+        ? "The attached image is a snapshot of the Figma design. Use a combination of the FigML file and the image to produce a pixel-perfect reproduction of this design."
+        : "",
+    };
+
+    const systemPrompt = parseTemplate(
+      "dev",
+      "new_figma_file",
+      "system",
+      codeTemplateParams,
+    );
+
+    const userPrompt = parseTemplate(
+      "dev",
+      "new_figma_file",
+      "user",
+      codeTemplateParams,
+    );
+
+    const code = (await sendGptVisionRequest(
+      userPrompt,
+      systemPrompt,
+      snapshotUrl,
+      0.5,
+    )) as string;
 
     const issueTemplateParams = {
       fileName,

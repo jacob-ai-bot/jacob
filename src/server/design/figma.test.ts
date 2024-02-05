@@ -217,6 +217,9 @@ describe("newIssueForFigmaFile", () => {
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
       "Your job is to take a representation of a Figma design and convert it into JSX to be used in a React functional component.",
     );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+      "Use the Font Awesome package if possible.",
+    );
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toContain(
       "https://example.com/snapshot.png",
     );
@@ -249,14 +252,16 @@ describe("newIssueForFigmaFile", () => {
     expect(createIssueOptions.body).toContain("test-additional-instructions");
   });
 
-  test("new with jason.config set to Style.CSS", async () => {
+  test("new with jason.config set to Style.CSS and IconSet.Heroicons", async () => {
     mockedRepo.getFile.mockImplementationOnce(
       () =>
         new Promise((resolve) =>
           resolve({
             data: {
               type: "file",
-              content: btoa(JSON.stringify({ style: "CSS" })),
+              content: btoa(
+                JSON.stringify({ style: "CSS", iconSet: "Heroicons" }),
+              ),
             },
           }),
         ),
@@ -280,6 +285,11 @@ describe("newIssueForFigmaFile", () => {
     await newIssueForFigmaFile(req, res);
 
     expect(res.statusCode).toBe(200);
+
+    expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+      "Use the Heroicons package if possible.",
+    );
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];

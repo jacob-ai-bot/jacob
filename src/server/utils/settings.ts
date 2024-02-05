@@ -11,6 +11,18 @@ export enum Style {
   Tailwind = "Tailwind",
 }
 
+export enum IconSet {
+  FontAwesome = "Font Awesome",
+  Heroicons = "Heroicons",
+  Unicons = "Unicons",
+  ReactFeather = "React Feather",
+  MaterialUI = "Material UI",
+  StyledIcons = "Styled Icons",
+  IconPark = "IconPark",
+  CoreUI = "CoreUI",
+  Iconify = "Iconify",
+}
+
 // TODO: add more enums, all options are in the jacob-setup repo
 
 export interface RepoSettings {
@@ -18,7 +30,7 @@ export interface RepoSettings {
   style?: Style;
   installCommand?: string;
   buildCommand?: string;
-  iconSet?: string;
+  iconSet?: IconSet;
   componentExamples?: string;
   apiEndpointsExamples?: string;
   pageExamples?: string;
