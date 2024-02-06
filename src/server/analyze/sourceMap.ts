@@ -1,6 +1,7 @@
 import { Project, SourceFile } from "ts-morph";
-import fs from "fs";
+import fs, { Dirent } from "fs";
 import { RepoSettings, Language } from "../utils";
+import path from "path";
 
 const FILES_TO_IGNORE = [
   "types.ts",
@@ -166,6 +167,19 @@ export const getTypes = (
   }
 };
 
+// Recursive function to get all image files
+function getImageFiles(dirPath: string, imageExtensions: string[]): string[] {
+  const entries: Dirent[] = fs.readdirSync(dirPath, { withFileTypes: true });
+  const filePaths = entries.map((entry) => {
+    const res = path.resolve(dirPath, entry.name);
+    return entry.isDirectory() ? getImageFiles(res, imageExtensions) : res;
+  });
+  // Flatten the array and filter out non-image files
+  return filePaths
+    .flat()
+    .filter((file) => imageExtensions.includes(path.extname(file)));
+}
+
 export const getImages = (
   rootPath: string,
   repoSettings: RepoSettings | undefined,
@@ -176,19 +190,16 @@ export const getImages = (
     repoSettings?.directories?.staticAssets ?? "public"
   ).replace(/^\/+|\/+$/g, "");
 
-  // then add /images to the end of the path
-  const publicPath = `${rootPath}/${staticAssets}/images`;
+  const publicPath = `${rootPath}/${staticAssets}`;
 
   // if the folder doesn't exist, create it
   if (!fs.existsSync(publicPath)) {
     fs.mkdirSync(publicPath, { recursive: true });
   }
 
+  // get all the image files in the static directory and subdirectories
   const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".svg"];
-
-  const imageFiles = fs
-    .readdirSync(publicPath)
-    .filter((file) => imageExtensions.includes(file.slice(-4)));
+  const imageFiles = getImageFiles(publicPath, imageExtensions);
 
   if (imageFiles.length === 0) {
     return "";
