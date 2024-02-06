@@ -6,7 +6,7 @@ import {
   postAccessToken,
 } from "./auth/authToken";
 import { newIssueForFigmaFile } from "./design/figma";
-import { uploadSnapshot } from "./image/upload";
+import { uploadImage } from "./image/upload";
 import express from "express";
 import cors from "cors";
 
@@ -27,7 +27,7 @@ app.post(
   "/api/image/upload",
   cors(),
   express.json({ limit: "10mb" }),
-  uploadSnapshot,
+  uploadImage,
 );
 setupGitHubWebhook(app);
 

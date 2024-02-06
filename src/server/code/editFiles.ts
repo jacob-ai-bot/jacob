@@ -16,6 +16,7 @@ import {
 } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
+import { saveImages } from "../utils/images";
 
 export enum IssueType {
   BUG = "BUG",
@@ -98,7 +99,9 @@ export async function editFiles(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
-  const images = getImages(rootPath);
+  let images = getImages(rootPath, repoSettings);
+  images = saveImages(images, issue?.body, rootPath, repoSettings);
+
   // TODO: populate tailwind colors and leverage in system prompt
 
   const codeTemplateParams = {
