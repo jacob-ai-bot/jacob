@@ -1,9 +1,9 @@
 A new design has been added to Figma for the file ${fileName}.
 The design was converted into JSX. Here is what was provided:
 
-```
+~~~
 ${code}
-```
+~~~
 
 - @jacob-ai-bot Here are your instructions for updating the codebase:
 1. Use the details in the code above to update the file. Note that the code is not guaranteed to be perfect, so you may need to make some adjustments. ${tailwindInstructions}
@@ -20,3 +20,4 @@ ${iconSetExample}
 
 ${additionalInstructions}
 ${snapshotUrl}
+${imageUrls}

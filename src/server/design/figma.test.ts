@@ -200,6 +200,10 @@ describe("newIssueForFigmaFile", () => {
           owner: { login: "test-login" },
         },
         snapshotUrl: "https://example.com/snapshot.png",
+        imageUrls: [
+          "https://example.com/image1.png",
+          "https://example.com/image2.png",
+        ],
       },
     });
 
@@ -253,6 +257,12 @@ describe("newIssueForFigmaFile", () => {
     );
     expect(createIssueOptions.body).toContain("code-converted-from-figma-map");
     expect(createIssueOptions.body).toContain("test-additional-instructions");
+    expect(createIssueOptions.body).toContain(
+      "![image](https://example.com/image1.png)",
+    );
+    expect(createIssueOptions.body).toContain(
+      "![image](https://example.com/image2.png)",
+    );
   });
 
   test("new with jason.config set to Style.CSS and IconSet.Heroicons", async () => {
