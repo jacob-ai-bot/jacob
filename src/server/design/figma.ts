@@ -256,12 +256,8 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         ? `\nHere is a temporary snapshot of your design. It will expire in 60 minutes for security purposes.\n![snapshot](${snapshotUrl})\n`
         : "",
       imageUrls: imageUrls
-        ? imageUrls
-            .map(
-              (url) =>
-                `\nHere are the images from your design. These images will be added to your repo and these links will expire in 60 minutes for security purposes.\n![image](${url})`,
-            )
-            .join("\n")
+        ? "\nHere are the images from your design. These images will be downloaded to this branch and these links will expire in 60 minutes for security purposes.\n" +
+          imageUrls.map((url) => `![image](${url})`).join("\n")
         : "",
     };
     const body = parseTemplate(
