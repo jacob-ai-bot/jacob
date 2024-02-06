@@ -104,7 +104,7 @@ export const saveImages = async (
 ): Promise<string> => {
   // find all the image urls in the issue body
   // they are in the format ![image](url1) ![image](url2)
-  const regex = /!\[.*?\]\((.*?)\)/g;
+  const regex = /!\[image\]\((.*?)\)/g;
   const imageUrls = issueBody?.match(regex) ?? [];
   if (!imageUrls?.length) {
     return existingImages;
