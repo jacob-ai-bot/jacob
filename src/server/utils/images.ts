@@ -1,5 +1,6 @@
 import Jimp from "jimp";
 import AWS from "aws-sdk";
+import fetch from "node-fetch";
 import { promises as fsPromises } from "fs";
 import path from "path";
 import { RepoSettings } from "./settings";
@@ -133,7 +134,12 @@ export const saveImages = async (
       const image = imageUrls.find((url) => url.includes(imageName!));
       if (image) {
         const imageUrl = image.split("(")[1].split(")")[0];
-        const imageBuffer = Buffer.from(imageUrl, "base64");
+
+        // Download the image data
+        const response = await fetch(imageUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const imageBuffer = Buffer.from(arrayBuffer);
+
         const imagePath = path.join(staticFolderPath, imageName!);
 
         // write the image file

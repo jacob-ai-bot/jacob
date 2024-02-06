@@ -15,6 +15,14 @@ vi.mock("fs", async () => {
   };
 });
 
+vi.mock("fetch", () => {
+  return {
+    default: () => ({
+      arrayBuffer: async () => new ArrayBuffer(0),
+    }),
+  };
+});
+
 describe("saveImages function", () => {
   const rootPath = "/root/path";
   const existingImages = "Images: /root/path/images/existingImage1.jpg\n";
@@ -35,6 +43,7 @@ describe("saveImages function", () => {
     const image1 = `${s3BaseUrl}image1.jpg${signature}`;
     const image2 = `${s3BaseUrl}image2.jpg${signature}`;
     const issueBody = `This is a test issue with images. ![image](${image1}) ![image](${image2})`;
+
     const result = await saveImages(existingImages, issueBody, rootPath);
     expect(result).toContain("image1.jpg");
     expect(result).toContain("image2.jpg");
