@@ -1,6 +1,19 @@
 import { saveImages } from "../utils/images";
 import { describe, it, expect, vi } from "vitest";
 import fs from "fs";
+import { beforeEach } from "node:test";
+
+vi.mock("fs", async () => {
+  const actual = await vi.importActual("fs");
+  return {
+    ...actual,
+    promises: {
+      access: vi.fn(),
+      mkdir: vi.fn(),
+      writeFile: vi.fn(),
+    },
+  };
+});
 
 describe("saveImages function", () => {
   const rootPath = "/root/path";
@@ -8,6 +21,9 @@ describe("saveImages function", () => {
   const s3BaseUrl = "https://bucket.s3.us-west-2.amazonaws.com/uploads/";
   const signature = "?AWSAccessKeyId=ABC&Expires=123&Signature=CBA";
   vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it("returns existing images if no images are found in the issue body", async () => {
     const issueBody = "This is a test issue with no images.";
