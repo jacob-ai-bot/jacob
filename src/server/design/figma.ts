@@ -253,10 +253,15 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         ? `Here are some important additional instructions from the product owner. You MUST follow these instructions, even if it means adjusting the JSX code provided above: \n ${additionalInstructions}`
         : "",
       snapshotUrl: snapshotUrl
-        ? `Here is a temporary snapshot of your design. It will expire in 60 minutes for security purposes.\n![snapshot](${snapshotUrl})\n`
+        ? `\nHere is a temporary snapshot of your design. It will expire in 60 minutes for security purposes.\n![snapshot](${snapshotUrl})\n`
         : "",
       imageUrls: imageUrls
-        ? imageUrls.map((url) => `![image](${url})`).join("\n")
+        ? imageUrls
+            .map(
+              (url) =>
+                `\nHere are the images from your design. These images will be added to your repo and these links will expire in 60 minutes for security purposes.\n![image](${url})`,
+            )
+            .join("\n")
         : "",
     };
     const body = parseTemplate(
