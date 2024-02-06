@@ -99,8 +99,8 @@ export async function editFiles(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
-  let images = getImages(rootPath, repoSettings);
-  images = saveImages(images, issue?.body, rootPath, repoSettings);
+  let images = await getImages(rootPath, repoSettings);
+  images = await saveImages(images, issue?.body, rootPath, repoSettings);
 
   // TODO: populate tailwind colors and leverage in system prompt
 

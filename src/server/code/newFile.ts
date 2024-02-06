@@ -48,8 +48,8 @@ export async function createNewFile(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
-  let images = getImages(rootPath, repoSettings);
-  images = saveImages(images, issue.body, rootPath, repoSettings);
+  let images = await getImages(rootPath, repoSettings);
+  images = await saveImages(images, issue.body, rootPath, repoSettings);
 
   const codeTemplateParams = {
     ...planTemplateParams,

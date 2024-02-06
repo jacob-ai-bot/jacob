@@ -1,9 +1,9 @@
 A new design has been added to Figma for the file ${fileName}.
 The design was converted into JSX. Here is what was provided:
 
-```
+~~~
 ${code}
-```
+~~~
 
 - @jacob-ai-bot Here are your instructions for creating the new file:
 1. Create a new file with the name ${fileName}.
@@ -22,3 +22,4 @@ ${iconSetExample}
 
 ${additionalInstructions}
 ${snapshotUrl}
+${imageUrls}
