@@ -1,5 +1,5 @@
 import { Project, SourceFile } from "ts-morph";
-import fs, { Dirent } from "fs";
+import fs, { promises as fsPromises, Dirent } from "fs";
 import { RepoSettings, Language } from "../utils";
 import path from "path";
 
@@ -168,38 +168,42 @@ export const getTypes = (
 };
 
 // Recursive function to get all image files
-function getImageFiles(dirPath: string, imageExtensions: string[]): string[] {
-  const entries: Dirent[] = fs.readdirSync(dirPath, { withFileTypes: true });
-  const filePaths = entries.map((entry) => {
-    const res = path.resolve(dirPath, entry.name);
-    return entry.isDirectory() ? getImageFiles(res, imageExtensions) : res;
+async function getImageFiles(
+  dirPath: string,
+  imageExtensions: string[],
+): Promise<string[]> {
+  const entries: Dirent[] = await fsPromises.readdir(dirPath, {
+    withFileTypes: true,
   });
+  const filePaths = await Promise.all(
+    entries.map(async (entry) => {
+      const res = path.resolve(dirPath, entry.name);
+      return entry.isDirectory() ? getImageFiles(res, imageExtensions) : res;
+    }),
+  );
   // Flatten the array and filter out non-image files
   return filePaths
     .flat()
     .filter((file) => imageExtensions.includes(path.extname(file)));
 }
 
-export const getImages = (
+export const getImages = async (
   rootPath: string,
-  repoSettings: RepoSettings | undefined,
-): string => {
+  repoSettings?: RepoSettings,
+): Promise<string> => {
   // the repoSettings.directories.staticAssets is the root directory, if that isn't set then use /public
-  // get the static assets folder (and trim any leading or trailing slashes that the user might have added to the config)
-  const staticAssets = (
-    repoSettings?.directories?.staticAssets ?? "public"
-  ).replace(/^\/+|\/+$/g, "");
+  const { staticAssets = "public" } = repoSettings?.directories ?? {};
+  const publicPath = path.join(rootPath, staticAssets);
 
-  const publicPath = `${rootPath}/${staticAssets}`;
-
-  // if the folder doesn't exist, create it
-  if (!fs.existsSync(publicPath)) {
-    fs.mkdirSync(publicPath, { recursive: true });
+  try {
+    await fsPromises.access(publicPath);
+  } catch (error) {
+    return "";
   }
 
   // get all the image files in the static directory and subdirectories
   const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".svg"];
-  const imageFiles = getImageFiles(publicPath, imageExtensions);
+  const imageFiles = await getImageFiles(publicPath, imageExtensions);
 
   if (imageFiles.length === 0) {
     return "";

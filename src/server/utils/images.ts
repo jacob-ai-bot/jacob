@@ -1,6 +1,7 @@
 import Jimp from "jimp";
 import AWS from "aws-sdk";
-import fs from "fs";
+import { promises as fsPromises } from "fs";
+import path from "path";
 import { RepoSettings } from "./settings";
 
 export enum IMAGE_TYPE {
@@ -94,12 +95,12 @@ export const resizeImageForGptVision = async (
   }
 };
 
-export const saveImages = (
+export const saveImages = async (
   existingImages: string,
   issueBody: string | null,
   rootPath: string,
   repoSettings?: RepoSettings,
-): string => {
+): Promise<string> => {
   // find all the image urls in the issue body
   // they are in the format ![image](url1) ![image](url2)
   const regex = /!\[.*?\]\((.*?)\)/g;
@@ -107,9 +108,17 @@ export const saveImages = (
   if (!imageUrls?.length) {
     return existingImages;
   }
-  const staticFolder = (
-    repoSettings?.directories?.staticAssets ?? "public"
-  ).replace(/^\/+|\/+$/g, ""); // remove leading and trailing slashes
+
+  // the repoSettings.directories.staticAssets is the root directory, if that isn't set then use /public
+  const staticFolder = repoSettings?.directories?.staticAssets ?? "public";
+  const staticFolderPath = path.join(rootPath, staticFolder, "images");
+
+  // check if the directory exists, if not create it
+  try {
+    await fsPromises.access(staticFolderPath);
+  } catch (error) {
+    await fsPromises.mkdir(staticFolderPath, { recursive: true });
+  }
 
   // get the image names from the urls
   const imageNames = imageUrls.map(
@@ -125,10 +134,10 @@ export const saveImages = (
       if (image) {
         const imageUrl = image.split("(")[1].split(")")[0];
         const imageBuffer = Buffer.from(imageUrl, "base64");
-        let imagePath = "";
+        const imagePath = path.join(staticFolderPath, imageName!);
 
-        imagePath = rootPath + "/" + staticFolder + "/images/" + imageName;
-        fs.writeFileSync(imagePath, imageBuffer);
+        // write the image file
+        await fsPromises.writeFile(imagePath, imageBuffer);
 
         // add the image to the existing image string. Note that existingImages is in a string format
         // that is used in the issue body, not an array.

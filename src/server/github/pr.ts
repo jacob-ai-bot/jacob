@@ -146,9 +146,15 @@ export async function concatenatePRFiles(
   prNumber: number,
 ) {
   const prFiles = await getPRFiles(repository, token, prNumber);
+  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".svg"];
+
   const relevantFileNames = prFiles.data
     .map(({ filename }) => filename)
-    .filter((filename) => !(path.basename(filename) === "package-lock.json"));
+    .filter((filename) => {
+      const isPackageLock = path.basename(filename) === "package-lock.json";
+      const isImageFile = imageExtensions.includes(path.extname(filename));
+      return !(isPackageLock || isImageFile);
+    });
 
   if (relevantFileNames.length === 0) {
     console.log(

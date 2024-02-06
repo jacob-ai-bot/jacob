@@ -88,7 +88,7 @@ export async function fixBuildError(
       const { causeOfError, ideasForFixingError, suggestedFix } = assessment;
       const sourceMap = getSourceMap(rootPath, repoSettings);
       const types = getTypes(rootPath, repoSettings);
-      const images = getImages(rootPath, repoSettings);
+      const images = await getImages(rootPath, repoSettings);
 
       const codeTemplateParams = {
         code,

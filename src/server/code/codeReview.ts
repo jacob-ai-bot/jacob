@@ -45,7 +45,7 @@ export async function codeReview(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
-  const images = getImages(rootPath, repoSettings);
+  const images = await getImages(rootPath, repoSettings);
 
   const code = await concatenatePRFiles(
     rootPath,
