@@ -166,10 +166,20 @@ export const getTypes = (
   }
 };
 
-export const getImages = (rootPath: string): string => {
-  const publicPath = rootPath + "/public/images";
+export const getImages = (
+  rootPath: string,
+  repoSettings: RepoSettings | undefined,
+): string => {
+  // the repoSettings.directories.staticAssets is the root directory, if that isn't set then use /public
+  // get the static assets folder (and trim any leading or trailing slashes that the user might have added to the config)
+  const staticAssets = (
+    repoSettings?.directories?.staticAssets ?? "public"
+  ).replace(/^\/+|\/+$/g, "");
 
-  // if /public/images doesn't exist, create it
+  // then add /images to the end of the path
+  const publicPath = `${rootPath}/${staticAssets}/images`;
+
+  // if the folder doesn't exist, create it
   if (!fs.existsSync(publicPath)) {
     fs.mkdirSync(publicPath, { recursive: true });
   }

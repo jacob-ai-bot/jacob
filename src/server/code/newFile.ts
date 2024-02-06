@@ -11,6 +11,7 @@ import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveNewFile } from "../utils/files";
+import { saveImages } from "../utils/images";
 
 export async function createNewFile(
   newFileName: string,
@@ -47,7 +48,8 @@ export async function createNewFile(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
-  const images = getImages(rootPath);
+  let images = getImages(rootPath, repoSettings);
+  images = saveImages(images, issue.body, rootPath, repoSettings);
 
   const codeTemplateParams = {
     ...planTemplateParams,

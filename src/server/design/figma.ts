@@ -73,14 +73,21 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       return;
     }
 
-    const { repo, fileName, figmaMap, additionalInstructions, snapshotUrl } =
-      req.body as {
-        figmaMap?: string;
-        fileName?: string;
-        additionalInstructions?: string;
-        repo?: GitHubRepo;
-        snapshotUrl?: string;
-      };
+    const {
+      repo,
+      fileName,
+      figmaMap,
+      additionalInstructions,
+      snapshotUrl,
+      imageUrls,
+    } = req.body as {
+      figmaMap?: string;
+      fileName?: string;
+      additionalInstructions?: string;
+      repo?: GitHubRepo;
+      snapshotUrl?: string;
+      imageUrls?: string[];
+    };
 
     if (!figmaMap || !fileName || !repo) {
       res.status(400).send("Missing required parameters");
@@ -178,6 +185,9 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         : "",
       snapshotUrl: snapshotUrl
         ? `Here is a temporary snapshot of your design. It will expire in 60 minutes for security purposes. \`\`\`![snapshot](${snapshotUrl})\`\`\``
+        : "",
+      imageUrls: imageUrls
+        ? imageUrls.map((url) => `![image](${url})`).join("\n")
         : "",
     };
     const body = parseTemplate(

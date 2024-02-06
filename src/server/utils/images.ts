@@ -1,5 +1,7 @@
 import Jimp from "jimp";
 import AWS from "aws-sdk";
+import fs from "fs";
+import { RepoSettings } from "./settings";
 
 export enum IMAGE_TYPE {
   JPEG = "image/jpeg",
@@ -18,9 +20,9 @@ export const uploadToS3 = async (
   imageBuffer: Buffer,
   imageType: IMAGE_TYPE,
   bucketName: string,
-  imagePath?: string | undefined,
+  imageName?: string | undefined,
 ) => {
-  const key = imagePath ?? `uploads/${Date.now()}.png`;
+  const key = `uploads/${imageName ?? Date.now()}.${imageType.split("/")[1]}`;
   const params = {
     Bucket: bucketName,
     Key: key,
@@ -90,4 +92,49 @@ export const resizeImageForGptVision = async (
     console.log("error resizing image", error);
     return imageBuffer;
   }
+};
+
+export const saveImages = (
+  existingImages: string,
+  issueBody: string | null,
+  rootPath: string,
+  repoSettings?: RepoSettings,
+): string => {
+  // find all the image urls in the issue body
+  // they are in the format ![image](url1) ![image](url2)
+  const regex = /!\[.*?\]\((.*?)\)/g;
+  const imageUrls = issueBody?.match(regex) ?? [];
+  if (!imageUrls?.length) {
+    return existingImages;
+  }
+  const staticFolder = (
+    repoSettings?.directories?.staticAssets ?? "public"
+  ).replace(/^\/+|\/+$/g, ""); // remove leading and trailing slashes
+
+  // get the image names from the urls
+  const imageNames = imageUrls.map(
+    (url) => url.split("/").pop()?.split("?")[0],
+  );
+
+  // loop through the images. If the image is not in the existing images,
+  // download it to the repoSettings.directories.staticAssets / images directory.
+  // Use /public/images if the static assets directory is not set.
+  for (const imageName of imageNames) {
+    if (!existingImages.includes(imageName!)) {
+      const image = imageUrls.find((url) => url.includes(imageName!));
+      if (image) {
+        const imageUrl = image.split("(")[1].split(")")[0];
+        const imageBuffer = Buffer.from(imageUrl, "base64");
+        let imagePath = "";
+
+        imagePath = rootPath + "/" + staticFolder + "/images/" + imageName;
+        fs.writeFileSync(imagePath, imageBuffer);
+
+        // add the image to the existing image string. Note that existingImages is in a string format
+        // that is used in the issue body, not an array.
+        existingImages += imagePath + "\n\t";
+      }
+    }
+  }
+  return existingImages;
 };
