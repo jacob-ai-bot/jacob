@@ -2,6 +2,7 @@ import {
   executeWithLogRequiringSuccess,
   getSanitizedEnv,
   type ExecPromise,
+  Language,
 } from "../../utils";
 import { RepoSettings } from "../../utils";
 
@@ -33,11 +34,18 @@ export async function runBuildCheck(
   };
   const {
     installCommand = "npm install",
-    buildCommand = "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+    language = Language.TypeScript,
+    buildCommand,
   } = repoSettings ?? {};
 
+  const realBuildCommand =
+    buildCommand ??
+    `__NEXT_TEST_MODE=1 npm run build --verbose${
+      language === Language.TypeScript ? "; npx tsc --noEmit" : ""
+    }`;
+
   await executeWithLogRequiringSuccess(path, installCommand, { env });
-  return executeWithLogRequiringSuccess(path, buildCommand, {
+  return executeWithLogRequiringSuccess(path, realBuildCommand, {
     env,
   });
 }
