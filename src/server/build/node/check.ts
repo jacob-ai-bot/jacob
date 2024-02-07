@@ -2,9 +2,9 @@ import {
   executeWithLogRequiringSuccess,
   getSanitizedEnv,
   type ExecPromise,
-  Language,
+  RepoSettings,
 } from "../../utils";
-import { RepoSettings } from "../../utils";
+import { Language } from "../../utils/settings";
 
 // From package-name-regexp 3.0.0 (without importing the ESM module)
 const packageNameRegex =

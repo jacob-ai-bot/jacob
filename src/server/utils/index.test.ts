@@ -5,11 +5,10 @@ import { describe, beforeEach, afterEach, it, expect } from "vitest";
 import {
   constructNewOrEditSystemPrompt,
   TemplateParams,
-  Language,
-  Style,
   removeMarkdownCodeblocks,
   getSnapshotUrl,
 } from "../utils";
+import { Language, Style } from "../utils/settings";
 
 dotenv.config();
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";

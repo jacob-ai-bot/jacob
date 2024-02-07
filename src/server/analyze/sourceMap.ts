@@ -1,6 +1,7 @@
 import { Project, SourceFile } from "ts-morph";
 import fs, { promises as fsPromises, Dirent } from "fs";
-import { RepoSettings, Language } from "../utils";
+import { RepoSettings } from "../utils";
+import { Language } from "../utils/settings";
 import path from "path";
 
 const FILES_TO_IGNORE = [

@@ -5,13 +5,8 @@ import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Endpoints } from "@octokit/types";
 
-import {
-  RepoSettings,
-  IconSet,
-  Style,
-  parseTemplate,
-  Language,
-} from "../utils";
+import { RepoSettings, parseTemplate } from "../utils";
+import { IconSet, Style, Language } from "../utils/settings";
 import { sendGptVisionRequest } from "../openai/request";
 import { getFile } from "../github/repo";
 
