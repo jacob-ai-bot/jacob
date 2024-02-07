@@ -1,0 +1,5 @@
+- Use the TailwindCSS responsive classes (i.e. "sm:p-4 p-2").
+- Re-write the psuedo-TailwindCSS using only the standard TailwindCSS classes. Remove any hard-coded widths or heights and instead use flexbox properties for the layout. You may use w-full, h-full, h-screen, or percentage widths like w-1/2. Use max width classes like max-w-2xl to ensure forms and other elements do not get too wide (i.e. max-w-7xl for content in pages, max-w-xl for forms, etc..)
+- Convert any arbitrary TailwindCSS text values to standard TailwindCSS classes. For example, if the text is "text-[24px]", you should convert this to "text-xl".
+- Convert any arbitrary colors to TailwindCSS colors. First check to see if the color is an exact match for a custom TailwindCSS color from the Tailwind.config file. If not, then match it to the closest TailwindCSS color. If it is a gradient, then use the TailwindCSS gradient classes.
+- Note: this code will be parsed by a TailwindCSS parser, so it is important that you ONLY use valid TailwindCSS classes.

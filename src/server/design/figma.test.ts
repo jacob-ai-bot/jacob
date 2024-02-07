@@ -145,6 +145,9 @@ describe("newIssueForFigmaFile", () => {
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+      "Act as an expert-level TypeScript Front-End TailwindCSS software developer.",
+    );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
       "=== START FigML ===\ntest-figma-map\n=== END FigML ===\n",
     );
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
@@ -152,6 +155,12 @@ describe("newIssueForFigmaFile", () => {
     );
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
       "Your job is to take a representation of a Figma design and convert it into JSX to be used in a React functional component.",
+    );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+      "w-[40px] h-[40px] border-solid border-black",
+    );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+      "Re-write the psuedo-TailwindCSS using only the standard TailwindCSS classes.",
     );
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toContain(
       "https://example.com/snapshot.png",
@@ -265,7 +274,7 @@ describe("newIssueForFigmaFile", () => {
     );
   });
 
-  test("new with jason.config set to Style.CSS and IconSet.Heroicons", async () => {
+  test("new with jason.config set to Language.Javascript, Style.CSS, and IconSet.Heroicons", async () => {
     mockedRepo.getFile.mockImplementationOnce(
       () =>
         new Promise((resolve) =>
@@ -273,7 +282,11 @@ describe("newIssueForFigmaFile", () => {
             data: {
               type: "file",
               content: btoa(
-                JSON.stringify({ style: "CSS", iconSet: "Heroicons" }),
+                JSON.stringify({
+                  language: "JavaScript",
+                  style: "CSS",
+                  iconSet: "Heroicons",
+                }),
               ),
             },
           }),
@@ -300,6 +313,15 @@ describe("newIssueForFigmaFile", () => {
     expect(res.statusCode).toBe(200);
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+      "Act as an expert-level JavaScript Front-End CSS software developer.",
+    );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+      "Re-write the psuedo-CSS using only standard CSS styles.",
+    );
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+      "width: 40px; height: 40px; border: 1px solid #000;",
+    );
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
       "Use the Heroicons package if possible.",
     );
