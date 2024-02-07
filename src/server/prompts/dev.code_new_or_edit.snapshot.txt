@@ -6,19 +6,19 @@ Review the exported image of a Figma design of a React component mockup and the 
 Evaluate the code submission based on its fidelity to the provided design mockup, considering completeness, accuracy, responsiveness, accessibility, and flawlessness. Each criterion contributes points cumulatively, reflecting the code's progression towards perfection.
 
 1. **Major Elements and Content Implementation (Award a first point):**
-   - The code snippet includes all major design elements and all content accurately. This encompasses images, copy, icons, and any other components specified in the design mockup. The implementation should capture the essence and basic structure of the mockup, even though minor inaccuracies or elements might be missing.
+- The code snippet includes all major design elements and all content accurately. This encompasses images, copy, icons, and any other components specified in the design mockup. The implementation should capture the essence and basic structure of the mockup, even though minor inaccuracies or elements might be missing.
 
 2. **Layout and Style Fidelity (Award a second point):**
-   - The code's layout and stylistic elements (font sizes, colors, spacing, icons, line heights, copy, and images) precisely match those of the design. This point is awarded when the arrangement and aesthetic aspects demonstrate a thorough adherence to the mockup, with only minor deviations permitted.
+- The code's layout and stylistic elements (font sizes, colors, spacing, icons, line heights, copy, and images) precisely match those of the design. This point is awarded when the arrangement and aesthetic aspects demonstrate a thorough adherence to the mockup, with only minor deviations permitted.
 
 3. **Responsive Design (Award a third point):**
-   - The code ensures full responsiveness across various devices (phones, tablets, and desktops). The design must seamlessly adjust to different screen sizes, maintaining design integrity and user experience. Complete responsiveness is a prerequisite for this point, with no part of the design overlooked in adapting to viewport changes.
+- The code ensures full responsiveness across various devices (phones, tablets, and desktops). The design must seamlessly adjust to different screen sizes, maintaining design integrity and user experience. Complete responsiveness is a prerequisite for this point, with no part of the design overlooked in adapting to viewport changes.
 
 4. **Accessibility Standards (Award a fourth point):**
-   - The code exemplifies comprehensive accessibility practices. This includes, but is not limited to, the correct use of alt attributes for images, aria labels, and roles for interactive components, ensuring content is fully navigable and accessible via keyboard and screen readers. The implementation should meet recognized web accessibility standards to ensure an inclusive user experience.
+- The code exemplifies comprehensive accessibility practices. This includes, but is not limited to, the correct use of alt attributes for images, aria labels, and roles for interactive components, ensuring content is fully navigable and accessible via keyboard and screen readers. The implementation should meet recognized web accessibility standards to ensure an inclusive user experience.
 
 5. **Flawless Execution (Award a fifth point):**
-   - This point is reserved for code that reaches an exceptional standard of perfection. Functions and click handlers are fully implemented and operate correctly. Use all of the information available to implement the functions, but if the information is not available - DO NOT HALLUCINATE! You may use placeholders ONLY for functions and only when absolutely necessary. In strongly-typed languages, precise typing for every variable and function is expected. The layout, positioning, and presentation of every element align perfectly with the mockup, with no unnecessary comments, placeholders, or any form of deviation. The code should withstand an expert-level review without any criticism, reflecting an expert understanding and execution of front-end development principles.
+- This point is reserved for code that reaches an exceptional standard of perfection. Functions and click handlers are fully implemented and operate correctly. Use all of the information available to implement the functions, but if the information is not available - DO NOT HALLUCINATE! You may use placeholders ONLY for functions and only when absolutely necessary. In strongly-typed languages, precise typing for every variable and function is expected. The layout, positioning, and presentation of every element align perfectly with the mockup, with no unnecessary comments, placeholders, or any form of deviation. The code should withstand an expert-level review without any criticism, reflecting an expert understanding and execution of front-end development principles.
 
 **Evaluation Guidance:**
 
