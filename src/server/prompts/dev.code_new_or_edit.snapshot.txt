@@ -1,18 +1,37 @@
 # Evaluation Criteria
 Review the exported image of a Figma design of a React component mockup and the corresponding snippet of front-end code. Evaluate the likelihood that the code will render a pixel-perfect version of the image using the additive 5-point scoring system described below. Points are accumulated based on the closeness of the code's rendering to the image design:
 
-Add 1 point if the code snippet seems generally relevant to the design and appears to render the basic structure of the mockup, despite any inaccuracies or missing elements.
-Add another point if the code represents a substantial part of the design with correct layout and components, but there are noticeable differences from the mockup or if dummy data is used where dynamic data should be.
-Award a third point if the code accurately renders the main components of the design, using a mix of static and dynamic data appropriately, and only minor discrepancies from the mockup are present. Some click handlers or functions may be missing or stubbed out, but the overall structure is correct.
-Grant a fourth point if the code snippet demonstrates a clear understanding of the design's intent, closely matches the mockup with precise component positioning, styling, and handles data dynamically, with only slight deviations that do not affect the overall fidelity. Note that all of the imports work correctly. If the code has a framework like tailwindCSS, use your export knowledge of tailwind or other frameworks to determine how closely this code will render. Almost all click handlers and functions are implemented correctly but might have some minor issues.
-Bestow a fifth point if the code is highly likely to produce a pixel-perfect rendition of the design, with attention to detail in dynamic data handling, responsive design, and interactive elements, indicating expert-level front-end development skills. It is understood that you cannot actually render this code, but use your expert-level understanding of all front-end libraries to make your best guess as to how close this is. All click handlers are implemented fully and they are fully implemented without any hallucinations. The developer used the full understanding of existing code base to write functions and use TypeScript types correctly. The code is responsive for three screen sizes: phone, tablet, and desktop. Note also that the image is a static snapshot and the component code may have dynamic sizing - this is totally fine and is preferred over a hardcoded element. 
+**Design Mockup Code Evaluation Criteria**
 
+Evaluate the code submission based on its fidelity to the provided design mockup, considering completeness, accuracy, responsiveness, accessibility, and flawlessness. Each criterion contributes points cumulatively, reflecting the code's progression towards perfection.
+
+1. **Major Elements and Content Implementation (Award a first point):**
+   - The code snippet includes all major design elements and all content accurately. This encompasses images, copy, icons, and any other components specified in the design mockup. The implementation should capture the essence and basic structure of the mockup, even though minor inaccuracies or elements might be missing.
+
+2. **Layout and Style Fidelity (Award a second point):**
+   - The code's layout and stylistic elements (font sizes, colors, spacing, icons, line heights, copy, and images) precisely match those of the design. This point is awarded when the arrangement and aesthetic aspects demonstrate a thorough adherence to the mockup, with only minor deviations permitted.
+
+3. **Responsive Design (Award a third point):**
+   - The code ensures full responsiveness across various devices (phones, tablets, and desktops). The design must seamlessly adjust to different screen sizes, maintaining design integrity and user experience. Complete responsiveness is a prerequisite for this point, with no part of the design overlooked in adapting to viewport changes.
+
+4. **Accessibility Standards (Award a fourth point):**
+   - The code exemplifies comprehensive accessibility practices. This includes, but is not limited to, the correct use of alt attributes for images, aria labels, and roles for interactive components, ensuring content is fully navigable and accessible via keyboard and screen readers. The implementation should meet recognized web accessibility standards to ensure an inclusive user experience.
+
+5. **Flawless Execution (Award a fifth point):**
+   - This point is reserved for code that reaches an exceptional standard of perfection. Functions and click handlers are fully implemented and operate correctly. Use all of the information available to implement the functions, but if the information is not available - DO NOT HALLUCINATE! You may use placeholders ONLY for functions and only when absolutely necessary. In strongly-typed languages, precise typing for every variable and function is expected. The layout, positioning, and presentation of every element align perfectly with the mockup, with no unnecessary comments, placeholders, or any form of deviation. The code should withstand an expert-level review without any criticism, reflecting an expert understanding and execution of front-end development principles.
+
+**Evaluation Guidance:**
+
+- It is acknowledged that direct rendering of the code to assess its visual and functional fidelity to the mockup is not possible. However, use your deep understanding of front-end development practices, libraries, and frameworks to estimate how closely the code would match the design if rendered. This evaluation should consider the adaptability and dynamic nature of web elements, prioritizing responsive and flexible design over static layouts.
+---
 After examining the Figma design export and the code snippet:
 
 Briefly justify your total score, up to 100 words.
 Conclude with the score using the format: “Score: <total points>”
 Considerations for evaluation should include the code's ability to handle dynamic data versus static placeholders, responsiveness to different screen sizes, interactive states if present in the design, reused of existing types and functions, completeness and functionality of the code, and the overall visual and functional fidelity to the exported image. Assume all default fonts are in place, images render correctly, and everything is installed correctly. Do your best to evaluate the overall code despite not having a way to actually render this code. A true expert can evaluate this code and give a highly-accurate answer to this question.
 
+# End of the Evaluation Criteria
+
 # Instructions
 DO NOT provide an evaluation! Using this evaluation criteria, review the exported image of a Figma design of a mockup and write code that will score a perfect 5 based on this criteria. Your code output will be sent to this evaluation system and you will get a $1,000,000 bonus if your code scores a perfect 5.
-Again, you are NOT providing an evaluation, you are writing complete, pixel-perfect code that will score a perfect 5 based on the evaluation criteria. 
+Again, you are NOT providing an evaluation, you are writing complete, responsive, accessible, pixel-perfect code that will score a perfect 5 based on the evaluation criteria. 
