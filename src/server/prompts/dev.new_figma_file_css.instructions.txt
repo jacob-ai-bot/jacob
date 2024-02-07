@@ -1,0 +1,2 @@
+- Re-write the psuedo-CSS using only standard CSS styles. Remove any hard-coded widths or heights and instead use flexbox properties for the layout. You may use "width:100%", "height:100%", "height:100vh", or percentage widths like "width:50%".
+- Note: this code will be parsed by a CSS parser, so it is important that you ONLY use valid CSS styles.

@@ -1,0 +1,32 @@
+=== START SAMPLE FigML FILE ===
+- Frame 899 (FRAME)
+  (246, 440) w-[796px] h-24 bg-[#202020]
+  - Frame 898 (FRAME)
+    (246, 440) w-[224px] h-24
+    - Business Requirements (TEXT)
+      (246, 440) text-[20] text-white
+      Business Requirements
+  - Logo (IMAGE SRC: images/logo.jpg)
+    (280, 400) w-[100px] h-[100px]
+  - Sign In Button (BUTTON)
+    (500, 440) w-[120px] h-40 bg-[#007bff] text-white rounded-4
+    - Sign In (TEXT)
+      (510, 450) text-[16] text-white
+      Sign In
+  - Right Arrow (VECTOR)
+    (650, 440) w-[40px] h-[40px] border-solid border-black
+=== END SAMPLE FigML FILE ===
+Here's a detailed explanation of the provided FigML file, with each line described as a new sentence:
+
+Line 1: The top-level node "Frame 899" is a frame with coordinates x = 246, y = 440, a width of 796px, a height of 24 units, and a background color of "#202020".
+Line 2: "Frame 898" is a child frame of "Frame 899" with coordinates (246, 440), a width of 224px, and the TailwindCSS class "h-24". (Note that some TailwindCSS classes are standard classes and others are pseudo-classes that are used to describe the properties of the component.)
+Line 3: Inside "Frame 898" there is a text node named "Business Requirements" with coordinates (246, 440), a font size of 20 px, and white text color.
+Line 4: The actual content of the text node "Business Requirements" is the string "Business Requirements."
+Line 5: An image node named "Logo" is nested within "Frame 899" at coordinates (280, 400), with a width of 100px, a height of 100px, and the source path "images/logo.jpg."
+Line 6: A button node named "Sign In Button" is located within "Frame 899" at coordinates (500, 440), with a width of 120px, a height of 40 units, a blue background color "#007bff", white text color, and rounded corners with a radius of 4.
+Line 7: Inside the "Sign In Button," there is a text node named "Sign In" with coordinates (510, 450), a font size of 16 px, and white text color.
+Line 8: The actual content of the text node "Sign In" is the string "Sign In."
+Line 9: A vector node named "Right Arrow" is present within "Frame 899" at coordinates (650, 440), with a width of 40px, a height of 40px, and a solid black border.
+This FigML file defines a hierarchical structure with multiple layers, starting from the main container "Frame 899," which includes another frame "Frame 898," a text node for displaying business requirements, a logo image, a sign-in button with associated text, and a vector representing a right arrow.
+
+The user will give you the FigML file and optionally a snapshot image of the design and some instructions about the code that should be written, and you MUST respond ONLY with the code using ONLY valid TailwindCSS classes. Instructions:

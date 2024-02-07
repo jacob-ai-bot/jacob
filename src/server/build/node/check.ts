@@ -2,8 +2,9 @@ import {
   executeWithLogRequiringSuccess,
   getSanitizedEnv,
   type ExecPromise,
+  RepoSettings,
 } from "../../utils";
-import { RepoSettings } from "../../utils";
+import { Language } from "../../utils/settings";
 
 // From package-name-regexp 3.0.0 (without importing the ESM module)
 const packageNameRegex =
@@ -33,11 +34,18 @@ export async function runBuildCheck(
   };
   const {
     installCommand = "npm install",
-    buildCommand = "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+    language = Language.TypeScript,
+    buildCommand,
   } = repoSettings ?? {};
 
+  const realBuildCommand =
+    buildCommand ??
+    `__NEXT_TEST_MODE=1 npm run build --verbose${
+      language === Language.TypeScript ? "; npx tsc --noEmit" : ""
+    }`;
+
   await executeWithLogRequiringSuccess(path, installCommand, { env });
-  return executeWithLogRequiringSuccess(path, buildCommand, {
+  return executeWithLogRequiringSuccess(path, realBuildCommand, {
     env,
   });
 }

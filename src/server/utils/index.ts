@@ -6,7 +6,7 @@ import { exec, ExecException } from "child_process";
 import { promisify } from "util";
 import { RepoSettings, Language, Style } from "./settings";
 
-export * from "./settings";
+export { RepoSettings, getRepoSettings } from "./settings";
 
 export type TemplateParams = {
   [key: string]: string;

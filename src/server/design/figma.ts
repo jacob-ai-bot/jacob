@@ -5,7 +5,8 @@ import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Endpoints } from "@octokit/types";
 
-import { RepoSettings, IconSet, Style, parseTemplate } from "../utils";
+import { RepoSettings, parseTemplate } from "../utils";
+import { IconSet, Style, Language } from "../utils/settings";
 import { sendGptVisionRequest } from "../openai/request";
 import { getFile } from "../github/repo";
 
@@ -136,11 +137,13 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       repo,
       fileName,
       figmaMap,
+      figmaMapCSS,
       additionalInstructions,
       snapshotUrl,
       imageUrls,
     } = req.body as {
       figmaMap?: string;
+      figmaMapCSS?: string;
       fileName?: string;
       additionalInstructions?: string;
       repo?: GitHubRepo;
@@ -148,6 +151,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       imageUrls?: string[];
     };
 
+    // TODO: require figmaMapCSS once new plugin is widely in use
     if (!figmaMap || !fileName || !repo) {
       res.status(400).send("Missing required parameters");
       return;
@@ -201,12 +205,44 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       /* empty */
     }
 
+    const updatedFileName =
+      fileName.endsWith(".jsx") || fileName.endsWith(".tsx")
+        ? fileName
+        : repoSettings?.language === Language.JavaScript
+        ? `${fileName}.jsx`
+        : `${fileName}.tsx`;
+
     const iconSet = repoSettings?.iconSet ?? IconSet.FontAwesome;
     const iconSetExample = iconSetExamples[iconSet];
 
+    const figmlExample = parseTemplate(
+      "dev",
+      repoSettings?.style === Style.CSS
+        ? "new_figma_file_css"
+        : "new_figma_file_tailwind",
+      "figml",
+      {},
+    );
+
+    const styleInstructions = parseTemplate(
+      "dev",
+      repoSettings?.style === Style.CSS
+        ? "new_figma_file_css"
+        : "new_figma_file_tailwind",
+      "instructions",
+      {},
+    );
+
     const codeTemplateParams = {
-      figmaMap,
+      figmaMap:
+        repoSettings?.style === Style.CSS && figmaMapCSS
+          ? figmaMapCSS
+          : figmaMap,
+      figmlExample,
+      styleInstructions,
       iconSet,
+      language: repoSettings?.language ?? "TypeScript",
+      styleQualifier: repoSettings?.style === Style.CSS ? "CSS" : "TailwindCSS",
       additionalInstructions: additionalInstructions
         ? `Here are some additional instructions: ${additionalInstructions}`
         : "",
@@ -237,7 +273,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
     )) as string;
 
     const issueTemplateParams = {
-      fileName,
+      fileName: updatedFileName,
       code,
       iconSet,
       iconSetExample,
@@ -274,8 +310,8 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         assignees: tokenData.user?.login ? [tokenData.user.login] : [],
         title:
           verb === "new"
-            ? `Create new file => ${fileName}`
-            : `Update the design for ${fileName}`,
+            ? `Create new file => ${updatedFileName}`
+            : `Update the design for ${updatedFileName}`,
         body,
       });
 
