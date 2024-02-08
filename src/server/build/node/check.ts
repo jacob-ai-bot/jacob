@@ -34,6 +34,7 @@ export async function runBuildCheck(
   };
   const {
     installCommand = "npm install",
+    formatCommand,
     language = Language.TypeScript,
     buildCommand,
   } = repoSettings ?? {};
@@ -45,6 +46,9 @@ export async function runBuildCheck(
     }`;
 
   await executeWithLogRequiringSuccess(path, installCommand, { env });
+  if (formatCommand) {
+    await executeWithLogRequiringSuccess(path, formatCommand, { env });
+  }
   return executeWithLogRequiringSuccess(path, realBuildCommand, {
     env,
   });

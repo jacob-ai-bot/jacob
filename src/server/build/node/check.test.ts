@@ -1,5 +1,6 @@
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { runBuildCheck, runNpmInstall } from "./check";
+import { Language } from "../../utils/settings";
 
 const mockedUtils = vi.hoisted(() => ({
   executeWithLogRequiringSuccess: vi
@@ -66,6 +67,18 @@ describe("runBuildCheck and runNpmInstall", () => {
     );
   });
 
+  test("runBuildCheck uses different default buildCommand when JavaScript is specific in settings", async () => {
+    await runBuildCheck(".", {
+      env: {},
+      language: Language.JavaScript,
+    });
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
+      ".",
+      "__NEXT_TEST_MODE=1 npm run build --verbose",
+      { env: {} },
+    );
+  });
+
   test("runBuildCheck uses env from settings", async () => {
     const result = await runBuildCheck(".", { env: {} });
     expect(result).toMatchObject({ stdout: "", stderr: "" });
@@ -84,19 +97,26 @@ describe("runBuildCheck and runNpmInstall", () => {
     );
   });
 
-  test("runBuildCheck uses installCommand and buildCommand from settings", async () => {
+  test("runBuildCheck uses commands from settings", async () => {
     const result = await runBuildCheck(".", {
       env: {},
       installCommand: "my-install",
+      formatCommand: "my-format",
       buildCommand: "my-build",
     });
     expect(result).toMatchObject({ stdout: "", stderr: "" });
 
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
       ".",
       "my-install",
+      { env: {} },
+    );
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
+      2,
+      ".",
+      "my-format",
       { env: {} },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(

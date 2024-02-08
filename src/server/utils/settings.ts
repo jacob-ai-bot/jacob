@@ -29,6 +29,7 @@ export interface RepoSettings {
   language?: Language;
   style?: Style;
   installCommand?: string;
+  formatCommand?: string;
   buildCommand?: string;
   iconSet?: IconSet;
   componentExamples?: string;
