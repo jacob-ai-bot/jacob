@@ -10,6 +10,21 @@ import { concatenateFiles } from "../utils/files";
 export type PREvent =
   RestEndpointMethodTypes["pulls"]["createReview"]["parameters"]["event"];
 
+interface ErrorWithStatus {
+  status: number;
+  [key: string]: unknown;
+}
+
+// Type guard to check if the error has a "status" property
+function isErrorWithStatus(error: unknown): error is ErrorWithStatus {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "status" in error &&
+    typeof (error as ErrorWithStatus).status === "number"
+  );
+}
+
 export async function createPR(
   repository: Repository,
   token: string,
@@ -25,15 +40,40 @@ export async function createPR(
     userAgent: "jacob",
   });
 
-  const result = await octokit.pulls.create({
-    owner: repository.owner.login,
-    repo: repository.name,
-    title,
-    head: newBranch,
-    base: repository.default_branch,
-    body,
-    draft,
-  });
+  let result;
+
+  try {
+    result = await octokit.pulls.create({
+      owner: repository.owner.login,
+      repo: repository.name,
+      title,
+      head: newBranch,
+      base: repository.default_branch,
+      body,
+      draft,
+    });
+    console.log("Pull request created:", result.data.html_url);
+  } catch (error) {
+    if (isErrorWithStatus(error) && error.status === 422) {
+      // If a 422 error is caught, the user does not have draft PRs enabled. Try again with draft set to false.
+      console.log(
+        "Draft pull request creation failed due to a 422 error, trying without draft...",
+      );
+      result = await octokit.pulls.create({
+        owner: repository.owner.login,
+        repo: repository.name,
+        title,
+        head: newBranch,
+        base: repository.default_branch,
+        body,
+        draft: false, // retry with draft set to false
+      });
+      console.log("Non-draft pull request created:", result.data.html_url);
+    } else {
+      // If the error code is not 422, rethrow the error
+      throw error;
+    }
+  }
 
   if (reviewers.length > 0) {
     await octokit.pulls.requestReviewers({
