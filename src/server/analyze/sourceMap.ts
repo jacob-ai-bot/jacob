@@ -127,21 +127,54 @@ export const getTypes = (
 
     const sourceFiles = project.getSourceFiles();
 
-    sourceFiles.map((file) => {
-      const filePath = file.getFilePath();
-      const fileName = file.getBaseName();
-      const relativePath = filePath.replaceAll(rootPath, "");
-      if (
-        fileName === "types.ts" ||
-        fileName === "interfaces.ts" ||
-        relativePath === "/interfaces/index.ts" ||
-        relativePath === "/types/index.ts"
-      ) {
-        console.log("found types file", fileName);
-        sourceFile = file;
+    // Check to see if the repoSettings.directories.types is set
+    // If it is, use that to find the types file
+    const { types = "types" } = repoSettings?.directories ?? {};
+    const typesPath = path.join(rootPath, types);
+    console.log("typesPath", typesPath);
+    if (fs.existsSync(typesPath)) {
+      // first check to see if this is a directory or a file path
+      // if it's a file path, use that, otherwise traverse the directory to find a types file
+      if (fs.lstatSync(typesPath).isFile()) {
+        sourceFile = project.addSourceFileAtPath(typesPath);
+      } else {
+        const files = fs.readdirSync(typesPath);
+        console.log("files", files);
+        for (const file of files) {
+          if (
+            file === "types.ts" ||
+            file === "interfaces.ts" ||
+            file === "index.d.ts"
+          ) {
+            try {
+              sourceFile = project.addSourceFileAtPath(typesPath + "/" + file);
+            } catch (error) {
+              // if there is an error, continue to the next file
+            }
+          }
+        }
       }
-    });
+    }
 
+    // If the types directory isn't set or the file is not there, look for it in the source files
+    if (!sourceFile) {
+      sourceFiles.map((file) => {
+        const filePath = file.getFilePath();
+        const fileName = file.getBaseName();
+        const relativePath = filePath.replaceAll(rootPath, "");
+        if (
+          fileName === "types.ts" ||
+          fileName === "interfaces.ts" ||
+          relativePath === "/interfaces/index.ts" ||
+          relativePath === "/types/index.ts"
+        ) {
+          console.log("found types file", fileName);
+          sourceFile = file;
+        }
+      });
+    }
+
+    // If we still haven't found the types file, look for it in the root
     if (!sourceFile) {
       console.log("no types file found, looking for types.ts or src/types.ts");
       // check to see if the file exists at the root
