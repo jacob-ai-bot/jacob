@@ -54,10 +54,9 @@ export async function runBuildCheck(
     env,
   });
 }
-
 export async function runNpmInstall(
   path: string,
-  packageNames: string,
+  packageName: string,
   repoSettings?: RepoSettings,
 ) {
   const env = {
@@ -66,21 +65,24 @@ export async function runNpmInstall(
   };
   const { installCommand = "npm install" } = repoSettings ?? {};
 
-  // there might be multiple packages to install, so we need to split them. They should be separated by spaces
-  const packageNamesArray = packageNames.split(" ");
-  for (const packageName of packageNamesArray) {
-    // do some quick validation to ensure the package name is valid and does not include an injection attack
-    if (!packageNameRegex.test(packageName)) {
-      // This regex matches any word character or dash
-      console.log(`runNpmInstall: Invalid package name: ${packageName}`);
-      continue;
+  // If we're trying to install multiple packages, first split them up and validate each one
+  const packageNames = packageName.split(" ");
+  for (const name of packageNames) {
+    if (!packageNameRegex.test(name)) {
+      throw new Error(`runNpmInstall: Invalid package name: ${name}`);
     }
-    // TODO: do we need an addCommand in jacob.json to better handle this generically?
-    const command = installCommand.startsWith("yarn")
-      ? "yarn add"
-      : installCommand;
-    await executeWithLogRequiringSuccess(path, `${command} ${packageName}`, {
-      env,
-    });
   }
+  const validatedPackageName = packageNames.join(" ");
+
+  // TODO: do we need an addCommand in jacob.json to better handle this generically?
+  const command = installCommand.startsWith("yarn")
+    ? "yarn add"
+    : installCommand;
+  return executeWithLogRequiringSuccess(
+    path,
+    `${command} ${validatedPackageName}`,
+    {
+      env,
+    },
+  );
 }

@@ -200,25 +200,15 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runNpmInstall installs multiple packages", async () => {
-    await runNpmInstall(".", "package-name-1 package-name-2", { env: {} });
-
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "npm install package-name-2",
-      { env: {} },
-    );
-  });
-
-  test("runNpmInstall installs multiple packages even if there is one invalid package name", async () => {
-    await runNpmInstall(".", "valid-package-name !invalid-package-name!", {
+    const result = await runNpmInstall(".", "package-name-1 package-name-2", {
       env: {},
     });
+    expect(result).toMatchObject({ stdout: "", stderr: "" });
 
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(1);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "npm install valid-package-name",
+      "npm install package-name-1 package-name-2",
       { env: {} },
     );
   });
