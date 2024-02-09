@@ -127,8 +127,7 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runNpmInstall succeeds with default commands and environment", async () => {
-    const result = await runNpmInstall(".", "package-name");
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    await runNpmInstall(".", "package-name");
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
@@ -153,8 +152,7 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runNpmInstall uses env from settings", async () => {
-    const result = await runNpmInstall(".", "package-name", { env: {} });
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    await runNpmInstall(".", "package-name", { env: {} });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
@@ -165,16 +163,39 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runNpmInstall uses installCommand from settings and understands yarn add", async () => {
-    const result = await runNpmInstall(".", "package-name", {
+    await runNpmInstall(".", "package-name", {
       env: {},
       installCommand: "yarn install",
     });
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "yarn add package-name",
+      { env: {} },
+    );
+  });
+
+  test("runNpmInstall installs multiple packages", async () => {
+    await runNpmInstall(".", "package-name-1 package-name-2", { env: {} });
+
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
+      ".",
+      "npm install package-name-2",
+      { env: {} },
+    );
+  });
+
+  test("runNpmInstall installs multiple packages even if there is one invalid package name", async () => {
+    await runNpmInstall(".", "valid-package-name !invalid-package-name!", {
+      env: {},
+    });
+
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(1);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
+      ".",
+      "npm install valid-package-name",
       { env: {} },
     );
   });
