@@ -131,7 +131,6 @@ export const getTypes = (
     // If it is, use that to find the types file
     const { types = "types" } = repoSettings?.directories ?? {};
     const typesPath = path.join(rootPath, types);
-    console.log("typesPath", typesPath);
     if (fs.existsSync(typesPath)) {
       // first check to see if this is a directory or a file path
       // if it's a file path, use that, otherwise traverse the directory to find a types file
@@ -139,7 +138,6 @@ export const getTypes = (
         sourceFile = project.addSourceFileAtPath(typesPath);
       } else {
         const files = fs.readdirSync(typesPath);
-        console.log("files", files);
         for (const file of files) {
           if (
             file === "types.ts" ||
