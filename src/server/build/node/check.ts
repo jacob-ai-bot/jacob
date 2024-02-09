@@ -79,7 +79,7 @@ export async function runNpmInstall(
     const command = installCommand.startsWith("yarn")
       ? "yarn add"
       : installCommand;
-    executeWithLogRequiringSuccess(path, `${command} ${packageName}`, {
+    await executeWithLogRequiringSuccess(path, `${command} ${packageName}`, {
       env,
     });
   }
