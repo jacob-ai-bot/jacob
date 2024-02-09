@@ -103,6 +103,7 @@ describe("checkAndCommit", () => {
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
       "/rootpath",
+      true,
       undefined,
     );
 
@@ -181,6 +182,7 @@ describe("checkAndCommit", () => {
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
       "/rootpath",
+      true,
       undefined,
     );
 
@@ -257,6 +259,7 @@ describe("checkAndCommit", () => {
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
       "/rootpath",
+      true,
       undefined,
     );
 
@@ -296,6 +299,7 @@ describe("checkAndCommit", () => {
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
       "/rootpath",
+      true,
       undefined,
     );
 

@@ -139,7 +139,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
         const repoSettings = getRepoSettings(path);
 
         try {
-          await runBuildCheck(path, repoSettings);
+          await runBuildCheck(path, false, repoSettings);
           await createRepoInstalledIssue(
             repository,
             installationAuthentication.token,
@@ -258,7 +258,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
       try {
         if (issueOpened) {
-          await runBuildCheck(path, repoSettings);
+          await runBuildCheck(path, false, repoSettings);
 
           const issueTitle = event.payload.issue.title;
 
@@ -283,7 +283,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           }
         } else if (issueComment) {
           // NOTE: The only command we support on issue comments is to run a build check
-          await runBuildCheck(path, repoSettings);
+          await runBuildCheck(path, false, repoSettings);
           await addCommentToIssue(
             repository,
             eventIssueOrPRNumber,

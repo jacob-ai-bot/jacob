@@ -59,7 +59,7 @@ export async function checkAndCommit({
   let buildErrorMessage: string | undefined;
 
   try {
-    await runBuildCheck(rootPath, repoSettings);
+    await runBuildCheck(rootPath, true, repoSettings);
   } catch (error) {
     const { message } = error as ExecAsyncException;
     // Awkward workaround to dynamically import an ESM module

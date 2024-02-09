@@ -22,7 +22,7 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runBuildCheck succeeds with default commands and environment", async () => {
-    const result = await runBuildCheck(".");
+    const result = await runBuildCheck(".", false);
     expect(result).toMatchObject({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
@@ -68,7 +68,7 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runBuildCheck uses different default buildCommand when JavaScript is specific in settings", async () => {
-    await runBuildCheck(".", {
+    await runBuildCheck(".", false, {
       env: {},
       language: Language.JavaScript,
     });
@@ -80,7 +80,7 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runBuildCheck uses env from settings", async () => {
-    const result = await runBuildCheck(".", { env: {} });
+    const result = await runBuildCheck(".", false, { env: {} });
     expect(result).toMatchObject({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
@@ -97,8 +97,31 @@ describe("runBuildCheck and runNpmInstall", () => {
     );
   });
 
-  test("runBuildCheck uses commands from settings", async () => {
-    const result = await runBuildCheck(".", {
+  test("runBuildCheck uses commands from settings - but skips formatCommand before modifications", async () => {
+    const result = await runBuildCheck(".", false, {
+      env: {},
+      installCommand: "my-install",
+      formatCommand: "my-format",
+      buildCommand: "my-build",
+    });
+    expect(result).toMatchObject({ stdout: "", stderr: "" });
+
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
+      1,
+      ".",
+      "my-install",
+      { env: {} },
+    );
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
+      ".",
+      "my-build",
+      { env: {} },
+    );
+  });
+
+  test("runBuildCheck uses commands from settings - including formatCommand after modifications", async () => {
+    const result = await runBuildCheck(".", true, {
       env: {},
       installCommand: "my-install",
       formatCommand: "my-format",

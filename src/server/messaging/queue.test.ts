@@ -188,6 +188,11 @@ describe("onGitHubEvent", () => {
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/tmp/jacob/1",
+      false,
+      undefined,
+    );
     expect(mockedNewFile.createNewFile).toHaveBeenCalledTimes(1);
   });
 
@@ -227,6 +232,11 @@ describe("onGitHubEvent", () => {
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/tmp/jacob/1",
+      false,
+      undefined,
+    );
     expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
   });
 
@@ -288,6 +298,11 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/tmp/jacob/1",
+      false,
+      undefined,
+    );
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
   });
 
@@ -300,6 +315,11 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/tmp/jacob/1",
+      false,
+      undefined,
+    );
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
 
@@ -316,6 +336,11 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/tmp/jacob/1",
+      false,
+      undefined,
+    );
     expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
     expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedComments.addFailedWorkComment.mock.calls[0][1]).toBe(125);

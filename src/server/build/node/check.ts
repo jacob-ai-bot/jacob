@@ -26,6 +26,7 @@ const NEXT_JS_ENV = {
 
 export async function runBuildCheck(
   path: string,
+  afterModifications: boolean,
   repoSettings?: RepoSettings,
 ): ExecPromise {
   const env = {
@@ -46,7 +47,7 @@ export async function runBuildCheck(
     }`;
 
   await executeWithLogRequiringSuccess(path, installCommand, { env });
-  if (formatCommand) {
+  if (afterModifications && formatCommand) {
     await executeWithLogRequiringSuccess(path, formatCommand, { env });
   }
   return executeWithLogRequiringSuccess(path, realBuildCommand, {
