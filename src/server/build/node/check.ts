@@ -48,7 +48,16 @@ export async function runBuildCheck(
 
   await executeWithLogRequiringSuccess(path, installCommand, { env });
   if (afterModifications && formatCommand) {
-    await executeWithLogRequiringSuccess(path, formatCommand, { env });
+    try {
+      await executeWithLogRequiringSuccess(path, formatCommand, { env });
+    } catch (error) {
+      // There are a variety of reasons why the formatCommand might fail
+      // so we choose to ignore those errors and continue with the build
+      console.log(
+        `Ignoring error running formatCommand: ${formatCommand}`,
+        error,
+      );
+    }
   }
   return executeWithLogRequiringSuccess(path, realBuildCommand, {
     env,

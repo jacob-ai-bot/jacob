@@ -149,6 +149,27 @@ describe("runBuildCheck and runNpmInstall", () => {
     );
   });
 
+  test("runBuildCheck ignores errors from the formatCommand", async () => {
+    // Fail the 2nd command only (the format command)
+    mockedUtils.executeWithLogRequiringSuccess
+      .mockImplementationOnce(
+        () => new Promise((resolve) => resolve({ stdout: "", stderr: "" })),
+      )
+      .mockImplementationOnce(
+        () => new Promise((_, reject) => reject(new Error("format error"))),
+      );
+
+    const result = await runBuildCheck(".", true, {
+      env: {},
+      installCommand: "my-install",
+      formatCommand: "my-format",
+      buildCommand: "my-build",
+    });
+    expect(result).toMatchObject({ stdout: "", stderr: "" });
+
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
+  });
+
   test("runNpmInstall succeeds with default commands and environment", async () => {
     await runNpmInstall(".", "package-name");
 
