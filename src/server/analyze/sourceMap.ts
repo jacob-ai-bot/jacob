@@ -120,7 +120,7 @@ export const getTypes = (
 
     let sourceFile: SourceFile | undefined;
 
-    const configPath = rootPath + "/tsconfig.json"; // Path to tsconfig.json
+    const configPath = path.join(rootPath, "tsconfig.json"); // Path to tsconfig.json
     const project = new Project({
       tsConfigFilePath: configPath,
     });
@@ -145,12 +145,12 @@ export const getTypes = (
     if (!sourceFile) {
       console.log("no types file found, looking for types.ts or src/types.ts");
       // check to see if the file exists at the root
-      let filePath = rootPath + "types.ts";
+      let filePath = path.join(rootPath, "types.ts");
       console.log("filePath", filePath);
       if (fs.existsSync(filePath)) {
         sourceFile = project.addSourceFileAtPath(filePath);
       } else {
-        filePath = rootPath + "src/types.ts";
+        filePath = path.join(rootPath, "src/types.ts");
         console.log("filePath", filePath);
         if (fs.existsSync(filePath)) {
           sourceFile = project.addSourceFileAtPath(filePath);
