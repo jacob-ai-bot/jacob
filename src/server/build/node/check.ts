@@ -68,6 +68,7 @@ export async function runNpmInstall(
   // If we're trying to install multiple packages, first split them up and validate each one
   const packageNames = packageName.split(" ");
   for (const name of packageNames) {
+    // do some quick validation to ensure the package name is valid and does not include an injection attack
     if (!packageNameRegex.test(name)) {
       throw new Error(`runNpmInstall: Invalid package name: ${name}`);
     }
@@ -78,7 +79,7 @@ export async function runNpmInstall(
   const command = installCommand.startsWith("yarn")
     ? "yarn add"
     : installCommand;
-  return executeWithLogRequiringSuccess(
+  return await executeWithLogRequiringSuccess(
     path,
     `${command} ${validatedPackageName}`,
     {
