@@ -360,63 +360,44 @@ const getFiles = (
   return files;
 };
 
-const generateMapFromFiles = (files: SourceMap[]) => {
+export const generateMapFromFiles = (files: SourceMap[]) => {
   let sourceMap: string = "";
   // loop through the result and create a map of the source code
   for (const file of files) {
     // start with the file path
-    sourceMap += "\n" + file.relativePath + ":";
+    sourceMap += `${file.relativePath}:\n`;
 
     // now add the interface names
-    if (file.interfaces.length > 0) {
-      sourceMap += "\n\tinterfaces:";
-      for (const int of file.interfaces) {
-        sourceMap += "\n\t\t" + int.name;
-        // add properties and methods for each interface
-        if (int.properties.length > 0) {
-          sourceMap += " - ";
-          for (const prop of int.properties) {
-            let typeName = prop.type;
-            if (typeName.includes("/Users") && typeName.includes(".")) {
-              // Get the part of the typeAliasType after the last .
-              typeName = typeName.split(".").pop()!;
-            }
-            sourceMap += prop.name + ": " + typeName;
-          }
+    const interfaces = file.interfaces.map((int) => {
+      // add properties and methods for each interface
+      const properties = int.properties.map((prop) => {
+        let typeName = prop.type;
+        if (typeName.includes("/Users") && typeName.includes(".")) {
+          // Get the part of the typeAliasType after the last .
+          typeName = typeName.split(".").pop()!;
         }
-        if (int.methods.length > 0) {
-          sourceMap += "\n\t\t\tmethods: ";
-          for (const method of int.methods) {
-            sourceMap += " " + method.name + " ";
-            // add commas between methods but not after the last method
-            sourceMap +=
-              method === int.methods[int.methods.length - 1] ? "" : ",";
-            // now add the parameters for each method (add on the same line, enclosed in parentheses)
-            if (method.parameters.length > 0) {
-              sourceMap += "(";
-              for (const param of method.parameters) {
-                let typeName = param.type;
-                if (typeName.includes("/Users") && typeName.includes(".")) {
-                  // Get the part of the typeAliasType after the .
-                  typeName = typeName.split(".").pop()!;
-                }
-                // add the parameter name and type. If it's the last parameter, don't add a comma
-                sourceMap +=
-                  param.name +
-                  ": " +
-                  typeName +
-                  (param === method.parameters[method.parameters.length - 1]
-                    ? ""
-                    : ", ");
-              }
-              sourceMap += ")";
-            }
-            // now add the return type (add on the same line, preceded by a colon)
-            sourceMap += ": " + method.returnType + " ";
+        return `    ${prop.name}: ${typeName};\n`;
+      });
+      const methods = int.methods.map((method) => {
+        const params = method.parameters.map((param) => {
+          let typeName = param.type;
+          if (typeName.includes("/Users") && typeName.includes(".")) {
+            // Get the part of the typeAliasType after the .
+            typeName = typeName.split(".").pop()!;
           }
-        }
-      }
-    }
+          // add the parameter name and type. If it's the last parameter, don't add a comma
+          return `${param.name}: ${typeName}`;
+        });
+        // now add the return type (add on the same line, preceded by a colon)
+        return `    ${method.name}(${params.join(", ")}): ${
+          method.returnType
+        };\n`;
+      });
+      return `  interface ${int.name} {\n${properties.join("")}${methods.join(
+        "",
+      )}  }\n`;
+    });
+    sourceMap += interfaces.join("");
   }
   // remove some of the extra strings we don't need
   sourceMap = sourceMap.replaceAll("/node_modules/next/dist/", "");
