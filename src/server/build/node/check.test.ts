@@ -1,5 +1,11 @@
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
-import { runBuildCheck, runNpmInstall } from "./check";
+import {
+  runBuildCheck,
+  runNpmInstall,
+  INSTALL_TIMEOUT,
+  FORMAT_TIMEOUT,
+  BUILD_TIMEOUT,
+} from "./check";
 import { Language } from "../../utils/settings";
 
 const mockedUtils = vi.hoisted(() => ({
@@ -44,6 +50,7 @@ describe("runBuildCheck and runNpmInstall", () => {
           NEXTAUTH_URL: "http://localhost:3000",
           NODE_ENV: "",
         },
+        timeout: INSTALL_TIMEOUT,
       },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
@@ -63,6 +70,7 @@ describe("runBuildCheck and runNpmInstall", () => {
           NEXTAUTH_URL: "http://localhost:3000",
           NODE_ENV: "",
         },
+        timeout: BUILD_TIMEOUT,
       },
     );
   });
@@ -75,7 +83,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "__NEXT_TEST_MODE=1 npm run build --verbose",
-      { env: {} },
+      { env: {}, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -88,12 +96,12 @@ describe("runBuildCheck and runNpmInstall", () => {
       1,
       ".",
       "npm install",
-      { env: {} },
+      { env: {}, timeout: INSTALL_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
-      { env: {} },
+      { env: {}, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -111,12 +119,12 @@ describe("runBuildCheck and runNpmInstall", () => {
       1,
       ".",
       "my-install",
-      { env: {} },
+      { env: {}, timeout: INSTALL_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "my-build",
-      { env: {} },
+      { env: {}, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -134,18 +142,18 @@ describe("runBuildCheck and runNpmInstall", () => {
       1,
       ".",
       "my-install",
-      { env: {} },
+      { env: {}, timeout: INSTALL_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
       ".",
       "my-format",
-      { env: {} },
+      { env: {}, timeout: FORMAT_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "my-build",
-      { env: {} },
+      { env: {}, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -191,6 +199,7 @@ describe("runBuildCheck and runNpmInstall", () => {
           NEXTAUTH_URL: "http://localhost:3000",
           NODE_ENV: "",
         },
+        timeout: INSTALL_TIMEOUT,
       },
     );
   });
@@ -202,7 +211,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "npm install package-name",
-      { env: {} },
+      { env: {}, timeout: INSTALL_TIMEOUT },
     );
   });
 
@@ -216,7 +225,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "yarn add package-name",
-      { env: {} },
+      { env: {}, timeout: INSTALL_TIMEOUT },
     );
   });
 
@@ -230,7 +239,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "npm install package-name-1 package-name-2",
-      { env: {} },
+      { env: {}, timeout: INSTALL_TIMEOUT },
     );
   });
 });

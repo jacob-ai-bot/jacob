@@ -24,6 +24,10 @@ const NEXT_JS_ENV = {
   NEXTAUTH_URL: "http://localhost:3000",
 };
 
+export const INSTALL_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+export const FORMAT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+export const BUILD_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+
 export async function runBuildCheck(
   path: string,
   afterModifications: boolean,
@@ -46,10 +50,16 @@ export async function runBuildCheck(
       language === Language.TypeScript ? "; npx tsc --noEmit" : ""
     }`;
 
-  await executeWithLogRequiringSuccess(path, installCommand, { env });
+  await executeWithLogRequiringSuccess(path, installCommand, {
+    env,
+    timeout: INSTALL_TIMEOUT,
+  });
   if (afterModifications && formatCommand) {
     try {
-      await executeWithLogRequiringSuccess(path, formatCommand, { env });
+      await executeWithLogRequiringSuccess(path, formatCommand, {
+        env,
+        timeout: FORMAT_TIMEOUT,
+      });
     } catch (error) {
       // There are a variety of reasons why the formatCommand might fail
       // so we choose to ignore those errors and continue with the build
@@ -61,6 +71,7 @@ export async function runBuildCheck(
   }
   return executeWithLogRequiringSuccess(path, realBuildCommand, {
     env,
+    timeout: BUILD_TIMEOUT,
   });
 }
 export async function runNpmInstall(
@@ -93,6 +104,7 @@ export async function runNpmInstall(
     `${command} ${validatedPackageName}`,
     {
       env,
+      timeout: INSTALL_TIMEOUT,
     },
   );
 }
