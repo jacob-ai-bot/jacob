@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
 
@@ -15,6 +15,10 @@ describe("getRepoSettings", () => {
   const packageJsonContents = {
     dependencies: { package1: "1.0.0", package2: "2.0.0" },
   };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   it("returns undefined when there is no jacob.json file", () => {
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
@@ -63,7 +67,6 @@ describe("getRepoSettings", () => {
     });
 
     const settings = getRepoSettings(rootPath);
-    console.log("settings", settings);
     expect(settings).toStrictEqual({
       ...fileContents,
       packageDependencies: packageJsonContents.dependencies,
