@@ -66,6 +66,18 @@ export async function checkAndCommit({
     // If we have an exception and stderr is empty, we should use stdout
     const output = stderr ? message : `${message}\n${stdout}`;
 
+    console.log("&& stdout", stdout);
+    console.log("&& stdout.length", stdout?.length);
+    console.log("&& stderr", stderr);
+    console.log("&& stderr.length", stderr?.length);
+    if (stderr) {
+      console.log("&& stderr is truthy");
+    } else {
+      console.log("&& stderr is not truthy");
+    }
+    console.log("&& message", message);
+    console.log("&& output", output);
+
     // Awkward workaround to dynamically import an ESM module
     // within a commonjs TypeScript module
 
