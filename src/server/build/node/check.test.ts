@@ -55,6 +55,32 @@ describe("runBuildCheck and runNpmInstall", () => {
       ".",
       "npm install",
       {
+        env: {},
+        timeout: INSTALL_TIMEOUT,
+      },
+    );
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
+      ".",
+      "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+      {
+        env: {},
+        timeout: BUILD_TIMEOUT,
+      },
+    );
+  });
+
+  test("runBuildCheck succeeds with default commands and environment for a Next.js project", async () => {
+    const result = await runBuildCheck(".", false, {
+      packageDependencies: { next: "1.0.0" },
+    });
+    expect(result).toStrictEqual({ stdout: "", stderr: "" });
+
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
+      1,
+      ".",
+      "npm install",
+      {
         env: {
           DATABASE_URL: "file:./db.sqlite",
           EMAIL_FROM: "EMAIL_FROM",
@@ -95,7 +121,6 @@ describe("runBuildCheck and runNpmInstall", () => {
 
   test("runBuildCheck uses different default buildCommand when JavaScript is specific in settings", async () => {
     await runBuildCheck(".", false, {
-      env: {},
       language: Language.JavaScript,
     });
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
@@ -106,7 +131,7 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runBuildCheck uses env from settings", async () => {
-    const result = await runBuildCheck(".", false, { env: {} });
+    const result = await runBuildCheck(".", false, { env: { custom: "1" } });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
@@ -114,18 +139,17 @@ describe("runBuildCheck and runNpmInstall", () => {
       1,
       ".",
       "npm install",
-      { env: {}, timeout: INSTALL_TIMEOUT },
+      { env: { custom: "1" }, timeout: INSTALL_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
-      { env: {}, timeout: BUILD_TIMEOUT },
+      { env: { custom: "1" }, timeout: BUILD_TIMEOUT },
     );
   });
 
   test("runBuildCheck uses commands from settings - but skips formatCommand before modifications", async () => {
     const result = await runBuildCheck(".", false, {
-      env: {},
       installCommand: "my-install",
       formatCommand: "my-format",
       buildCommand: "my-build",
@@ -148,7 +172,6 @@ describe("runBuildCheck and runNpmInstall", () => {
 
   test("runBuildCheck uses commands from settings - including formatCommand after modifications", async () => {
     const result = await runBuildCheck(".", true, {
-      env: {},
       installCommand: "my-install",
       formatCommand: "my-format",
       buildCommand: "my-build",
@@ -186,7 +209,6 @@ describe("runBuildCheck and runNpmInstall", () => {
       );
 
     const result = await runBuildCheck(".", true, {
-      env: {},
       installCommand: "my-install",
       formatCommand: "my-format",
       buildCommand: "my-build",
@@ -215,11 +237,7 @@ describe("runBuildCheck and runNpmInstall", () => {
           ),
       );
 
-    await expect(() =>
-      runBuildCheck(".", true, {
-        env: {},
-      }),
-    ).rejects.toThrowError(
+    await expect(() => runBuildCheck(".", true)).rejects.toThrowError(
       "Command failed: npm run build --verbose\nerror: special stdout only error",
     );
   });
@@ -232,38 +250,25 @@ describe("runBuildCheck and runNpmInstall", () => {
       ".",
       "npm install package-name",
       {
-        env: {
-          DATABASE_URL: "file:./db.sqlite",
-          EMAIL_FROM: "EMAIL_FROM",
-          EMAIL_SERVER_HOST: "EMAIL_SERVER_HOST",
-          EMAIL_SERVER_PASSWORD: "EMAIL_SERVER_PASSWORD",
-          EMAIL_SERVER_PORT: "EMAIL_SERVER_PORT",
-          EMAIL_SERVER_USER: "EMAIL_SERVER_USER",
-          GITHUB_ID: "GITHUB_ID",
-          GITHUB_SECRET: "GITHUB_SECRET",
-          NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
-          NEXTAUTH_URL: "http://localhost:3000",
-          NODE_ENV: "",
-        },
+        env: {},
         timeout: INSTALL_TIMEOUT,
       },
     );
   });
 
   test("runNpmInstall uses env from settings", async () => {
-    await runNpmInstall(".", "package-name", { env: {} });
+    await runNpmInstall(".", "package-name", { env: { custom: "1" } });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "npm install package-name",
-      { env: {}, timeout: INSTALL_TIMEOUT },
+      { env: { custom: "1" }, timeout: INSTALL_TIMEOUT },
     );
   });
 
   test("runNpmInstall uses installCommand from settings and understands yarn add", async () => {
     await runNpmInstall(".", "package-name", {
-      env: {},
       installCommand: "yarn install",
     });
 
@@ -276,9 +281,11 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runNpmInstall installs multiple packages", async () => {
-    const result = await runNpmInstall(".", "package-name-1 package-name-2", {
-      env: {},
-    });
+    const result = await runNpmInstall(
+      ".",
+      "package-name-1 package-name-2",
+      {},
+    );
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();

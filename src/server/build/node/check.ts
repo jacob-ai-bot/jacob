@@ -31,15 +31,20 @@ export const INSTALL_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 export const FORMAT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 export const BUILD_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
+function getEnv(repoSettings?: RepoSettings) {
+  return {
+    ...getSanitizedEnv(),
+    ...(repoSettings?.env ??
+      (repoSettings?.packageDependencies?.next ? NEXT_JS_ENV : {})),
+  };
+}
+
 export async function runBuildCheck(
   path: string,
   afterModifications: boolean,
   repoSettings?: RepoSettings,
 ): ExecPromise {
-  const env = {
-    ...getSanitizedEnv(),
-    ...(repoSettings?.env ?? NEXT_JS_ENV),
-  };
+  const env = getEnv(repoSettings);
   const {
     installCommand = "npm install",
     formatCommand,
@@ -98,10 +103,7 @@ export async function runNpmInstall(
   packageName: string,
   repoSettings?: RepoSettings,
 ) {
-  const env = {
-    ...getSanitizedEnv(),
-    ...(repoSettings?.env ?? NEXT_JS_ENV),
-  };
+  const env = getEnv(repoSettings);
   const { installCommand = "npm install" } = repoSettings ?? {};
 
   // If we're trying to install multiple packages, first split them up and validate each one
