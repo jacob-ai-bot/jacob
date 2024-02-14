@@ -240,7 +240,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
     let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
     let prBranch: string | undefined;
-    if (prCommand || prReview) {
+    if (prComment || prReview) {
       const result = await getPR(
         repository,
         installationAuthentication.token,
