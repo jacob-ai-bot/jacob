@@ -61,14 +61,18 @@ export async function checkAndCommit({
   try {
     await runBuildCheck(rootPath, true, repoSettings);
   } catch (error) {
-    const { message } = error as ExecAsyncException;
+    const { message, stdout, stderr } = error as ExecAsyncException;
+    // Some tools (e.g. tsc) write to stdout instead of stderr
+    // If we have an exception and stderr is empty, we should use stdout
+    const output = stderr ? message : `${message}\n${stdout}`;
+
     // Awkward workaround to dynamically import an ESM module
     // within a commonjs TypeScript module
 
     // See Option #4 here: https://github.com/TypeStrong/ts-node/discussions/1290
     const stripAnsiFn = (await dynamicImport("strip-ansi"))
       .default as typeof stripAnsi;
-    buildErrorMessage = stripAnsiFn(message);
+    buildErrorMessage = stripAnsiFn(output);
   }
 
   await addCommitAndPush(rootPath, branch, commitMessage);
