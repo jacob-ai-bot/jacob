@@ -83,17 +83,13 @@ export async function runBuildCheck(
     // If we have an exception and stderr is empty, we should use stdout
     const output = stderr ? message : `${message}\n${stdout}`;
 
-    console.log("output", output);
-
     // Awkward workaround to dynamically import an ESM module
     // within a commonjs TypeScript module
 
     // See Option #4 here: https://github.com/TypeStrong/ts-node/discussions/1290
     const stripAnsiFn = (await dynamicImport("strip-ansi"))
       .default as typeof stripAnsi;
-    const errMsg = stripAnsiFn(output);
-    console.log("errMsg", errMsg);
-    throw new Error(errMsg);
+    throw new Error(stripAnsiFn(output));
   }
 }
 export async function runNpmInstall(
