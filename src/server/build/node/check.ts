@@ -52,11 +52,17 @@ export async function runBuildCheck(
     buildCommand,
   } = repoSettings ?? {};
 
-  const realBuildCommand =
+  const buildCommandPrefix = repoSettings?.packageDependencies?.next
+    ? "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 "
+    : "";
+
+  const baseBuildCommand =
     buildCommand ??
-    `__NEXT_TEST_MODE=1 npm run build --verbose${
+    `npm run build --verbose${
       language === Language.TypeScript ? "; npx tsc --noEmit" : ""
     }`;
+
+  const realBuildCommand = `${buildCommandPrefix}${baseBuildCommand}`;
 
   try {
     await executeWithLogRequiringSuccess(path, installCommand, {

@@ -61,7 +61,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+      "npm run build --verbose; npx tsc --noEmit",
       {
         env: {},
         timeout: BUILD_TIMEOUT,
@@ -99,7 +99,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+      "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 npm run build --verbose; npx tsc --noEmit",
       {
         env: {
           DATABASE_URL: "file:./db.sqlite",
@@ -125,7 +125,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     });
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "__NEXT_TEST_MODE=1 npm run build --verbose",
+      "npm run build --verbose",
       { env: {}, timeout: BUILD_TIMEOUT },
     );
   });
@@ -143,7 +143,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "__NEXT_TEST_MODE=1 npm run build --verbose; npx tsc --noEmit",
+      "npm run build --verbose; npx tsc --noEmit",
       { env: { custom: "1" }, timeout: BUILD_TIMEOUT },
     );
   });
