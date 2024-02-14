@@ -196,7 +196,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
   });
 
-  test.only("runBuildCheck propagates errors from the buildCommand", async () => {
+  test("runBuildCheck propagates errors from the buildCommand", async () => {
     // Fail the 2nd command only (the build command)
     mockedUtils.executeWithLogRequiringSuccess
       .mockImplementationOnce(
