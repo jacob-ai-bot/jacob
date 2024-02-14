@@ -18,7 +18,8 @@ import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_req
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
 import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
-import issueCommentCreatedIssueComandBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.build.json";
+import issueCommentCreatedIssueCommandBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.build.json";
+import issueCommentCreatedIssueCommandOnPRBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommandOnPR.build.json";
 import installationRepositoriesAddedPayload from "../../data/test/webhooks/installation_repositories.added.json";
 import {
   onGitHubEvent,
@@ -310,7 +311,24 @@ describe("onGitHubEvent", () => {
     await onGitHubEvent({
       id: "8",
       name: "issue_comment",
-      payload: issueCommentCreatedIssueComandBuildPayload,
+      payload: issueCommentCreatedIssueCommandBuildPayload,
+    } as WebhookIssueCommentCreatedEvent);
+
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/tmp/jacob/1",
+      false,
+      undefined,
+    );
+    expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
+  });
+
+  test("issue command - build - on PR", async () => {
+    await onGitHubEvent({
+      id: "8",
+      name: "issue_comment",
+      payload: issueCommentCreatedIssueCommandOnPRBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
@@ -331,7 +349,7 @@ describe("onGitHubEvent", () => {
     await onGitHubEvent({
       id: "8",
       name: "issue_comment",
-      payload: issueCommentCreatedIssueComandBuildPayload,
+      payload: issueCommentCreatedIssueCommandBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);

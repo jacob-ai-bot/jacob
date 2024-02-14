@@ -183,7 +183,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     const prOpened = eventName === "pull_request";
     const prComment =
       eventName === "issue_comment" && event.payload.issue?.pull_request;
-    const issueComment = eventName === "issue_comment" && !prComment;
+    const issueComment = eventName === "issue_comment";
     const prReview = eventName === "pull_request_review";
     const eventIssueOrPRNumber =
       eventName === "pull_request" || eventName === "pull_request_review"
@@ -204,9 +204,14 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         : undefined,
     );
     if ((prOpened || prComment) && !prCommand) {
-      throw new Error(
-        "Valid prCommand expected for queued PR opened or comment event",
-      );
+      if (
+        !issueComment ||
+        !event.payload.comment?.body?.includes("@jacob-ai-bot build")
+      ) {
+        throw new Error(
+          "Valid prCommand expected for queued PR opened or comment event",
+        );
+      }
     }
     if (prCommand && issueOpened) {
       throw new Error(
@@ -281,15 +286,6 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               repoSettings,
             );
           }
-        } else if (issueComment) {
-          // NOTE: The only command we support on issue comments is to run a build check
-          await runBuildCheck(path, false, repoSettings);
-          await addCommentToIssue(
-            repository,
-            eventIssueOrPRNumber,
-            installationAuthentication.token,
-            "Good news!\n\nThe build was successful! :tada:",
-          );
         } else if (prReview) {
           if (!prBranch || !existingPr) {
             throw new Error("prBranch and existingPr when handling prReview");
@@ -344,6 +340,17 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               );
               break;
           }
+        } else if (issueComment) {
+          // NOTE: important tht we are handing issueComment ONLY after handling prCommand
+
+          // NOTE: The only command we support on issue comments is to run a build check
+          await runBuildCheck(path, false, repoSettings);
+          await addCommentToIssue(
+            repository,
+            eventIssueOrPRNumber,
+            installationAuthentication.token,
+            "Good news!\n\nThe build was successful! :tada:",
+          );
         }
       } finally {
         console.log(
