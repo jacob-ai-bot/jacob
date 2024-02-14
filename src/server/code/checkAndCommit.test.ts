@@ -9,24 +9,6 @@ import {
   type PullRequest,
 } from "./checkAndCommit";
 
-class TestExecAsyncException extends Error {
-  stdout: string;
-  stderr: string;
-
-  constructor(message: string, stdout: string, stderr: string) {
-    super(message);
-    this.stdout = stdout;
-    this.stderr = stderr;
-  }
-}
-
-const mockedDynamicImport = vi.hoisted(() => ({
-  dynamicImport: vi
-    .fn()
-    .mockImplementation(async (specifier) => await import(specifier)),
-}));
-vi.mock("../utils/dynamicImport", () => mockedDynamicImport);
-
 const mockedCheck = vi.hoisted(() => ({
   runBuildCheck: vi
     .fn()
@@ -164,16 +146,7 @@ describe("checkAndCommit", () => {
       npm verb code 1
     `;
     mockedCheck.runBuildCheck.mockImplementation(
-      () =>
-        new Promise((_, reject) =>
-          reject(
-            new TestExecAsyncException(
-              fakeBuildError,
-              "",
-              "npm verb exit 1\nnpm verb code 1",
-            ),
-          ),
-        ),
+      () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
     const issue =
@@ -239,62 +212,6 @@ describe("checkAndCommit", () => {
     );
   });
 
-  test("checkAndCommit - with build error only in stdout", async () => {
-    const fakeBuildError = dedent`
-      Command failed: npm run build --verbose
-    `;
-    mockedCheck.runBuildCheck.mockImplementation(
-      () =>
-        new Promise((_, reject) =>
-          reject(
-            new TestExecAsyncException(
-              fakeBuildError,
-              "error: special stdout only error",
-              "",
-            ),
-          ),
-        ),
-    );
-
-    const issue =
-      issueCommentCreatedPRCommandFixBuildErrorPayload.issue as Issue;
-    const repository = {
-      owner: { login: "test-login" },
-      name: "test-repo",
-    } as Repository;
-
-    await checkAndCommit({
-      repository,
-      token: "token",
-      rootPath: "/rootpath",
-      branch: "jacob-issue-48-test",
-      issue,
-      commitMessage: "test-commit-message",
-      buildErrorAttemptNumber: 1,
-      existingPr: {
-        number: 48,
-        node_id: "PR_nodeid",
-        title: "pr-title",
-        html_url: "https://github.com/pr-url",
-      } as PullRequest,
-    });
-
-    expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(2);
-    expect(mockedIssue.addCommentToIssue).toHaveBeenNthCalledWith(
-      1,
-      repository,
-      48,
-      "token",
-      "This PR has been updated with a new commit.\n\n" +
-        "## Next Steps\n\n" +
-        "I am working to resolve a build error. I will update this PR with my progress.\n" +
-        "@jacob-ai-bot fix build error\n\n" +
-        "## Error Message (Attempt Number 2):\n\n" +
-        fakeBuildError +
-        "\nerror: special stdout only error",
-    );
-  });
-
   test("checkAndCommit - build error after too many attempts", async () => {
     const fakeBuildError = dedent`
       Command failed: npm run build --verbose
@@ -312,7 +229,7 @@ describe("checkAndCommit", () => {
       name: "test-repo",
     } as Repository;
 
-    await expect(() =>
+    await expect(
       checkAndCommit({
         repository,
         token: "token",

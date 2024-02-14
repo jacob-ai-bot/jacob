@@ -1,10 +1,13 @@
+import stripAnsi from "strip-ansi";
 import {
   executeWithLogRequiringSuccess,
   getSanitizedEnv,
   type ExecPromise,
   RepoSettings,
+  ExecAsyncException,
 } from "../../utils";
 import { Language } from "../../utils/settings";
+import { dynamicImport } from "../../utils/dynamicImport";
 
 // From package-name-regexp 3.0.0 (without importing the ESM module)
 const packageNameRegex =
@@ -50,29 +53,48 @@ export async function runBuildCheck(
       language === Language.TypeScript ? "; npx tsc --noEmit" : ""
     }`;
 
-  await executeWithLogRequiringSuccess(path, installCommand, {
-    env,
-    timeout: INSTALL_TIMEOUT,
-  });
-  if (afterModifications && formatCommand) {
-    try {
-      await executeWithLogRequiringSuccess(path, formatCommand, {
-        env,
-        timeout: FORMAT_TIMEOUT,
-      });
-    } catch (error) {
-      // There are a variety of reasons why the formatCommand might fail
-      // so we choose to ignore those errors and continue with the build
-      console.log(
-        `Ignoring error running formatCommand: ${formatCommand}`,
-        error,
-      );
+  try {
+    await executeWithLogRequiringSuccess(path, installCommand, {
+      env,
+      timeout: INSTALL_TIMEOUT,
+    });
+    if (afterModifications && formatCommand) {
+      try {
+        await executeWithLogRequiringSuccess(path, formatCommand, {
+          env,
+          timeout: FORMAT_TIMEOUT,
+        });
+      } catch (error) {
+        // There are a variety of reasons why the formatCommand might fail
+        // so we choose to ignore those errors and continue with the build
+        console.log(
+          `Ignoring error running formatCommand: ${formatCommand}`,
+          error,
+        );
+      }
     }
+    return await executeWithLogRequiringSuccess(path, realBuildCommand, {
+      env,
+      timeout: BUILD_TIMEOUT,
+    });
+  } catch (error) {
+    const { message, stdout, stderr } = error as ExecAsyncException;
+    // Some tools (e.g. tsc) write to stdout instead of stderr
+    // If we have an exception and stderr is empty, we should use stdout
+    const output = stderr ? message : `${message}\n${stdout}`;
+
+    console.log("output", output);
+
+    // Awkward workaround to dynamically import an ESM module
+    // within a commonjs TypeScript module
+
+    // See Option #4 here: https://github.com/TypeStrong/ts-node/discussions/1290
+    const stripAnsiFn = (await dynamicImport("strip-ansi"))
+      .default as typeof stripAnsi;
+    const errMsg = stripAnsiFn(output);
+    console.log("errMsg", errMsg);
+    throw new Error(errMsg);
   }
-  return executeWithLogRequiringSuccess(path, realBuildCommand, {
-    env,
-    timeout: BUILD_TIMEOUT,
-  });
 }
 export async function runNpmInstall(
   path: string,

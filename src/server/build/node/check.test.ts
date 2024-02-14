@@ -8,6 +8,24 @@ import {
 } from "./check";
 import { Language } from "../../utils/settings";
 
+class TestExecAsyncException extends Error {
+  stdout: string;
+  stderr: string;
+
+  constructor(message: string, stdout: string, stderr: string) {
+    super(message);
+    this.stdout = stdout;
+    this.stderr = stderr;
+  }
+}
+
+const mockedDynamicImport = vi.hoisted(() => ({
+  dynamicImport: vi
+    .fn()
+    .mockImplementation(async (specifier) => await import(specifier)),
+}));
+vi.mock("../../utils/dynamicImport", () => mockedDynamicImport);
+
 const mockedUtils = vi.hoisted(() => ({
   executeWithLogRequiringSuccess: vi
     .fn()
@@ -176,6 +194,34 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(result).toMatchObject({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
+  });
+
+  test.only("runBuildCheck propagates errors from the buildCommand", async () => {
+    // Fail the 2nd command only (the build command)
+    mockedUtils.executeWithLogRequiringSuccess
+      .mockImplementationOnce(
+        () => new Promise((resolve) => resolve({ stdout: "", stderr: "" })),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) =>
+            reject(
+              new TestExecAsyncException(
+                "Command failed: npm run build --verbose",
+                "error: special stdout only error",
+                "",
+              ),
+            ),
+          ),
+      );
+
+    await expect(() =>
+      runBuildCheck(".", true, {
+        env: {},
+      }),
+    ).rejects.toThrowError(
+      "Command failed: npm run build --verbose\nerror: special stdout only error",
+    );
   });
 
   test("runNpmInstall succeeds with default commands and environment", async () => {

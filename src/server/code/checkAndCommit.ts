@@ -7,16 +7,9 @@ import path from "path";
 import { addCommitAndPush } from "../git/commit";
 import { addCommentToIssue } from "../github/issue";
 import { runBuildCheck } from "../build/node/check";
-import {
-  ExecAsyncException,
-  extractFilePathWithArrow,
-  PRCommand,
-  RepoSettings,
-} from "../utils";
+import { extractFilePathWithArrow, PRCommand, RepoSettings } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
-import { dynamicImport } from "../utils/dynamicImport";
-import stripAnsi from "strip-ansi";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -61,30 +54,8 @@ export async function checkAndCommit({
   try {
     await runBuildCheck(rootPath, true, repoSettings);
   } catch (error) {
-    const { message, stdout, stderr } = error as ExecAsyncException;
-    // Some tools (e.g. tsc) write to stdout instead of stderr
-    // If we have an exception and stderr is empty, we should use stdout
-    const output = stderr ? message : `${message}\n${stdout}`;
-
-    console.log("&& stdout", stdout);
-    console.log("&& stdout.length", stdout?.length);
-    console.log("&& stderr", stderr);
-    console.log("&& stderr.length", stderr?.length);
-    if (stderr) {
-      console.log("&& stderr is truthy");
-    } else {
-      console.log("&& stderr is not truthy");
-    }
-    console.log("&& message", message);
-    console.log("&& output", output);
-
-    // Awkward workaround to dynamically import an ESM module
-    // within a commonjs TypeScript module
-
-    // See Option #4 here: https://github.com/TypeStrong/ts-node/discussions/1290
-    const stripAnsiFn = (await dynamicImport("strip-ansi"))
-      .default as typeof stripAnsi;
-    buildErrorMessage = stripAnsiFn(output);
+    const { message } = error as Error;
+    buildErrorMessage = message;
   }
 
   await addCommitAndPush(rootPath, branch, commitMessage);
