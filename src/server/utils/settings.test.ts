@@ -1,32 +1,72 @@
-import { describe, afterEach, it, expect } from "vitest";
-import { promises as fs } from "fs";
+import { describe, it, expect, vi } from "vitest";
+import fs from "fs";
 import path from "path";
 
 import { getRepoSettings } from "./settings";
 
 describe("getRepoSettings", () => {
-  const settingsPath = "./";
-  const settingsFilePath = path.join(settingsPath, "jacob.json");
+  const rootPath = "./";
+  const settingsFilePath = path.join(rootPath, "jacob.json");
+  const packageJsonFilePath = path.join(rootPath, "package.json");
 
-  afterEach(async () => {
-    try {
-      await fs.rm(settingsFilePath);
-    } catch (e) {
-      /* empty */
-    }
-  });
+  const fileContents = {
+    env: { VAR1: "var1", VAR2: "var2" },
+  };
+  const packageJsonContents = {
+    dependencies: { package1: "1.0.0", package2: "2.0.0" },
+  };
 
   it("returns undefined when there is no jacob.json file", () => {
-    const settings = getRepoSettings(settingsPath);
+    vi.spyOn(fs, "readFileSync").mockImplementation(() => {
+      throw new Error("ENOENT: no such file or directory");
+    });
+    const settings = getRepoSettings(rootPath);
     expect(settings).toBeUndefined();
   });
 
-  it("returns undefined when there is no jacob.json file", async () => {
+  it("returns a valid RepoSettings when there is a jacob.json file", () => {
     const fileContents = {
       env: { VAR1: "var1", VAR2: "var2" },
     };
-    await fs.writeFile(settingsFilePath, JSON.stringify(fileContents, null, 2));
-    const settings = getRepoSettings(settingsPath);
-    expect(settings).toMatchObject(fileContents);
+    vi.spyOn(fs, "readFileSync").mockImplementation((file) => {
+      if (file === settingsFilePath) {
+        return JSON.stringify(fileContents);
+      }
+      throw new Error("ENOENT: no such file or directory");
+    });
+    const settings = getRepoSettings(rootPath);
+    expect(settings).toStrictEqual(fileContents);
+  });
+
+  it("returns a valid RepoSettings when there is no jacob.json file, but there is a package.json file with dependencies", () => {
+    vi.spyOn(fs, "readFileSync").mockImplementation((file) => {
+      if (file === packageJsonFilePath) {
+        return JSON.stringify(packageJsonContents);
+      }
+      throw new Error("ENOENT: no such file or directory");
+    });
+
+    const settings = getRepoSettings(rootPath);
+    expect(settings).toStrictEqual({
+      packageDependencies: packageJsonContents.dependencies,
+    });
+  });
+
+  it("returns a valid RepoSettings when there is a jacob.json file and a package.json file with dependencies", async () => {
+    vi.spyOn(fs, "readFileSync").mockImplementation((file) => {
+      if (file === settingsFilePath) {
+        return JSON.stringify(fileContents);
+      } else if (file === packageJsonFilePath) {
+        return JSON.stringify(packageJsonContents);
+      }
+      throw new Error("ENOENT: no such file or directory");
+    });
+
+    const settings = getRepoSettings(rootPath);
+    console.log("settings", settings);
+    expect(settings).toStrictEqual({
+      ...fileContents,
+      packageDependencies: packageJsonContents.dependencies,
+    });
   });
 });

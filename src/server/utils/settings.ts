@@ -55,16 +55,35 @@ export interface RepoSettings {
     exampleFile?: string;
   };
   env?: Record<string, string>;
+  packageDependencies?: Record<string, string>;
 }
 
 export function getRepoSettings(rootPath: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let packageJson: Record<string, any> | undefined;
+  try {
+    const packageJsonContent = fs.readFileSync(
+      path.join(rootPath, "package.json"),
+      "utf-8",
+    );
+    packageJson = JSON.parse(packageJsonContent);
+  } catch (e) {
+    // Ignore failures on repos where we can't load/parse package.json
+  }
+  let settingsFromFile: RepoSettings | undefined;
   try {
     const settingsContent = fs.readFileSync(
       path.join(rootPath, "jacob.json"),
       "utf-8",
     );
-    return JSON.parse(settingsContent) as RepoSettings;
+    settingsFromFile = JSON.parse(settingsContent) as RepoSettings;
   } catch (e) {
-    return;
+    // Ignore failures on repos where we can't load/parse jacob.json
   }
+  if (typeof packageJson?.dependencies === "object") {
+    const settings: RepoSettings = settingsFromFile ?? {};
+    settings.packageDependencies = packageJson.dependencies;
+    return settings;
+  }
+  return settingsFromFile;
 }

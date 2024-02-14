@@ -47,7 +47,7 @@ describe("runBuildCheck and runNpmInstall", () => {
 
   test("runBuildCheck succeeds with default commands and environment", async () => {
     const result = await runBuildCheck(".", false);
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
@@ -107,7 +107,7 @@ describe("runBuildCheck and runNpmInstall", () => {
 
   test("runBuildCheck uses env from settings", async () => {
     const result = await runBuildCheck(".", false, { env: {} });
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
@@ -130,7 +130,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       formatCommand: "my-format",
       buildCommand: "my-build",
     });
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
@@ -153,7 +153,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       formatCommand: "my-format",
       buildCommand: "my-build",
     });
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
@@ -191,7 +191,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       formatCommand: "my-format",
       buildCommand: "my-build",
     });
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
   });
@@ -279,7 +279,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     const result = await runNpmInstall(".", "package-name-1 package-name-2", {
       env: {},
     });
-    expect(result).toMatchObject({ stdout: "", stderr: "" });
+    expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
