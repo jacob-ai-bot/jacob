@@ -52,7 +52,7 @@ export async function runBuildCheck(
     buildCommand,
   } = repoSettings ?? {};
 
-  const buildCommandPrefix = repoSettings?.packageDependencies?.next
+  const buildAndFormatCommandPrefix = repoSettings?.packageDependencies?.next
     ? "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 "
     : "";
 
@@ -62,7 +62,7 @@ export async function runBuildCheck(
       language === Language.TypeScript ? "; npx tsc --noEmit" : ""
     }`;
 
-  const realBuildCommand = `${buildCommandPrefix}${baseBuildCommand}`;
+  const realBuildCommand = `${buildAndFormatCommandPrefix}${baseBuildCommand}`;
 
   try {
     await executeWithLogRequiringSuccess(path, installCommand, {
@@ -71,7 +71,8 @@ export async function runBuildCheck(
     });
     if (afterModifications && formatCommand) {
       try {
-        await executeWithLogRequiringSuccess(path, formatCommand, {
+        const realFormatCommand = `${buildAndFormatCommandPrefix}${formatCommand}`;
+        await executeWithLogRequiringSuccess(path, realFormatCommand, {
           env,
           timeout: FORMAT_TIMEOUT,
         });
