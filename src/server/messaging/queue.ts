@@ -240,7 +240,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
     let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
     let prBranch: string | undefined;
-    if (prComment || prReview) {
+    if (prComment || prReview || prOpened) {
       const result = await getPR(
         repository,
         installationAuthentication.token,
@@ -404,11 +404,12 @@ export type WebhookPRCommentCreatedEvent =
     };
   };
 
-type WebhookPullRequestOpenedEvent = EmitterWebhookEvent<"pull_request"> & {
-  payload: {
-    action: "opened";
+export type WebhookPullRequestOpenedEvent =
+  EmitterWebhookEvent<"pull_request"> & {
+    payload: {
+      action: "opened";
+    };
   };
-};
 
 export type WebhookPullRequestReviewWithCommentsSubmittedEvent =
   EmitterWebhookEvent<"pull_request_review"> & {

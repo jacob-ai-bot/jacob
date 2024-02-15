@@ -15,6 +15,7 @@ import "dotenv/config";
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
 import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
 import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_request_review.submitted.json";
+import pullRequestOpenedPayload from "../../data/test/webhooks/pull_request.opened.json";
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
 import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
@@ -27,7 +28,8 @@ import {
   type WebhookPRCommentCreatedEvent,
   type WebhookPullRequestReviewWithCommentsSubmittedEvent,
   type WebhookInstallationRepositoriesAddedEvent,
-  WebhookIssueCommentCreatedEvent,
+  type WebhookPullRequestOpenedEvent,
+  type WebhookIssueCommentCreatedEvent,
 } from "./queue";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
@@ -288,6 +290,17 @@ describe("onGitHubEvent", () => {
     expect(mockedRespondToCodeReview.respondToCodeReview).toHaveBeenCalledTimes(
       1,
     );
+  });
+
+  test("PR opened", async () => {
+    await onGitHubEvent({
+      id: "7",
+      name: "pull_request",
+      payload: pullRequestOpenedPayload,
+    } as WebhookPullRequestOpenedEvent);
+
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCreateStory.createStory).toHaveBeenCalledTimes(1);
   });
 
   test("repo added - one repo", async () => {
