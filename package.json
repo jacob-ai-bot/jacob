@@ -74,7 +74,7 @@
     "node-mocks-http": "^1.14.0",
     "nodemon": "^3.0.1",
     "orchid-orm-test-factory": "^0.3.145",
-    "rake-db": "^2.12.7",
+    "rake-db": "^2.10.52",
     "ts-node": "^10.9.1",
     "tsc-watch": "^6.0.4",
     "typescript": "^5.2.2",
