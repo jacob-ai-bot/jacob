@@ -54,8 +54,11 @@ export async function createRepoInstalledIssue(
   const body = error
     ? `JACoB here...\nI can now access this repo, but ran into trouble building.\n\nHere is some additional info on the build error(s) I saw:\n\n${
         (error as { message?: string })?.message ?? error.toString()
-      }`
-    : "JACoB here...\nI can now access this repo and build the project successfully!";
+      }
+      
+      Please visit the [JACoB documentation](https://docs.jacb.ai) for more information on how to resolve this issue.
+      `
+    : "JACoB here...\nI can now access this repo and build the project successfully!\n\nPlease visit the [JACoB documentation](https://docs.jacb.ai) for more information on how to get started with JACoB.";
 
   return octokit.issues.create({
     owner: repository.owner.login,

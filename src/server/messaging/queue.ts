@@ -2,7 +2,10 @@ import ampq from "amqplib";
 import { Octokit } from "@octokit/core";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 import { Repository } from "@octokit/webhooks-types";
-import { createAppAuth } from "@octokit/auth-app";
+import {
+  InstallationAccessTokenAuthentication,
+  createAppAuth,
+} from "@octokit/auth-app";
 
 import { db } from "../db/db";
 import { cloneRepo } from "../git/clone";
@@ -27,6 +30,7 @@ import {
   addStartingWorkComment,
 } from "../github/comments";
 import { createRepoInstalledIssue } from "../github/issue";
+import { getFile } from "../github/repo";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -100,6 +104,41 @@ async function addProjectToDB(
   );
 }
 
+async function checkIfRepoIsInstalled(
+  repository: Pick<Repository, "id">,
+): Promise<boolean> {
+  const project = await db.projects.findByOptional({
+    repoId: `${repository.id}`,
+  });
+  return !!project;
+}
+
+async function isNodeProject(
+  repository: Pick<
+    Repository,
+    "owner" | "id" | "node_id" | "name" | "full_name" | "private"
+  >,
+  installationAuthentication: InstallationAccessTokenAuthentication,
+): Promise<boolean> {
+  // Check to see if the repo has a package.json file in the root
+  // This is a simple way to determine if the repo is a Node.js project
+  // We will need to remove this assumption if we want to support other languages
+  const { data } = await getFile(
+    {
+      ...repository,
+      owner: {
+        ...repository.owner,
+        name: repository.owner?.name ?? undefined,
+        gravatar_id: repository.owner?.gravatar_id ?? "",
+        type: repository.owner?.type as "Bot" | "User" | "Organization",
+      },
+    },
+    installationAuthentication.token,
+    "package.json",
+  );
+  return !(data instanceof Array) && data.type === "file";
+}
+
 async function authInstallation(installationId?: number) {
   if (installationId) {
     return auth({
@@ -119,46 +158,57 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
     );
     return;
   }
-  return Promise.all(
-    repos.map(async (repo) => {
+  for (const repo of repos) {
+    console.log(
+      `onReposAdded: ${event.id} ${event.name} : ${repo.full_name} ${repo.id}`,
+    );
+
+    const repository = { ...repo, owner: installation.account };
+    if (await checkIfRepoIsInstalled(repo)) {
       console.log(
-        `onReposAdded: ${event.id} ${event.name} : ${repo.full_name} ${repo.id}`,
+        `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : already installed`,
       );
-      const repository = { ...repo, owner: installation.account };
+      continue;
+    }
+
+    try {
+      if (!(await isNodeProject(repository, installationAuthentication))) {
+        console.log(
+          `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : not a Node.js project - skipping installation`,
+        );
+        continue;
+      }
+      await addProjectToDB(repo, event.id, event.name);
+      const { path, cleanup } = await cloneRepo(
+        repo.full_name,
+        undefined,
+        installationAuthentication.token,
+      );
+
+      console.log(`[${repo.full_name}] repo cloned to ${path}`);
+
+      const repoSettings = getRepoSettings(path);
 
       try {
-        await addProjectToDB(repo, event.id, event.name);
-        const { path, cleanup } = await cloneRepo(
-          repo.full_name,
-          undefined,
-          installationAuthentication.token,
-        );
-
-        console.log(`[${repo.full_name}] repo cloned to ${path}`);
-
-        const repoSettings = getRepoSettings(path);
-
-        try {
-          await runBuildCheck(path, false, repoSettings);
-          await createRepoInstalledIssue(
-            repository,
-            installationAuthentication.token,
-            sender.login,
-          );
-        } finally {
-          console.log(`[${repo.full_name}] cleaning up repo cloned to ${path}`);
-          cleanup();
-        }
-      } catch (error) {
+        await runBuildCheck(path, false, repoSettings);
         await createRepoInstalledIssue(
           repository,
           installationAuthentication.token,
           sender.login,
-          error as Error,
         );
+      } finally {
+        console.log(`[${repo.full_name}] cleaning up repo cloned to ${path}`);
+        cleanup();
       }
-    }),
-  );
+    } catch (error) {
+      await createRepoInstalledIssue(
+        repository,
+        installationAuthentication.token,
+        sender.login,
+        error as Error,
+      );
+    }
+  }
 }
 
 export async function onGitHubEvent(event: WebhookQueuedEvent) {

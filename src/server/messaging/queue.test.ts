@@ -57,6 +57,9 @@ const mockedDb = vi.hoisted(() => ({
             ),
         })),
       })),
+      findByOptional: vi
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
     },
   },
 }));
@@ -154,6 +157,20 @@ const mockedPR = vi.hoisted(() => ({
     ),
 }));
 vi.mock("../github/pr", () => mockedPR);
+
+const mockedGetFile = vi.hoisted(() => ({
+  getFile: vi.fn().mockImplementation(
+    () =>
+      new Promise((resolve) =>
+        resolve({
+          data: {
+            type: "file",
+          },
+        }),
+      ),
+  ),
+}));
+vi.mock("../github/repo", () => mockedGetFile);
 
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
@@ -305,7 +322,7 @@ describe("onGitHubEvent", () => {
 
   test("repo added - one repo", async () => {
     await onGitHubEvent({
-      id: "7",
+      id: "8",
       name: "installation_repositories",
       payload: installationRepositoriesAddedPayload,
     } as unknown as WebhookInstallationRepositoriesAddedEvent);
@@ -318,6 +335,34 @@ describe("onGitHubEvent", () => {
       undefined,
     );
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
+  });
+
+  test("repo added - repo already exists in DB", async () => {
+    mockedDb.db.projects.findByOptional.mockImplementationOnce(() =>
+      Promise.resolve({ id: 77 }),
+    );
+
+    await onGitHubEvent({
+      id: "9",
+      name: "installation_repositories",
+      payload: installationRepositoriesAddedPayload,
+    } as unknown as WebhookInstallationRepositoriesAddedEvent);
+
+    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
+  });
+
+  test("repo added - repo is not a NodeJS project", async () => {
+    mockedGetFile.getFile.mockImplementationOnce(() =>
+      Promise.resolve(undefined),
+    );
+
+    await onGitHubEvent({
+      id: "10",
+      name: "installation_repositories",
+      payload: installationRepositoriesAddedPayload,
+    } as unknown as WebhookInstallationRepositoriesAddedEvent);
+
+    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
   });
 
   test("issue command - build", async () => {
