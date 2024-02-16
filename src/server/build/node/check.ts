@@ -13,7 +13,7 @@ import { dynamicImport } from "../../utils/dynamicImport";
 const packageNameRegex =
   /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 
-const NEXT_JS_ENV = {
+export const NEXT_JS_ENV = {
   NODE_ENV: "",
   NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
   GITHUB_ID: "GITHUB_ID",
@@ -31,11 +31,14 @@ export const INSTALL_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 export const FORMAT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 export const BUILD_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
-function getEnv(repoSettings?: RepoSettings) {
+export function getEnv(repoSettings?: RepoSettings) {
   return {
     ...getSanitizedEnv(),
-    ...(repoSettings?.env ??
-      (repoSettings?.packageDependencies?.next ? NEXT_JS_ENV : {})),
+    ...(typeof repoSettings?.env === "object"
+      ? repoSettings.env
+      : repoSettings?.packageDependencies?.next
+      ? NEXT_JS_ENV
+      : {}),
   };
 }
 

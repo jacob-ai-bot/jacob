@@ -5,6 +5,8 @@ import {
   INSTALL_TIMEOUT,
   FORMAT_TIMEOUT,
   BUILD_TIMEOUT,
+  NEXT_JS_ENV,
+  getEnv,
 } from "./check";
 import { Language } from "../../utils/settings";
 
@@ -35,6 +37,44 @@ const mockedUtils = vi.hoisted(() => ({
   getSanitizedEnv: vi.fn().mockImplementation(() => ({})),
 }));
 vi.mock("../../utils", () => mockedUtils);
+
+describe("getEnv", () => {
+  test("default is empty object", () => {
+    const env = getEnv();
+    expect(env).toStrictEqual({});
+  });
+
+  test("empty string env key in repo settings still returns empty object", () => {
+    const env = getEnv({ env: "" as unknown as Record<string, string> });
+    expect(env).toStrictEqual({});
+  });
+
+  test("env in repo settings returned", () => {
+    const env = getEnv({
+      packageDependencies: { next: "1.0.0" },
+      env: { custom: "1" },
+    });
+    expect(env).toStrictEqual({ custom: "1" });
+  });
+
+  test("Next.js projects: default is a NEXT_JS_ENV", () => {
+    const env = getEnv({ packageDependencies: { next: "1.0.0" } });
+    expect(env).toStrictEqual(NEXT_JS_ENV);
+  });
+
+  test("Next.js projects: empty string env key in repo settings still returns a NEXT_JS_ENV", () => {
+    const env = getEnv({
+      packageDependencies: { next: "1.0.0" },
+      env: "" as unknown as Record<string, string>,
+    });
+    expect(env).toStrictEqual(NEXT_JS_ENV);
+  });
+
+  test("Next.js projects: empty env in repo settings returned", () => {
+    const env = getEnv({ packageDependencies: { next: "1.0.0" }, env: {} });
+    expect(env).toStrictEqual({});
+  });
+});
 
 describe("runBuildCheck and runNpmInstall", () => {
   afterEach(() => {
