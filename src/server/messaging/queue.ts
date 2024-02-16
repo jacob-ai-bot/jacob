@@ -68,7 +68,7 @@ async function initRabbitMQ() {
           channel?.ack(message);
         } catch (error) {
           console.error(`Error parsing or processing message: ${error}`);
-          channel?.nack(message);
+          channel?.nack(message, false, false);
         }
       },
       {
