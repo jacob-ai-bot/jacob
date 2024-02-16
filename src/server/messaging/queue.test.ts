@@ -57,9 +57,6 @@ const mockedDb = vi.hoisted(() => ({
             ),
         })),
       })),
-      findByOptional: vi
-        .fn()
-        .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
     },
   },
 }));
@@ -337,9 +334,9 @@ describe("onGitHubEvent", () => {
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
   });
 
-  test("repo added - repo already exists in DB", async () => {
-    mockedDb.db.projects.findByOptional.mockImplementationOnce(() =>
-      Promise.resolve({ id: 77 }),
+  test("repo added - repo is not a NodeJS project", async () => {
+    mockedGetFile.getFile.mockImplementationOnce(() =>
+      Promise.resolve(undefined),
     );
 
     await onGitHubEvent({
@@ -351,23 +348,9 @@ describe("onGitHubEvent", () => {
     expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
   });
 
-  test("repo added - repo is not a NodeJS project", async () => {
-    mockedGetFile.getFile.mockImplementationOnce(() =>
-      Promise.resolve(undefined),
-    );
-
-    await onGitHubEvent({
-      id: "10",
-      name: "installation_repositories",
-      payload: installationRepositoriesAddedPayload,
-    } as unknown as WebhookInstallationRepositoriesAddedEvent);
-
-    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
-  });
-
   test("issue command - build", async () => {
     await onGitHubEvent({
-      id: "8",
+      id: "10",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
@@ -384,7 +367,7 @@ describe("onGitHubEvent", () => {
 
   test("issue command - build - on PR", async () => {
     await onGitHubEvent({
-      id: "8",
+      id: "11",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandOnPRBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
@@ -405,7 +388,7 @@ describe("onGitHubEvent", () => {
     );
 
     await onGitHubEvent({
-      id: "8",
+      id: "12",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandBuildPayload,
     } as WebhookIssueCommentCreatedEvent);

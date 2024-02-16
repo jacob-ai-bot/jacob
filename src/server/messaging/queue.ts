@@ -68,7 +68,7 @@ async function initRabbitMQ() {
           channel?.ack(message);
         } catch (error) {
           console.error(`Error parsing or processing message: ${error}`);
-          channel?.nack(message, false, false);
+          channel?.nack(message);
         }
       },
       {
@@ -102,15 +102,6 @@ async function addProjectToDB(
   console.log(
     `[${repository.full_name}] onGitHubEvent: ${eventId} ${eventName} : DB project ID: ${project.id}`,
   );
-}
-
-async function checkIfRepoIsInstalled(
-  repository: Pick<Repository, "id">,
-): Promise<boolean> {
-  const project = await db.projects.findByOptional({
-    repoId: `${repository.id}`,
-  });
-  return !!project;
 }
 
 async function isNodeProject(
@@ -162,14 +153,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
     console.log(
       `onReposAdded: ${event.id} ${event.name} : ${repo.full_name} ${repo.id}`,
     );
-
     const repository = { ...repo, owner: installation.account };
-    if (await checkIfRepoIsInstalled(repo)) {
-      console.log(
-        `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : already installed`,
-      );
-      continue;
-    }
 
     try {
       if (!(await isNodeProject(repository, installationAuthentication))) {
@@ -201,12 +185,21 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
         cleanup();
       }
     } catch (error) {
-      await createRepoInstalledIssue(
-        repository,
-        installationAuthentication.token,
-        sender.login,
-        error as Error,
-      );
+      try {
+        await createRepoInstalledIssue(
+          repository,
+          installationAuthentication.token,
+          sender.login,
+          error as Error,
+        );
+      } catch (issueError) {
+        // NOTE: some repos don't have issues and we will fail to create an issue
+        // Ignoring this error so we can continue to process the next repo and remove this event from the queue
+        console.error(
+          `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : ${issueError}, original error:`,
+          error,
+        );
+      }
     }
   }
 }
