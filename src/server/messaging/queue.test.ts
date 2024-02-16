@@ -155,6 +155,20 @@ const mockedPR = vi.hoisted(() => ({
 }));
 vi.mock("../github/pr", () => mockedPR);
 
+const mockedGetFile = vi.hoisted(() => ({
+  getFile: vi.fn().mockImplementation(
+    () =>
+      new Promise((resolve) =>
+        resolve({
+          data: {
+            type: "file",
+          },
+        }),
+      ),
+  ),
+}));
+vi.mock("../github/repo", () => mockedGetFile);
+
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
@@ -305,7 +319,7 @@ describe("onGitHubEvent", () => {
 
   test("repo added - one repo", async () => {
     await onGitHubEvent({
-      id: "7",
+      id: "8",
       name: "installation_repositories",
       payload: installationRepositoriesAddedPayload,
     } as unknown as WebhookInstallationRepositoriesAddedEvent);
@@ -320,9 +334,23 @@ describe("onGitHubEvent", () => {
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
   });
 
+  test("repo added - repo is not a NodeJS project", async () => {
+    mockedGetFile.getFile.mockImplementationOnce(() =>
+      Promise.resolve(undefined),
+    );
+
+    await onGitHubEvent({
+      id: "9",
+      name: "installation_repositories",
+      payload: installationRepositoriesAddedPayload,
+    } as unknown as WebhookInstallationRepositoriesAddedEvent);
+
+    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
+  });
+
   test("issue command - build", async () => {
     await onGitHubEvent({
-      id: "8",
+      id: "10",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
@@ -339,7 +367,7 @@ describe("onGitHubEvent", () => {
 
   test("issue command - build - on PR", async () => {
     await onGitHubEvent({
-      id: "8",
+      id: "11",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandOnPRBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
@@ -360,7 +388,7 @@ describe("onGitHubEvent", () => {
     );
 
     await onGitHubEvent({
-      id: "8",
+      id: "12",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
