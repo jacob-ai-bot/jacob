@@ -187,11 +187,16 @@ export async function concatenatePRFiles(
 ) {
   const prFiles = await getPRFiles(repository, token, prNumber);
   const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".svg"];
+  const packageLockFiles = [
+    "package-lock.json", // npm
+    "yarn.lock", // Yarn
+    "pnpm-lock.yaml", // pnpm
+  ];
 
   const relevantFileNames = prFiles.data
     .map(({ filename }) => filename)
     .filter((filename) => {
-      const isPackageLock = path.basename(filename) === "package-lock.json";
+      const isPackageLock = packageLockFiles.includes(path.basename(filename));
       const isImageFile = imageExtensions.includes(path.extname(filename));
       return !(isPackageLock || isImageFile);
     });
