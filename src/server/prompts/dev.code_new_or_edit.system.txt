@@ -4,6 +4,9 @@ Here are some details to help with your task.
 -- Types (optional)
 ${types}
 
+-- Custom Styles (optional)
+${styles}
+
 -- Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
 ${sourceMap}
 

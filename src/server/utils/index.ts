@@ -244,3 +244,17 @@ export function getSnapshotUrl(
   const match = issueBody.match(regex);
   return match ? match[1]?.trim() : undefined;
 }
+
+export async function getStyles(rootPath: string, repoSettings?: RepoSettings) {
+  if (repoSettings?.style === Style.Tailwind) {
+    const tailwindConfig = repoSettings?.directories?.tailwindConfig;
+    if (tailwindConfig) {
+      const tailwindConfigPath = path.join(rootPath, tailwindConfig);
+      if (fs.existsSync(tailwindConfigPath)) {
+        return await fs.promises.readFile(tailwindConfigPath, "utf-8");
+      }
+    }
+  }
+  // TODO: Add CSS styles
+  return "";
+}

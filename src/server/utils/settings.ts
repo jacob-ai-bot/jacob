@@ -40,6 +40,7 @@ export interface RepoSettings {
     pages?: string;
     styles?: string;
     staticAssets?: string;
+    tailwindConfig?: string;
   };
   stateManagement?: {
     tool?: string;

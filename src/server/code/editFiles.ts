@@ -8,6 +8,7 @@ import {
   constructNewOrEditSystemPrompt,
   RepoSettings,
   getSnapshotUrl,
+  getStyles,
 } from "../utils";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
 import {
@@ -99,6 +100,7 @@ export async function editFiles(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
+  const styles = await getStyles(rootPath, repoSettings);
   let images = await getImages(rootPath, repoSettings);
   images = await saveImages(images, issue?.body, rootPath, repoSettings);
 
@@ -107,6 +109,7 @@ export async function editFiles(
   const codeTemplateParams = {
     sourceMap,
     types,
+    styles,
     images,
     code,
     issueBody,
