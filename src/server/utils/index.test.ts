@@ -17,6 +17,7 @@ describe("constructNewOrEditSystemPrompt", () => {
   const mockParams: TemplateParams = {
     types: "types",
     sourceMap: "sourceMap",
+    styles: "styles",
     images: "images",
     newFileName: "newFileName",
     code: "code",
@@ -47,6 +48,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       Here are some details to help with your task.
       -- Types (optional)
       types
+
+      -- Custom Styles (optional)
+      styles
 
       -- Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
       sourceMap
@@ -83,6 +87,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       Here are some details to help with your task.
       -- Types (optional)
       types
+
+      -- Custom Styles (optional)
+      styles
       
       -- Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
       sourceMap
@@ -127,6 +134,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       Here are some details to help with your task.
       -- Types (optional)
       types
+
+      -- Custom Styles (optional)
+      styles
       
       -- Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
       sourceMap
@@ -172,6 +182,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       Here are some details to help with your task.
       -- Types (optional)
       types
+
+      -- Custom Styles (optional)
+      styles
       
       -- Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
       sourceMap
@@ -225,6 +238,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       -- Types (optional)
       types
       
+      -- Custom Styles (optional)
+      styles
+
       -- Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
       sourceMap
 

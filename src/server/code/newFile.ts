@@ -6,6 +6,7 @@ import {
   constructNewOrEditSystemPrompt,
   RepoSettings,
   getSnapshotUrl,
+  getStyles,
 } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
@@ -48,6 +49,7 @@ export async function createNewFile(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
+  const styles = await getStyles(rootPath, repoSettings);
   let images = await getImages(rootPath, repoSettings);
   images = await saveImages(images, issue.body, rootPath, repoSettings);
 
@@ -57,6 +59,7 @@ export async function createNewFile(
     sourceMap,
     types,
     images,
+    styles,
     snapshotUrl: snapshotUrl ?? "",
   };
 
