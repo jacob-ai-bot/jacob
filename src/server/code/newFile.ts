@@ -49,7 +49,7 @@ export async function createNewFile(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
-  const styles = getStyles(rootPath, repoSettings);
+  const styles = await getStyles(rootPath, repoSettings);
   let images = await getImages(rootPath, repoSettings);
   images = await saveImages(images, issue.body, rootPath, repoSettings);
 
