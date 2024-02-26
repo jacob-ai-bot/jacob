@@ -5,6 +5,7 @@ Here is an example of how the FigML format works:
 ${figmlExample}
 
 - ONLY respond with the JSX. Do not include backticks or any comments. This output will be rendered directly by React and anything other than valid JSX will throw a serious error in the application!
+- DO NOT include any import or export statements in the response!
 - The name of the component should EXACTLY match the name and casing of the file. For example, if the file is "src/components/LoginButton.tsx", then the component should be named "LoginButton".
 - The FigML file contains the name of the layer and the type, followed by the coordinates and a ${styleQualifier}-like description of the layer. If it is a text node, the text is on the next line. 
 - Include padding and margins as needed.
