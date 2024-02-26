@@ -49,6 +49,9 @@ export async function createNewFile(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
+  const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
+    "\n",
+  );
   const styles = await getStyles(rootPath, repoSettings);
   let images = await getImages(rootPath, repoSettings);
   images = await saveImages(images, issue.body, rootPath, repoSettings);
@@ -58,6 +61,7 @@ export async function createNewFile(
     plan,
     sourceMap,
     types,
+    packages,
     images,
     styles,
     snapshotUrl: snapshotUrl ?? "",

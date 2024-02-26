@@ -100,6 +100,9 @@ export async function editFiles(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
+  const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
+    "\n",
+  );
   const styles = await getStyles(rootPath, repoSettings);
   let images = await getImages(rootPath, repoSettings);
   images = await saveImages(images, issue?.body, rootPath, repoSettings);
@@ -109,6 +112,7 @@ export async function editFiles(
   const codeTemplateParams = {
     sourceMap,
     types,
+    packages,
     styles,
     images,
     code,

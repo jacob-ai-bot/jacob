@@ -16,6 +16,7 @@ const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 describe("constructNewOrEditSystemPrompt", () => {
   const mockParams: TemplateParams = {
     types: "types",
+    packages: "packages",
     sourceMap: "sourceMap",
     styles: "styles",
     images: "images",
@@ -48,6 +49,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       Here are some details to help with your task.
       -- Types (optional)
       types
+
+      -- Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
+      packages
 
       -- Custom Styles (optional)
       styles
@@ -87,6 +91,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       Here are some details to help with your task.
       -- Types (optional)
       types
+
+      -- Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
+      packages
 
       -- Custom Styles (optional)
       styles
@@ -135,6 +142,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       -- Types (optional)
       types
 
+      -- Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
+      packages
+
       -- Custom Styles (optional)
       styles
       
@@ -182,6 +192,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       Here are some details to help with your task.
       -- Types (optional)
       types
+
+      -- Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
+      packages
 
       -- Custom Styles (optional)
       styles
@@ -238,6 +251,9 @@ describe("constructNewOrEditSystemPrompt", () => {
       -- Types (optional)
       types
       
+      -- Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
+      packages
+
       -- Custom Styles (optional)
       styles
 

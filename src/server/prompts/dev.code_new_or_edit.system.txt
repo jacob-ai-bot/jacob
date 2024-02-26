@@ -4,6 +4,9 @@ Here are some details to help with your task.
 -- Types (optional)
 ${types}
 
+-- Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
+${packages}
+
 -- Custom Styles (optional)
 ${styles}
 
