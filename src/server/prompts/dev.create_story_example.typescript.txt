@@ -1,0 +1,91 @@
+// The code for the Button component:
+// import React from "react";
+
+// interface ButtonProps {
+//   primary?: boolean;
+//   backgroundColor?: string;
+//   size?: "small" | "medium" | "large";
+//   label: string;
+//   onClick?: () => void;
+// }
+
+// export const Button = ({
+//   primary = false,
+//   backgroundColor,
+//   size = "medium",
+//   label,
+//   ...props
+// }: ButtonProps) => {
+//   const mode = primary
+//     ? "storybook-button--primary"
+//     : "storybook-button--secondary";
+//   return (
+//     <button
+//       type="button"
+//       className={[
+//         "storybook-button",
+//         `storybook-button--${size}`,
+//         mode,
+//       ].join(" ")}
+//       style={{ backgroundColor }}
+//       {...props}
+//     >
+//       {label}
+//     </button>
+//   );
+// };
+
+// The full story starts here:
+import type { Meta, StoryObj } from "@storybook/react";
+
+import Button from "~/components/Button";
+
+const meta = {
+  title: "Components/Button",
+  component: Button,
+  parameters: {
+    layout: "centered",
+  },
+  tags: ["autodocs"],
+  argTypes: {
+    backgroundColor: { control: "color" },
+  },
+} satisfies Meta<typeof Button>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Primary: Story = {
+  args: {
+    primary: true,
+    label: "Button",
+  },
+};
+
+export const Secondary: Story = {
+  args: {
+    label: "Button",
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: "large",
+    label: "Button",
+  },
+};
+
+export const Small: Story = {
+  args: {
+    size: "small",
+    label: "Button",
+  },
+};
+
+export const Warning: Story = {
+  args: {
+    primary: true,
+    label: "Delete now",
+    backgroundColor: "red",
+  },
+};

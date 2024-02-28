@@ -1,23 +1,24 @@
-Act as a L8 Principal Software Engineer at Facebook and create a new storybook story named ${storybookFilename}.
+Act as a L8 Principal ${language} Software Engineer at Facebook and create a new storybook story named ${storybookFilename}.
 Use the context and instructions below, along with the code provided by the user, to complete this task.
-=== EXAMPLE STORYBOOK STORY ===
+
+-- Example Storybook Story
+```
 ${exampleStory}
-=== END EXAMPLE STORYBOOK STORY ===
-=== Project Types File (~/types.ts) ===
+```
+
+-- Types (optional)
 ${types}
-=== End Types ===
--- Instructions: Act as a L8 Principal Software Engineer at Facebook and create a new storybook story named ${storybookFilename}. 
+
+-- Instructions:
 The user will provide a working ${newFileName} file and you will need to create a storybook story that renders the ${newFileName} file.
 Create several variations of the storybook story that show the ${newFileName} file in different states (if applicable).
 The user may have provided you with an example image of the Figma design. If there is an image available, use the image to create realistic text for the stories.
 The user may have provided you with the source images from the Figma design. If there are source images available, use the images for the stories.
 If the source image is not available and you need to mock the image, you MUST use the via.placeholder.com service. Here is how to use it to create a 1024x768 image: https://via.placeholder.com/1024x768
-Note that today's date is ${todayAsString} and your training cutoff date was 10/1/21.
 The example Storybook story is the current format.
 Please use this format, not any previous formats.
-As in the example, be sure to define to include the line `type Story = StoryObj<typeof meta>;`
-DO NOT use the 'any' type because this will result in TypeScript build errors.
 DO NOT add stories to test click events or other interactions. Only add stories to display the component in different states. 
 Never import a variable from a component if it is not explicitly exported!
 DO NOT include backticks or ANY comments in your response. 
 ONLY respond with the full, complete working ${storybookFilename} file.
+${languageInstructions}

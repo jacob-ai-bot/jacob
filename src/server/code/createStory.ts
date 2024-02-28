@@ -10,121 +10,15 @@ import { getIssue } from "../github/issue";
 import {
   extractFilePathWithArrow,
   parseTemplate,
-  todayAsString,
   RepoSettings,
   getSnapshotUrl,
 } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
 import { saveNewFile } from "../utils/files";
+import { Language } from "../utils/settings";
 
-type PullRequest =
+export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
-
-const exampleStory = dedent`
-  // The code for the Button component:
-  // import React from "react";
-  
-  // interface ButtonProps {
-  //   primary?: boolean;
-  //   backgroundColor?: string;
-  //   size?: "small" | "medium" | "large";
-  //   label: string;
-  //   onClick?: () => void;
-  // }
-  
-  // const Button: React.FC<ButtonProps> = ({
-  //   primary = false,
-  //   backgroundColor,
-  //   size = "medium",
-  //   label,
-  //   ...props
-  // }) => {
-  //   const mode = primary
-  //     ? "storybook-button--primary"
-  //     : "storybook-button--secondary";
-  //   return (
-  //     <button
-  //       type="button"
-  //       className={[
-  //         "storybook-button",
-  //         \`storybook-button--\${size}\`,
-  //         mode,
-  //       ].join(" ")}
-  //       style={{ backgroundColor }}
-  //       {...props}
-  //     >
-  //       {label}
-  //     </button>
-  //   );
-  // };
-  
-  // export default Button;
-  
-  // The full story starts here:
-  import type { Meta, StoryObj } from "@storybook/react";
-  
-  import Button from "~/components/Button"
-  
-  const mockPrimary:any = {
-      primary: true,
-      label: "Button",
-  };
-  
-  const mockSecondary:any = {
-      label: "Button",
-  };
-  
-  const mockLarge:any = {
-      size: "large",
-      label: "Button",
-  };
-  
-  const mockSmall:any = {
-      size: "small",
-      label: "Button",
-  };
-  
-  const mockWarning:any = {
-      primary: true,
-      label: "Delete now",
-      backgroundColor: "red",
-  };
-  
-  const meta = {
-    title: "Components/Button",
-    component: Button,
-    parameters: {
-      layout: "centered",
-    },
-    tags: ["autodocs"],
-    argTypes: {
-      backgroundColor: { control: "color" },
-    },
-  } satisfies Meta<typeof Button>;
-  
-  export default meta;
-  type Story = StoryObj<typeof meta>;
-  
-  export const Primary: Story = {
-    args: mockPrimary,
-  };
-  
-  export const Secondary: Story = {
-    args: mockSecondary,
-  };
-  
-  export const Large: Story = {
-    args: mockLarge,
-  };
-  
-  export const Small: Story = {
-    args: mockSmall,
-  };
-  
-  export const Warning: Story = {
-    args: mockWarning,
-  };
-`;
 
 export async function createStory(
   repository: Repository,
@@ -144,17 +38,30 @@ export async function createStory(
   const issue = result.data;
 
   const newFileName = extractFilePathWithArrow(issue.title);
-  if (!newFileName) {
+  const newFileExtension = newFileName ? path.extname(newFileName) : "";
+  if (!newFileName || !newFileExtension) {
     throw new Error(
-      "createStory: Unable to extract file name from issue title",
+      "createStory: Unable to extract file name and extension from issue title",
     );
   }
-  const storybookFilename = newFileName.replace(".tsx", ".stories.tsx");
+  const storybookFilename = newFileName.replace(
+    newFileExtension,
+    `.stories${newFileExtension}`,
+  );
   const componentCode = fs.readFileSync(
     path.join(rootPath, newFileName),
     "utf8",
   );
   const types = getTypes(rootPath, repoSettings);
+
+  const exampleStory = parseTemplate(
+    "dev",
+    "create_story_example",
+    repoSettings?.language === Language.JavaScript
+      ? "javascript"
+      : "typescript",
+    { size: "${size}" }, // Because the files contain a ${size} that should not be replaced
+  );
 
   const storyTemplateParams = {
     newFileName,
@@ -162,25 +69,32 @@ export async function createStory(
     types,
     exampleStory,
     componentCode,
-    todayAsString: todayAsString(),
+    language: repoSettings?.language ?? "TypeScript",
+    languageInstructions:
+      repoSettings?.language == Language.JavaScript
+        ? ""
+        : dedent`
+          As in the example, be sure to define to include the line \`type Story = StoryObj<typeof meta>;\`
+          DO NOT use the 'any' type because this will result in TypeScript build errors.    
+        `,
   };
   const snapshotUrl = getSnapshotUrl(issue.body);
 
-  const planSystemPrompt = parseTemplate(
+  const storySystemPrompt = parseTemplate(
     "dev",
     "create_story",
     "system",
     storyTemplateParams,
   );
-  const planUserPrompt = parseTemplate(
+  const storyUserPrompt = parseTemplate(
     "dev",
     "create_story",
     "user",
     storyTemplateParams,
   );
   const storybookCode = (await sendGptVisionRequest(
-    planUserPrompt,
-    planSystemPrompt,
+    storyUserPrompt,
+    storySystemPrompt,
     snapshotUrl,
     0.2,
   )) as string;

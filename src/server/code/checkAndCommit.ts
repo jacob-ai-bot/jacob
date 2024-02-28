@@ -82,13 +82,18 @@ export async function checkAndCommit({
   }
 
   const newFileName = extractFilePathWithArrow(issue?.title);
+  const newFileExtension = newFileName ? path.extname(newFileName) : "";
   // if the new file name contains the word "component" or then it is a component
   const isComponent = newFileName?.toLowerCase().includes("component");
   const hasStorybook = fs.existsSync(path.join(rootPath, ".storybook"));
   const hasAlreadyCreatedStory =
     newFileName &&
+    newFileExtension &&
     fs.existsSync(
-      path.join(rootPath, newFileName.replace(".tsx", ".stories.tsx")),
+      path.join(
+        rootPath,
+        newFileName.replace(newFileExtension, `.stories${newFileExtension}`),
+      ),
     );
 
   const requestStoryCreation =

@@ -191,17 +191,6 @@ export const extractFilePathWithArrow = (title?: string) => {
   return match ? match[1]?.trim() : null;
 };
 
-export const todayAsString = () => {
-  const today = new Date();
-  const todayFormatted = `${(today.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}/${today
-    .getDate()
-    .toString()
-    .padStart(2, "0")}/${today.getFullYear()}`;
-  return todayFormatted;
-};
-
 export enum PRCommand {
   FixBuildError = "@jacob-ai-bot fix build error",
   CreateStory = "@jacob-ai-bot create story",

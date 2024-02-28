@@ -2,6 +2,7 @@ import dedent from "ts-dedent";
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { Issue, Repository } from "@octokit/webhooks-types";
 
+import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
 import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
 import {
   checkAndCommit,
@@ -71,8 +72,7 @@ describe("checkAndCommit", () => {
   });
 
   test("checkAndCommit calls", async () => {
-    const issue =
-      issueCommentCreatedPRCommandFixBuildErrorPayload.issue as Issue;
+    const issue = issuesOpenedNewFilePayload.issue as Issue;
     const repository = {
       owner: { login: "test-login" },
       name: "test-repo",
@@ -133,9 +133,159 @@ describe("checkAndCommit", () => {
     );
     expect(mockedIssue.addCommentToIssue).toHaveBeenLastCalledWith(
       repository,
-      48,
+      47,
       "token",
       "## Update\n\nI've completed my work on this issue and have updated this pull request: [pr-title](https://github.com/pr-url).\n\nPlease review my changes there.",
+    );
+  });
+
+  test("checkAndCommit will append @jacob-ai-bot create story to PR", async () => {
+    // Mock that all files exist (including the storybook directory) but not the story files.
+    mockedFS.default.existsSync.mockImplementation(
+      (path) =>
+        !path.endsWith(".stories.tsx") && !path.endsWith(".stories.jsx"),
+    );
+
+    const issue = issuesOpenedNewFilePayload.issue as Issue;
+    const repository = {
+      owner: { login: "test-login" },
+      name: "test-repo",
+    } as Repository;
+
+    await checkAndCommit({
+      repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      issue,
+      commitMessage: "test-commit-message",
+      existingPr: {
+        number: 48,
+        node_id: "PR_nodeid",
+        title: "pr-title",
+        html_url: "https://github.com/pr-url",
+      } as PullRequest,
+    });
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/rootpath",
+      true,
+      undefined,
+    );
+
+    expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
+      "/rootpath",
+      "jacob-issue-48-test",
+      "test-commit-message",
+    );
+
+    expect(mockedPR.markPRReadyForReview).toHaveBeenCalledTimes(1);
+    expect(mockedPR.markPRReadyForReview).toHaveBeenLastCalledWith(
+      "token",
+      "PR_nodeid",
+    );
+
+    expect(mockedPR.createPR).not.toHaveBeenCalled();
+
+    expect(mockedIssue.getIssue).not.toHaveBeenCalled();
+    expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(2);
+    expect(mockedIssue.addCommentToIssue).toHaveBeenNthCalledWith(
+      1,
+      repository,
+      48,
+      "token",
+      "This PR has been updated to request a storybook story.\n\n" +
+        "## Next Steps\n\n" +
+        "I am working to create a storybook story. I will update this PR with my progress.\n" +
+        "## Storybook Story:\n\n" +
+        "I will update this PR with a storybook story for this component.\n\n" +
+        "@jacob-ai-bot create story\n",
+    );
+    expect(mockedIssue.addCommentToIssue).toHaveBeenLastCalledWith(
+      repository,
+      47,
+      "token",
+      "## Update\n\n" +
+        "I've updated this pull request: [pr-title](https://github.com/pr-url).\n\n" +
+        "I will update this PR with a storybook story for this component.",
+    );
+  });
+
+  test("checkAndCommit (JavaScript JSX) will append @jacob-ai-bot create story to PR", async () => {
+    // Mock that all files exist (including the storybook directory) but not the story files.
+    mockedFS.default.existsSync.mockImplementation(
+      (path) =>
+        !path.endsWith(".stories.tsx") && !path.endsWith(".stories.jsx"),
+    );
+
+    const issue = issuesOpenedNewFilePayload.issue as Issue;
+    // Change the file extension to .jsx for testing purposes
+    issue.title = issue.title.replace(".tsx", ".jsx");
+    const repository = {
+      owner: { login: "test-login" },
+      name: "test-repo",
+    } as Repository;
+
+    await checkAndCommit({
+      repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      issue,
+      commitMessage: "test-commit-message",
+      existingPr: {
+        number: 48,
+        node_id: "PR_nodeid",
+        title: "pr-title",
+        html_url: "https://github.com/pr-url",
+      } as PullRequest,
+    });
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
+      "/rootpath",
+      true,
+      undefined,
+    );
+
+    expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
+      "/rootpath",
+      "jacob-issue-48-test",
+      "test-commit-message",
+    );
+
+    expect(mockedPR.markPRReadyForReview).toHaveBeenCalledTimes(1);
+    expect(mockedPR.markPRReadyForReview).toHaveBeenLastCalledWith(
+      "token",
+      "PR_nodeid",
+    );
+
+    expect(mockedPR.createPR).not.toHaveBeenCalled();
+
+    expect(mockedIssue.getIssue).not.toHaveBeenCalled();
+    expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(2);
+    expect(mockedIssue.addCommentToIssue).toHaveBeenNthCalledWith(
+      1,
+      repository,
+      48,
+      "token",
+      "This PR has been updated to request a storybook story.\n\n" +
+        "## Next Steps\n\n" +
+        "I am working to create a storybook story. I will update this PR with my progress.\n" +
+        "## Storybook Story:\n\n" +
+        "I will update this PR with a storybook story for this component.\n\n" +
+        "@jacob-ai-bot create story\n",
+    );
+    expect(mockedIssue.addCommentToIssue).toHaveBeenLastCalledWith(
+      repository,
+      47,
+      "token",
+      "## Update\n\n" +
+        "I've updated this pull request: [pr-title](https://github.com/pr-url).\n\n" +
+        "I will update this PR with a storybook story for this component.",
     );
   });
 
