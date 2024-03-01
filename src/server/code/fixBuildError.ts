@@ -57,6 +57,9 @@ export async function fixBuildError(
   console.log(`[${repository.full_name}] Assessment of Error:`, assessment);
 
   try {
+    const commitMessageBase = "JACoB fix build error: ";
+    const commitMessage = `${commitMessageBase}${assessment.suggestedFix}`;
+
     if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
       console.log(`[${repository.full_name}] Needs npm install`);
 
@@ -72,7 +75,7 @@ export async function fixBuildError(
         rootPath,
         branch,
         repoSettings,
-        commitMessage: "JACoB commit: fix build error",
+        commitMessage,
         existingPr,
         issue,
         buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
@@ -133,7 +136,7 @@ export async function fixBuildError(
         rootPath,
         branch,
         repoSettings,
-        commitMessage: "JACoB commit: fix build error",
+        commitMessage,
         existingPr,
         issue,
         buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
