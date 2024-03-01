@@ -406,6 +406,8 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         repository,
         eventIssueOrPRNumber,
         installationAuthentication.token,
+        issueOpened,
+        prReview,
         error as Error,
       );
     }

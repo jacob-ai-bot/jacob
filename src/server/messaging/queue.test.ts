@@ -232,7 +232,7 @@ describe("onGitHubEvent", () => {
       "fake-token",
     );
     expect(
-      mockedComments.addFailedWorkComment.mock.calls[0][3].toString(),
+      mockedComments.addFailedWorkComment.mock.calls[0][5].toString(),
     ).toBe("Error: test error");
 
     expect(mockedCheck.runBuildCheck).not.toHaveBeenCalled();
@@ -407,7 +407,7 @@ describe("onGitHubEvent", () => {
       "fake-token",
     );
     expect(
-      mockedComments.addFailedWorkComment.mock.calls[0][3].toString(),
+      mockedComments.addFailedWorkComment.mock.calls[0][5].toString(),
     ).toBe("Error: build error");
   });
 });

@@ -99,13 +99,38 @@ export function addFailedWorkComment(
   repository: Repository,
   issueOrPRNumber: number,
   token: string,
+  issueOpened: boolean,
+  prReview: boolean,
   error: Error,
 ) {
-  const message = dedent`
+  const errorMsg = error.message ?? error.toString();
+  let message = dedent`
     Unfortunately, I ran into trouble working on this.
     
     Here is some error information:
-    ${(error as { message?: string })?.message ?? error.toString()}
+    ${errorMsg}
   `;
+  // If the error message is about a clean working tree, we can provide a more specific message.
+  if (errorMsg.includes("nothing to commit, working tree clean")) {
+    if (issueOpened) {
+      message = dedent`
+        I was not able to write any code that would address this issue.
+
+        Please include more specific details in issues when you mention me.
+      `;
+    } else if (prReview) {
+      message = dedent`
+        I was not able to address the review comments on this PR.
+
+        Please include more specific details in the PR review comments.
+      `;
+    } else {
+      message = dedent`
+        Unfortunately, I ran into trouble working on this.
+
+        I was not able to write the requested code. Please contact support on https://docs.jacb.ai.
+      `;
+    }
+  }
   return addCommentToIssue(repository, issueOrPRNumber, token, message);
 }
