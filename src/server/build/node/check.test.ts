@@ -39,40 +39,40 @@ const mockedUtils = vi.hoisted(() => ({
 vi.mock("../../utils", () => mockedUtils);
 
 describe("getEnv", () => {
-  test("default is empty object", () => {
+  test("default is empty object with CI added", () => {
     const env = getEnv();
-    expect(env).toStrictEqual({});
+    expect(env).toStrictEqual({ CI: "true" });
   });
 
-  test("empty string env key in repo settings still returns empty object", () => {
+  test("empty string env key in repo settings still returns empty object with CI added", () => {
     const env = getEnv({ env: "" as unknown as Record<string, string> });
-    expect(env).toStrictEqual({});
+    expect(env).toStrictEqual({ CI: "true" });
   });
 
-  test("env in repo settings returned", () => {
+  test("env in repo settings returned with CI added", () => {
     const env = getEnv({
       packageDependencies: { next: "1.0.0" },
       env: { custom: "1" },
     });
-    expect(env).toStrictEqual({ custom: "1" });
+    expect(env).toStrictEqual({ CI: "true", custom: "1" });
   });
 
-  test("Next.js projects: default is a NEXT_JS_ENV", () => {
+  test("Next.js projects: default is a NEXT_JS_ENV with CI added", () => {
     const env = getEnv({ packageDependencies: { next: "1.0.0" } });
-    expect(env).toStrictEqual(NEXT_JS_ENV);
+    expect(env).toStrictEqual({ CI: "true", ...NEXT_JS_ENV });
   });
 
-  test("Next.js projects: empty string env key in repo settings still returns a NEXT_JS_ENV", () => {
+  test("Next.js projects: empty string env key in repo settings still returns a NEXT_JS_ENV with CI added", () => {
     const env = getEnv({
       packageDependencies: { next: "1.0.0" },
       env: "" as unknown as Record<string, string>,
     });
-    expect(env).toStrictEqual(NEXT_JS_ENV);
+    expect(env).toStrictEqual({ CI: "true", ...NEXT_JS_ENV });
   });
 
-  test("Next.js projects: empty env in repo settings returned", () => {
+  test("Next.js projects: empty env in repo settings returned with CI added", () => {
     const env = getEnv({ packageDependencies: { next: "1.0.0" }, env: {} });
-    expect(env).toStrictEqual({});
+    expect(env).toStrictEqual({ CI: "true" });
   });
 });
 
@@ -95,7 +95,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       ".",
       "npm install",
       {
-        env: {},
+        env: { CI: "true" },
         timeout: INSTALL_TIMEOUT,
       },
     );
@@ -103,7 +103,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       ".",
       "npm run build --verbose; npx tsc --noEmit",
       {
-        env: {},
+        env: { CI: "true" },
         timeout: BUILD_TIMEOUT,
       },
     );
@@ -122,6 +122,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       "npm install",
       {
         env: {
+          CI: "true",
           DATABASE_URL: "file:./db.sqlite",
           EMAIL_FROM: "EMAIL_FROM",
           EMAIL_SERVER_HOST: "EMAIL_SERVER_HOST",
@@ -142,6 +143,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 npm run build --verbose; npx tsc --noEmit",
       {
         env: {
+          CI: "true",
           DATABASE_URL: "file:./db.sqlite",
           EMAIL_FROM: "EMAIL_FROM",
           EMAIL_SERVER_HOST: "EMAIL_SERVER_HOST",
@@ -166,7 +168,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "npm run build --verbose",
-      { env: {}, timeout: BUILD_TIMEOUT },
+      { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -179,12 +181,12 @@ describe("runBuildCheck and runNpmInstall", () => {
       1,
       ".",
       "npm install",
-      { env: { custom: "1" }, timeout: INSTALL_TIMEOUT },
+      { env: { CI: "true", custom: "1" }, timeout: INSTALL_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "npm run build --verbose; npx tsc --noEmit",
-      { env: { custom: "1" }, timeout: BUILD_TIMEOUT },
+      { env: { CI: "true", custom: "1" }, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -201,12 +203,12 @@ describe("runBuildCheck and runNpmInstall", () => {
       1,
       ".",
       "my-install",
-      { env: {}, timeout: INSTALL_TIMEOUT },
+      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "my-build",
-      { env: {}, timeout: BUILD_TIMEOUT },
+      { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -223,18 +225,18 @@ describe("runBuildCheck and runNpmInstall", () => {
       1,
       ".",
       "my-install",
-      { env: {}, timeout: INSTALL_TIMEOUT },
+      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
       ".",
       "my-format",
-      { env: {}, timeout: FORMAT_TIMEOUT },
+      { env: { CI: "true" }, timeout: FORMAT_TIMEOUT },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "my-build",
-      { env: {}, timeout: BUILD_TIMEOUT },
+      { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
     );
   });
 
@@ -290,7 +292,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       ".",
       "npm install package-name",
       {
-        env: {},
+        env: { CI: "true" },
         timeout: INSTALL_TIMEOUT,
       },
     );
@@ -303,7 +305,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "npm install package-name",
-      { env: { custom: "1" }, timeout: INSTALL_TIMEOUT },
+      { env: { CI: "true", custom: "1" }, timeout: INSTALL_TIMEOUT },
     );
   });
 
@@ -316,7 +318,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "yarn add package-name",
-      { env: {}, timeout: INSTALL_TIMEOUT },
+      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
     );
   });
 
@@ -332,7 +334,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
       "npm install package-name-1 package-name-2",
-      { env: {}, timeout: INSTALL_TIMEOUT },
+      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
     );
   });
 });

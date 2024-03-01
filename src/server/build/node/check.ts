@@ -34,6 +34,7 @@ export const BUILD_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 export function getEnv(repoSettings?: RepoSettings) {
   return {
     ...getSanitizedEnv(),
+    CI: "true",
     ...(typeof repoSettings?.env === "object"
       ? repoSettings.env
       : repoSettings?.packageDependencies?.next
