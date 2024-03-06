@@ -3,7 +3,7 @@ import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { Issue, Repository } from "@octokit/webhooks-types";
 
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
-import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
+import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
 import {
   checkAndCommit,
   MAX_ATTEMPTS_TO_FIX_BUILD_ERROR,
@@ -299,8 +299,7 @@ describe("checkAndCommit", () => {
       () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
-    const issue =
-      issueCommentCreatedPRCommandFixBuildErrorPayload.issue as Issue;
+    const issue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
     const repository = {
       owner: { login: "test-login" },
       name: "test-repo",
@@ -348,7 +347,7 @@ describe("checkAndCommit", () => {
       "This PR has been updated with a new commit.\n\n" +
         "## Next Steps\n\n" +
         "I am working to resolve an error. I will update this PR with my progress.\n" +
-        "@jacob-ai-bot fix build error\n\n" +
+        "@jacob-ai-bot fix error\n\n" +
         "## Error Message (Attempt Number 2):\n\n" +
         fakeBuildError,
     );
@@ -372,8 +371,7 @@ describe("checkAndCommit", () => {
       () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
-    const issue =
-      issueCommentCreatedPRCommandFixBuildErrorPayload.issue as Issue;
+    const issue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
     const repository = {
       owner: { login: "test-login" },
       name: "test-repo",

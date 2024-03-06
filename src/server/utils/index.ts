@@ -192,7 +192,7 @@ export const extractFilePathWithArrow = (title?: string) => {
 };
 
 export enum PRCommand {
-  FixBuildError = "@jacob-ai-bot fix build error",
+  FixError = "@jacob-ai-bot fix error",
   CreateStory = "@jacob-ai-bot create story",
   CodeReview = "@jacob-ai-bot code review",
 }

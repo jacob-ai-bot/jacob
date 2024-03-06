@@ -18,7 +18,7 @@ import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_req
 import pullRequestOpenedPayload from "../../data/test/webhooks/pull_request.opened.json";
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
-import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
+import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
 import issueCommentCreatedIssueCommandBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.build.json";
 import issueCommentCreatedIssueCommandOnPRBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommandOnPR.build.json";
 import installationRepositoriesAddedPayload from "../../data/test/webhooks/installation_repositories.added.json";
@@ -109,12 +109,12 @@ const mockedCreateStory = vi.hoisted(() => ({
 }));
 vi.mock("../code/createStory", () => mockedCreateStory);
 
-const mockedFixBuildError = vi.hoisted(() => ({
-  fixBuildError: vi
+const mockedFixError = vi.hoisted(() => ({
+  fixError: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
 }));
-vi.mock("../code/fixBuildError", () => mockedFixBuildError);
+vi.mock("../code/fixError", () => mockedFixError);
 
 const mockedRespondToCodeReview = vi.hoisted(() => ({
   respondToCodeReview: vi
@@ -285,12 +285,12 @@ describe("onGitHubEvent", () => {
     await onGitHubEvent({
       id: "5",
       name: "issue_comment",
-      payload: issueCommentCreatedPRCommandFixBuildErrorPayload,
+      payload: issueCommentCreatedPRCommandFixErrorPayload,
     } as WebhookPRCommentCreatedEvent);
 
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
-    expect(mockedFixBuildError.fixBuildError).toHaveBeenCalledTimes(1);
+    expect(mockedFixError.fixError).toHaveBeenCalledTimes(1);
   });
 
   test("PR review submitted", async () => {

@@ -109,7 +109,7 @@ export async function checkAndCommit({
       ? ` (Attempt Number ${buildErrorAttemptNumber + 1})`
       : "";
     prBodySuffix = dedent`\n
-      ${PRCommand.FixBuildError}
+      ${PRCommand.FixError}
       
       ## Error Message${errorAttemptInHeading}:
       

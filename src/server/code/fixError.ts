@@ -15,7 +15,7 @@ import { reconstructFiles } from "../utils/files";
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
 
-export async function fixBuildError(
+export async function fixError(
   repository: Repository,
   token: string,
   prIssue: Issue | null,

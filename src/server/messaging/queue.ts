@@ -14,7 +14,7 @@ import { createNewFile } from "../code/newFile";
 import { editFiles } from "../code/editFiles";
 import { getPR } from "../github/pr";
 import { addCommentToIssue } from "../github/issue";
-import { fixBuildError } from "../code/fixBuildError";
+import { fixError } from "../code/fixError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
 import { respondToCodeReview } from "../code/respondToCodeReview";
@@ -373,8 +373,8 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 existingPr,
               );
               break;
-            case PRCommand.FixBuildError:
-              await fixBuildError(
+            case PRCommand.FixError:
+              await fixError(
                 repository,
                 installationAuthentication.token,
                 eventName === "pull_request" ? null : event.payload.issue,
