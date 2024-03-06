@@ -73,9 +73,9 @@ const mockedAssessBuildError = vi.hoisted(() => ({
       new Promise((resolve) =>
         resolve({
           fileName: "file.txt",
-          causeOfError: "something went wrong",
+          causeOfErrors: "something went wrong",
           ideasForFixingError: "change something",
-          suggestedFix: "change some code",
+          suggestedFixes: "change some code",
         }),
       ),
   ),
@@ -143,7 +143,7 @@ describe("fixBuildError", () => {
     const checkAndCommitOptions =
       mockedCheckAndCommit.checkAndCommit.mock.calls[0][0];
     expect(checkAndCommitOptions.commitMessage).toBe(
-      "JACoB fix build error: change some code",
+      "JACoB fix error: change some code",
     );
     expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(2);
   });

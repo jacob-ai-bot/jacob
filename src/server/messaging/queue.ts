@@ -49,7 +49,12 @@ async function initRabbitMQ() {
     const connection = await ampq.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
 
-    await channel.assertQueue(QUEUE_NAME, { durable: true });
+    // Init queue with one hour consumer timeout to ensure
+    // we have enough time to install, build, and test
+    await channel.assertQueue(QUEUE_NAME, {
+      durable: true,
+      arguments: { "x-consumer-timeout": 60 * 60 * 1000 },
+    });
 
     channel.prefetch(1);
     channel.consume(

@@ -281,7 +281,7 @@ describe("onGitHubEvent", () => {
     expect(mockedCreateStory.createStory).toHaveBeenCalledTimes(1);
   });
 
-  test("PR comment created - fix build error command", async () => {
+  test("PR comment created - fix build/test error command", async () => {
     await onGitHubEvent({
       id: "5",
       name: "issue_comment",

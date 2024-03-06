@@ -75,7 +75,7 @@ export function addStartingWorkComment(options: AddStartingWorkCommentParams) {
       let updateMessage: string;
       switch (prCommand) {
         case PRCommand.FixBuildError:
-          updateMessage = "I'm busy working on this build error.";
+          updateMessage = "I'm busy working on this error.";
           break;
         case PRCommand.CreateStory:
           updateMessage =

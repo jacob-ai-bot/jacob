@@ -15,13 +15,13 @@ You previously created this code but it had errors.
 Please use this feedback to avoid these errors and update the code.
 
 -- Cause Of Error
-${causeOfError}
+${causeOfErrors}
 
 -- Ideas For Fixing Error
 ${ideasForFixingError}
 
 -- Suggested Fix
-${suggestedFix}
+${suggestedFixes}
 
 -- Instructions
 The code that needs to be updated is a file called "code.txt":

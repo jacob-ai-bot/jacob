@@ -46,19 +46,19 @@ export async function fixBuildError(
     restOfHeading.match(/Attempt\s+Number\s+(\d+)/)?.[1] ?? "",
     10,
   );
-  const buildError =
+  const errors =
     afterHeadingIndex === -1
       ? ""
       : buildErrorSection
           .slice(afterHeadingIndex + headingEndMarker.length)
           .split(nextHeadingMarker)[0];
 
-  const assessment = await assessBuildError(buildError);
+  const assessment = await assessBuildError(errors);
   console.log(`[${repository.full_name}] Assessment of Error:`, assessment);
 
   try {
-    const commitMessageBase = "JACoB fix build error: ";
-    const commitMessage = `${commitMessageBase}${assessment.suggestedFix}`;
+    const commitMessageBase = "JACoB fix error: ";
+    const commitMessage = `${commitMessageBase}${assessment.suggestedFixes}`;
 
     if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
       console.log(`[${repository.full_name}] Needs npm install`);
@@ -88,7 +88,7 @@ export async function fixBuildError(
         existingPr.number,
       );
 
-      const { causeOfError, ideasForFixingError, suggestedFix } = assessment;
+      const { causeOfErrors, ideasForFixingError, suggestedFixes } = assessment;
       const sourceMap = getSourceMap(rootPath, repoSettings);
       const types = getTypes(rootPath, repoSettings);
       const images = await getImages(rootPath, repoSettings);
@@ -96,9 +96,9 @@ export async function fixBuildError(
       const codeTemplateParams = {
         code,
         issueBody: issue.body ?? "",
-        causeOfError,
+        causeOfErrors,
         ideasForFixingError,
-        suggestedFix,
+        suggestedFixes,
         sourceMap,
         types,
         images,
@@ -146,11 +146,11 @@ export async function fixBuildError(
     if (prIssue) {
       const message = dedent`JACoB here once again...
 
-        Unfortunately, I wasn't able to resolve this build error.
+        Unfortunately, I wasn't able to resolve this error.
 
         Here is some information about the error:
         
-        ${assessment.causeOfError}
+        ${assessment.causeOfErrors}
 
         Here are some ideas for fixing the error:
         
@@ -158,7 +158,7 @@ export async function fixBuildError(
 
         Here is the suggested fix:
         
-        ${assessment.suggestedFix}
+        ${assessment.suggestedFixes}
       `;
 
       await addCommentToIssue(repository, prIssue.number, token, message);
