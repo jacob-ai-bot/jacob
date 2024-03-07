@@ -99,8 +99,7 @@ describe("fixError", () => {
   });
 
   test("fixError calls", async () => {
-    const issue =
-      issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
+    const issue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
 
     await fixError(
       { owner: { login: "test-login" }, name: "test-repo" } as Repository,
