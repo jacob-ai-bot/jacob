@@ -14,7 +14,7 @@ import { createNewFile } from "../code/newFile";
 import { editFiles } from "../code/editFiles";
 import { getPR } from "../github/pr";
 import { addCommentToIssue } from "../github/issue";
-import { fixBuildError } from "../code/fixBuildError";
+import { fixError } from "../code/fixError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
 import { respondToCodeReview } from "../code/respondToCodeReview";
@@ -49,7 +49,12 @@ async function initRabbitMQ() {
     const connection = await ampq.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
 
-    await channel.assertQueue(QUEUE_NAME, { durable: true });
+    // Init queue with one hour consumer timeout to ensure
+    // we have enough time to install, build, and test
+    await channel.assertQueue(QUEUE_NAME, {
+      durable: true,
+      arguments: { "x-consumer-timeout": 60 * 60 * 1000 },
+    });
 
     channel.prefetch(1);
     channel.consume(
@@ -368,8 +373,8 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 existingPr,
               );
               break;
-            case PRCommand.FixBuildError:
-              await fixBuildError(
+            case PRCommand.FixError:
+              await fixError(
                 repository,
                 installationAuthentication.token,
                 eventName === "pull_request" ? null : event.payload.issue,

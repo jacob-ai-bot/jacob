@@ -3,7 +3,7 @@ import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { Issue, Repository } from "@octokit/webhooks-types";
 
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
-import issueCommentCreatedPRCommandFixBuildErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixBuildError.json";
+import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
 import {
   checkAndCommit,
   MAX_ATTEMPTS_TO_FIX_BUILD_ERROR,
@@ -289,7 +289,7 @@ describe("checkAndCommit", () => {
     );
   });
 
-  test("checkAndCommit - with build error", async () => {
+  test("checkAndCommit - with build/test error", async () => {
     const fakeBuildError = dedent`
       Command failed: npm run build --verbose
       npm verb exit 1
@@ -299,8 +299,7 @@ describe("checkAndCommit", () => {
       () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
-    const issue =
-      issueCommentCreatedPRCommandFixBuildErrorPayload.issue as Issue;
+    const issue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
     const repository = {
       owner: { login: "test-login" },
       name: "test-repo",
@@ -347,8 +346,8 @@ describe("checkAndCommit", () => {
       "token",
       "This PR has been updated with a new commit.\n\n" +
         "## Next Steps\n\n" +
-        "I am working to resolve a build error. I will update this PR with my progress.\n" +
-        "@jacob-ai-bot fix build error\n\n" +
+        "I am working to resolve an error. I will update this PR with my progress.\n" +
+        "@jacob-ai-bot fix error\n\n" +
         "## Error Message (Attempt Number 2):\n\n" +
         fakeBuildError,
     );
@@ -358,11 +357,11 @@ describe("checkAndCommit", () => {
       "token",
       "## Update\n\n" +
         "I've updated this pull request: [pr-title](https://github.com/pr-url).\n\n" +
-        "The changes currently result in a build error, so I'll be making some additional changes before it is ready to merge.",
+        "The changes currently result in an error, so I'll be making some additional changes before it is ready to merge.",
     );
   });
 
-  test("checkAndCommit - build error after too many attempts", async () => {
+  test("checkAndCommit - build/test error after too many attempts", async () => {
     const fakeBuildError = dedent`
       Command failed: npm run build --verbose
       npm verb exit 1
@@ -372,8 +371,7 @@ describe("checkAndCommit", () => {
       () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
-    const issue =
-      issueCommentCreatedPRCommandFixBuildErrorPayload.issue as Issue;
+    const issue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
     const repository = {
       owner: { login: "test-login" },
       name: "test-repo",
@@ -396,7 +394,7 @@ describe("checkAndCommit", () => {
         } as PullRequest,
       }),
     ).rejects.toThrowError(
-      `Too many attempts to fix build errors.\n\nThe latest error:\n\n${fakeBuildError}`,
+      `Too many attempts to fix errors.\n\nThe latest error:\n\n${fakeBuildError}`,
     );
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);

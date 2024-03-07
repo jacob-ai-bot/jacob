@@ -1,5 +1,5 @@
-=== BUILD ERROR ===
-${buildError}
+=== ERRORS ===
+${errors}
 === INSTRUCTIONS ===
-Determine the cause of the error and a suggested fix.
+Determine the cause of the errors and suggested fixes.
 Return ONLY a valid AssessmentSchema JSON object.

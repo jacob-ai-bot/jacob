@@ -109,7 +109,7 @@ export async function checkAndCommit({
       ? ` (Attempt Number ${buildErrorAttemptNumber + 1})`
       : "";
     prBodySuffix = dedent`\n
-      ${PRCommand.FixBuildError}
+      ${PRCommand.FixError}
       
       ## Error Message${errorAttemptInHeading}:
       
@@ -162,16 +162,16 @@ export async function checkAndCommit({
 
   if (buildErrorMessage) {
     if ((buildErrorAttemptNumber ?? 0) >= MAX_ATTEMPTS_TO_FIX_BUILD_ERROR - 1) {
-      // Too many consecutive attempts to fix the build error. Give up.
+      // Too many consecutive attempts to fix the build/test error. Give up.
       throw new Error(
-        `Too many attempts to fix build errors.\n\nThe latest error:\n\n${buildErrorMessage}`,
+        `Too many attempts to fix errors.\n\nThe latest error:\n\n${buildErrorMessage}`,
       );
     }
     if (existingPr) {
       const nextStepsMessage = dedent`
         ## Next Steps
 
-        I am working to resolve a build error. I will update this PR with my progress.${prBodySuffix}
+        I am working to resolve an error. I will update this PR with my progress.${prBodySuffix}
       `;
 
       const prMessage = dedent`
@@ -191,7 +191,7 @@ export async function checkAndCommit({
 
         ${prStatus}
 
-        The changes currently result in a build error, so I'll be making some additional changes before it is ready to merge.
+        The changes currently result in an error, so I'll be making some additional changes before it is ready to merge.
       `;
 
       await addCommentToIssue(repository, issue.number, token, issueMessage);

@@ -31,6 +31,7 @@ export interface RepoSettings {
   installCommand?: string;
   formatCommand?: string;
   buildCommand?: string;
+  testCommand?: string;
   iconSet?: IconSet;
   componentExamples?: string;
   apiEndpointsExamples?: string;

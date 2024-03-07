@@ -52,7 +52,7 @@ export async function createRepoInstalledIssue(
   });
 
   const body = error
-    ? `JACoB here...\nI can now access this repo, but ran into trouble building.\n\nHere is some additional info on the build error(s) I saw:\n\n${
+    ? `JACoB here...\nI can now access this repo, but ran into trouble building.\n\nHere is some additional info on the error(s) I saw:\n\n${
         (error as { message?: string })?.message ?? error.toString()
       }
       

@@ -30,6 +30,7 @@ export const NEXT_JS_ENV = {
 export const INSTALL_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 export const FORMAT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 export const BUILD_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+export const TEST_TIMEOUT = 20 * 60 * 1000; // 20 minutes
 
 export function getEnv(repoSettings?: RepoSettings) {
   return {
@@ -54,9 +55,11 @@ export async function runBuildCheck(
     formatCommand,
     language = Language.TypeScript,
     buildCommand,
+    testCommand = "npm test --if-present",
   } = repoSettings ?? {};
 
-  const buildAndFormatCommandPrefix = repoSettings?.packageDependencies?.next
+  // Used for all commands except installCommand
+  const commandPrefix = repoSettings?.packageDependencies?.next
     ? "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 "
     : "";
 
@@ -66,8 +69,6 @@ export async function runBuildCheck(
       language === Language.TypeScript ? "; npx tsc --noEmit" : ""
     }`;
 
-  const realBuildCommand = `${buildAndFormatCommandPrefix}${baseBuildCommand}`;
-
   try {
     await executeWithLogRequiringSuccess(path, installCommand, {
       env,
@@ -75,11 +76,14 @@ export async function runBuildCheck(
     });
     if (afterModifications && formatCommand) {
       try {
-        const realFormatCommand = `${buildAndFormatCommandPrefix}${formatCommand}`;
-        await executeWithLogRequiringSuccess(path, realFormatCommand, {
-          env,
-          timeout: FORMAT_TIMEOUT,
-        });
+        await executeWithLogRequiringSuccess(
+          path,
+          `${commandPrefix}${formatCommand}`,
+          {
+            env,
+            timeout: FORMAT_TIMEOUT,
+          },
+        );
       } catch (error) {
         // There are a variety of reasons why the formatCommand might fail
         // so we choose to ignore those errors and continue with the build
@@ -89,10 +93,22 @@ export async function runBuildCheck(
         );
       }
     }
-    return await executeWithLogRequiringSuccess(path, realBuildCommand, {
-      env,
-      timeout: BUILD_TIMEOUT,
-    });
+    await executeWithLogRequiringSuccess(
+      path,
+      `${commandPrefix}${baseBuildCommand}`,
+      {
+        env,
+        timeout: BUILD_TIMEOUT,
+      },
+    );
+    return await executeWithLogRequiringSuccess(
+      path,
+      `${commandPrefix}${testCommand}`,
+      {
+        env,
+        timeout: TEST_TIMEOUT,
+      },
+    );
   } catch (error) {
     const { message, stdout, stderr } = error as ExecAsyncException;
     // Some tools (e.g. tsc) write to stdout instead of stderr
