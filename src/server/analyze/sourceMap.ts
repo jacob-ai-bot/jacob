@@ -96,12 +96,8 @@ type SourceMap = {
   }[];
 };
 
-export const getSourceMap = (
-  rootPath: string,
-  repoSettings?: RepoSettings,
-  targetFilePath?: string,
-) => {
-  const files = getFiles(rootPath, repoSettings, targetFilePath);
+export const getSourceMap = (rootPath: string, repoSettings?: RepoSettings) => {
+  const files = getFiles(rootPath, repoSettings);
   const sourceMap = generateMapFromFiles(files);
   return sourceMap;
 };
@@ -218,7 +214,6 @@ export const getImages = async (
 const getFiles = (
   rootPath: string,
   repoSettings?: RepoSettings,
-  targetFilePath?: string,
 ): SourceMap[] => {
   if (
     (repoSettings?.language ?? Language.TypeScript)?.toLowerCase() !==
@@ -236,24 +231,16 @@ const getFiles = (
 
   const files = sourceFiles
     .map((sourceFile) => {
-      let isTargetFile = false;
       const filePath = sourceFile.getFilePath();
       const fileName = sourceFile.getBaseName();
       const relativePath = filePath.replace(rootPath, "");
-      if (targetFilePath && filePath !== targetFilePath) {
+      // ignore files
+      if (FILES_TO_IGNORE.includes(fileName)) {
         return null;
-      } else {
-        if (targetFilePath) isTargetFile = true;
       }
-      if (!isTargetFile) {
-        // ignore files
-        if (FILES_TO_IGNORE.includes(fileName)) {
-          return null;
-        }
-        // ignore extensions
-        if (EXTENSIONS_TO_IGNORE.includes(fileName.split(".").pop()!)) {
-          return null;
-        }
+      // ignore extensions
+      if (EXTENSIONS_TO_IGNORE.includes(fileName.split(".").pop()!)) {
+        return null;
       }
       const classes = sourceFile.getClasses().map((cls) => ({
         name: cls.getName(),
