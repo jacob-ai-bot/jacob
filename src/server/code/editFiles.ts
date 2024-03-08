@@ -35,13 +35,15 @@ export async function editFiles(
   repoSettings?: RepoSettings,
 ) {
   const snapshotUrl = getSnapshotUrl(issue.body);
-  const projectFiles = await traverseCodebase(rootPath);
+  // Fallback to a source file list if we don't have a source map (e.g. JS projects)
+  const sourceMap =
+    getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ?? "";
   const issueText = `${issue.title} ${issueBody}`;
 
   const extractedIssueTemplateParams = {
-    projectFiles,
+    sourceMap,
     issueText,
   };
 
@@ -79,7 +81,6 @@ export async function editFiles(
   );
   console.log(`[${repository.full_name}] Concatenated code:\n\n`, code);
 
-  const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
   const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
     "\n",
@@ -97,7 +98,7 @@ export async function editFiles(
     styles,
     images,
     code,
-    issueBody,
+    issueBody: issueText,
     plan: extractedIssue.stepsToAddressIssue ?? "",
     snapshotUrl: snapshotUrl ?? "",
   };

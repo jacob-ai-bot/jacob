@@ -91,4 +91,9 @@ describe("generateMapFromFiles", () => {
       
     `);
   });
+
+  test("returns an empty string if no files are provided", () => {
+    const sourceMap = generateMapFromFiles([]);
+    expect(sourceMap).toEqual("");
+  });
 });

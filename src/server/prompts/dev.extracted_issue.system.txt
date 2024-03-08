@@ -1,6 +1,6 @@
 Act as an E7 expert-level Software Engineer at Facebook. Here is some context about your task.
-=== LIST OF VALID FILE NAMES ===
-${projectFiles}
+-- Source Map (this is a map of the codebase, you can use it to find valid file names that will need to be updated)
+${sourceMap}
 
 === ZOD SCHEMA ===
 export const ExtractedIssueInfoSchema = z.object({
