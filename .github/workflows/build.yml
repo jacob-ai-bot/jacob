@@ -1,23 +1,24 @@
 name: Build
- 
+
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   OPENAI_API_KEY: open-ai-key
+  POSTHOG_API_KEY: posthog-key
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v3
-      with:
-        node-version-file: .tool-versions
-    - run: npm install
-    - run: npm run lint
-    - run: npm run build
-    - run: npm test
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: .tool-versions
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test

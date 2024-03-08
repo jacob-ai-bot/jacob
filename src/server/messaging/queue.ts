@@ -490,7 +490,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           : prReview
           ? event.payload.review.user.login ?? ""
           : prCommand
-          ? existingPr?.user.login ?? ""
+          ? existingPr?.user?.login ?? ""
           : "",
         event: "Work Failed",
         properties: {
