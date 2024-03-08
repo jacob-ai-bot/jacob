@@ -1,4 +1,4 @@
-import { executeWithLogRequiringSuccess } from "../utils";
+import { executeWithLogRequiringSuccess, ExecAsyncException } from "../utils";
 
 const appName = process.env.GITHUB_APP_NAME ?? "";
 const appUsername = process.env.GITHUB_APP_USERNAME ?? "";
@@ -22,10 +22,22 @@ export async function addCommitAndPush(
   );
 
   // Commit files
-  await executeWithLogRequiringSuccess(
-    rootPath,
-    `git commit -m "${commitMessage}"`,
-  );
+  try {
+    await executeWithLogRequiringSuccess(
+      rootPath,
+      `git commit -m "${commitMessage}"`,
+    );
+  } catch (error) {
+    // Log error and rethrow (so we can get better detail around 'nothing to commit' errors)
+    const asyncException = (
+      typeof error === "object" ? error : { error }
+    ) as ExecAsyncException;
+    console.error(
+      `Commit failed: stderr: ${asyncException.stderr}, stdout: ${asyncException.stdout}`,
+      error,
+    );
+    throw error;
+  }
 
   // Push branch to origin
   return executeWithLogRequiringSuccess(
