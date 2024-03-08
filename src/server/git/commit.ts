@@ -25,7 +25,7 @@ export async function addCommitAndPush(
   try {
     await executeWithLogRequiringSuccess(
       rootPath,
-      `git commit -m "${commitMessage}"`,
+      `git commit -m "${commitMessage.replace(/`/g, "\\`")}"`,
     );
   } catch (error) {
     // Log error and rethrow (so we can get better detail around 'nothing to commit' errors)
