@@ -3,28 +3,10 @@ Act as an E7 expert-level Software Engineer at Facebook. Here is some context ab
 ${projectFiles}
 
 === ZOD SCHEMA ===
-export enum IssueType {
-  BUG = "BUG",
-  FEATURE = "FEATURE",
-}
-export enum FileChangeType {
-  CREATE_FILE = "CREATE_FILE",
-  UPDATE_FILE = "UPDATE_FILE",
-}
-export enum FileType {
-  PAGE = "PAGE",
-  COMPONENT = "COMPONENT",
-  API_ENDPOINT = "API_ENDPOINT",
-  OTHER = "OTHER",
-}
 export const ExtractedIssueInfoSchema = z.object({
-  issueType: z.nativeEnum(IssueType),
-  fileChangeType: z.nativeEnum(FileChangeType),
-  fileType: z.nativeEnum(FileType),
-  issueSummary: z.string(), // a high-level summary of the issue
-  stepsToAddressIssue: z.string(), // a highly-detailed, step-by-step plan of how a developer would address the given issue
-  filesToCreate: z.array(z.string()).nullable().optional(), // If fileChangeType == CREATE_FILE, an array of file paths that will be created by the developer. If the full path is specified in the issue title, you MUST use the full path from the title! The name CANNOT be in the list of available files.
-  filesToUpdate: z.array(z.string()).nullable().optional(), // If fileChangeType == UPDATE_FILE, an array of file paths that will be updated by the developer. If the full path is specified in the issue title, you MUST use the full path from the title! The name MUST be from the list of available files.
+  stepsToAddressIssue: z.string(), // a step-by-step plan of how a developer would address the given issue
+  filesToCreate: z.array(z.string()), // an array of file paths that will be created by the developer. The paths CANNOT be in the list of valid file names.
+  filesToUpdate: z.array(z.string()), // an array of file paths that will be updated by the developer
 });
 
 === INSTRUCTIONS ===

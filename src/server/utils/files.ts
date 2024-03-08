@@ -6,6 +6,7 @@ import { removeMarkdownCodeblocks } from ".";
 export const concatenateFiles = (
   rootDir: string,
   filesToInclude?: string[],
+  fileNamesToCreate?: null | string[],
 ) => {
   console.log("concatenateFiles", rootDir, filesToInclude);
   let gitignore: Ignore | null = null;
@@ -60,13 +61,15 @@ export const concatenateFiles = (
           return;
         }
 
-        output.push(`__FILEPATH__${relativePath}__`);
+        output.push(`__FILEPATH__${relativePath}__\n`);
         output.push(fs.readFileSync(filePath).toString("utf-8"));
       }
     });
   };
 
   walkDir(rootDir);
+
+  (fileNamesToCreate ?? []).forEach((fileName) => output.push(fileName));
   return output.join("");
 };
 
@@ -74,7 +77,7 @@ export const reconstructFiles = (
   concatFileContent: string,
   outputPath: string,
 ) => {
-  const sections = concatFileContent.split(/__FILEPATH__(.*?)__/).slice(1);
+  const sections = concatFileContent.split(/__FILEPATH__(.*?)__\n/).slice(1);
 
   for (let i = 0; i < sections.length; i += 2) {
     const filePath = sections[i];

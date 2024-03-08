@@ -19,33 +19,10 @@ import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
 
-export enum IssueType {
-  BUG = "BUG",
-  FEATURE = "FEATURE",
-  DOCUMENTATION = "DOCUMENTATION",
-  OTHER = "OTHER",
-}
-export enum FileChangeType {
-  CREATE_FILE = "CREATE_FILE",
-  UPDATE_FILE = "UPDATE_FILE",
-  DELETE_FILE = "DELETE_FILE",
-  UNKNOWN = "UNKNOWN",
-}
-export enum DocumentationType {
-  FUNCTIONAL_SPEC = "FUNCTIONAL_SPEC",
-  TECHNICAL_SPEC = "TECHNICAL_SPEC",
-  OTHER = "OTHER",
-}
 export const ExtractedIssueInfoSchema = z.object({
-  issueType: z.nativeEnum(IssueType),
-  fileChangeType: z.nativeEnum(FileChangeType).nullable().optional(), // If IssueType == "BUG" or "FEATURE", the type of file change that needs to be made
-  documentationType: z.nativeEnum(DocumentationType).nullable().optional(), // If IssueType == "DOCUMENTATION", the type of documentation that needs to be created
-  issueSummary: z.string().nullable().optional(), // a high-level summary of the issue
   stepsToAddressIssue: z.string().nullable().optional(), // a step-by-step plan of how a developer would address the given issue
-  exampleFiles: z.array(z.string()).nullable().optional(), // Only if an example file is listed in the issue, an array of existing files that are similar to the files that will be edited or created. This can be used to help GPT write code using similar patterns, styles, and give hints to the underlying file structure.
-  filesToCreate: z.array(z.string()).nullable().optional(), // If fileChangeType == "CREATE_FILE", an array of file paths that will be created by the developer.
-  filesToUpdate: z.array(z.string()).nullable().optional(), // If fileChangeType == UPDATE_FILE, an array of file paths that will be updated by the developer.
-  filesToDelete: z.array(z.string()).nullable().optional(), // If fileChangeType == DELETE_FILE, an array of file paths that will be deleted by the developer.
+  filesToCreate: z.array(z.string()).nullable().optional(), // an array of file paths that will be created by the developer. The paths CANNOT be in the list of valid file names.
+  filesToUpdate: z.array(z.string()).nullable().optional(), // an array of file paths that will be updated by the developer
 });
 
 export type ExtractedIssueInfo = z.infer<typeof ExtractedIssueInfoSchema>;
@@ -95,7 +72,11 @@ export async function editFiles(
     console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files to update\n\n\n\n");
     throw new Error("No files to update");
   }
-  const code = concatenateFiles(rootPath, filesToUpdate);
+  const code = concatenateFiles(
+    rootPath,
+    filesToUpdate,
+    extractedIssue.filesToCreate,
+  );
   console.log(`[${repository.full_name}] Concatenated code:\n\n`, code);
 
   const sourceMap = getSourceMap(rootPath, repoSettings);

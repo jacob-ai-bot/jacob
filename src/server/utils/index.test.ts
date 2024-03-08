@@ -113,6 +113,7 @@ describe("constructNewOrEditSystemPrompt", () => {
       Use only the 'Github Issue:' and 'Plan:' provided by the user to update the file.
       DO NOT make up any imports!
       DO NOT add any new files to the "code.txt" file.
+      New code can be placed in empty files in the "code.txt" file.
       The output MUST be the exact "code.txt" file with the updated code changes.
       Include website copy as needed.
       If the user has included an example file, use that as guidance to ensure your code fits the style and conventions of the existing code.
@@ -214,6 +215,7 @@ describe("constructNewOrEditSystemPrompt", () => {
       Use only the 'Github Issue:' and 'Plan:' provided by the user to update the file.
       DO NOT make up any imports!
       DO NOT add any new files to the "code.txt" file.
+      New code can be placed in empty files in the "code.txt" file.
       The output MUST be the exact "code.txt" file with the updated code changes.
       Include website copy as needed.
       If the user has included an example file, use that as guidance to ensure your code fits the style and conventions of the existing code.
@@ -272,6 +274,7 @@ describe("constructNewOrEditSystemPrompt", () => {
       Use only the 'Github Issue:' and 'Plan:' provided by the user to update the file.
       DO NOT make up any imports!
       DO NOT add any new files to the "code.txt" file.
+      New code can be placed in empty files in the "code.txt" file.
       The output MUST be the exact "code.txt" file with the updated code changes.
       Include website copy as needed.
       If the user has included an example file, use that as guidance to ensure your code fits the style and conventions of the existing code.
