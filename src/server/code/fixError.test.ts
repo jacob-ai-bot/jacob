@@ -76,6 +76,7 @@ const mockedAssessBuildError = vi.hoisted(() => ({
           causeOfErrors: "something went wrong",
           ideasForFixingError: "change something",
           suggestedFixes: "change some code",
+          filesToUpdate: ["src/file.txt"],
         }),
       ),
   ),
@@ -113,11 +114,20 @@ describe("fixError", () => {
     );
 
     expect(mockedAssessBuildError.assessBuildError).toHaveBeenCalledTimes(1);
-    expect(mockedAssessBuildError.assessBuildError).toHaveBeenLastCalledWith(
-      "build-error-info\n\n",
-    );
+    expect(mockedAssessBuildError.assessBuildError).toHaveBeenLastCalledWith({
+      errors: "build-error-info\n\n",
+      sourceMap: "source map",
+    });
 
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
+    expect(mockedPR.concatenatePRFiles).toHaveBeenLastCalledWith(
+      "/rootpath",
+      { name: "test-repo", owner: { login: "test-login" } },
+      "token",
+      48,
+      ["src/file.txt"],
+      undefined,
+    );
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];

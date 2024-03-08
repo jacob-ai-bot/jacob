@@ -1,3 +1,5 @@
+=== Source Map (this is a map of the codebase, you can use it to find valid file names that need to be updated) ===
+${sourceMap}
 === ERRORS ===
 ${errors}
 === INSTRUCTIONS ===

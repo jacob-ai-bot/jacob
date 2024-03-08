@@ -3,6 +3,7 @@ import { Endpoints } from "@octokit/types";
 import dedent from "ts-dedent";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
+import { traverseCodebase } from "../analyze/traverse";
 import { RepoSettings, parseTemplate } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { assessBuildError } from "./assessBuildError";
@@ -53,7 +54,9 @@ export async function fixError(
           .slice(afterHeadingIndex + headingEndMarker.length)
           .split(nextHeadingMarker)[0];
 
-  const assessment = await assessBuildError(errors);
+  const sourceMap =
+    getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));
+  const assessment = await assessBuildError({ sourceMap, errors });
   console.log(`[${repository.full_name}] Assessment of Error:`, assessment);
 
   try {
@@ -86,10 +89,11 @@ export async function fixError(
         repository,
         token,
         existingPr.number,
+        assessment.filesToUpdate,
+        assessment.filesToCreate,
       );
 
       const { causeOfErrors, ideasForFixingError, suggestedFixes } = assessment;
-      const sourceMap = getSourceMap(rootPath, repoSettings);
       const types = getTypes(rootPath, repoSettings);
       const images = await getImages(rootPath, repoSettings);
 

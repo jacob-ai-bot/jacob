@@ -184,6 +184,8 @@ export async function concatenatePRFiles(
   repository: Repository,
   token: string,
   prNumber: number,
+  fileNamesToInclude?: string[],
+  fileNamesToCreate?: null | string[],
 ) {
   const prFiles = await getPRFiles(repository, token, prNumber);
   const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".svg"];
@@ -193,7 +195,7 @@ export async function concatenatePRFiles(
     "pnpm-lock.yaml", // pnpm
   ];
 
-  const relevantFileNames = prFiles.data
+  const prFileNames = prFiles.data
     .map(({ filename }) => filename)
     .filter((filename) => {
       const isPackageLock = packageLockFiles.includes(path.basename(filename));
@@ -201,11 +203,15 @@ export async function concatenatePRFiles(
       return !(isPackageLock || isImageFile);
     });
 
-  if (relevantFileNames.length === 0) {
+  const relevantFileNames = [
+    ...new Set([...prFileNames, ...(fileNamesToInclude ?? [])]),
+  ];
+
+  if (relevantFileNames.length === 0 && fileNamesToCreate?.length === 0) {
     console.log(
       "\n\n\n\n^^^^^^\n\n\n\n[${repository.full_name}] ERROR: No files changed in PR\n\n\n\n",
     );
     throw new Error("No relevant files changed in PR");
   }
-  return concatenateFiles(rootPath, relevantFileNames);
+  return concatenateFiles(rootPath, relevantFileNames, fileNamesToCreate);
 }

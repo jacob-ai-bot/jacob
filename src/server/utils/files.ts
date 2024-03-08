@@ -5,10 +5,10 @@ import { removeMarkdownCodeblocks } from ".";
 
 export const concatenateFiles = (
   rootDir: string,
-  filesToInclude?: string[],
+  fileNamesToInclude?: string[],
   fileNamesToCreate?: null | string[],
 ) => {
-  console.log("concatenateFiles", rootDir, filesToInclude);
+  console.log("concatenateFiles", rootDir, fileNamesToInclude);
   let gitignore: Ignore | null = null;
   const gitignorePath = path.join(rootDir, ".gitignore");
 
@@ -19,7 +19,7 @@ export const concatenateFiles = (
   const output: string[] = [];
 
   const shouldIncludeFile = (relativePath: string, fileName: string) => {
-    if (!filesToInclude || filesToInclude.length === 0) return true;
+    if (!fileNamesToInclude || fileNamesToInclude.length === 0) return true;
 
     const absolutePath = path.join(rootDir, relativePath); // Calculate the absolute path
 
@@ -27,7 +27,7 @@ export const concatenateFiles = (
     const normalizedRelativePath = path.normalize(relativePath).toLowerCase();
     const normalizedAbsolutePath = path.normalize(absolutePath).toLowerCase();
 
-    for (const fileToInclude of filesToInclude) {
+    for (const fileToInclude of fileNamesToInclude) {
       const normalizedFileToInclude = path
         .normalize(fileToInclude)
         .toLowerCase();
