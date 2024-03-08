@@ -1,6 +1,0 @@
--- GitHub Issue ${issueText}
-
-${previousErrors}
-=== INSTRUCTIONS ===
-Act as an E7 expert-level Software Engineer at Facebook. Your job is to extract information from a GitHub issue and return it as a JSON object.
-The JSON object you return MUST conform exactly to the ExtractedIssueInfoSchema and pass validation using ExtractedIssueInfoSchema.safeParse(obj). DO NOT include any additional comments or backticks in your response. If your response is not EXACTLY a valid ExtractedIssueInfoSchema JSON object, the code will throw an error and break the system.
