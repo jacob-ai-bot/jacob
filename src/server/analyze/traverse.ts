@@ -47,9 +47,9 @@ export async function traverseCodebase(rootPath: string): Promise<string> {
 
   const files = await processDirectory(rootPath);
 
-  return JSON.stringify(files || []);
+  return files.join("\n");
 }
 
 function isRelevantFile(filePath: string): boolean {
-  return /\.(ts|tsx)$/.test(filePath);
+  return /\.(ts|tsx|js|jsx)$/.test(filePath);
 }
