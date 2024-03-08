@@ -160,6 +160,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
       `onReposAdded: ${event.id} ${event.name} : ${repo.full_name} ${repo.id}`,
     );
     const repository = { ...repo, owner: installation.account };
+    const distinctId = sender.login ?? "";
 
     try {
       if (!(await isNodeProject(repository, installationAuthentication))) {
@@ -187,7 +188,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
           sender.login,
         );
         posthogClient.capture({
-          distinctId: sender.login ?? "",
+          distinctId,
           event: "Repo Installed Successfully",
           properties: {
             repo: repo.full_name,
@@ -206,7 +207,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
           error as Error,
         );
         posthogClient.capture({
-          distinctId: sender.login ?? "",
+          distinctId,
           event: "Repo Install Failed",
           properties: {
             repo: repo.full_name,
@@ -220,7 +221,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
           error,
         );
         posthogClient.capture({
-          distinctId: sender.login ?? "",
+          distinctId,
           event: "Repo Issue Creation Failed",
           properties: {
             repo: repo.full_name,
@@ -267,12 +268,24 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         : eventName === "issue_comment"
         ? event.payload.comment.body
         : event.payload.issue.body;
+    const distinctId =
+      eventName === "pull_request"
+        ? event.payload.pull_request.user.login
+        : eventName === "issues"
+        ? event.payload.issue.user.login
+        : eventName === "pull_request_review"
+        ? event.payload.review.user.login
+        : eventName === "issue_comment"
+        ? event.payload.comment.user.login
+        : "";
+
     const prCommand = enumFromStringValue(
       PRCommand,
       prOpened || prComment
         ? PR_COMMAND_VALUES.find((cmd) => body?.includes(cmd))
         : undefined,
     );
+
     if ((prOpened || prComment) && !prCommand) {
       if (
         !issueComment ||
@@ -348,7 +361,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               repoSettings,
             );
             posthogClient.capture({
-              distinctId: event.payload.issue.user.login ?? "",
+              distinctId,
               event: "New File Created",
               properties: {
                 repo: repository.full_name,
@@ -364,7 +377,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               repoSettings,
             );
             posthogClient.capture({
-              distinctId: event.payload.issue.user.login ?? "",
+              distinctId,
               event: "Files Edited",
               properties: {
                 repo: repository.full_name,
@@ -386,7 +399,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             body,
           );
           posthogClient.capture({
-            distinctId: event.payload.review.user.login ?? "",
+            distinctId,
             event: "Code Review Responded",
             properties: {
               repo: repository.full_name,
@@ -408,7 +421,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 existingPr,
               );
               posthogClient.capture({
-                distinctId: existingPr.user.login ?? "",
+                distinctId,
                 event: "Story Created",
                 properties: {
                   repo: repository.full_name,
@@ -426,7 +439,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 existingPr,
               );
               posthogClient.capture({
-                distinctId: existingPr.user.login ?? "",
+                distinctId,
                 event: "Code Review Started",
                 properties: {
                   repo: repository.full_name,
@@ -448,7 +461,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 existingPr,
               );
               posthogClient.capture({
-                distinctId: existingPr.user.login ?? "",
+                distinctId,
                 event: "Error Fix Started",
                 properties: {
                   repo: repository.full_name,
@@ -485,17 +498,11 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         error as Error,
       );
       posthogClient.capture({
-        distinctId: issueOpened
-          ? event.payload.issue.user.login ?? ""
-          : prReview
-          ? event.payload.review.user.login ?? ""
-          : prCommand
-          ? existingPr?.user?.login ?? ""
-          : "",
+        distinctId,
         event: "Work Failed",
         properties: {
           repo: repository.full_name,
-          pr: prBranch,
+          branch: prBranch,
           issue: eventIssueOrPRNumber,
         },
       });
