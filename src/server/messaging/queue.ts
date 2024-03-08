@@ -31,6 +31,7 @@ import {
 } from "../github/comments";
 import { createRepoInstalledIssue } from "../github/issue";
 import { getFile } from "../github/repo";
+import { posthogClient } from "../analytics/posthog";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -185,6 +186,13 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
           installationAuthentication.token,
           sender.login,
         );
+        posthogClient.capture({
+          distinctId: sender.login ?? "",
+          event: "Repo Installed Successfully",
+          properties: {
+            repo: repo.full_name,
+          },
+        });
       } finally {
         console.log(`[${repo.full_name}] cleaning up repo cloned to ${path}`);
         cleanup();
@@ -197,6 +205,13 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
           sender.login,
           error as Error,
         );
+        posthogClient.capture({
+          distinctId: sender.login ?? "",
+          event: "Repo Install Failed",
+          properties: {
+            repo: repo.full_name,
+          },
+        });
       } catch (issueError) {
         // NOTE: some repos don't have issues and we will fail to create an issue
         // Ignoring this error so we can continue to process the next repo and remove this event from the queue
@@ -204,6 +219,13 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
           `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : ${issueError}, original error:`,
           error,
         );
+        posthogClient.capture({
+          distinctId: sender.login ?? "",
+          event: "Repo Issue Creation Failed",
+          properties: {
+            repo: repo.full_name,
+          },
+        });
       }
     }
   }
@@ -325,6 +347,14 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               path,
               repoSettings,
             );
+            posthogClient.capture({
+              distinctId: event.payload.issue.user.login ?? "",
+              event: "New File Created",
+              properties: {
+                repo: repository.full_name,
+                file: newFileName,
+              },
+            });
           } else {
             await editFiles(
               repository,
@@ -333,6 +363,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               path,
               repoSettings,
             );
+            posthogClient.capture({
+              distinctId: event.payload.issue.user.login ?? "",
+              event: "File Edited",
+              properties: {
+                repo: repository.full_name,
+              },
+            });
           }
         } else if (prReview) {
           if (!prBranch || !existingPr) {
@@ -348,6 +385,14 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             event.payload.review.state,
             body,
           );
+          posthogClient.capture({
+            distinctId: event.payload.review.user.login ?? "",
+            event: "Code Review Responded",
+            properties: {
+              repo: repository.full_name,
+              pr: prBranch,
+            },
+          });
         } else if (prCommand) {
           if (!prBranch || !existingPr) {
             throw new Error("prBranch and existingPr when handling prCommand");
@@ -362,6 +407,14 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 repoSettings,
                 existingPr,
               );
+              posthogClient.capture({
+                distinctId: existingPr.user.login ?? "",
+                event: "Story Created",
+                properties: {
+                  repo: repository.full_name,
+                  pr: prBranch,
+                },
+              });
               break;
             case PRCommand.CodeReview:
               await codeReview(
@@ -372,6 +425,14 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 repoSettings,
                 existingPr,
               );
+              posthogClient.capture({
+                distinctId: existingPr.user.login ?? "",
+                event: "Code Review Started",
+                properties: {
+                  repo: repository.full_name,
+                  pr: prBranch,
+                },
+              });
               break;
             case PRCommand.FixError:
               await fixError(
@@ -386,6 +447,14 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
                 repoSettings,
                 existingPr,
               );
+              posthogClient.capture({
+                distinctId: existingPr.user.login ?? "",
+                event: "Error Fix Started",
+                properties: {
+                  repo: repository.full_name,
+                  pr: prBranch,
+                },
+              });
               break;
           }
         } else if (issueComment) {
@@ -415,6 +484,21 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         prReview,
         error as Error,
       );
+      posthogClient.capture({
+        distinctId: issueOpened
+          ? event.payload.issue.user.login ?? ""
+          : prReview
+          ? event.payload.review.user.login ?? ""
+          : prCommand
+          ? existingPr?.user.login ?? ""
+          : "",
+        event: "Work Failed",
+        properties: {
+          repo: repository.full_name,
+          pr: prBranch,
+          issue: eventIssueOrPRNumber,
+        },
+      });
     }
   } else {
     console.error(
