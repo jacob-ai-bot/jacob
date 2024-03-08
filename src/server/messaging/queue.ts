@@ -365,7 +365,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             );
             posthogClient.capture({
               distinctId: event.payload.issue.user.login ?? "",
-              event: "File Edited",
+              event: "Files Edited",
               properties: {
                 repo: repository.full_name,
               },
