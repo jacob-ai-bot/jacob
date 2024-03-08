@@ -77,7 +77,7 @@ describe("generateMapFromFiles", () => {
         exportedDeclarations: [],
       },
     ];
-    const sourceMap = generateMapFromFiles(filesSourceMap);
+    const sourceMap = generateMapFromFiles("/rootpath", filesSourceMap);
     expect(sourceMap).toEqual(dedent`
       src/src.ts:
         interface Interface1 {
@@ -92,8 +92,43 @@ describe("generateMapFromFiles", () => {
     `);
   });
 
+  test("the source map will clean out ugly import type syntax", () => {
+    const filesSourceMap = [
+      {
+        filePath: "/path/rootPath/src/src.ts",
+        fileName: "src.ts",
+        relativePath: "src/src.ts",
+        classes: [],
+        enums: [],
+        functions: [
+          {
+            name: "function1",
+            returnType: "void",
+            parameters: [
+              {
+                name: "db",
+                type: `import("/rootpath/node_modules/.prisma/client/index").PrismaClient<import("/rootpath/node_modules/.prisma/client/index").Prisma.PrismaClientOptions, never, import("/rootpath/node_modules/@prisma/client/runtime/library").DefaultArgs>`,
+              },
+            ],
+          },
+        ],
+        imports: [],
+        interfaces: [],
+        variables: [],
+        typeAliases: [],
+        exportedDeclarations: [],
+      },
+    ];
+    const sourceMap = generateMapFromFiles("/rootpath", filesSourceMap);
+    expect(sourceMap).toEqual(dedent`
+      src/src.ts:
+        function function1(db: PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>): void;
+      
+    `);
+  });
+
   test("returns an empty string if no files are provided", () => {
-    const sourceMap = generateMapFromFiles([]);
+    const sourceMap = generateMapFromFiles("/rootpath", []);
     expect(sourceMap).toEqual("");
   });
 });

@@ -98,7 +98,7 @@ type SourceMap = {
 
 export const getSourceMap = (rootPath: string, repoSettings?: RepoSettings) => {
   const files = getFiles(rootPath, repoSettings);
-  const sourceMap = generateMapFromFiles(files);
+  const sourceMap = generateMapFromFiles(rootPath, files);
   return sourceMap;
 };
 
@@ -347,7 +347,14 @@ const getFiles = (
   return files;
 };
 
-export const generateMapFromFiles = (files: SourceMap[]) => {
+function cleanType(rootPath: string, type: string) {
+  return type.replace(
+    new RegExp(`import\\("${rootPath}\\/node_modules\\/[^"]+"\\)\\.`, "g"),
+    "",
+  );
+}
+
+export const generateMapFromFiles = (rootPath: string, files: SourceMap[]) => {
   let sourceMap: string = "";
   // loop through the result and create a map of the source code
   for (const file of files) {
@@ -357,28 +364,18 @@ export const generateMapFromFiles = (files: SourceMap[]) => {
     // now add the interface names
     const interfaces = file.interfaces.map((int) => {
       // add properties and methods for each interface
-      const properties = int.properties.map((prop) => {
-        let typeName = prop.type;
-        if (typeName.includes("/Users") && typeName.includes(".")) {
-          // Get the part of the typeAliasType after the last .
-          typeName = typeName.split(".").pop()!;
-        }
-        return `    ${prop.name}: ${typeName};\n`;
-      });
+      const properties = int.properties.map(
+        (prop) => `    ${prop.name}: ${cleanType(rootPath, prop.type)};\n`,
+      );
       const methods = int.methods.map((method) => {
-        const params = method.parameters.map((param) => {
-          let typeName = param.type;
-          if (typeName.includes("/Users") && typeName.includes(".")) {
-            // Get the part of the typeAliasType after the .
-            typeName = typeName.split(".").pop()!;
-          }
-          // add the parameter name and type. If it's the last parameter, don't add a comma
-          return `${param.name}: ${typeName}`;
-        });
+        const params = method.parameters.map(
+          (param) => `${param.name}: ${cleanType(rootPath, param.type)}`,
+        );
         // now add the return type (add on the same line, preceded by a colon)
-        return `    ${method.name}(${params.join(", ")}): ${
-          method.returnType
-        };\n`;
+        return `    ${method.name}(${params.join(", ")}): ${cleanType(
+          rootPath,
+          method.returnType,
+        )};\n`;
       });
       return `  interface ${int.name} {\n${properties.join("")}${methods.join(
         "",
@@ -388,9 +385,12 @@ export const generateMapFromFiles = (files: SourceMap[]) => {
 
     const functions = file.functions.map((func) => {
       const params = func.parameters
-        .map((param) => `${param.name}: ${param.type}`)
+        .map((param) => `${param.name}: ${cleanType(rootPath, param.type)}`)
         .join(", ");
-      return `  function ${func.name}(${params}): ${func.returnType};\n`;
+      return `  function ${func.name}(${params}): ${cleanType(
+        rootPath,
+        func.returnType,
+      )};\n`;
     });
     sourceMap += functions.join("");
 
