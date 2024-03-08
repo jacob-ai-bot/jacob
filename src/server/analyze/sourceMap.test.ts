@@ -12,7 +12,28 @@ describe("generateMapFromFiles", () => {
         relativePath: "src/src.ts",
         classes: [],
         enums: [],
-        functions: [],
+        functions: [
+          {
+            name: "function1",
+            returnType: "void",
+            parameters: [
+              {
+                name: "param1",
+                type: "string",
+              },
+            ],
+          },
+          {
+            name: "function2",
+            returnType: "number",
+            parameters: [
+              {
+                name: "param1",
+                type: "boolean",
+              },
+            ],
+          },
+        ],
         imports: [],
         interfaces: [
           {
@@ -65,6 +86,8 @@ describe("generateMapFromFiles", () => {
           method1(param1: string): void;
           method2(param1: boolean): number;
         }
+        function function1(param1: string): void;
+        function function2(param1: boolean): number;
       
     `);
   });

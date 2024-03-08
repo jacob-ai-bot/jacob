@@ -385,6 +385,16 @@ export const generateMapFromFiles = (files: SourceMap[]) => {
       )}  }\n`;
     });
     sourceMap += interfaces.join("");
+
+    const functions = file.functions.map((func) => {
+      const params = func.parameters
+        .map((param) => `${param.name}: ${param.type}`)
+        .join(", ");
+      return `  function ${func.name}(${params}): ${func.returnType};\n`;
+    });
+    sourceMap += functions.join("");
+
+    // TODO: consider including classes, enums, variables, typeAliases, and exportedDeclarations
   }
   // remove some of the extra strings we don't need
   sourceMap = sourceMap.replaceAll("/node_modules/next/dist/", "");
