@@ -37,14 +37,17 @@ export const concatenateFiles = (
         normalizedFileToInclude === fileName.toLowerCase() ||
         normalizedFileToInclude === normalizedAbsolutePath
       ) {
+        console.log(`shouldIncludeFile: ${relativePath} ${fileName} - true`);
         return true;
       }
     }
 
+    console.log(`shouldIncludeFile: ${relativePath} ${fileName} - true`);
     return false;
   };
 
   const walkDir = (dir: string) => {
+    console.log(`walkDir: ${dir}`);
     const files = fs.readdirSync(dir);
 
     files.forEach((file) => {
@@ -69,7 +72,9 @@ export const concatenateFiles = (
 
   walkDir(rootDir);
 
-  (fileNamesToCreate ?? []).forEach((fileName) => output.push(fileName));
+  (fileNamesToCreate ?? []).forEach((fileName) =>
+    output.push(`__FILEPATH__${fileName}__\n`),
+  );
   return output.join("");
 };
 
