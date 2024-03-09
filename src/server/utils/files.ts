@@ -32,36 +32,20 @@ export const concatenateFiles = (
         .normalize(fileToInclude)
         .toLowerCase();
 
-      console.log(
-        `shouldIncludeFile: normalizedFileToInclude: ${normalizedFileToInclude}`,
-      );
-
-      console.log(
-        `shouldIncludeFile: normalizedRelativePath: ${normalizedRelativePath}`,
-      );
-      console.log(
-        `shouldIncludeFile: fileName toLowerCase: ${fileName.toLowerCase()}`,
-      );
-      console.log(
-        `shouldIncludeFile: normalizedAbsolutePath: ${normalizedAbsolutePath}`,
-      );
-
       if (
         normalizedFileToInclude === normalizedRelativePath ||
+        normalizedFileToInclude === `/${normalizedRelativePath}` ||
         normalizedFileToInclude === fileName.toLowerCase() ||
         normalizedFileToInclude === normalizedAbsolutePath
       ) {
-        console.log(`shouldIncludeFile: ${relativePath} ${fileName} - true`);
         return true;
       }
     }
 
-    console.log(`shouldIncludeFile: ${relativePath} ${fileName} - false`);
     return false;
   };
 
   const walkDir = (dir: string) => {
-    console.log(`walkDir: ${dir}`);
     const files = fs.readdirSync(dir);
 
     files.forEach((file) => {
