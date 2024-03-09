@@ -32,6 +32,20 @@ export const concatenateFiles = (
         .normalize(fileToInclude)
         .toLowerCase();
 
+      console.log(
+        `shouldIncludeFile: normalizedFileToInclude: ${normalizedFileToInclude}`,
+      );
+
+      console.log(
+        `shouldIncludeFile: normalizedRelativePath: ${normalizedRelativePath}`,
+      );
+      console.log(
+        `shouldIncludeFile: fileName toLowerCase: ${fileName.toLowerCase()}`,
+      );
+      console.log(
+        `shouldIncludeFile: normalizedAbsolutePath: ${normalizedAbsolutePath}`,
+      );
+
       if (
         normalizedFileToInclude === normalizedRelativePath ||
         normalizedFileToInclude === fileName.toLowerCase() ||
@@ -42,7 +56,7 @@ export const concatenateFiles = (
       }
     }
 
-    console.log(`shouldIncludeFile: ${relativePath} ${fileName} - true`);
+    console.log(`shouldIncludeFile: ${relativePath} ${fileName} - false`);
     return false;
   };
 
