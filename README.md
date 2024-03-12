@@ -22,12 +22,13 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 
 2. **Running Smee**
 
-   - Start your smee client with the command `smee -u [Your smee.io URL]`, ensuring it's forwarding to your local server's port (e.g., `http://localhost:3000/`).
+   - Start your smee client with the command `smee -u [Your smee.io URL] --target  http://localhost:5173`, ensuring it's forwarding to your local server's port.
 
 3. **JACoB Configuration**
 
-   - In your project's root, run `npx jacob-setup create` to generate a `jacob.config` file. This file configures JACoB for your specific project environment and needs.
+   - For any project you'd like to use JACoB in, you'll need to setup a config file to ensure JACoB can understand your environment and your personal preferences. Switch to your target project's root, run `npx jacob-setup create` to generate a `jacob.config` file. This file configures JACoB for your specific project environment and needs.
    - Edit `jacob.config` to specify your project’s details, including any necessary environment variables for building your application.
+   - Repeat as necessary for any other projects you'd like to use JACoB with.
 
 4. **Figma Plugin Installation**
    - Clone and build the [JACoB Figma plugin repository](https://github.com/PioneerSquareLabs/otto-figma). Instructions for building are typically found in the repository's README.
