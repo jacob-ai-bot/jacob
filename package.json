@@ -37,6 +37,7 @@
     "orchid-orm": "^1.17.18",
     "orchid-orm-schema-to-zod": "^0.4.21",
     "path": "^0.12.7",
+    "posthog-node": "^3.6.3",
     "pqb": "^0.18.18",
     "react": "^18.2.0",
     "react-cookie": "^6.1.1",
