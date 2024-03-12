@@ -1,10 +1,10 @@
 ## Overview
 
-JACoB (Just Another Coding Bot) leverages Large Language Models (LLMs) to enhance software development workflows, using an event-driven framework for seamless integration with development tools. Designed to improve team collaboration and coding efficiency, JACoB excels in environments utilizing TypeScript and Next.js applications with Tailwind CSS, with plans to support additional languages and frameworks.
+JACoB, Just Another Coding Bot, is an open-source tool designed to streamline your development process by automating coding tasks, transforming Figma designs into deployable code, and integrating seamlessly into your existing workflow. As an AI-powered team member, JACoB works alongside you, learning your coding style and preferences to generate consistent, high-quality code output that fits right into your project’s architecture.
 
 ## Quick Start
 
-To try out the hosted version of JACoB, visit the [JACoB Main Website](https://www.jacb.ai). For a self-hosted version, follow the steps below to set up JACoB locally.
+JACoB works via a custom GitHub app and a Figma Plugin, along with a command-line tool to set up the configuation options. To try out the hosted version of JACoB, visit the [JACoB Website](https://www.jacb.ai). For a self-hosted version, follow the steps below to set up JACoB locally.
 
 ### Prerequisites
 
@@ -30,7 +30,7 @@ To try out the hosted version of JACoB, visit the [JACoB Main Website](https://w
    - Edit `jacob.config` to specify your project’s details, including any necessary environment variables for building your application.
 
 4. **Figma Plugin Installation**
-   - Clone and build the JACoB Figma plugin repository. Instructions for building are typically found in the repository's README.
+   - Clone and build the [JACoB Figma plugin repository](https://github.com/PioneerSquareLabs/otto-figma). Instructions for building are typically found in the repository's README.
    - Once built, open Figma and navigate to `Plugins > Development > Import plugin from manifest...`, selecting the `manifest.json` file from your local Figma plugin build.
    - Ensure the plugin is configured to interact with your local JACoB instance by setting the appropriate URLs in its configuration.
 
