@@ -6,6 +6,8 @@ JACoB (Just Another Coding Bot) leverages Large Language Models (LLMs) to enhanc
 
 ## Quick Start
 
+To try out the hosted version of JACoB, visit the [JACoB Main Website](https://www.jacb.ai). For a self-hosted version, follow the steps below to set up JACoB locally.
+
 ### Prerequisites
 
 - GitHub and Figma accounts
@@ -102,6 +104,7 @@ Follow these steps to set up and run Ollama with JACoB:
 
 - **Docker**:
   Use the official Ollama Docker image:
+
   ```bash
   docker pull ollama/ollama
   ```
