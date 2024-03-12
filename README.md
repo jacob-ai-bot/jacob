@@ -1,5 +1,3 @@
-# JACoB README
-
 ## Overview
 
 JACoB (Just Another Coding Bot) leverages Large Language Models (LLMs) to enhance software development workflows, using an event-driven framework for seamless integration with development tools. Designed to improve team collaboration and coding efficiency, JACoB excels in environments utilizing TypeScript and Next.js applications with Tailwind CSS, with plans to support additional languages and frameworks.
