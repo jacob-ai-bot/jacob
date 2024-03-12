@@ -1,4 +1,4 @@
-## Overview
+# Overview
 
 JACoB, Just Another Coding Bot, is an open-source tool designed to streamline your development process by automating coding tasks, transforming Figma designs into deployable code, and integrating seamlessly into your existing workflow. As an AI-powered team member, JACoB works alongside you, learning your coding style and preferences to generate consistent, high-quality code output that fits right into your project’s architecture.
 
@@ -16,8 +16,20 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 1. **GitHub App Creation**
 
    - Visit [GitHub's New App page](https://github.com/settings/apps/new) to create a new GitHub app. Fill in the basic details, including the app name and description.
+   - Set the Callback URL to `http://localhost:5173/auth/github`.
    - Set the Webhook URL to your smee.io channel URL. Create a smee channel at [smee.io](https://smee.io) if you haven't already. This will proxy GitHub webhooks to your local development environment.
-   - Subscribe to webhook events such as `Issue comments`, `Issues`, `Pull request review comments`, and `Pull requests`.
+   - Set the repository permissions to `Read & Write` for the following:
+     - `Issues`
+     - `Pull requests`
+     - `Contents`
+     - `Metadata` (can be read-only)
+   - Subscribe to webhook events:
+     - `Issues`
+     - `Issue comments`
+     - `Pull requests`
+     - `Pull request reviews`
+     - `Pull request review comment`
+     - `Pull request review threads`
    - Note down the `App ID`, `Client ID`, `Client Secret`, and generate a `Private Key`. These will be used in your `.env` configuration.
 
 2. **Running Smee**
