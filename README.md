@@ -1,88 +1,163 @@
-# jacob-mvp
+# JACoB README
 
-MVP version of the JACoB codebase
+## Overview
 
-# Architectural Plan
+JACoB (Just Another Coding Bot) leverages Large Language Models (LLMs) to enhance software development workflows, using an event-driven framework for seamless integration with development tools. Designed to improve team collaboration and coding efficiency, JACoB excels in environments utilizing TypeScript and Next.js applications with Tailwind CSS, with plans to support additional languages and frameworks.
 
-This project leverages the power of AI to automate various roles in the software development lifecycle. It uses a centralized Event Hub for communication between different AI agents, ensuring a decoupled and scalable system.
+## Quick Start
 
-## Components
+### Prerequisites
 
-- **Event Hub (Message Bus)**: A centralized communication system that facilitates the exchange of messages between different AI agents.
+- GitHub and Figma accounts
+- Node.js installed locally
 
-- **Software Project Manager Agent**: Responsible for planning and coordinating tasks. Creates and updates plans based on input from other agents and users.
+### Installation Steps for Self-Hosted Version
 
-- **Reviewer Agent**: Conducts code reviews and provides feedback. Interacts with the Software Engineer Agent for any required changes.
+1. **GitHub App Creation**
 
-- **Client Account Manager Agent**: Manages user interaction via Slack. Receives user feedback and communicates it to the relevant agents.
+   - Visit [GitHub's New App page](https://github.com/settings/apps/new) to create a new GitHub app. Fill in the basic details, including the app name and description.
+   - Set the Webhook URL to your smee.io channel URL. Create a smee channel at [smee.io](https://smee.io) if you haven't already. This will proxy GitHub webhooks to your local development environment.
+   - Subscribe to webhook events such as `Issue comments`, `Issues`, `Pull request review comments`, and `Pull requests`.
+   - Note down the `App ID`, `Client ID`, `Client Secret`, and generate a `Private Key`. These will be used in your `.env` configuration.
 
-- **Software Engineer Agent**: Writes, tests, and builds code based on the plan provided by the Project Manager Agent.
+2. **Running Smee**
 
-- **Task Queue**: A queue for handling incoming tasks, maintaining the order of execution.
+   - Start your smee client with the command `smee -u [Your smee.io URL]`, ensuring it's forwarding to your local server's port (e.g., `http://localhost:3000/`).
 
-- **Database/State Management**: Keeps track of the state and details of each task, including plans, code, reviews, and user feedback.
+3. **JACoB Configuration**
 
-## Workflow
+   - In your project's root, run `npx jacob-setup create` to generate a `jacob.config` file. This file configures JACoB for your specific project environment and needs.
+   - Edit `jacob.config` to specify your project’s details, including any necessary environment variables for building your application.
 
-1. **Task Initialization**: A new task is enqueued in the Task Queue. The Software Project Manager Agent dequeues the task and creates a plan. The plan is published to the Event Hub.
+4. **Figma Plugin Installation**
+   - Clone and build the JACoB Figma plugin repository. Instructions for building are typically found in the repository's README.
+   - Once built, open Figma and navigate to `Plugins > Development > Import plugin from manifest...`, selecting the `manifest.json` file from your local Figma plugin build.
+   - Ensure the plugin is configured to interact with your local JACoB instance by setting the appropriate URLs in its configuration.
 
-2. **Client Interaction**: The Client Account Manager Agent picks up the plan from the Event Hub. Sends the plan to the user via Slack and waits for feedback. Publishes user feedback to the Event Hub.
+## Local Development Setup
 
-3. **Plan Update and Code Generation**: The Software Project Manager Agent receives user feedback and updates the plan. The updated plan is sent to the Software Engineer Agent via the Event Hub. The Software Engineer Agent writes the code and sends it for review through the Event Hub.
+1. **Environment Setup**
 
-4. **Code Review**: The Reviewer Agent picks up the code from the Event Hub and reviews it. Feedback from the review is sent back to the Software Engineer Agent via the Event Hub. Necessary changes are made, and the code is finalized.
+   - Create a `.env` file based on `.env.example`, configuring values for `GITHUB_WEBHOOK_SECRET`, `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and your `OPENAI_API_KEY` among others.
 
-5. **Completion and Notification**: The final code and results are communicated to the Client Account Manager Agent via the Event Hub. The user is notified via Slack, and the task is marked as complete.
+2. **Infrastructure with Docker**
 
-## Diagram
+   - Use `docker compose up -d` to start essential services like RabbitMQ and Postgres.
 
-This diagram represents the flow of tasks and information between different components of the system. The arrows indicate the direction of communication or task flow.
+3. **Dependency Management**
 
+   - Install project dependencies with `npm install`.
+
+4. **Database Setup**
+
+   - Execute `npm run db create` and `npm run db migrate` to prepare your local databases.
+
+5. **Testing and Running**
+   - Verify the setup with `npm test`.
+   - Launch the development server using `npm run dev`.
+
+### Final Steps to Ensure Proper Configuration
+
+After setting up your environment and JACoB's core components, perform the following steps to ensure everything is integrated correctly:
+
+1. **Install the Registered GitHub App**
+
+   - Navigate to the settings page of your newly created GitHub app and install it on a repository you wish to use with JACoB. This step is crucial for enabling JACoB to interact with your repository.
+
+2. **Authenticate with JACoB**
+
+   - Ensure you can navigate to the `/auth/github` route in your local JACoB instance and successfully sign in using GitHub. This step verifies the OAuth flow is correctly set up between your GitHub app and JACoB.
+
+3. **Verify Webhook Functionality**
+   - Create or comment on an issue in the repository where JACoB is installed. Check your local server logs to confirm that these events trigger the expected activities in JACoB. This step is essential to confirm that webhooks are properly set up and that JACoB is responding to GitHub events as expected.
+
+### Using GitHub's Webhook Replay Feature for Testing
+
+After you've set up your local JACoB environment and configured the GitHub app, you'll likely want to test how JACoB handles specific GitHub webhook events (e.g., issue creation, pull request updates). Instead of repeatedly performing actions on GitHub to trigger these events, you can use GitHub's webhook replay feature to simulate them. Here’s how:
+
+1. **Access the Webhook Settings**: Go to your GitHub app's settings page and navigate to the "Advanced" section, where you'll find a list of delivered webhooks.
+
+2. **Identify the Event to Replay**: Look through the list of delivered webhooks to find the event you want to test with JACoB. This list provides details about each event, including its type, delivery status, and payload.
+
+3. **Replay the Webhook**: Next to the event you want to replay, you'll see a "Redeliver" button. Clicking this button will resend the webhook's payload to your specified endpoint (in this case, your local JACoB instance via the smee.io URL or directly if you're testing in a production-like environment).
+
+4. **Monitor the Response**: After replaying the webhook, monitor your JACoB logs or the development server output to see how it processes the event. This immediate feedback is invaluable for debugging and ensures that JACoB reacts as expected to the simulated events.
+
+5. **Iterate as Needed**: If the behavior isn’t what you anticipated, make the necessary adjustments to your JACoB configuration or code, and use the replay feature again to test the changes. This cycle can be repeated as many times as needed to achieve the desired outcome.
+
+## Running Local Models with Ollama
+
+JACoB supports using Ollama for local LLM integration, providing a drop-in alternative for using open-source language models directly within your development environment. Please note that JACoB's architecture is optimized to work with GPT-4 and may not perform well with smaller models.
+
+Follow these steps to set up and run Ollama with JACoB:
+
+### Installation
+
+- **macOS and Windows (Preview)**: Download the installer from the official [Ollama website](https://ollama.com).
+- **Linux**:
+
+  ```bash
+  curl -fsSL https://ollama.com/install.sh | sh
+  ```
+
+- **Docker**:
+  Use the official Ollama Docker image:
+  ```bash
+  docker pull ollama/ollama
+  ```
+
+### Libraries
+
+Install the Ollama library for your programming language:
+
+- Python: `ollama-python`
+- JavaScript: `ollama-js`
+
+### Quickstart
+
+To start using Ollama with Llama 2, execute:
+
+```bash
+ollama run llama2
 ```
-Task Queue → Software Project Manager Agent → Event Hub
-                 ↓
-Client Account Manager Agent ← Event Hub
-                 ↓
-Software Engineer Agent → Reviewer Agent → Event Hub
-                 ↓
-Database/State Management
-```
 
-## Local dev setup
+### Model Library
 
-* Create the `.env` file based on `.env.example`
-  * Configure a smee.io URL
-  * Generate a `GITHUB_WEBHOOK_SECRET`
-  * Generate a `GITHUB_PRIVATE_KEY`
-  * Set the proper `OPENAI_API_KEY`
-  * Register a GitHub app (use the fields above) and take note of the `GITHUB_APP_ID`, the `GITHUB_APP_NAME`, the `GITHUB_CLIENT_ID`, and the `GITHUB_CLIENT_SECRET` (note that this needs to be populated as both `GITHUB_CLIENT_SECRET` and `VITE_GITHUB_CLIENT_SECRET` in the `.env` file)
-    * Determine the `GITHUB_APP_USERNAME` by calling a URL like this https://api.github.com/users/otto-ai-app[bot] and look at the `id` in the response (it will be a number) (when `GITHUB_APP_NAME` is `otto-ai-app`)
-    * Ensure the app is listening for the following webhook events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
-* Assuming `docker` is installed locally, run this to start RabbitMQ and Postgres:
-```console
-docker compose up -d
-```
-* Ensure you are using the version of `node` referenced in `.tool-versions` (handled automatically if you are using `asdf`)
-* Install dependencies:
-```console
-npm install
-```
-* Create local dev and test databases:
-```console
-npm run db create
-```
-* Migrate local dev database:
-```console
-npm run db migrate
-```
-* Verify tests pass:
-```console
-npm test
-```
-* Start dev server:
-```console
-npm run dev
-```
-* Install the registered GitHub app on a repo on github.com
-* Verify that you can visit the `/auth/github` page and sign in to github
-* Verify local server log activity when github repo issues are created or commented on.
+Explore various models supported by Ollama at [ollama.com/library](https://ollama.com/library). Download and run models as needed, e.g.:
+
+- For Llama 2 (7B parameters, 3.8GB): `ollama run llama2`
+- For Code Llama (specialized for coding tasks): `ollama run codellama`
+
+### JACoB Integration
+
+After setting up Ollama:
+
+1. Update your `.env` configuration in the JACoB setup by changing the `LLM_PROVIDER` variable to `"ollama"`.
+2. Restart JACoB to apply the changes.
+
+### System Requirements
+
+Ensure your system meets the RAM requirements for the chosen models:
+
+- At least 8 GB for 7B models.
+- 16 GB for 13B models.
+- 32 GB or more for models above 33B.
+
+By integrating Ollama, you leverage local processing of language models, enhancing privacy and reducing latency in your development workflow with JACoB.
+
+## Contributing
+
+Contributions are welcome! Check our [contribution guidelines](https://docs.jacb.ai/contributing) for how to proceed. Open issues for any bugs or feature discussions before submitting pull requests and ensure adherence to project coding standards.
+
+## Additional Resources
+
+- [JACoB Main Website](https://www.jacb.ai)
+- [Detailed Documentation](https://docs.jacb.ai)
+
+## License
+
+Licensed under the Apache License 2.0. See the [LICENSE](https://www.apache.org/licenses/LICENSE-2.0) file for more details.
+
+## Acknowledgements
+
+A heartfelt thank you to the developer community for contributions and support. JACoB is a community-driven project, and its success is thanks to the collaborative effort of developers worldwide.
