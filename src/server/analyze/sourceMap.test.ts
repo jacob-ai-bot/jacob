@@ -107,7 +107,7 @@ describe("generateMapFromFiles", () => {
             parameters: [
               {
                 name: "db",
-                type: `import("/rootpath/node_modules/.prisma/client/index").PrismaClient<import("/rootpath/node_modules/.prisma/client/index").Prisma.PrismaClientOptions, never, import("/rootpath/node_modules/@prisma/client/runtime/library").DefaultArgs>`,
+                type: `import("/rootpath/foo/client/index").PrismaClient<import("/rootpath/foo/.prisma/client/index").Prisma.PrismaClientOptions, never, import("/rootpath/node_modules/@prisma/client/runtime/library").DefaultArgs>`,
               },
             ],
           },

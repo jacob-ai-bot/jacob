@@ -349,7 +349,7 @@ const getFiles = (
 
 function cleanType(rootPath: string, type: string) {
   return type.replace(
-    new RegExp(`import\\("${rootPath}\\/node_modules\\/[^"]+"\\)\\.`, "g"),
+    new RegExp(`import\\("${rootPath}\\/[^"]+"\\)\\.`, "g"),
     "",
   );
 }
