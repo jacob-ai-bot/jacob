@@ -103,7 +103,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
       ".",
-      "npm run build --verbose; npx tsc --noEmit",
+      "npm run build --verbose && npx tsc --noEmit",
       {
         env: { CI: "true" },
         timeout: BUILD_TIMEOUT,
@@ -133,7 +133,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
       ".",
-      "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 npm run build --verbose; npx tsc --noEmit",
+      "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 npm run build --verbose && npx tsc --noEmit",
       {
         env: {
           CI: "true",
@@ -170,7 +170,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
       ".",
-      "npm run build --verbose; npx tsc --noEmit",
+      "npm run build --verbose && npx tsc --noEmit",
       { env: { CI: "true", custom: "1" }, timeout: BUILD_TIMEOUT },
     );
   });

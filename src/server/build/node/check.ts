@@ -66,7 +66,7 @@ export async function runBuildCheck(
   const baseBuildCommand =
     buildCommand ??
     `npm run build --verbose${
-      language === Language.TypeScript ? "; npx tsc --noEmit" : ""
+      language === Language.TypeScript ? " && npx tsc --noEmit" : ""
     }`;
 
   try {
