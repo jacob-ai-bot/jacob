@@ -1,6 +1,6 @@
 import { Issue, Repository } from "@octokit/webhooks-types";
 
-import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
+import { getTypes, getImages } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
 import {
   parseTemplate,
@@ -24,18 +24,18 @@ export async function editFiles(
   token: string,
   issue: Issue,
   rootPath: string,
+  sourceMap: string,
   repoSettings?: RepoSettings,
 ) {
   const snapshotUrl = getSnapshotUrl(issue.body);
   // Fallback to a source file list if we don't have a source map (e.g. JS projects)
-  const sourceMap =
-    getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));
+  const sourceMapOrFileList = sourceMap || (await traverseCodebase(rootPath));
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ?? "";
   const issueText = `${issue.title} ${issueBody}`;
 
   const extractedIssueTemplateParams = {
-    sourceMap,
+    sourceMap: sourceMapOrFileList,
     issueText,
   };
 
@@ -84,7 +84,7 @@ export async function editFiles(
   // TODO: populate tailwind colors and leverage in system prompt
 
   const codeTemplateParams = {
-    sourceMap,
+    sourceMap: sourceMapOrFileList,
     types,
     packages,
     styles,

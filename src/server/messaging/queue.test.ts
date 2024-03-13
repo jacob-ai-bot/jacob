@@ -74,6 +74,11 @@ const mockedClone = vi.hoisted(() => ({
 }));
 vi.mock("../git/clone", () => mockedClone);
 
+const mockedSourceMap = vi.hoisted(() => ({
+  getSourceMap: vi.fn().mockImplementation(() => "source map"),
+}));
+vi.mock("../analyze/sourceMap", () => mockedSourceMap);
+
 const mockedCheck = vi.hoisted(() => ({
   runBuildCheck: vi
     .fn()

@@ -1,6 +1,6 @@
 import { Issue, Repository } from "@octokit/webhooks-types";
 
-import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
+import { getTypes, getImages } from "../analyze/sourceMap";
 import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
@@ -20,6 +20,7 @@ export async function createNewFile(
   token: string,
   issue: Issue,
   rootPath: string,
+  sourceMap: string,
   repoSettings?: RepoSettings,
 ) {
   const snapshotUrl = getSnapshotUrl(issue.body);
@@ -47,7 +48,6 @@ export async function createNewFile(
     0.2,
   )) as string;
 
-  const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
   const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
     "\n",

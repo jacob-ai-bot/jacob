@@ -10,6 +10,7 @@ import {
 import { db } from "../db/db";
 import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
+import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
 import { editFiles } from "../code/editFiles";
 import { getPR } from "../github/pr";
@@ -346,6 +347,10 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
       try {
         if (issueOpened) {
+          // Ensure that we capture a source map BEFORE we run the build check.
+          // Once npm install has been run, the source map becomes much more
+          // detailed and is too large for our LLM context window.
+          const sourceMap = getSourceMap(path, repoSettings);
           await runBuildCheck(path, false, repoSettings);
 
           const issueTitle = event.payload.issue.title;
@@ -358,6 +363,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               installationAuthentication.token,
               event.payload.issue,
               path,
+              sourceMap,
               repoSettings,
             );
             posthogClient.capture({
@@ -374,6 +380,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               installationAuthentication.token,
               event.payload.issue,
               path,
+              sourceMap,
               repoSettings,
             );
             posthogClient.capture({
