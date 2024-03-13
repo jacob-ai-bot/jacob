@@ -55,7 +55,7 @@ export async function runBuildCheck(
     formatCommand,
     language = Language.TypeScript,
     buildCommand,
-    testCommand = "npm test --if-present",
+    testCommand,
   } = repoSettings ?? {};
 
   // Used for all commands except installCommand
@@ -93,7 +93,7 @@ export async function runBuildCheck(
         );
       }
     }
-    await executeWithLogRequiringSuccess(
+    const buildResult = await executeWithLogRequiringSuccess(
       path,
       `${commandPrefix}${baseBuildCommand}`,
       {
@@ -101,6 +101,9 @@ export async function runBuildCheck(
         timeout: BUILD_TIMEOUT,
       },
     );
+    if (!testCommand) {
+      return buildResult;
+    }
     return await executeWithLogRequiringSuccess(
       path,
       `${commandPrefix}${testCommand}`,

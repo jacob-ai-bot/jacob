@@ -90,7 +90,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     const result = await runBuildCheck(".", false);
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
       ".",
@@ -109,14 +109,6 @@ describe("runBuildCheck and runNpmInstall", () => {
         timeout: BUILD_TIMEOUT,
       },
     );
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "npm test --if-present",
-      {
-        env: { CI: "true" },
-        timeout: TEST_TIMEOUT,
-      },
-    );
   });
 
   test("runBuildCheck succeeds with default commands and environment for a Next.js project", async () => {
@@ -125,7 +117,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
       ".",
@@ -150,17 +142,6 @@ describe("runBuildCheck and runNpmInstall", () => {
         timeout: BUILD_TIMEOUT,
       },
     );
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 npm test --if-present",
-      {
-        env: {
-          CI: "true",
-          ...NEXT_JS_ENV,
-        },
-        timeout: TEST_TIMEOUT,
-      },
-    );
   });
 
   test("runBuildCheck uses different default buildCommand when JavaScript is specific in settings", async () => {
@@ -179,7 +160,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     const result = await runBuildCheck(".", false, { env: { custom: "1" } });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
       ".",
@@ -191,11 +172,6 @@ describe("runBuildCheck and runNpmInstall", () => {
       ".",
       "npm run build --verbose; npx tsc --noEmit",
       { env: { CI: "true", custom: "1" }, timeout: BUILD_TIMEOUT },
-    );
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "npm test --if-present",
-      { env: { CI: "true", custom: "1" }, timeout: TEST_TIMEOUT },
     );
   });
 
