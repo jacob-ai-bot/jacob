@@ -4,8 +4,12 @@ ${issueText}
 
 -- Instructions:
 Act as an E7 expert-level Software Engineer at Facebook.
-You will perform a code review and return it as a JSON object.
-The JSON object you return MUST conform exactly to the CodeReviewSchema and pass validation using CodeReviewSchema.safeParse(obj).
-DO NOT include any additional comments or backticks in your response.
-If your response is not EXACTLY a valid CodeReviewSchema JSON object, the code will throw an error and break the system.
-${issueInstruction}
+You will perform a code review and respond back with all of the code with comments inserted.
+Comments should be inserted on new lines just below the lines of code where the comment applies.
+Each comment can be a single line or multiple lines.
+Each comment should be prefixed with a `__COMMENT_START__` marker on its own line.
+Each comment should conclude with a `__COMMENT_END__` market on its own line.
+If the code does not need any improvement, DO NOT insert any comments.
+DO NOT edit or remove existing lines starting with __FILEPATH__.
+DO NOT add any new lines starting with __FILEPATH__. 
+DO NOT modify any of the code, ONLY add code review comments and return the updated "code.txt" file.

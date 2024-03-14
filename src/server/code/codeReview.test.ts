@@ -10,7 +10,7 @@ import {
 } from "vitest";
 import { Repository } from "@octokit/webhooks-types";
 
-import { codeReview, type CodeReview, type PullRequest } from "./codeReview";
+import { codeReview, type PullRequest } from "./codeReview";
 
 const mockedPR = vi.hoisted(() => ({
   concatenatePRFiles: vi
@@ -18,7 +18,7 @@ const mockedPR = vi.hoisted(() => ({
     .mockImplementation(
       () =>
         new Promise((resolve) =>
-          resolve("__FILEPATH__file.txt__code-to-be-reviewed"),
+          resolve("__FILEPATH__file.js__\ncode-to-be-reviewed"),
         ),
     ),
   createPRReview: vi
@@ -49,12 +49,9 @@ const mockedSourceMap = vi.hoisted(() => ({
 vi.mock("../analyze/sourceMap", () => mockedSourceMap);
 
 const mockedRequest = vi.hoisted(() => ({
-  sendGptRequestWithSchema: vi.fn().mockImplementation(() => {
-    const codeReview: CodeReview = {
-      isApproved: true,
-    };
-    return new Promise((resolve) => resolve(codeReview));
-  }),
+  sendGptRequest: vi
+    .fn()
+    .mockResolvedValue("__FILEPATH__file.js__\ncode-to-be-reviewed"),
 }));
 vi.mock("../openai/request", () => mockedRequest);
 
@@ -88,26 +85,28 @@ describe("codeReview", () => {
 
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
 
-    expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledTimes(1);
-    const systemPrompt =
-      mockedRequest.sendGptRequestWithSchema.mock.calls[0][1];
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
     expect(systemPrompt).toContain("-- Types\ntypes\n");
     expect(systemPrompt).toContain(
       "-- Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n-- END Source Map\n",
     );
     expect(systemPrompt).toContain("-- Types\ntypes\n\n");
     expect(systemPrompt).toContain("-- Images\nimages\n\n");
-    expect(systemPrompt).toContain(
-      '-- Instructions:\nThe code that needs to be reviewed is a file called "code.txt":\n\n-- Code to review:\n__FILEPATH__file.txt__code-to-be-reviewed\n',
-    );
+    expect(systemPrompt).toContain(dedent`
+      -- Instructions:
+      The code that needs to be reviewed is a file called "code.txt":
+      
+      -- Code to review:
+      __FILEPATH__file.js__
+      code-to-be-reviewed
+
+    `);
     expect(systemPrompt).toContain(
       "Your job is to review a GitHub issue and the code written to address the issue.",
     );
-    const userPrompt = mockedRequest.sendGptRequestWithSchema.mock.calls[0][0];
+    const userPrompt = mockedRequest.sendGptRequest.mock.calls[0][0];
     expect(userPrompt).toContain("-- GitHub Issue:\nissue-body\n\n");
-    expect(userPrompt).toContain(
-      "Your job is to review a GitHub issue and the code written to address the issue.",
-    );
 
     expect(mockedPR.createPRReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.createPRReview).toHaveBeenCalledWith({
@@ -115,20 +114,19 @@ describe("codeReview", () => {
       token: "token",
       pull_number: 48,
       commit_id: "abcdefg",
-      event: "COMMENT",
+      event: "APPROVE",
       body: "I have performed a code review on this PR and found no issues. Looks good!",
     });
   });
 
   test("codeReview succeeds with a code review that requests changes", async () => {
-    mockedRequest.sendGptRequestWithSchema.mockImplementationOnce(() => {
-      const codeReview: CodeReview = {
-        minorIssues: "minor issues",
-        majorIssues: "major issues",
-        isApproved: false,
-      };
-      return new Promise((resolve) => resolve(codeReview));
-    });
+    mockedRequest.sendGptRequest.mockResolvedValueOnce(dedent`
+      __FILEPATH__file.js__
+      code-with-comments
+      __COMMENT_START__
+      You should improve this line of code
+      __COMMENT_END__
+    `);
 
     await codeReview(
       { owner: { login: "test-login" }, name: "test-repo" } as Repository,
@@ -141,26 +139,22 @@ describe("codeReview", () => {
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
-    expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledTimes(1);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     expect(mockedPR.createPRReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.createPRReview).toHaveBeenCalledWith({
       repository: { owner: { login: "test-login" }, name: "test-repo" },
       token: "token",
       pull_number: 48,
       commit_id: "abcdefg",
-      event: "COMMENT",
-      body: dedent`
-        I have performed a code review on this PR and I've found a few issues that need to be addressed.
-
-        Here are the main issues I found:
-
-        major issues
-
-        I also found a few minor issues:
-
-        minor issues
-
-      `,
+      event: "REQUEST_CHANGES",
+      comments: [
+        {
+          path: "file.js",
+          line: 1,
+          body: "You should improve this line of code",
+        },
+      ],
+      body: "I have performed a code review on this PR and I've added some comments.\n",
     });
   });
 
@@ -176,18 +170,14 @@ describe("codeReview", () => {
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
-    expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledTimes(1);
-    const systemPrompt =
-      mockedRequest.sendGptRequestWithSchema.mock.calls[0][1];
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
     expect(systemPrompt).not.toContain(
       "Your job is to review a GitHub issue and the code written to address the issue.",
     );
-    const userPrompt = mockedRequest.sendGptRequestWithSchema.mock.calls[0][0];
+    const userPrompt = mockedRequest.sendGptRequest.mock.calls[0][0];
     expect(userPrompt).not.toContain("-- GitHub Issue:");
     expect(userPrompt).not.toContain("issue-body");
-    expect(userPrompt).not.toContain(
-      "Your job is to review a GitHub issue and the code written to address the issue.",
-    );
 
     expect(mockedPR.createPRReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.createPRReview).toHaveBeenCalledWith({
@@ -195,7 +185,7 @@ describe("codeReview", () => {
       token: "token",
       pull_number: 48,
       commit_id: "abcdefg",
-      event: "COMMENT",
+      event: "APPROVE",
       body: "I have performed a code review on this PR and found no issues. Looks good!",
     });
   });

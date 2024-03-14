@@ -103,6 +103,54 @@ export const reconstructFiles = (
   }
 };
 
+interface CodeComment {
+  path: string;
+  body: string;
+  line: number;
+}
+
+export const extractPRCommentsFromFiles = (concatFileContent: string) => {
+  const sections = concatFileContent.split(/__FILEPATH__(.*?)__\n/).slice(1);
+
+  const comments: CodeComment[] = [];
+
+  for (let i = 0; i < sections.length; i += 2) {
+    const path = sections[i];
+    let fileContent = sections[i + 1];
+
+    // if the first line in file content starts with _, remove it
+    // keep doing this until the first line doesn't start with _
+    while (
+      fileContent?.length > 0 &&
+      fileContent.split("\n")[0].startsWith("_")
+    ) {
+      fileContent = fileContent.split("\n").slice(1).join("\n");
+    }
+
+    // if the code is wrapped in a code block, remove the code block
+    fileContent = removeMarkdownCodeblocks(fileContent);
+
+    const lines = fileContent.split("\n");
+    let lineNumber = 0;
+    let currentComment: string | undefined;
+    for (const line of lines) {
+      if (currentComment !== undefined) {
+        if (line.trim() === "__COMMENT_END__") {
+          comments.push({ body: currentComment, line: lineNumber, path });
+          currentComment = undefined;
+        } else {
+          currentComment = currentComment ? `${currentComment}\n${line}` : line;
+        }
+        continue;
+      } else if (line.trim() === "__COMMENT_START__") {
+        currentComment = "";
+        continue;
+      } else lineNumber++;
+    }
+  }
+  return comments;
+};
+
 export const saveNewFile = (
   rootDir: string,
   filePath: string,
