@@ -9,6 +9,8 @@ import { concatenateFiles } from "../utils/files";
 
 export type PREvent =
   RestEndpointMethodTypes["pulls"]["createReview"]["parameters"]["event"];
+export type PRComments =
+  RestEndpointMethodTypes["pulls"]["createReview"]["parameters"]["comments"];
 
 interface ErrorWithStatus {
   status: number;
@@ -92,6 +94,7 @@ export async function createPRReview({
   token,
   pull_number,
   body,
+  comments,
   commit_id,
   event,
 }: {
@@ -99,6 +102,7 @@ export async function createPRReview({
   token: string;
   pull_number: number;
   body?: string;
+  comments?: PRComments;
   commit_id?: string;
   event?: PREvent;
 }) {
@@ -115,6 +119,7 @@ export async function createPRReview({
     event,
     pull_number,
     body,
+    comments,
   });
 }
 
