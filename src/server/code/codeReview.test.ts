@@ -15,12 +15,7 @@ import { codeReview, type PullRequest } from "./codeReview";
 const mockedPR = vi.hoisted(() => ({
   concatenatePRFiles: vi
     .fn()
-    .mockImplementation(
-      () =>
-        new Promise((resolve) =>
-          resolve("__FILEPATH__file.js__\ncode-to-be-reviewed"),
-        ),
-    ),
+    .mockResolvedValue({ code: "__FILEPATH__file.js__\ncode-to-be-reviewed" }),
   createPRReview: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve({}))),
@@ -152,6 +147,7 @@ describe("codeReview", () => {
           path: "file.js",
           line: 1,
           body: "You should improve this line of code",
+          side: "RIGHT",
         },
       ],
       body: "I have performed a code review on this PR and I've added some comments.\n",

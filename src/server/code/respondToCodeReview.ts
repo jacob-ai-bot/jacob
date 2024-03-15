@@ -25,7 +25,7 @@ export async function respondToCodeReview(
   const types = getTypes(rootPath, repoSettings);
   const images = await getImages(rootPath, repoSettings);
 
-  const code = await concatenatePRFiles(
+  const { code } = await concatenatePRFiles(
     rootPath,
     repository,
     token,

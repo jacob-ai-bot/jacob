@@ -39,7 +39,7 @@ export async function codeReview(
   const types = getTypes(rootPath, repoSettings);
   const images = await getImages(rootPath, repoSettings);
 
-  const code = await concatenatePRFiles(
+  const { code } = await concatenatePRFiles(
     rootPath,
     repository,
     token,
@@ -127,7 +127,7 @@ export async function codeReview(
       commit_id: existingPr.head.sha,
       event: jacobCreatedThisPR ? "COMMENT" : "REQUEST_CHANGES",
       body,
-      comments,
+      comments: comments.map((comment) => ({ ...comment, side: "RIGHT" })),
     });
   }
 }

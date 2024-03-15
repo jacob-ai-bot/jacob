@@ -22,12 +22,7 @@ vi.mock("./checkAndCommit", () => mockedCheckAndCommit);
 const mockedPR = vi.hoisted(() => ({
   concatenatePRFiles: vi
     .fn()
-    .mockImplementation(
-      () =>
-        new Promise((resolve) =>
-          resolve("__FILEPATH__file.txt__code-with-error"),
-        ),
-    ),
+    .mockResolvedValue({ code: "__FILEPATH__file.txt__code-with-error" }),
 }));
 vi.mock("../github/pr", () => mockedPR);
 
