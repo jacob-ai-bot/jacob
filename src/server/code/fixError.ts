@@ -84,7 +84,7 @@ export async function fixError(
         buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
       });
     } else {
-      const code = await concatenatePRFiles(
+      const { code } = await concatenatePRFiles(
         rootPath,
         repository,
         token,

@@ -3,12 +3,15 @@ import path from "path";
 import ignore, { Ignore } from "ignore";
 import { removeMarkdownCodeblocks } from ".";
 
+type LineLengthMap = Record<string, number>;
+
 export const concatenateFiles = (
   rootDir: string,
   fileNamesToInclude?: string[],
   fileNamesToCreate?: null | string[],
 ) => {
   console.log("concatenateFiles", rootDir, fileNamesToInclude);
+  const lineLengthMap: LineLengthMap = {};
   let gitignore: Ignore | null = null;
   const gitignorePath = path.join(rootDir, ".gitignore");
 
@@ -63,7 +66,11 @@ export const concatenateFiles = (
         }
 
         output.push(`__FILEPATH__${relativePath}__\n`);
-        output.push(fs.readFileSync(filePath).toString("utf-8"));
+        const fileContent = fs.readFileSync(filePath).toString("utf-8");
+        output.push(fileContent);
+        const lineLength =
+          fileContent.split("\n").length - (fileContent.endsWith("\n") ? 1 : 0);
+        lineLengthMap[relativePath] = lineLength;
       }
     });
   };
@@ -73,7 +80,8 @@ export const concatenateFiles = (
   (fileNamesToCreate ?? []).forEach((fileName) =>
     output.push(`__FILEPATH__${fileName}__\n`),
   );
-  return output.join("");
+  const code = output.join("");
+  return { code, lineLengthMap };
 };
 
 export const reconstructFiles = (
@@ -116,21 +124,9 @@ export const extractPRCommentsFromFiles = (concatFileContent: string) => {
 
   for (let i = 0; i < sections.length; i += 2) {
     const path = sections[i];
-    let fileContent = sections[i + 1];
-
-    // if the first line in file content starts with _, remove it
-    // keep doing this until the first line doesn't start with _
-    while (
-      fileContent?.length > 0 &&
-      fileContent.split("\n")[0].startsWith("_")
-    ) {
-      fileContent = fileContent.split("\n").slice(1).join("\n");
-    }
-
-    // if the code is wrapped in a code block, remove the code block
-    fileContent = removeMarkdownCodeblocks(fileContent);
-
+    const fileContent = sections[i + 1];
     const lines = fileContent.split("\n");
+
     let lineNumber = 0;
     let currentComment: string | undefined;
     for (const line of lines) {

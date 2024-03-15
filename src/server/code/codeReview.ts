@@ -39,7 +39,7 @@ export async function codeReview(
   const types = getTypes(rootPath, repoSettings);
   const images = await getImages(rootPath, repoSettings);
 
-  const code = await concatenatePRFiles(
+  const { code, lineLengthMap } = await concatenatePRFiles(
     rootPath,
     repository,
     token,
@@ -87,7 +87,21 @@ export async function codeReview(
     throw new Error("No codeWithComments generated");
   }
 
-  const comments = extractPRCommentsFromFiles(codeWithComments);
+  const extractedComments = extractPRCommentsFromFiles(codeWithComments);
+
+  // Add side: "RIGHT" to each comment and leverage the lineLengthMap to ensure
+  // that comments are not associated with lines that don't exist in the file (the LLM response
+  // occasionally adds a line at the end of the file that doesn't exist in the original file)
+  const comments = extractedComments.map((comment) => {
+    const { path, line: suggestedLine } = comment;
+    const lineLength = lineLengthMap[path];
+    const line = Math.min(suggestedLine, lineLength ? lineLength : Infinity);
+    return {
+      ...comment,
+      line,
+      side: "RIGHT",
+    };
+  });
 
   const appUsername = process.env.APP_USERNAME;
   const jacobCreatedThisPR =

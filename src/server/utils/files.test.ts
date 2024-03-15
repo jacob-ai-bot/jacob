@@ -15,6 +15,7 @@ describe("extractPRCommentsFromFiles", () => {
     const fileComments = extractPRCommentsFromFiles(contentWithNoComments);
     expect(fileComments).toStrictEqual([]);
   });
+
   it("handles response with no comments", () => {
     const contentWithSimpleComment = dedent`
     __FILEPATH__file1.js__
@@ -30,6 +31,27 @@ describe("extractPRCommentsFromFiles", () => {
     expect(fileComments).toStrictEqual([
       {
         path: "file1.js",
+        body: "This console.log() statement is unnecessary.",
+        line: 1,
+      },
+    ]);
+  });
+
+  it("handles response with comment after the last line", () => {
+    const contentWithNoComments = dedent`
+    __FILEPATH__file1.js__
+    console.log("file1");
+    __FILEPATH__file2.js__
+    console.log("file2");
+    __COMMENT_START__
+    This console.log() statement is unnecessary.
+    __COMMENT_END__
+  `;
+
+    const fileComments = extractPRCommentsFromFiles(contentWithNoComments);
+    expect(fileComments).toStrictEqual([
+      {
+        path: "file2.js",
         body: "This console.log() statement is unnecessary.",
         line: 1,
       },

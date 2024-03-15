@@ -20,14 +20,10 @@ const mockedCheckAndCommit = vi.hoisted(() => ({
 vi.mock("./checkAndCommit", () => mockedCheckAndCommit);
 
 const mockedPR = vi.hoisted(() => ({
-  concatenatePRFiles: vi
-    .fn()
-    .mockImplementation(
-      () =>
-        new Promise((resolve) =>
-          resolve("__FILEPATH__file.txt__code-with-error"),
-        ),
-    ),
+  concatenatePRFiles: vi.fn().mockResolvedValue({
+    code: "__FILEPATH__file.txt__\ncode-with-error",
+    lineLengthMap: { "file.txt": 1 },
+  }),
 }));
 vi.mock("../github/pr", () => mockedPR);
 
@@ -139,7 +135,7 @@ describe("fixError", () => {
       "-- Cause Of Error\nsomething went wrong\n\n-- Ideas For Fixing Error\nchange something\n\n-- Suggested Fix\nchange some code\n",
     );
     expect(systemPrompt).toContain(
-      '-- Instructions\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__code-with-error\n',
+      '-- Instructions\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__\ncode-with-error\n',
     );
 
     expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
