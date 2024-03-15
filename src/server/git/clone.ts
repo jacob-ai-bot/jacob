@@ -4,15 +4,17 @@ import { executeWithLogRequiringSuccess, ExecAsyncException } from "../utils";
 const HTTPS_PREFIX = "https://";
 const HTTPS_SUFFIX = "github.com/";
 const GIT_REPO_SUFFIX = ".git";
-const DEFAULT_TMP_DIR = "/tmp";
 
 export async function cloneRepo(
   repoName: string,
   branch?: string,
   token?: string,
 ): Promise<DirectoryResult> {
-  const tmpDir = process.env.TMP_DIR || DEFAULT_TMP_DIR;
-  const result = await dir({ unsafeCleanup: true, dir: tmpDir });
+  const tmpDir = process.env.TMP_DIR;
+  const options = tmpDir
+    ? { unsafeCleanup: true, dir: tmpDir }
+    : { unsafeCleanup: true };
+  const result = await dir(options);
   const { path } = result;
 
   const args = branch ? `-b ${branch}` : "";
