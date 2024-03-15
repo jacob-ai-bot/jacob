@@ -218,7 +218,5 @@ export async function concatenatePRFiles(
     );
     throw new Error("No relevant files changed in PR");
   }
-  return {
-    code: concatenateFiles(rootPath, relevantFileNames, fileNamesToCreate),
-  };
+  return concatenateFiles(rootPath, relevantFileNames, fileNamesToCreate);
 }

@@ -66,7 +66,7 @@ export async function editFiles(
     console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files to update\n\n\n\n");
     throw new Error("No files to update");
   }
-  const code = concatenateFiles(
+  const { code } = concatenateFiles(
     rootPath,
     filesToUpdate,
     extractedIssue.filesToCreate,
