@@ -10,9 +10,9 @@ export async function cloneRepo(
   branch?: string,
   token?: string,
 ): Promise<DirectoryResult> {
-  const tmpDir = process.env.TMP_DIR;
-  const options = tmpDir
-    ? { unsafeCleanup: true, tmpDir }
+  const tmpdir = process.env.TMP_DIR;
+  const options = tmpdir
+    ? { unsafeCleanup: true, tmpdir }
     : { unsafeCleanup: true };
   const result = await dir(options);
   const { path } = result;
