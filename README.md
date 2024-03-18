@@ -1,8 +1,80 @@
-# Overview
+<div align="center">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="https://www.jacb.ai/images/logo.svg" width="300">
+  <source media="(prefers-color-scheme: dark)" srcset="https://www.jacb.ai/images/logo-white.svg" width="300">
+  <img alt="JACoB logo">
+</picture>
+<br/>
+JACoB: Just Another Coding Bot. Empowering Developers to Automate with AI.
+<br/>
+</div>
+
+###
+
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/PioneerSquareLabs/otto-mvp/blob/main/LICENSE)
+[![Discord](https://badgen.net/badge/icon/discord?icon=discord&label&color=blue)](https://discord.gg/NWzF9rUe)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Installation Steps](#installation-steps-for-self-hosted-version)
+
+## Overview
 
 JACoB, Just Another Coding Bot, is an open-source tool designed to streamline your development process by automating coding tasks, transforming Figma designs into deployable code, and integrating seamlessly into your existing workflow. As an AI-powered team member, JACoB works alongside you, learning your coding style and preferences to generate consistent, high-quality code output that fits right into your project’s architecture.
 
+JACoB is designed to be flexible and extensible, allowing you to customize its behavior to fit your specific needs. It integrates with GitHub and Figma, ensuring a smooth transition from design to deployable code, tailored to your project's standards. JACoB is built for privacy and security, ensuring that your code and data remain secure and private.
+
+## Why We Built JACoB
+
+AI is already changing the way software is written and these changes are only going to accelerate over time. We believe that developers, not large corporations, should be at the forefront of this change. JACoB is designed to help developers leverage AI to make their lives easier, to be more productive and to build better software. Our team is committed to building a tool that is open, transparent and respectful of the privacy and security of developers and their code. Every developer in the world should have a say in how AI is used in software development, and JACoB is our contribution to that conversation. We hope you'll join us in building the future of AI in software development, together.
+
+## See How JACoB Works
+
+Our team used JACoB to save hundreds of hours of work over the past year. We weren't just trying to beat outdated benchmarks, we built JACoB to make our real-life production-level tasks faster, easier, and way more fun. To see JACoB being used to build the jacb.ai site in an hour, watch our [demo video](https://www.youtube.com/watch?v=OfRUaehTcEM)
+
+[![JACoB Tutorial](http://img.youtube.com/vi/OfRUaehTcEM/0.jpg)](http://www.youtube.com/watch?v=OfRUaehTcEM "JACoB Tutorial")
+
+## Not Just Another Cool Demo
+
+JACoB is a product of a full year of research and development around using AI for real-world production scenarios, and we've published a technical white paper to provide a deep dive into JACoB's methodology and architecture. The paper covers the architecture of JACoB, an evaluation of JACoB with other tools and a roadmap for future development.
+
+**[Read the Technical White Paper](https://jacb.ai/paper)**
+
+To evaluate JACoB, we recruited a wide variety of developers to visit the [JACoB Arena](https://jacb.ai/arena) to compare JACoB's capabilities against the top design-to-code tools and human benchmarks. The results were impressive, with JACoB vastly outperforming other tools. The JACoB Arena is a great place to see the quality of JACoB's output for yourself.
+
 ## Quick Start
+
+JACoB integrates directly into your GitHub workflow, transforming Figma designs into deployable code and understanding your entire codebase. Begin by [signing up](https://jacb.ai/signup) to explore JACoB's capabilities or follow our [quick start guide](https://jacb.ai/quickstart) for immediate onboarding.
+
+## What Makes JACoB Different
+
+JACoB pioneers intelligent automation, handling complete development tasks beyond mere auto-completion. It offers:
+
+- **End-to-End Task Management**: From design conversion to code review.
+- **Open Source and Extensible**: Adaptable to your specific needs.
+- **Full Codebase View**: Holistic development approach.
+- **Customizable Workflow**: Configure via JSON in your codebase.
+
+## Streamlined Workflow
+
+Integrates with GitHub and Figma, eliminating the need for additional tools. This ensures a smooth transition from design to deployable code, tailored to your project's standards.
+
+## Smart Collaboration
+
+JACoB safely reviews and contributes, adhering to your project's code review processes, and supports collaborative coding with AI without disrupting existing workflows.
+
+## Full Codebase Understanding
+
+JACoB learns your coding style and preferences, generating consistent, high-quality code output that fits right into your project’s architecture.
+
+## Built for Privacy and Security
+
+JACoB does not store your code or train on any data. The hosted version contains logs that will have code snippets, which will be retained for 14 days. It uses the OpenAI API, you can read their [API data privacy policy here](https://openai.com/enterprise-privacy). The self-hosted version can be run on your own infrastructure and using your own OpenAI API key or local language models via Ollama.
+
+## Getting Started
 
 JACoB works via a custom GitHub app and a Figma Plugin, along with a command-line tool to set up the configuation options. To try out the hosted version of JACoB, visit the [JACoB Website](https://www.jacb.ai). For a self-hosted version, follow the steps below to set up JACoB locally.
 
@@ -127,7 +199,7 @@ Install the Ollama library for your programming language:
 - Python: `ollama-python`
 - JavaScript: `ollama-js`
 
-### Quickstart
+### Ollama Quickstart
 
 To start using Ollama with Llama 2, execute:
 
@@ -161,12 +233,15 @@ By integrating Ollama, you leverage local processing of language models, enhanci
 
 ## Contributing
 
-Contributions are welcome! Check our [contribution guidelines](https://docs.jacb.ai/contributing) for how to proceed. Open issues for any bugs or feature discussions before submitting pull requests and ensure adherence to project coding standards.
+We welcome contributions! From language support to framework integrations, there's always room for new features and improvements. Check our [Contribution Guidelines](https://docs.jacb.ai/contributing) and join our [Discord](https://discord.gg/NWzF9rUe) community for discussions and support.
 
 ## Additional Resources
 
-- [JACoB Main Website](https://www.jacb.ai)
-- [Detailed Documentation](https://docs.jacb.ai)
+- **[JACoB Main Website](https://www.jacb.ai)**: Explore JACoB's features and capabilities.
+- **[Detailed Documentation](https://docs.jacb.ai)**: Learn how to use JACoB and integrate it into your workflow.
+- **[JACoB Arena](https://jacb.ai/arena)**: Compare JACoB's capabilities against other tools.
+- **[Technical White Paper](https://jacb.ai/paper)**: Dive deeper into JACoB's methodology and architecture.
+- **[YouTube Channel](https://www.youtube.com/channel/UCA_gs2-Nzh8asC5DQFvREPQ)**: Watch tutorials, demos, and discussions on JACoB.
 
 ## License
 
