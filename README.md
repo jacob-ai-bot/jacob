@@ -82,12 +82,15 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 
 - GitHub and Figma accounts
 - Node.js installed locally
+- Docker and Docker Compose installed locally
 
 ### Installation Steps for Self-Hosted Version
 
 1. **GitHub App Creation**
 
    - Visit [GitHub's New App page](https://github.com/settings/apps/new) to create a new GitHub app. Fill in the basic details, including the app name and description.
+   - Generate a Webhook Secret (run `openssl rand -base64 32` to generate a secret key)
+   - Generate a `GITHUB_PRIVATE_KEY` and save it. This will be used in your `.env` configuration.
    - Set the Callback URL to `http://localhost:5173/auth/github`.
    - Set the Webhook URL to your smee.io channel URL. Create a smee channel at [smee.io](https://smee.io) if you haven't already. This will proxy GitHub webhooks to your local development environment.
    - Set the repository permissions to `Read & Write` for the following:
@@ -123,7 +126,13 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 
 1. **Environment Setup**
 
-   - Create a `.env` file based on `.env.example`, configuring values for `GITHUB_WEBHOOK_SECRET`, `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and your `OPENAI_API_KEY` among others.
+   - Create the `.env` file based on `.env.example`
+     - Configure a smee.io URL
+     - Set the proper `OPENAI_API_KEY` (not needed if using Ollama for local language model integration)
+     - Set the `GITHUB_PRIVATE_KEY` generated in the GitHub app setup
+     - From the a GitHub app, populate the `GITHUB_APP_ID`, the `GITHUB_APP_NAME`, the `GITHUB_CLIENT_ID`, and the `GITHUB_CLIENT_SECRET` (note that this needs to be populated as both `GITHUB_CLIENT_SECRET` and `VITE_GITHUB_CLIENT_SECRET` in the `.env` file)
+     - Determine the `GITHUB_APP_USERNAME` by calling a URL like this https://api.github.com/users/[GITHUB_APP_NAME][bot] and look at the `id` in the response (it will be a number)
+   - Ensure the app is listening for the following webhook events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
 
 2. **Infrastructure with Docker**
 
