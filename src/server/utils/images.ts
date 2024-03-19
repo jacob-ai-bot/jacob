@@ -24,6 +24,14 @@ export const uploadToS3 = async (
   bucketName: string,
   imageName?: string | undefined,
 ) => {
+  if (
+    !process.env.AWS_ACCESS_KEY_ID ||
+    !process.env.AWS_SECRET_ACCESS_KEY ||
+    !process.env.AWS_REGION
+  ) {
+    console.log("AWS credentials not found, image not uploaded");
+    return "";
+  }
   const key = `uploads/${imageName ?? Date.now()}.${imageType.split("/")[1]}`;
   const params = {
     Bucket: bucketName,
@@ -40,6 +48,14 @@ export const getSignedUrl = (
   bucketName: string,
   expiresInSeconds: number = 3600,
 ) => {
+  if (
+    !process.env.AWS_ACCESS_KEY_ID ||
+    !process.env.AWS_SECRET_ACCESS_KEY ||
+    !process.env.AWS_REGION
+  ) {
+    console.log("AWS credentials not found, signed url not created");
+    return "";
+  }
   const params = {
     Bucket: bucketName,
     Key: imagePath,

@@ -11,6 +11,7 @@ coverage/
 # Environment variables
 .env
 .env.local
+.env.prod
 
 # IDEs and editors
 .vscode/

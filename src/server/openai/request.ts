@@ -11,7 +11,7 @@ import { parseTemplate, removeMarkdownCodeblocks } from "../utils";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "https://api.portkey.ai/v1/proxy",
+  baseURL: process.env.PORTKEY_BASE_URL || "https://api.portkey.ai/v1/proxy",
   defaultHeaders: {
     "x-portkey-api-key": process.env.PORTKEY_API_KEY,
     "x-portkey-mode": "proxy openai",

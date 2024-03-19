@@ -18,8 +18,10 @@ JACoB: Just Another Coding Bot. Empowering Developers to Automate with AI.
 
 - [Overview](#overview)
 - [Quick Start](#quick-start)
-- [Prerequisites](#prerequisites)
-- [Installation Steps](#installation-steps-for-self-hosted-version)
+- [Self-Hosted Installation](#installation-steps-for-self-hosted-version)
+- [Local Model Setup](#running-local-models-with-ollama)
+- [Contribution Guide](#contributing)
+- [Addtional Resources](#additional-resources)
 
 ## Overview
 
@@ -82,21 +84,21 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 
 - GitHub and Figma accounts
 - Node.js installed locally
+- SMEE client installed - `npm install -g smee-client`
 - Docker and Docker Compose installed locally
 
 ### Installation Steps for Self-Hosted Version
 
 1. **GitHub App Creation**
 
-   - Visit [GitHub's New App page](https://github.com/settings/apps/new) to create a new GitHub app. Fill in the basic details, including the app name and description.
-   - Generate a Webhook Secret (run `openssl rand -base64 32` to generate a secret key)
-   - Generate a `GITHUB_PRIVATE_KEY` and save it. This will be used in your `.env` configuration.
+   - Visit [GitHub's New App page](https://github.com/settings/apps/new) to create a new GitHub app. Fill in the basic details, including the app name and homepage url (any web address is fine).
    - Set the Callback URL to `http://localhost:5173/auth/github`.
    - Set the Webhook URL to your smee.io channel URL. Create a smee channel at [smee.io](https://smee.io) if you haven't already. This will proxy GitHub webhooks to your local development environment.
+   - Generate a Webhook Secret (run `openssl rand -base64 32` in your terminal to generate a secret key)
    - Set the repository permissions to `Read & Write` for the following:
+     - `Contents`
      - `Issues`
      - `Pull requests`
-     - `Contents`
      - `Metadata` (can be read-only)
    - Subscribe to webhook events:
      - `Issues`
@@ -105,11 +107,15 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
      - `Pull request reviews`
      - `Pull request review comment`
      - `Pull request review threads`
-   - Note down the `App ID`, `Client ID`, `Client Secret`, and generate a `Private Key`. These will be used in your `.env` configuration.
+   - Create the GitHub App
+   - Note down the `App ID` and `Client ID`. This will be used in your `.env` configuration.
+   - Generate a new Client Secret and save it.
+   - Generate a new Private Key and save it.
 
 2. **Running Smee**
 
-   - Start your smee client with the command `smee -u [Your smee.io URL] --target  http://localhost:5173`, ensuring it's forwarding to your local server's port.
+   - Install the smee client `npm install -g smee-client`
+   - Start your smee client on the terminal with the command `smee -u [Your smee.io URL] --target  http://localhost:5173`, ensuring it's forwarding to your local server's port.
 
 3. **JACoB Configuration**
 
@@ -118,9 +124,15 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
    - Repeat as necessary for any other projects you'd like to use JACoB with.
 
 4. **Figma Plugin Installation**
-   - Clone and build the [JACoB Figma plugin repository](https://github.com/PioneerSquareLabs/otto-figma). Instructions for building are typically found in the repository's README.
+
+   - Clone and build the [JACoB Figma plugin repository](https://github.com/PioneerSquareLabs/otto-figma). Be sure to update the API_URL to point to `http://localhost:5173` More instructions for building are found in the repository's README.
    - Once built, open Figma and navigate to `Plugins > Development > Import plugin from manifest...`, selecting the `manifest.json` file from your local Figma plugin build.
    - Ensure the plugin is configured to interact with your local JACoB instance by setting the appropriate URLs in its configuration.
+   - Open the `manifest.json` file and copy the id for the .env
+
+5. **Running Portkey Gateway**
+   - [Portkey](https://github.com/Portkey-AI/gateway] is an open-source project that provides an easy way to run multiple LLMs with a single API interface
+   - Start the gateway on the terminal `npx @portkey-ai/gateway` and save the URL for the .env
 
 ## Local Development Setup
 
@@ -131,8 +143,10 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
      - Set the proper `OPENAI_API_KEY` (not needed if using Ollama for local language model integration)
      - Set the `GITHUB_PRIVATE_KEY` generated in the GitHub app setup
      - From the a GitHub app, populate the `GITHUB_APP_ID`, the `GITHUB_APP_NAME`, the `GITHUB_CLIENT_ID`, and the `GITHUB_CLIENT_SECRET` (note that this needs to be populated as both `GITHUB_CLIENT_SECRET` and `VITE_GITHUB_CLIENT_SECRET` in the `.env` file)
-     - Determine the `GITHUB_APP_USERNAME` by calling a URL like this https://api.github.com/users/[GITHUB_APP_NAME][bot] and look at the `id` in the response (it will be a number)
-   - Ensure the app is listening for the following webhook events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
+     - Determine the `GITHUB_APP_USERNAME` by calling a URL like this https://api.github.com/users/INSERT_GITHUB_APP_NAME[bot] and look at the `id` in the response (it will be a number)
+     - Set the `PORTKEY_BASE_URL` to the URL shown after running `npx @portkey-ai/gateway`. You do not need to set the `PORTKEY_API_KEY` unless you'd prefer to run via the hosted version.
+     - Open the Figma plugin manifest.json file and get the id. Use that id to populate the `VITE_FIGMA_PLUGIN` variable.
+     - Optional for the GPT-4-Vision endpoint: Create a new S3 bucket and add your `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` and `BUCKET_NAME` variables.
 
 2. **Infrastructure with Docker**
 
@@ -160,7 +174,7 @@ After setting up your environment and JACoB's core components, perform the follo
 
 2. **Authenticate with JACoB**
 
-   - Ensure you can navigate to the `/auth/github` route in your local JACoB instance and successfully sign in using GitHub. This step verifies the OAuth flow is correctly set up between your GitHub app and JACoB.
+   - Ensure you can navigate to the `http://localhost:5173/auth/github` route in your local JACoB instance and successfully sign in using GitHub. This step verifies the OAuth flow is correctly set up between your GitHub app and JACoB.
 
 3. **Verify Webhook Functionality**
    - Create or comment on an issue in the repository where JACoB is installed. Check your local server logs to confirm that these events trigger the expected activities in JACoB. This step is essential to confirm that webhooks are properly set up and that JACoB is responding to GitHub events as expected.
