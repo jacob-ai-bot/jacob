@@ -93,7 +93,8 @@ export async function fixError(
         assessment.filesToCreate,
       );
 
-      const { causeOfErrors, ideasForFixingError, suggestedFixes } = assessment;
+      const { causeOfErrors, ideasForFixingErrors, suggestedFixes } =
+        assessment;
       const types = getTypes(rootPath, repoSettings);
       const images = await getImages(rootPath, repoSettings);
 
@@ -101,7 +102,7 @@ export async function fixError(
         code,
         issueBody: issue.body ?? "",
         causeOfErrors,
-        ideasForFixingError,
+        ideasForFixingErrors,
         suggestedFixes,
         sourceMap,
         types,
@@ -150,17 +151,17 @@ export async function fixError(
     if (prIssue) {
       const message = dedent`JACoB here once again...
 
-        Unfortunately, I wasn't able to resolve this error.
+        Unfortunately, I wasn't able to resolve the error(s).
 
-        Here is some information about the error:
+        Here is some information about the error(s):
         
         ${assessment.causeOfErrors}
 
-        Here are some ideas for fixing the error:
+        Here are some ideas for fixing the error(s):
         
-        ${assessment.ideasForFixingError}
+        ${assessment.ideasForFixingErrors}
 
-        Here is the suggested fix:
+        Here are the suggested fix(es):
         
         ${assessment.suggestedFixes}
       `;

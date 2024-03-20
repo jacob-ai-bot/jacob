@@ -1,4 +1,4 @@
-Act as a L7 expert Software Engineer at Facebook and write flawless production-level code to address the build error.
+Act as a L7 expert Software Engineer at Facebook and write flawless production-level code to address errors.
 
 -- Instructions:
 You will be given 100 points for writing flawless, production-level code that builds successfully.

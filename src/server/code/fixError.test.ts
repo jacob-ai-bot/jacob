@@ -70,7 +70,7 @@ const mockedAssessBuildError = vi.hoisted(() => ({
         resolve({
           fileName: "file.txt",
           causeOfErrors: "something went wrong",
-          ideasForFixingError: "change something",
+          ideasForFixingErrors: "change something",
           suggestedFixes: "change some code",
           filesToUpdate: ["src/file.txt"],
         }),
@@ -132,7 +132,7 @@ describe("fixError", () => {
       "-- Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n-- END Source Map\n",
     );
     expect(systemPrompt).toContain(
-      "-- Cause Of Error\nsomething went wrong\n\n-- Ideas For Fixing Error\nchange something\n\n-- Suggested Fix\nchange some code\n",
+      "-- Cause Of Errors\nsomething went wrong\n\n-- Ideas For Fixing Errors\nchange something\n\n-- Suggested Fixes\nchange some code\n",
     );
     expect(systemPrompt).toContain(
       '-- Instructions\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__\ncode-with-error\n',
