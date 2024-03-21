@@ -95,6 +95,12 @@ const iconSetExamples = {
     const element = <Icon icon={envelopeIcon} />
     \`\`\`
   `,
+  [IconSet.Lucide]: dedent`
+    \`\`\`
+    import { LayoutDashboard } from 'lucide-react'
+    const element = <LayoutDashboard />
+    \`\`\`
+  `,
 };
 
 export const newIssueForFigmaFile = async (req: Request, res: Response) => {

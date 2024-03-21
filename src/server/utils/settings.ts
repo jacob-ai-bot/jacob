@@ -21,6 +21,7 @@ export enum IconSet {
   IconPark = "IconPark",
   CoreUI = "CoreUI",
   Iconify = "Iconify",
+  Lucide = "Lucide",
 }
 
 // TODO: add more enums, all options are in the jacob-setup repo
