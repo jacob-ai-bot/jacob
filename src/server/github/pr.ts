@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+import { OctokitResponse } from "@octokit/types";
 import { Repository } from "@octokit/webhooks-types";
 import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 import { graphql } from "@octokit/graphql";
@@ -139,6 +140,25 @@ export async function getPR(
     repo: repository.name,
     pull_number,
   });
+}
+
+export async function getPRDiff(
+  repository: Repository,
+  token: string,
+  pull_number: number,
+) {
+  const octokit = new Octokit({
+    auth: token,
+    log: console,
+    userAgent: "jacob",
+  });
+
+  return octokit.pulls.get({
+    owner: repository.owner.login,
+    repo: repository.name,
+    pull_number,
+    mediaType: { format: "diff" },
+  }) as unknown as Promise<OctokitResponse<string>>;
 }
 
 export async function getPRFiles(

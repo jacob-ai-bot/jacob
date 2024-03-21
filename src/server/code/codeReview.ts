@@ -6,8 +6,12 @@ import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate, RepoSettings } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { getIssue } from "../github/issue";
-import { concatenatePRFiles, createPRReview } from "../github/pr";
-import { extractPRCommentsFromFiles } from "../utils/files";
+import { concatenatePRFiles, createPRReview, getPRDiff } from "../github/pr";
+import {
+  type CodeComment,
+  extractPRCommentsFromFiles,
+  getNewOrModifiedRangesMapFromDiff,
+} from "../utils/files";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -38,6 +42,9 @@ export async function codeReview(
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
   const images = await getImages(rootPath, repoSettings);
+
+  const { data: diff } = await getPRDiff(repository, token, existingPr.number);
+  const newOrModifiedRangeMap = getNewOrModifiedRangesMapFromDiff(diff);
 
   const { code, lineLengthMap } = await concatenatePRFiles(
     rootPath,
@@ -92,16 +99,30 @@ export async function codeReview(
   // Add side: "RIGHT" to each comment and leverage the lineLengthMap to ensure
   // that comments are not associated with lines that don't exist in the file (the LLM response
   // occasionally adds a line at the end of the file that doesn't exist in the original file)
-  const comments = extractedComments.map((comment) => {
-    const { path, line: suggestedLine } = comment;
-    const lineLength = lineLengthMap[path];
-    const line = Math.min(suggestedLine, lineLength ? lineLength : Infinity);
-    return {
-      ...comment,
-      line,
-      side: "RIGHT",
-    };
-  });
+  const comments = extractedComments
+    .map((comment) => {
+      const { path, line: suggestedLine } = comment;
+      const lineLength = lineLengthMap[path];
+      const line = Math.min(suggestedLine, lineLength ? lineLength : Infinity);
+      const ranges = newOrModifiedRangeMap[path];
+      const appliesToNewOrModifiedCode = ranges?.some(
+        (range) => line >= range.start && line <= range.end,
+      );
+      if (!appliesToNewOrModifiedCode) {
+        console.warn(
+          `[${repository.full_name}] Comment on line ${line} does not apply to new or modified code (ignoring):`,
+          comment,
+        );
+      }
+      return appliesToNewOrModifiedCode
+        ? {
+            ...comment,
+            line,
+            side: "RIGHT",
+          }
+        : undefined;
+    })
+    .filter(Boolean) as CodeComment[];
 
   const appUsername = process.env.APP_USERNAME;
   const jacobCreatedThisPR =

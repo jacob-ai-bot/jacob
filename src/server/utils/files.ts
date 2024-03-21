@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import ignore, { Ignore } from "ignore";
+import parseDiff from "parse-diff";
 import { removeMarkdownCodeblocks } from ".";
 
 type LineLengthMap = Record<string, number>;
@@ -111,7 +112,7 @@ export const reconstructFiles = (
   }
 };
 
-interface CodeComment {
+export interface CodeComment {
   path: string;
   body: string;
   line: number;
@@ -160,3 +161,52 @@ export const saveNewFile = (
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, fileContent);
 };
+
+interface NewOrModifiedRange {
+  start: number;
+  end: number;
+}
+
+type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
+
+export function getNewOrModifiedRangesMapFromDiff(diff: string) {
+  const rangeMap: FilesRangesMap = {};
+  parseDiff(diff).forEach((file) => {
+    if (!file.to) {
+      return;
+    }
+    const ranges: NewOrModifiedRange[] = [];
+    let currentRange: NewOrModifiedRange | undefined;
+    file.chunks.forEach(({ changes }) => {
+      changes.forEach((change) => {
+        switch (change.type) {
+          case "normal":
+            if (currentRange) {
+              ranges.push(currentRange);
+              currentRange = undefined;
+            }
+            break;
+          case "add":
+            if (!currentRange) {
+              currentRange = {
+                start: change.ln,
+                end: change.ln,
+              };
+            } else {
+              currentRange.end = change.ln;
+            }
+            break;
+        }
+      });
+      if (currentRange) {
+        ranges.push(currentRange);
+      }
+    });
+    if (!rangeMap[file.to]) {
+      rangeMap[file.to] = ranges;
+    } else {
+      rangeMap[file.to].push(...ranges);
+    }
+  });
+  return rangeMap;
+}

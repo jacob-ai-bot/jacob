@@ -17,9 +17,10 @@ const mockedPR = vi.hoisted(() => ({
     code: "__FILEPATH__file.js__\ncode-to-be-reviewed",
     lineLengthMap: { "file.js": 1 },
   }),
-  createPRReview: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve({}))),
+  createPRReview: vi.fn().mockResolvedValue({}),
+  getPRDiff: vi.fn().mockResolvedValue({
+    data: "diff --git a/file.js b/file.js\nindex fa02118..f31a4db 100644\n--- a/file.js\n+++ b/file.js\n@@ -1,1 +1,1 @@\n-code-before-changes\n+code-to-be-reviewed",
+  }),
 }));
 vi.mock("../github/pr", () => mockedPR);
 
@@ -185,5 +186,76 @@ describe("codeReview", () => {
       event: "APPROVE",
       body: "I have performed a code review on this PR and found no issues. Looks good!",
     });
+  });
+
+  test("codeReview succeeds and filters comments that don't apply to new or modified lines", async () => {
+    mockedRequest.sendGptRequest.mockResolvedValueOnce(dedent`
+      __FILEPATH__file.js__
+      code-to-be-reviewed
+      unmodified-line
+      __COMMENT_START__
+      You should improve this line of code
+      __COMMENT_END__
+    `);
+    mockedPR.concatenatePRFiles.mockResolvedValueOnce({
+      code: dedent`
+        __FILEPATH__file.js__
+        code-to-be-reviewed
+        unmodified-line
+      `,
+      lineLengthMap: { "file.js": 2 },
+    });
+    mockedPR.getPRDiff.mockResolvedValueOnce({
+      data: dedent`
+        diff --git a/file.js b/file.js
+        index fa02118..f31a4db 100644
+        --- a/file.js
+        +++ b/file.js
+        @@ -1,2 +1,2 @@
+        -code-before-changes
+        +code-to-be-reviewed
+         unmodified-line
+      `,
+    });
+    vi.spyOn(console, "warn");
+
+    await codeReview(
+      {
+        owner: { login: "test-login" },
+        name: "test-repo",
+        full_name: "test-login/test-repo",
+      } as Repository,
+      "token",
+      "/rootpath",
+      "jacob-issue-48-test",
+      undefined,
+      { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+    );
+
+    expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
+    expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    expect(mockedPR.createPRReview).toHaveBeenCalledTimes(1);
+    expect(mockedPR.createPRReview).toHaveBeenCalledWith({
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+        full_name: "test-login/test-repo",
+      },
+      token: "token",
+      pull_number: 48,
+      commit_id: "abcdefg",
+      event: "APPROVE",
+      body: "I have performed a code review on this PR and found no issues. Looks good!",
+    });
+    expect(console.warn).toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(
+      "[test-login/test-repo] Comment on line 2 does not apply to new or modified code (ignoring):",
+      {
+        body: "You should improve this line of code",
+        line: 2,
+        path: "file.js",
+      },
+    );
   });
 });

@@ -4,5 +4,6 @@
   "compilerOptions": {
     "moduleResolution": "node",
     "module": "commonjs",
+    "types": ["vite/client"],
   }
 }
