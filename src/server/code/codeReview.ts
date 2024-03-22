@@ -2,7 +2,7 @@ import dedent from "ts-dedent";
 import { Repository } from "@octokit/webhooks-types";
 import { Endpoints } from "@octokit/types";
 
-import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
+import { getSourceMap, getTypes } from "../analyze/sourceMap";
 import { parseTemplate, RepoSettings } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { getIssue } from "../github/issue";

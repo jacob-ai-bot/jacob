@@ -337,12 +337,20 @@ describe("onGitHubEvent", () => {
       undefined,
     );
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
+    const expectedRepo = {
+      ...installationRepositoriesAddedPayload.repositories_added[0],
+      owner: installationRepositoriesAddedPayload.installation.account,
+    };
+    expect(mockedIssue.createRepoInstalledIssue).toHaveBeenLastCalledWith(
+      expectedRepo,
+      "fake-token",
+      "cpirich",
+      true,
+    );
   });
 
   test("repo added - repo is not a NodeJS project", async () => {
-    mockedGetFile.getFile.mockImplementationOnce(() =>
-      Promise.resolve(undefined),
-    );
+    mockedGetFile.getFile.mockRejectedValueOnce(new Error("test error"));
 
     await onGitHubEvent({
       id: "9",
@@ -350,7 +358,19 @@ describe("onGitHubEvent", () => {
       payload: installationRepositoriesAddedPayload,
     } as unknown as WebhookInstallationRepositoriesAddedEvent);
 
-    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).not.toHaveBeenCalled();
+    expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
+    const expectedRepo = {
+      ...installationRepositoriesAddedPayload.repositories_added[0],
+      owner: installationRepositoriesAddedPayload.installation.account,
+    };
+    expect(mockedIssue.createRepoInstalledIssue).toHaveBeenLastCalledWith(
+      expectedRepo,
+      "fake-token",
+      "cpirich",
+      false,
+    );
   });
 
   test("issue command - build", async () => {

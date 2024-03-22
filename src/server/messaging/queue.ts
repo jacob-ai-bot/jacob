@@ -121,20 +121,24 @@ async function isNodeProject(
   // Check to see if the repo has a package.json file in the root
   // This is a simple way to determine if the repo is a Node.js project
   // We will need to remove this assumption if we want to support other languages
-  const { data } = await getFile(
-    {
-      ...repository,
-      owner: {
-        ...repository.owner,
-        name: repository.owner?.name ?? undefined,
-        gravatar_id: repository.owner?.gravatar_id ?? "",
-        type: repository.owner?.type as "Bot" | "User" | "Organization",
+  try {
+    const { data } = await getFile(
+      {
+        ...repository,
+        owner: {
+          ...repository.owner,
+          name: repository.owner?.name ?? undefined,
+          gravatar_id: repository.owner?.gravatar_id ?? "",
+          type: repository.owner?.type as "Bot" | "User" | "Organization",
+        },
       },
-    },
-    installationAuthentication.token,
-    "package.json",
-  );
-  return !(data instanceof Array) && data.type === "file";
+      installationAuthentication.token,
+      "package.json",
+    );
+    return !(data instanceof Array) && data.type === "file";
+  } catch (e) {
+    return false;
+  }
 }
 
 async function authInstallation(installationId?: number) {
@@ -163,13 +167,9 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
     const repository = { ...repo, owner: installation.account };
     const distinctId = sender.login ?? "";
 
+    let isNodeRepo: boolean | undefined;
     try {
-      if (!(await isNodeProject(repository, installationAuthentication))) {
-        console.log(
-          `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : not a Node.js project - skipping installation`,
-        );
-        continue;
-      }
+      isNodeRepo = await isNodeProject(repository, installationAuthentication);
       await addProjectToDB(repo, event.id, event.name);
       const { path, cleanup } = await cloneRepo(
         repo.full_name,
@@ -182,11 +182,19 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
       const repoSettings = getRepoSettings(path);
 
       try {
-        await runBuildCheck(path, false, repoSettings);
+        if (isNodeRepo) {
+          await runBuildCheck(path, false, repoSettings);
+        } else {
+          console.log(
+            `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : not a Node.js project - skipping runBuildCheck`,
+          );
+        }
+
         await createRepoInstalledIssue(
           repository,
           installationAuthentication.token,
           sender.login,
+          isNodeRepo,
         );
         posthogClient.capture({
           distinctId,
@@ -205,6 +213,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
           repository,
           installationAuthentication.token,
           sender.login,
+          isNodeRepo,
           error as Error,
         );
         posthogClient.capture({
