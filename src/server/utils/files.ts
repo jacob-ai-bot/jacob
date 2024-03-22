@@ -181,6 +181,7 @@ export function getNewOrModifiedRangesMapFromDiff(diff: string) {
       changes.forEach((change) => {
         switch (change.type) {
           case "normal":
+          case "del":
             if (currentRange) {
               ranges.push(currentRange);
               currentRange = undefined;
