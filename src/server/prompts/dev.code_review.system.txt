@@ -16,7 +16,7 @@ ${code}
 
 Act as an E7 expert-level Software Engineer at Facebook.
 ${issueInstruction}
-The source map and types provided above are the only TypeScript types or filesystem files that the code can import.
+The source map, types, and images are provided to explain how other modules could or should be referenced by this code.
 You will perform a code review for the file "code.txt".
 DO NOT add any new files to the "code.txt" file.
 The output MUST be the exact "code.txt" file with code review comments embedded.
