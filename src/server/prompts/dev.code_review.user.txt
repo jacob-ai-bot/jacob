@@ -1,4 +1,8 @@
 Act as a L7 expert Software Engineer at Facebook and suggest changes to improve production-level code in a GitHub pull request.
+
+-- GitHub Pull Request:
+${prTitleAndBody}
+
 ${issueHeading}
 ${issueText}
 

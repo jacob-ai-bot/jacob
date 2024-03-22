@@ -31,7 +31,7 @@ const mockedIssue = vi.hoisted(() => ({
         if (isNaN(issueNumber)) {
           reject(new Error("Issue number is not a number"));
         } else {
-          resolve({ data: { body: "issue-body" } });
+          resolve({ data: { body: "issue-body", title: "issue-title" } });
         }
       }),
   ),
@@ -41,7 +41,6 @@ vi.mock("../github/issue", () => mockedIssue);
 const mockedSourceMap = vi.hoisted(() => ({
   getSourceMap: vi.fn().mockImplementation(() => "source map"),
   getTypes: vi.fn().mockImplementation(() => "types"),
-  getImages: vi.fn().mockImplementation(() => "images"),
 }));
 vi.mock("../analyze/sourceMap", () => mockedSourceMap);
 
@@ -75,7 +74,12 @@ describe("codeReview", () => {
       "/rootpath",
       "jacob-issue-48-test",
       undefined,
-      { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+      {
+        number: 48,
+        head: { sha: "abcdefg" },
+        title: "pr-title",
+        body: "pr-body",
+      } as PullRequest,
     );
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
@@ -84,12 +88,13 @@ describe("codeReview", () => {
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
-    expect(systemPrompt).toContain("-- Types\ntypes\n");
-    expect(systemPrompt).toContain(
-      "-- Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n-- END Source Map\n",
-    );
+    expect(systemPrompt).toContain(dedent`
+      -- Source Map (this is a map of the codebase, you can use it to understand other modules referenced by this code. It is NOT part of the task!)
+      source map
+      -- END Source Map
+
+    `);
     expect(systemPrompt).toContain("-- Types\ntypes\n\n");
-    expect(systemPrompt).toContain("-- Images\nimages\n\n");
     expect(systemPrompt).toContain(dedent`
       -- Instructions:
       The code that needs to be reviewed is a file called "code.txt":
@@ -100,10 +105,15 @@ describe("codeReview", () => {
 
     `);
     expect(systemPrompt).toContain(
-      "Your job is to review a GitHub issue and the code written to address the issue.",
+      "Your job is to review a GitHub pull request and the code written to address the issue.",
     );
     const userPrompt = mockedRequest.sendGptRequest.mock.calls[0][0];
-    expect(userPrompt).toContain("-- GitHub Issue:\nissue-body\n\n");
+    expect(userPrompt).toContain(
+      "-- GitHub Pull Request:\npr-title\npr-body\n\n",
+    );
+    expect(userPrompt).toContain(
+      "-- GitHub Issue:\nissue-title\nissue-body\n\n",
+    );
 
     expect(mockedPR.createPRReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.createPRReview).toHaveBeenCalledWith({

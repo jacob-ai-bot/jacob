@@ -41,8 +41,6 @@ export async function codeReview(
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
-  const images = await getImages(rootPath, repoSettings);
-
   const { data: diff } = await getPRDiff(repository, token, existingPr.number);
   const newOrModifiedRangeMap = getNewOrModifiedRangesMapFromDiff(diff);
 
@@ -56,12 +54,12 @@ export async function codeReview(
   const codeReviewTemplateParams = {
     sourceMap,
     types,
-    images,
     code,
-    issueText: issue?.body ?? "",
-    issueHeading: issue?.body ? "-- GitHub Issue:" : "",
+    prTitleAndBody: `${existingPr.title}\n${existingPr.body ?? ""}`,
+    issueText: issue ? `${issue.title}\n${issue.body ?? ""}` : "",
+    issueHeading: issue ? "-- GitHub Issue:" : "",
     issueInstruction: issue?.body
-      ? "Your job is to review a GitHub issue and the code written to address the issue."
+      ? " and the code written to address the issue."
       : "",
   };
 
