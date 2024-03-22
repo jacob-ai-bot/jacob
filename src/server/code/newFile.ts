@@ -1,4 +1,7 @@
 import { Issue, Repository } from "@octokit/webhooks-types";
+import dedent from "ts-dedent";
+import fs from "fs";
+import path from "path";
 
 import { getTypes, getImages } from "../analyze/sourceMap";
 import {
@@ -23,6 +26,15 @@ export async function createNewFile(
   sourceMap: string,
   repoSettings?: RepoSettings,
 ) {
+  if (fs.existsSync(path.join(rootPath, newFileName))) {
+    throw new Error(dedent`
+      The issue requested that I create a new file named ${newFileName}, but a file with that name already exists.
+      I'm going to stop working on this issue to avoid overwriting important code in that file.
+
+      Please consider creating a new issue to make it clear if you would like me to edit this file or to create a new file with a different name.
+    `);
+  }
+
   const snapshotUrl = getSnapshotUrl(issue.body);
   const planTemplateParams = {
     newFileName,
