@@ -6,7 +6,7 @@ import { graphql } from "@octokit/graphql";
 import { MarkPullRequestReadyForReviewPayload } from "@octokit/graphql-schema";
 import path from "path";
 
-import { concatenateFiles } from "../utils/files";
+import { concatenateFiles, type FilesRangesMap } from "../utils/files";
 
 export type PREvent =
   RestEndpointMethodTypes["pulls"]["createReview"]["parameters"]["event"];
@@ -209,6 +209,7 @@ export async function concatenatePRFiles(
   repository: Repository,
   token: string,
   prNumber: number,
+  newOrModifiedRangeMap?: FilesRangesMap,
   fileNamesToInclude?: string[],
   fileNamesToCreate?: null | string[],
 ) {
@@ -238,5 +239,10 @@ export async function concatenatePRFiles(
     );
     throw new Error("No relevant files changed in PR");
   }
-  return concatenateFiles(rootPath, relevantFileNames, fileNamesToCreate);
+  return concatenateFiles(
+    rootPath,
+    newOrModifiedRangeMap,
+    relevantFileNames,
+    fileNamesToCreate,
+  );
 }

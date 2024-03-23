@@ -1,7 +1,9 @@
 import { dedent } from "ts-dedent";
-import { describe, it, expect } from "vitest";
+import { vi, describe, it, expect, afterEach } from "vitest";
+import fs, { type Stats, type Dirent } from "fs";
 
 import {
+  concatenateFiles,
   extractPRCommentsFromFiles,
   getNewOrModifiedRangesMapFromDiff,
 } from "./files";
@@ -20,13 +22,36 @@ describe("extractPRCommentsFromFiles", () => {
     expect(fileComments).toStrictEqual([]);
   });
 
-  it("handles response with no comments", () => {
+  it("handles response with a simple comment", () => {
     const contentWithSimpleComment = dedent`
     __FILEPATH__file1.js__
     console.log("file1");
     __COMMENT_START__
     This console.log() statement is unnecessary.
     __COMMENT_END__
+    __FILEPATH__file2.js__
+    console.log("file2");
+  `;
+
+    const fileComments = extractPRCommentsFromFiles(contentWithSimpleComment);
+    expect(fileComments).toStrictEqual([
+      {
+        path: "file1.js",
+        body: "This console.log() statement is unnecessary.",
+        line: 1,
+      },
+    ]);
+  });
+
+  it("doesn't include modified line markers in line numbers", () => {
+    const contentWithSimpleComment = dedent`
+    __FILEPATH__file1.js__
+    console.log("file1");
+    __START_MODIFIED_LINES__
+    __COMMENT_START__
+    This console.log() statement is unnecessary.
+    __COMMENT_END__
+    __END_MODIFIED_LINES__
     __FILEPATH__file2.js__
     console.log("file2");
   `;
@@ -80,5 +105,93 @@ describe("getNewOrModifiedRangesMapFromDiff", () => {
         { start: 58, end: 58 },
       ],
     });
+  });
+});
+
+describe("concatenateFiles", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("concatenates files", () => {
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    vi.spyOn(fs, "statSync").mockReturnValue({
+      isDirectory: () => false,
+    } as Stats);
+    vi.spyOn(fs, "readdirSync").mockReturnValue([
+      "file1.js",
+      "file2.js",
+    ] as unknown as Dirent[]);
+    vi.spyOn(fs, "readFileSync").mockReturnValue(
+      Buffer.from(dedent`
+        console.log("line1");
+        console.log("line2");
+
+      `),
+    );
+
+    const { code, lineLengthMap } = concatenateFiles("./");
+    expect(code).toBe(
+      dedent`
+        __FILEPATH__file1.js__
+        console.log("line1");
+        console.log("line2");
+        __FILEPATH__file2.js__
+        console.log("line1");
+        console.log("line2");
+
+      `,
+    );
+    expect(lineLengthMap).toStrictEqual({ "file1.js": 2, "file2.js": 2 });
+  });
+
+  it("concatenates files with modified range markers inserted", () => {
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    vi.spyOn(fs, "statSync").mockReturnValue({
+      isDirectory: () => false,
+    } as Stats);
+    vi.spyOn(fs, "readdirSync").mockReturnValue([
+      "file1.js",
+      "file2.js",
+    ] as unknown as Dirent[]);
+    vi.spyOn(fs, "readFileSync").mockReturnValue(
+      Buffer.from(dedent`
+        console.log("line1");
+        console.log("line2");
+        console.log("line3");
+        console.log("line4");
+
+      `),
+    );
+
+    const { code, lineLengthMap } = concatenateFiles("./", {
+      "file1.js": [{ start: 1, end: 3 }],
+      "file2.js": [
+        { start: 2, end: 2 },
+        { start: 4, end: 4 },
+      ],
+    });
+    expect(code).toBe(
+      dedent`
+        __FILEPATH__file1.js__
+        __START_MODIFIED_LINES__
+        console.log("line1");
+        console.log("line2");
+        console.log("line3");
+        __END_MODIFIED_LINES__
+        console.log("line4");
+        __FILEPATH__file2.js__
+        console.log("line1");
+        __START_MODIFIED_LINES__
+        console.log("line2");
+        __END_MODIFIED_LINES__
+        console.log("line3");
+        __START_MODIFIED_LINES__
+        console.log("line4");
+        __END_MODIFIED_LINES__
+
+      `,
+    );
+    expect(lineLengthMap).toStrictEqual({ "file1.js": 4, "file2.js": 4 });
   });
 });

@@ -9,6 +9,10 @@ ${issueText}
 -- Instructions:
 Act as an E7 expert-level Software Engineer at Facebook.
 You will perform a code review and respond back with all of the code with pull request (PR) comments inserted.
+The new or modified lines of code are prefaced with a `__START_MODIFIED_LINES__` marker on its own line and followed by a `__END_MODIFIED_LINES__` marker on its own line.
+ONLY add PR comments on new or modified lines of code between a `__START_MODIFIED_LINES__` marker and a `__END_MODIFIED_LINES__` marker.
+These markers are not part of the code.
+They have been added only to help you identify the relevant lines and will be removed later before the code is used.
 Each PR comment ABSOLUTELY MUST be inserted on new lines just below the specific line of code where the comment applies.
 DO NOT insert any PR comments after the last line of a file or at the end of the "code.txt" file.
 A PR comment is not part of the code.

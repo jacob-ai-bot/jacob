@@ -49,6 +49,7 @@ export async function codeReview(
     repository,
     token,
     existingPr.number,
+    newOrModifiedRangeMap,
   );
 
   const codeReviewTemplateParams = {

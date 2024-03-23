@@ -68,6 +68,7 @@ export async function editFiles(
   }
   const { code } = concatenateFiles(
     rootPath,
+    undefined,
     filesToUpdate,
     extractedIssue.filesToCreate,
   );

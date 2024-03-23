@@ -89,6 +89,7 @@ export async function fixError(
         repository,
         token,
         existingPr.number,
+        undefined,
         assessment.filesToUpdate,
         assessment.filesToCreate,
       );

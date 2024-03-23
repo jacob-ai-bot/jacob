@@ -6,12 +6,26 @@ import { removeMarkdownCodeblocks } from ".";
 
 type LineLengthMap = Record<string, number>;
 
+interface NewOrModifiedRange {
+  start: number;
+  end: number;
+}
+
+export type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
+
 export const concatenateFiles = (
   rootDir: string,
+  newOrModifiedRangeMap?: FilesRangesMap,
   fileNamesToInclude?: string[],
   fileNamesToCreate?: null | string[],
 ) => {
-  console.log("concatenateFiles", rootDir, fileNamesToInclude);
+  console.log(
+    "concatenateFiles",
+    rootDir,
+    newOrModifiedRangeMap,
+    fileNamesToInclude,
+    fileNamesToCreate,
+  );
   const lineLengthMap: LineLengthMap = {};
   let gitignore: Ignore | null = null;
   const gitignorePath = path.join(rootDir, ".gitignore");
@@ -68,9 +82,26 @@ export const concatenateFiles = (
 
         output.push(`__FILEPATH__${relativePath}__\n`);
         const fileContent = fs.readFileSync(filePath).toString("utf-8");
-        output.push(fileContent);
-        const lineLength =
-          fileContent.split("\n").length - (fileContent.endsWith("\n") ? 1 : 0);
+        const newOrModifiedRanges = newOrModifiedRangeMap?.[relativePath];
+        const lines = fileContent.split("\n");
+        if (newOrModifiedRanges) {
+          lines.forEach((line, index) => {
+            const lineNumber = index + 1;
+            if (newOrModifiedRanges.some(({ start }) => lineNumber === start)) {
+              output.push(`__START_MODIFIED_LINES__\n`);
+            }
+            output.push(line);
+            if (index < lines.length - 1) {
+              output.push("\n");
+            }
+            if (newOrModifiedRanges.some(({ end }) => lineNumber === end)) {
+              output.push(`__END_MODIFIED_LINES__\n`);
+            }
+          });
+        } else {
+          output.push(fileContent);
+        }
+        const lineLength = lines.length - (fileContent.endsWith("\n") ? 1 : 0);
         lineLengthMap[relativePath] = lineLength;
       }
     });
@@ -131,18 +162,26 @@ export const extractPRCommentsFromFiles = (concatFileContent: string) => {
     let lineNumber = 0;
     let currentComment: string | undefined;
     for (const line of lines) {
+      const trimmedLine = line.trim();
       if (currentComment !== undefined) {
-        if (line.trim() === "__COMMENT_END__") {
+        if (trimmedLine === "__COMMENT_END__") {
           comments.push({ body: currentComment, line: lineNumber, path });
           currentComment = undefined;
         } else {
           currentComment = currentComment ? `${currentComment}\n${line}` : line;
         }
         continue;
-      } else if (line.trim() === "__COMMENT_START__") {
+      } else if (trimmedLine === "__COMMENT_START__") {
         currentComment = "";
         continue;
-      } else lineNumber++;
+      } else if (
+        trimmedLine === "__START_MODIFIED_LINES__" ||
+        trimmedLine === "__END_MODIFIED_LINES__"
+      ) {
+        continue;
+      } else {
+        lineNumber++;
+      }
     }
   }
   return comments;
@@ -161,13 +200,6 @@ export const saveNewFile = (
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, fileContent);
 };
-
-interface NewOrModifiedRange {
-  start: number;
-  end: number;
-}
-
-type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
 
 export function getNewOrModifiedRangesMapFromDiff(diff: string) {
   const rangeMap: FilesRangesMap = {};

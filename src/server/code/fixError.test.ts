@@ -121,6 +121,7 @@ describe("fixError", () => {
       { name: "test-repo", owner: { login: "test-login" } },
       "token",
       48,
+      undefined,
       ["src/file.txt"],
       undefined,
     );
