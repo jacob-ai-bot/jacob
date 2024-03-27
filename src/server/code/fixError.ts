@@ -36,8 +36,7 @@ export async function fixError(
   const issue = result.data;
 
   const buildErrorSection = (body?.split("## Error Message") ?? [])[1];
-  const headingEndMarker = "\n\n";
-  const nextHeadingMarker = "## ";
+  const headingEndMarker = "\n```\n";
   const afterHeadingIndex = (buildErrorSection ?? "").indexOf(headingEndMarker);
   const restOfHeading =
     afterHeadingIndex === -1
@@ -47,12 +46,13 @@ export async function fixError(
     restOfHeading.match(/Attempt\s+Number\s+(\d+)/)?.[1] ?? "",
     10,
   );
+  const endOfErrorSectionMarker = "```";
   const errors =
     afterHeadingIndex === -1
       ? ""
       : buildErrorSection
           .slice(afterHeadingIndex + headingEndMarker.length)
-          .split(nextHeadingMarker)[0];
+          .split(endOfErrorSectionMarker)[0];
 
   const sourceMap =
     getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));

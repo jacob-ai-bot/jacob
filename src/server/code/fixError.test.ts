@@ -102,7 +102,7 @@ describe("fixError", () => {
       { owner: { login: "test-login" }, name: "test-repo" } as Repository,
       "token",
       issue,
-      "## Error Message (Attempt Number 2):\n\nbuild-error-info\n\n## Something else",
+      "## Error Message (Attempt Number 2):\n```\nbuild-error-info\n\n```\n## Something else\n\n",
       "/rootpath",
       "jacob-issue-48-test",
       undefined,

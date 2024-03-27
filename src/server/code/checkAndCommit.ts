@@ -112,8 +112,9 @@ export async function checkAndCommit({
       ${PRCommand.FixError}
       
       ## Error Message${errorAttemptInHeading}:
-      
+      \`\`\`
       ${buildErrorMessage}
+      \`\`\`
     `;
   } else if (requestStoryCreation) {
     prBodySuffix = dedent`\n

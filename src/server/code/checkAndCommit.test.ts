@@ -348,8 +348,9 @@ describe("checkAndCommit", () => {
         "## Next Steps\n\n" +
         "I am working to resolve an error. I will update this PR with my progress.\n" +
         "@jacob-ai-bot fix error\n\n" +
-        "## Error Message (Attempt Number 2):\n\n" +
-        fakeBuildError,
+        "## Error Message (Attempt Number 2):\n```\n" +
+        fakeBuildError +
+        "\n```",
     );
     expect(mockedIssue.addCommentToIssue).toHaveBeenLastCalledWith(
       repository,
