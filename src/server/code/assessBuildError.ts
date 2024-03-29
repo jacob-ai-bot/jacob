@@ -9,8 +9,8 @@ export const AssessmentSchema = z.object({
   suggestedFixes: z.string(), // The suggested fixes to the code to make the build and tests succeed. Your first choice should bias towards changing the file that caused the errors. You may also suggest that the user comment out some code that is causing the issue.
   filesToCreate: z.array(z.string()).optional(), // an array of file paths that need to be created to resolve the errors. The paths CANNOT be in the list of valid file names.
   filesToUpdate: z.array(z.string()).optional(), // an array of file paths that need to be updated to resolve the errors
-  needsNpmInstall: z.boolean().optional(), // Whether or not the errors are caused by a missing dependency
-  npmPackageToInstall: z.string().optional(), // If a dependency is missing, provide the name of the npm package that needs to be installed (just the name, not the command i.e. "lodash" instead of "npm install lodash")
+  needsNpmInstall: z.boolean().nullish(), // Whether or not the errors are caused by a missing dependency
+  npmPackageToInstall: z.string().nullish(), // If a dependency is missing, provide the name of the npm package that needs to be installed (just the name, not the command i.e. "lodash" instead of "npm install lodash")
 });
 
 export type Assessment = z.infer<typeof AssessmentSchema>;
