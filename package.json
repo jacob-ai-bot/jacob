@@ -45,6 +45,7 @@
     "react-dom": "^18.2.0",
     "react-github-btn": "^1.4.0",
     "react-router-dom": "^6.16.0",
+    "semver": "^7.6.0",
     "smee-client": "^1.2.3",
     "strip-ansi": "^7.1.0",
     "tiktoken-node": "^0.0.6",

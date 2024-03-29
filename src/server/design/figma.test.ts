@@ -15,59 +15,35 @@ const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
     .fn()
     .mockImplementation(() =>
-      vi
-        .fn()
-        .mockImplementation(
-          () => new Promise((resolve) => resolve({ token: "fake-token" })),
-        ),
+      vi.fn().mockResolvedValue({ token: "fake-token" }),
     ),
 }));
 vi.mock("@octokit/auth-app", () => mockedOctokitAuthApp);
 
 const mockedRepo = vi.hoisted(() => ({
-  getFile: vi
-    .fn()
-    .mockImplementation(
-      () =>
-        new Promise((_resolve, reject) => reject(new Error("File not found"))),
-    ),
+  getFile: vi.fn().mockRejectedValue(new Error("File not found")),
 }));
 vi.mock("../github/repo", () => mockedRepo);
 
 const mockedCheckToken = vi.hoisted(() =>
-  vi.fn().mockImplementation(
-    () =>
-      new Promise((resolve) =>
-        resolve({
-          status: 200,
-          data: { user: { login: "test-login-user" } },
-        }),
-      ),
-  ),
+  vi.fn().mockResolvedValue({
+    status: 200,
+    data: { user: { login: "test-login-user" } },
+  }),
 );
 
 const mockedGetRepoInstallation = vi.hoisted(() =>
-  vi.fn().mockImplementation(
-    () =>
-      new Promise((resolve) =>
-        resolve({
-          status: 200,
-          data: { id: 42 },
-        }),
-      ),
-  ),
+  vi.fn().mockResolvedValue({
+    status: 200,
+    data: { id: 42 },
+  }),
 );
 
 const mockedCreateIssue = vi.hoisted(() =>
-  vi.fn().mockImplementation(
-    () =>
-      new Promise((resolve) =>
-        resolve({
-          status: 200,
-          data: { number: 99 },
-        }),
-      ),
-  ),
+  vi.fn().mockResolvedValue({
+    status: 200,
+    data: { number: 99 },
+  }),
 );
 
 const mockedOctokitRest = vi.hoisted(() => ({
@@ -86,16 +62,10 @@ const mockedOctokitRest = vi.hoisted(() => ({
 vi.mock("@octokit/rest", () => mockedOctokitRest);
 
 const mockedRequest = vi.hoisted(() => ({
-  sendGptRequest: vi
-    .fn()
-    .mockImplementation(
-      () => new Promise((resolve) => resolve("code-converted-from-figma-map")),
-    ),
+  sendGptRequest: vi.fn().mockResolvedValue("code-converted-from-figma-map"),
   sendGptVisionRequest: vi
     .fn()
-    .mockImplementation(
-      () => new Promise((resolve) => resolve("code-converted-from-figma-map")),
-    ),
+    .mockResolvedValue("code-converted-from-figma-map"),
 }));
 vi.mock("../openai/request", () => mockedRequest);
 
@@ -201,7 +171,9 @@ describe("newIssueForFigmaFile", () => {
       params: { verb: "new" },
       body: {
         figmaMap: "test-figma-map",
+        specifiedFileName: "test-filename.tsx",
         fileName: "test-filename.tsx",
+        newFileType: "component",
         additionalInstructions: "test-additional-instructions",
         repo: {
           name: "test-repo",
@@ -247,10 +219,10 @@ describe("newIssueForFigmaFile", () => {
     expect(createIssueOptions.repo).toBe("test-repo");
     expect(createIssueOptions.assignees).toStrictEqual(["test-login-user"]);
     expect(createIssueOptions.title).toBe(
-      "Create new file => test-filename.tsx",
+      "Create new file => src/components/test-filename.tsx",
     );
     expect(createIssueOptions.body).toContain(
-      "A new design has been added to Figma for the file test-filename.tsx.",
+      "A new design has been added to Figma for the file src/components/test-filename.tsx.",
     );
     expect(createIssueOptions.body).toContain(
       "- @jacob-ai-bot Here are your instructions for creating the new file:",
@@ -274,24 +246,178 @@ describe("newIssueForFigmaFile", () => {
     );
   });
 
+  test("new for page with Next.js app router", async () => {
+    mockedRepo.getFile.mockImplementation(async (_repo, _token, repoPath) => {
+      const isPackageJson = repoPath === "package.json";
+      const isNextAppDir = repoPath === "app";
+      if (isPackageJson || isNextAppDir) {
+        return {
+          data: isNextAppDir
+            ? []
+            : {
+                type: "file",
+                content: btoa(
+                  JSON.stringify(
+                    isPackageJson ? { dependencies: { next: "^13.0.0" } } : {},
+                  ),
+                ),
+              },
+        };
+      } else {
+        throw new Error("File not found");
+      }
+    });
+
+    const { req, res } = createMocks({
+      params: { verb: "new" },
+      body: {
+        figmaMap: "test-figma-map",
+        specifiedFileName: "test page",
+        fileName: "test page",
+        newFileType: "page",
+        additionalInstructions: "test-additional-instructions",
+        repo: {
+          name: "test-repo",
+          full_name: "test-login/test-repo",
+          owner: { login: "test-login" },
+        },
+        snapshotUrl: "https://example.com/snapshot.png",
+        imageUrls: [
+          "https://example.com/image1.png",
+          "https://example.com/image2.png",
+        ],
+      },
+    });
+
+    await newIssueForFigmaFile(req, res);
+
+    expect(res.statusCode).toBe(200);
+
+    expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    expect(createIssueOptions.title).toBe(
+      "Create new file => app/test-page/page.tsx",
+    );
+  });
+
+  test("new for component with Next.js app router in src/app", async () => {
+    mockedRepo.getFile.mockImplementation(async (_repo, _token, repoPath) => {
+      const isPackageJson = repoPath === "package.json";
+      const isNextAppDir = repoPath === "src/app";
+      if (isPackageJson || isNextAppDir) {
+        return {
+          data: isNextAppDir
+            ? []
+            : {
+                type: "file",
+                content: btoa(
+                  JSON.stringify(
+                    isPackageJson ? { dependencies: { next: "^13.0.0" } } : {},
+                  ),
+                ),
+              },
+        };
+      } else {
+        throw new Error("File not found");
+      }
+    });
+
+    const { req, res } = createMocks({
+      params: { verb: "new" },
+      body: {
+        figmaMap: "test-figma-map",
+        specifiedFileName: "Test Component",
+        fileName: "Test Component",
+        newFileType: "component",
+        additionalInstructions: "test-additional-instructions",
+        repo: {
+          name: "test-repo",
+          full_name: "test-login/test-repo",
+          owner: { login: "test-login" },
+        },
+        snapshotUrl: "https://example.com/snapshot.png",
+        imageUrls: [
+          "https://example.com/image1.png",
+          "https://example.com/image2.png",
+        ],
+      },
+    });
+
+    await newIssueForFigmaFile(req, res);
+
+    expect(res.statusCode).toBe(200);
+
+    expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    expect(createIssueOptions.title).toBe(
+      "Create new file => src/app/_components/Test-Component.tsx",
+    );
+  });
+
+  test("new for component with components directory in settings", async () => {
+    mockedRepo.getFile.mockImplementation(async (_repo, _token, repoPath) => {
+      const isJacobJson = repoPath === "jacob.json";
+      if (isJacobJson) {
+        return {
+          data: {
+            type: "file",
+            content: btoa(
+              JSON.stringify({
+                directories: { components: "mycomponentsdir" },
+              }),
+            ),
+          },
+        };
+      } else {
+        throw new Error("File not found");
+      }
+    });
+
+    const { req, res } = createMocks({
+      params: { verb: "new" },
+      body: {
+        figmaMap: "test-figma-map",
+        specifiedFileName: "Test Component",
+        fileName: "Test Component",
+        newFileType: "component",
+        additionalInstructions: "test-additional-instructions",
+        repo: {
+          name: "test-repo",
+          full_name: "test-login/test-repo",
+          owner: { login: "test-login" },
+        },
+        snapshotUrl: "https://example.com/snapshot.png",
+        imageUrls: [
+          "https://example.com/image1.png",
+          "https://example.com/image2.png",
+        ],
+      },
+    });
+
+    await newIssueForFigmaFile(req, res);
+
+    expect(res.statusCode).toBe(200);
+
+    expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    expect(createIssueOptions.title).toBe(
+      "Create new file => mycomponentsdir/Test-Component.tsx",
+    );
+  });
+
   test("new with jason.config set to Language.Javascript, Style.CSS, and IconSet.Heroicons", async () => {
-    mockedRepo.getFile.mockImplementationOnce(
-      () =>
-        new Promise((resolve) =>
-          resolve({
-            data: {
-              type: "file",
-              content: btoa(
-                JSON.stringify({
-                  language: "JavaScript",
-                  style: "CSS",
-                  iconSet: "Heroicons",
-                }),
-              ),
-            },
+    mockedRepo.getFile.mockResolvedValueOnce({
+      data: {
+        type: "file",
+        content: btoa(
+          JSON.stringify({
+            language: "JavaScript",
+            style: "CSS",
+            iconSet: "Heroicons",
           }),
         ),
-    );
+      },
+    });
 
     const { req, res } = createMocks({
       params: { verb: "new" },

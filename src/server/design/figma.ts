@@ -4,6 +4,8 @@ import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
 import { Endpoints } from "@octokit/types";
+import semver from "semver";
+import path from "path";
 
 import { RepoSettings, parseTemplate } from "../utils";
 import { IconSet, Style, Language } from "../utils/settings";
@@ -103,6 +105,28 @@ const iconSetExamples = {
   `,
 };
 
+function generatePreferredFileName(
+  specifiedFileName: string | undefined,
+  fileName: string,
+  newFileType: string | undefined,
+  nextAppRouter: boolean,
+) {
+  if (!specifiedFileName) {
+    return fileName;
+  }
+  if (specifiedFileName.includes("/")) {
+    return specifiedFileName;
+  }
+  const nameWithoutSpaces = specifiedFileName.replace(/ /g, "-");
+
+  return nextAppRouter &&
+    newFileType === "page" &&
+    !nameWithoutSpaces.endsWith(".tsx") &&
+    !nameWithoutSpaces.endsWith(".jsx")
+    ? `${nameWithoutSpaces}/page`
+    : nameWithoutSpaces;
+}
+
 export const newIssueForFigmaFile = async (req: Request, res: Response) => {
   const { verb } = req.params;
 
@@ -141,7 +165,9 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
 
     const {
       repo,
+      specifiedFileName,
       fileName,
+      newFileType,
       figmaMap,
       figmaMapCSS,
       additionalInstructions,
@@ -150,7 +176,9 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
     } = req.body as {
       figmaMap?: string;
       figmaMapCSS?: string;
+      specifiedFileName?: string;
       fileName?: string;
+      newFileType?: string;
       additionalInstructions?: string;
       repo?: GitHubRepo;
       snapshotUrl?: string;
@@ -189,9 +217,8 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       installationId: installationData.id,
     });
 
-    let repoSettings: RepoSettings | undefined;
-    try {
-      const { data } = await getFile(
+    const getRepoContent = (repoPath: string) =>
+      getFile(
         {
           ...repo,
           owner: {
@@ -202,21 +229,85 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
           },
         },
         installationAuthentication.token,
-        "jacob.json",
+        repoPath,
       );
-      if (!(data instanceof Array) && data.type === "file") {
-        repoSettings = JSON.parse(atob(data.content));
-      }
-    } catch (e) {
-      /* empty */
-    }
 
+    const getRepoFileContent = async (repoPath: string) => {
+      try {
+        const { data } = await getRepoContent(repoPath);
+        if (!(data instanceof Array) && data.type === "file") {
+          return JSON.parse(atob(data.content));
+        }
+      } catch (e) {
+        /* empty */
+      }
+    };
+
+    const isRepoDirPresent = async (repoPath: string) => {
+      try {
+        const { data } = await getRepoContent(repoPath);
+        return data instanceof Array;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const repoSettings = (await getRepoFileContent("jacob.json")) as
+      | RepoSettings
+      | undefined;
+    const parsedPackageJson = (await getRepoFileContent("package.json")) as  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      | Record<string, any>
+      | undefined;
+    const nextVersion = parsedPackageJson?.dependencies?.next;
+    const nextMinVersion = semver.validRange(nextVersion)
+      ? semver.minVersion(nextVersion)
+      : null;
+    const nextMajorVersion =
+      semver.valid(nextMinVersion) && nextMinVersion
+        ? semver.major(nextMinVersion)
+        : 0;
+    let nextAppRouter = false;
+    let nextPagesDir = "src/pages";
+    if (nextMajorVersion >= 13) {
+      if (await isRepoDirPresent("app")) {
+        nextPagesDir = "app";
+        nextAppRouter = true;
+      } else if (await isRepoDirPresent("src/app")) {
+        nextPagesDir = "src/app";
+        nextAppRouter = true;
+      }
+    }
+    const nextComponentsDir = nextAppRouter
+      ? `${nextPagesDir}/_components`
+      : "src/components";
+    const preferredFileName = generatePreferredFileName(
+      specifiedFileName,
+      fileName,
+      newFileType,
+      nextAppRouter,
+    );
     const updatedFileName =
-      fileName.endsWith(".jsx") || fileName.endsWith(".tsx")
-        ? fileName
+      preferredFileName.endsWith(".jsx") || preferredFileName.endsWith(".tsx")
+        ? preferredFileName
         : repoSettings?.language === Language.JavaScript
-        ? `${fileName}.jsx`
-        : `${fileName}.tsx`;
+        ? `${preferredFileName}.jsx`
+        : `${preferredFileName}.tsx`;
+
+    const componentsDir =
+      repoSettings?.directories?.components ?? nextComponentsDir;
+    const pagesDir = repoSettings?.directories?.pages ?? nextPagesDir;
+
+    let fullNewFileName;
+    switch (newFileType) {
+      case "page":
+        fullNewFileName = path.join(pagesDir, updatedFileName);
+        break;
+      case "component":
+        fullNewFileName = path.join(componentsDir, updatedFileName);
+        break;
+      default:
+        fullNewFileName = updatedFileName;
+    }
 
     const iconSet = repoSettings?.iconSet ?? IconSet.FontAwesome;
     const iconSetExample = iconSetExamples[iconSet];
@@ -279,7 +370,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
     )) as string;
 
     const issueTemplateParams = {
-      fileName: updatedFileName,
+      fileName: fullNewFileName,
       code,
       iconSet,
       iconSetExample,
@@ -316,7 +407,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
         assignees: tokenData.user?.login ? [tokenData.user.login] : [],
         title:
           verb === "new"
-            ? `Create new file => ${updatedFileName}`
+            ? `Create new file => ${fullNewFileName}`
             : `Update the design for ${updatedFileName}`,
         body,
       });
