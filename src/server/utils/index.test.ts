@@ -1,12 +1,22 @@
 import * as dotenv from "dotenv";
 import dedent from "ts-dedent";
-import { describe, beforeEach, afterEach, it, expect } from "vitest";
+import {
+  vi,
+  describe,
+  beforeEach,
+  afterEach,
+  afterAll,
+  it,
+  expect,
+} from "vitest";
+import fs from "fs";
 
 import {
   constructNewOrEditSystemPrompt,
   TemplateParams,
   removeMarkdownCodeblocks,
   getSnapshotUrl,
+  getStyles,
 } from "../utils";
 import { Language, Style } from "../utils/settings";
 
@@ -377,5 +387,66 @@ describe("getSnapshotUrl", () => {
   it("should return undefined if the issue body doesn't contain a snapshot url", () => {
     const issueBody = "This issue doesn't contain a snapshot url";
     expect(getSnapshotUrl(issueBody)).toEqual(undefined);
+  });
+});
+
+describe("getStyles", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns the tailwind config contents", async () => {
+    vi.spyOn(fs, "existsSync").mockImplementation(
+      (path) =>
+        path === "/rootpath/tailwind.config.ts" ||
+        path === "/rootpath/tailwind.config.js" ||
+        path === "/rootpath/custom/tailwind.config.ts",
+    );
+    vi.spyOn(fs.promises, "readFile").mockImplementation(
+      (path) =>
+        new Promise((resolve, reject) => {
+          if (path === "/rootpath/tailwind.config.ts") {
+            resolve("tailwind config typescript");
+          } else if (path === "/rootpath/tailwind.config.js") {
+            resolve("tailwind config javascript");
+          } else if (path === "/rootpath/custom/tailwind.config.ts") {
+            resolve("custom path config contents");
+          } else {
+            reject(new Error("File not found"));
+          }
+        }),
+    );
+
+    const resultNoSettings = await getStyles("/rootpath");
+    expect(resultNoSettings).toBe("tailwind config typescript");
+
+    const resultTailwind = await getStyles("/rootpath", {
+      style: Style.Tailwind,
+    });
+    expect(resultTailwind).toBe("tailwind config typescript");
+
+    const resultTypeScript = await getStyles("/rootpath", {
+      language: Language.TypeScript,
+    });
+    expect(resultTypeScript).toBe("tailwind config typescript");
+
+    const resultCustomPath = await getStyles("/rootpath", {
+      directories: { tailwindConfig: "custom/tailwind.config.ts" },
+    });
+    expect(resultCustomPath).toBe("custom path config contents");
+
+    const resultCSS = await getStyles("/rootpath", {
+      style: Style.CSS,
+    });
+    expect(resultCSS).toBe("");
+
+    const resultJavaScript = await getStyles("/rootpath", {
+      language: Language.JavaScript,
+    });
+    expect(resultJavaScript).toBe("tailwind config javascript");
   });
 });

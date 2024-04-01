@@ -235,12 +235,22 @@ export function getSnapshotUrl(
 }
 
 export async function getStyles(rootPath: string, repoSettings?: RepoSettings) {
-  if (repoSettings?.style === Style.Tailwind) {
-    const tailwindConfig = repoSettings?.directories?.tailwindConfig;
+  const style = repoSettings?.style ?? Style.Tailwind;
+  if (style === Style.Tailwind) {
+    const language = repoSettings?.language ?? Language.TypeScript;
+    const defaultTailwindConfig = `tailwind.config.${
+      language === Language.JavaScript ? "js" : "ts"
+    }`;
+    const tailwindConfig =
+      repoSettings?.directories?.tailwindConfig ?? defaultTailwindConfig;
     if (tailwindConfig) {
       const tailwindConfigPath = path.join(rootPath, tailwindConfig);
       if (fs.existsSync(tailwindConfigPath)) {
-        return await fs.promises.readFile(tailwindConfigPath, "utf-8");
+        try {
+          return await fs.promises.readFile(tailwindConfigPath, "utf-8");
+        } catch (e) {
+          console.error("Error reading tailwind config", e);
+        }
       }
     }
   }
