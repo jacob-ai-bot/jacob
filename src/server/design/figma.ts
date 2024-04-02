@@ -42,63 +42,63 @@ const auth = createAppAuth({
 
 const iconSetExamples = {
   [IconSet.FontAwesome]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
     import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
     const element = <FontAwesomeIcon icon={faEnvelope} />
     \`\`\`
   `,
   [IconSet.Heroicons]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { BeakerIcon } from '@heroicons/react/24/solid'
     const element = <BeakerIcon className="h-6 w-6 text-blue-500"/>
     \`\`\`
   `,
   [IconSet.Unicons]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { UilEnvelope } from '@iconscout/react-unicons'
     const element = <UilEnvelope size="24" color="#000"/>
     \`\`\`
   `,
   [IconSet.ReactFeather]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { Camera } from 'react-feather'
     const element = <Camera />
     \`\`\`
   `,
   [IconSet.MaterialUI]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { AccessAlarm } from '@material-ui/icons';
     const element = <AccessAlarm />
     \`\`\`
   `,
   [IconSet.StyledIcons]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { Lock } from '@styled-icons/material'
     const element = <Lock />
     \`\`\`
   `,
   [IconSet.IconPark]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { Email } from '@icon-park/react'
     const element = <Email />
     \`\`\`
   `,
   [IconSet.CoreUI]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { CilEnvelopeOpen } from '@coreui/icons-react'
     const element = <CilEnvelopeOpen />
     \`\`\`
   `,
   [IconSet.Iconify]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { Icon } from '@iconify/react'
     import envelopeIcon from '@iconify-icons/mdi/envelope'
     const element = <Icon icon={envelopeIcon} />
     \`\`\`
   `,
   [IconSet.Lucide]: dedent`
-    \`\`\`
+    \`\`\`jsx
     import { LayoutDashboard } from 'lucide-react'
     const element = <LayoutDashboard />
     \`\`\`
