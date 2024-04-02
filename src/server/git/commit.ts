@@ -31,7 +31,7 @@ export async function addCommitAndPush(
     // Log error and rethrow (so we can get better detail around 'nothing to commit' errors)
     const asyncException = (
       typeof error === "object" ? error : { error }
-    ) as ExecAsyncException;
+    ) as Partial<ExecAsyncException>;
     console.error(
       `Commit failed: stderr: ${asyncException.stderr}, stdout: ${asyncException.stdout}`,
       error,

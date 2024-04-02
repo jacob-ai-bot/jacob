@@ -2,7 +2,7 @@ import dedent from "ts-dedent";
 import { Repository } from "@octokit/webhooks-types";
 
 import { addCommentToIssue } from "../github/issue";
-import { PRCommand } from "../utils";
+import { PRCommand, ExecAsyncException } from "../utils";
 
 interface AddStartingWorkCommentBaseParams {
   repository: Repository;
@@ -103,15 +103,23 @@ export function addFailedWorkComment(
   prReview: boolean,
   error: Error,
 ) {
+  const asyncException = (
+    typeof error === "object" ? error : { error }
+  ) as Partial<ExecAsyncException>;
+
   const errorMsg = error.message ?? error.toString();
   let message = dedent`
     Unfortunately, I ran into trouble working on this.
     
     Here is some error information:
+    \`\`\`
     ${errorMsg}
+    \`\`\`
   `;
   // If the error message is about a clean working tree, we can provide a more specific message.
-  if (errorMsg.includes("nothing to commit, working tree clean")) {
+  if (
+    asyncException.stdout?.includes("nothing to commit, working tree clean")
+  ) {
     if (issueOpened) {
       message = dedent`
         I was not able to write any code that would address this issue.
