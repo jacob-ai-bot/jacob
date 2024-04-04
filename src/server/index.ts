@@ -6,6 +6,7 @@ import {
   postAccessToken,
 } from "./auth/authToken";
 import { newIssueForFigmaFile } from "./design/figma";
+import { getRepos } from "./api/repos";
 import { uploadImage } from "./image/upload";
 import express from "express";
 import cors from "cors";
@@ -21,6 +22,7 @@ app.post("/api/auth/accessToken/", createAccessTokenKeys);
 app.get("/api/auth/accessToken/:readKey", getAccessToken);
 app.post("/api/auth/accessToken/:writeKey", express.json(), postAccessToken);
 app.options("/api/design/:verb", cors());
+app.get("/api/repos", cors(), express.json(), getRepos);
 app.post("/api/design/:verb", cors(), express.json(), newIssueForFigmaFile);
 app.options("/api/image/upload", cors());
 app.post(
