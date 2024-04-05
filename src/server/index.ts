@@ -7,6 +7,7 @@ import {
 } from "./auth/authToken";
 import { newIssueForFigmaFile } from "./design/figma";
 import { getRepos } from "./api/repos";
+import { getExtractedIssues } from "./api/issues";
 import { uploadImage } from "./image/upload";
 import express from "express";
 import cors from "cors";
@@ -21,8 +22,9 @@ app.get("/api/auth/github/callback", gitHubOAuthCallback);
 app.post("/api/auth/accessToken/", createAccessTokenKeys);
 app.get("/api/auth/accessToken/:readKey", getAccessToken);
 app.post("/api/auth/accessToken/:writeKey", express.json(), postAccessToken);
-app.options("/api/design/:verb", cors());
 app.get("/api/repos", cors(), express.json(), getRepos);
+app.get("/api/extractedIssues", cors(), express.json(), getExtractedIssues);
+app.options("/api/design/:verb", cors());
 app.post("/api/design/:verb", cors(), express.json(), newIssueForFigmaFile);
 app.options("/api/image/upload", cors());
 app.post(

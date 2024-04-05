@@ -22,8 +22,14 @@ export function addCommentToIssue(
   });
 }
 
+type SimpleOwner = Pick<Repository["owner"], "login">;
+interface SimpleRepository {
+  owner: SimpleOwner;
+  name: string;
+}
+
 export async function getIssue(
-  repository: Repository,
+  repository: SimpleRepository,
   token: string,
   issue_number: number,
 ) {

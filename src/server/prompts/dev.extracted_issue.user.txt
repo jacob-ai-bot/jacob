@@ -1,4 +1,5 @@
--- GitHub Issue ${issueText}
+-- GitHub Issue
+${issueText}
 
 === INSTRUCTIONS ===
 Act as an E7 expert-level Software Engineer at Facebook.

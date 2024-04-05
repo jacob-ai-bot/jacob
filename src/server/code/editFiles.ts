@@ -31,8 +31,8 @@ export async function editFiles(
   // Fallback to a source file list if we don't have a source map (e.g. JS projects)
   const sourceMapOrFileList = sourceMap || (await traverseCodebase(rootPath));
   // When we start processing PRs, need to handle appending additionalComments
-  const issueBody = issue.body ?? "";
-  const issueText = `${issue.title} ${issueBody}`;
+  const issueBody = issue.body ? `\n${issue.body}` : "";
+  const issueText = `${issue.title}${issueBody}`;
 
   const extractedIssueTemplateParams = {
     sourceMap: sourceMapOrFileList,
