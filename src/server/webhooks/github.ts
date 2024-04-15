@@ -10,6 +10,7 @@ import {
   type WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit,
 } from "../messaging/queue";
 import { PR_COMMAND_VALUES } from "../utils";
+import { codeReviewCommandSuggestion } from "../github/issue";
 
 dotenv.config();
 
@@ -48,7 +49,11 @@ ghApp.webhooks.on("issues.opened", async (event) => {
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} opened event`,
   );
-  if (payload?.issue.body?.includes("@jacob-ai-bot")) {
+  // NOTE: We avoid reacting to our own command suggestion in the repo installed message
+  if (
+    payload?.issue.body?.includes("@jacob-ai-bot") &&
+    !payload?.issue.body?.includes(codeReviewCommandSuggestion)
+  ) {
     console.log(
       `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob-ai-bot mention`,
     );

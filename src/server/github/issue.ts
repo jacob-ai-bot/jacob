@@ -2,6 +2,9 @@ import dedent from "ts-dedent";
 import { Octokit } from "@octokit/rest";
 import { Repository } from "@octokit/webhooks-types";
 
+export const codeReviewCommandSuggestion =
+  "Please note: I am available to do code reviews in this repo if you add the comment `@jacob-ai-bot code review` to a pull request.";
+
 export function addCommentToIssue(
   repository: Repository,
   issueOrPRNumber: number,
@@ -84,7 +87,7 @@ export async function createRepoInstalledIssue(
     const limitations = isNodeRepo
       ? ""
       : dedent`
-      Please note: I am available to do code reviews in this repo if you add the comment \`@jacob-ai-bot code review\` to a pull request.
+      ${codeReviewCommandSuggestion}
       At the moment, I can only write code for JavaScript and TypeScript projects.
       Check back soon for updates on additional language support.
       
