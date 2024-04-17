@@ -219,6 +219,7 @@ export async function concatenatePRFiles(
     "package-lock.json", // npm
     "yarn.lock", // Yarn
     "pnpm-lock.yaml", // pnpm
+    "bun.lockb", // bun
   ];
 
   const prFileNames = prFiles.data
