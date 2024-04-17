@@ -147,9 +147,8 @@ export async function runNpmInstall(
   const validatedPackageName = packageNames.join(" ");
 
   // TODO: do we need an addCommand in jacob.json to better handle this generically?
-  const command = installCommand.startsWith("yarn")
-    ? "yarn add"
-    : installCommand;
+  const installCommandFirstPart = installCommand.split(" ")[0];
+  const command = `${installCommandFirstPart} add`;
   return await executeWithLogRequiringSuccess(
     path,
     `${command} ${validatedPackageName}`,

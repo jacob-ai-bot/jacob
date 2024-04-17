@@ -290,7 +290,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "npm install package-name",
+      "npm add package-name",
       {
         env: { CI: "true" },
         timeout: INSTALL_TIMEOUT,
@@ -304,7 +304,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "npm install package-name",
+      "npm add package-name",
       { env: { CI: "true", custom: "1" }, timeout: INSTALL_TIMEOUT },
     );
   });
@@ -333,7 +333,7 @@ describe("runBuildCheck and runNpmInstall", () => {
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
       ".",
-      "npm install package-name-1 package-name-2",
+      "npm add package-name-1 package-name-2",
       { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
     );
   });
