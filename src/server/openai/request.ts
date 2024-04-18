@@ -1,11 +1,6 @@
 import { OpenAI } from "openai";
 import { encodingForModel } from "tiktoken-node";
-import {
-  type SafeParseError,
-  type SafeParseReturnType,
-  type SafeParseSuccess,
-  type ZodSchema,
-} from "zod";
+import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
 import { parseTemplate, removeMarkdownCodeblocks } from "../utils";
 

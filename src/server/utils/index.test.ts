@@ -13,7 +13,7 @@ import fs from "fs";
 
 import {
   constructNewOrEditSystemPrompt,
-  TemplateParams,
+  type TemplateParams,
   removeMarkdownCodeblocks,
   getSnapshotUrl,
   getStyles,

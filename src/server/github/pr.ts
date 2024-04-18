@@ -1,9 +1,9 @@
 import { Octokit } from "@octokit/rest";
-import { OctokitResponse } from "@octokit/types";
-import { Repository } from "@octokit/webhooks-types";
-import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
+import type { OctokitResponse } from "@octokit/types";
+import type { Repository } from "@octokit/webhooks-types";
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 import { graphql } from "@octokit/graphql";
-import { MarkPullRequestReadyForReviewPayload } from "@octokit/graphql-schema";
+import type { MarkPullRequestReadyForReviewPayload } from "@octokit/graphql-schema";
 import path from "path";
 
 import { concatenateFiles, type FilesRangesMap } from "../utils/files";

@@ -1,8 +1,8 @@
 import dedent from "ts-dedent";
-import { Repository } from "@octokit/webhooks-types";
+import type { Repository } from "@octokit/webhooks-types";
 
 import { addCommentToIssue } from "../github/issue";
-import { PRCommand, ExecAsyncException } from "../utils";
+import { PRCommand, type ExecAsyncException } from "../utils";
 
 interface AddStartingWorkCommentBaseParams {
   repository: Repository;

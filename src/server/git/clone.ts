@@ -1,5 +1,5 @@
-import { dir, DirectoryResult } from "tmp-promise";
-import { executeWithLogRequiringSuccess, ExecAsyncException } from "../utils";
+import { dir, type DirectoryResult } from "tmp-promise";
+import { executeWithLogRequiringSuccess, type ExecAsyncException } from "../utils";
 
 const HTTPS_PREFIX = "https://";
 const HTTPS_SUFFIX = "github.com/";

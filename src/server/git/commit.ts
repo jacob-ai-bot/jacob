@@ -1,4 +1,4 @@
-import { executeWithLogRequiringSuccess, ExecAsyncException } from "../utils";
+import { executeWithLogRequiringSuccess, type ExecAsyncException } from "../utils";
 
 const appName = process.env.GITHUB_APP_NAME ?? "";
 const appUsername = process.env.GITHUB_APP_USERNAME ?? "";
