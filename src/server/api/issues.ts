@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { type Request, type Response } from "express";
 
 import { cloneRepo } from "../git/clone";
 import { getSourceMap } from "../analyze/sourceMap";
@@ -8,7 +8,7 @@ import { getIssue } from "../github/issue";
 
 import {
   ExtractedIssueInfoSchema,
-  ExtractedIssueInfo,
+  type ExtractedIssueInfo,
 } from "../code/extractedIssue";
 import { sendGptRequestWithSchema } from "../openai/request";
 
@@ -27,6 +27,7 @@ export async function getExtractedIssues(req: Request, res: Response) {
     issues?.split(",").map((issue) => parseInt(issue, 10)) ?? [];
 
   if (
+    !token ||
     !repo ||
     !repoOwner ||
     !repoName ||
@@ -82,7 +83,7 @@ export async function getExtractedIssues(req: Request, res: Response) {
           extractedIssueSystemPrompt,
           ExtractedIssueInfoSchema,
           0.2,
-        )) as Promise<ExtractedIssueInfo>;
+        )) as ExtractedIssueInfo;
 
         return {
           issueNumber: issue.number,
@@ -93,7 +94,7 @@ export async function getExtractedIssues(req: Request, res: Response) {
 
     return res.status(200).json(extractedIssues);
   } catch (error) {
-    return res.status(500).json({ errors: [`${error}`] });
+    return res.status(500).json({ errors: [String(error)] });
   } finally {
     await cleanupClone?.();
   }

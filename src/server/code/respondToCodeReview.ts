@@ -1,8 +1,8 @@
-import { Repository } from "@octokit/webhooks-types";
-import { Endpoints } from "@octokit/types";
+import { type Repository } from "@octokit/webhooks-types";
+import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { parseTemplate, RepoSettings } from "../utils";
+import { parseTemplate, type RepoSettings } from "../utils";
 import { reconstructFiles } from "../utils/files";
 import { sendGptRequest } from "../openai/request";
 import { concatenatePRFiles } from "../github/pr";
@@ -60,7 +60,7 @@ export async function respondToCodeReview(
     responseToCodeReviewUserPrompt,
     responseToCodeReviewSystemPrompt,
     0.2,
-  )) as string;
+  )) ?? "";
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
     console.log(`[${repository.full_name}] code`, code);

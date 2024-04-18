@@ -1,6 +1,6 @@
-import { Project, SourceFile } from "ts-morph";
-import fs, { promises as fsPromises, Dirent } from "fs";
-import { RepoSettings } from "../utils";
+import { Project, type SourceFile } from "ts-morph";
+import fs, { promises as fsPromises, type Dirent } from "fs";
+import { type RepoSettings } from "../utils";
 import { Language } from "../utils/settings";
 import path from "path";
 
@@ -160,7 +160,7 @@ export const getTypes = (
     return sourceFile?.getText() || "";
   } catch (error) {
     console.log("error in getTypes", error);
-    throw new Error("Error in getTypes: " + error);
+    throw new Error(`Error in getTypes: ${String(error)}`);
   }
 };
 
@@ -268,7 +268,7 @@ const getFiles = (
       const functions = sourceFile.getFunctions().map((func) => ({
         name: func.getName(),
         parameters: func.getParameters().map((param) => {
-          const path = param.getType().getText()?.split(".")[0] || "";
+          const path = param.getType().getText()?.split(".")[0] ?? "";
           return {
             name: param.getName(),
             type: param
@@ -355,7 +355,7 @@ function cleanType(rootPath: string, type: string) {
 }
 
 export const generateMapFromFiles = (rootPath: string, files: SourceMap[]) => {
-  let sourceMap: string = "";
+  let sourceMap = "";
   // loop through the result and create a map of the source code
   for (const file of files) {
     // start with the file path

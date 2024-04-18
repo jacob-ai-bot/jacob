@@ -1,13 +1,13 @@
 import dedent from "ts-dedent";
-import { Request, Response } from "express";
+import { type Request, type Response } from "express";
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { createOAuthAppAuth } from "@octokit/auth-oauth-app";
-import { Endpoints } from "@octokit/types";
+import { type Endpoints } from "@octokit/types";
 import semver from "semver";
 import path from "path";
 
-import { RepoSettings, parseTemplate } from "../utils";
+import { type RepoSettings, parseTemplate } from "../utils";
 import { IconSet, Style, Language } from "../utils/settings";
 import { sendGptVisionRequest } from "../openai/request";
 import { getFile } from "../github/repo";
@@ -138,9 +138,9 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
   }
 
   const { authorization } = req.headers;
-  const access_token: string | undefined = (authorization ?? "")
+  const access_token = (authorization ?? "")
     .trim()
-    .split(" ")[1];
+    .split(" ")[1] ?? "";
 
   try {
     const { status: tokenStatus, data: tokenData } =
@@ -236,7 +236,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       try {
         const { data } = await getRepoContent(repoPath);
         if (!(data instanceof Array) && data.type === "file") {
-          return JSON.parse(atob(data.content));
+          return JSON.parse(atob(data.content)) as unknown;
         }
       } catch (e) {
         /* empty */
@@ -256,9 +256,9 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       | RepoSettings
       | undefined;
     const parsedPackageJson = (await getRepoFileContent("package.json")) as  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      | Record<string, any>
+      | { dependencies?: { next?: string } }
       | undefined;
-    const nextVersion = parsedPackageJson?.dependencies?.next;
+    const nextVersion = parsedPackageJson?.dependencies?.next ?? "";
     const nextMinVersion = semver.validRange(nextVersion)
       ? semver.minVersion(nextVersion)
       : null;
@@ -367,7 +367,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       systemPrompt,
       snapshotUrl,
       0.5,
-    )) as string;
+    ))!;
 
     const issueTemplateParams = {
       fileName: fullNewFileName,

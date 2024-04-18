@@ -4,7 +4,8 @@ import { zodSchemaProvider } from "orchid-orm-schema-to-zod";
 export const BaseTable = createBaseTable({
   columnTypes: (t) => ({
     ...t,
-    text: (min = 0, max = Infinity) => t.text(min, max),
+    // eslint-disable-next-line @typescript-eslint/no-inferrable-types
+    text: (min: number = 0, max: number = Infinity) => t.text(min, max),
     timestamp: <P extends number>(precision?: P) =>
       t.timestamp<P>(precision).asNumber(),
   }),

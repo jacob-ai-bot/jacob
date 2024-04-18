@@ -1,5 +1,5 @@
-import { Repository } from "@octokit/webhooks-types";
-import { Endpoints } from "@octokit/types";
+import { type Repository } from "@octokit/webhooks-types";
+import { type Endpoints } from "@octokit/types";
 import dedent from "ts-dedent";
 import fs from "fs";
 import path from "path";
@@ -10,7 +10,7 @@ import { getIssue } from "../github/issue";
 import {
   extractFilePathWithArrow,
   parseTemplate,
-  RepoSettings,
+  type RepoSettings,
   getSnapshotUrl,
 } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
@@ -97,7 +97,7 @@ export async function createStory(
     storySystemPrompt,
     snapshotUrl,
     0.2,
-  )) as string;
+  )) ?? "";
 
   saveNewFile(rootPath, storybookFilename, storybookCode);
 

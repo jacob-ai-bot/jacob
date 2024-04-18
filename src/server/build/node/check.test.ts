@@ -25,6 +25,7 @@ class TestExecAsyncException extends Error {
 const mockedDynamicImport = vi.hoisted(() => ({
   dynamicImport: vi
     .fn()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     .mockImplementation(async (specifier) => await import(specifier)),
 }));
 vi.mock("../../utils/dynamicImport", () => mockedDynamicImport);

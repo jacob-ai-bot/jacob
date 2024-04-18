@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { type Request, type Response } from "express";
 import { Octokit } from "@octokit/rest";
 
 export async function getRepos(req: Request, res: Response) {
@@ -29,6 +29,6 @@ export async function getRepos(req: Request, res: Response) {
     );
     return res.status(200).json(repoLists.flat());
   } catch (error) {
-    return res.status(500).json({ errors: [`${error}`] });
+    return res.status(500).json({ errors: [String(error)] });
   }
 }

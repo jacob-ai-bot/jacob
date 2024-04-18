@@ -8,7 +8,7 @@ import {
   beforeEach,
   vi,
 } from "vitest";
-import { Repository } from "@octokit/webhooks-types";
+import { type Repository } from "@octokit/webhooks-types";
 
 import { codeReview, type PullRequest } from "./codeReview";
 
@@ -26,7 +26,7 @@ vi.mock("../github/pr", () => mockedPR);
 
 const mockedIssue = vi.hoisted(() => ({
   getIssue: vi.fn().mockImplementation(
-    (_r, _t, issueNumber) =>
+    (_r, _t, issueNumber: number) =>
       new Promise((resolve, reject) => {
         if (isNaN(issueNumber)) {
           reject(new Error("Issue number is not a number"));
@@ -87,6 +87,7 @@ describe("codeReview", () => {
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
     expect(systemPrompt).toContain(dedent`
       -- Source Map (this is a map of the codebase, you can use it to understand other modules referenced by this code. It is NOT part of the task!)
@@ -107,6 +108,7 @@ describe("codeReview", () => {
     expect(systemPrompt).toContain(
       "Your job is to review a GitHub pull request and the code written to address the issue.",
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userPrompt = mockedRequest.sendGptRequest.mock.calls[0][0];
     expect(userPrompt).toContain(
       "-- GitHub Pull Request:\npr-title\npr-body\n\n",
@@ -179,10 +181,12 @@ describe("codeReview", () => {
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
     expect(systemPrompt).not.toContain(
       "Your job is to review a GitHub issue and the code written to address the issue.",
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userPrompt = mockedRequest.sendGptRequest.mock.calls[0][0];
     expect(userPrompt).not.toContain("-- GitHub Issue:");
     expect(userPrompt).not.toContain("issue-body");

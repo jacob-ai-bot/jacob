@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   describe,
   test,
@@ -237,7 +238,7 @@ describe("onGitHubEvent", () => {
       "fake-token",
     );
     expect(
-      mockedComments.addFailedWorkComment.mock.calls[0][5].toString(),
+      String(mockedComments.addFailedWorkComment.mock.calls[0][5]),
     ).toBe("Error: test error");
 
     expect(mockedCheck.runBuildCheck).not.toHaveBeenCalled();
@@ -432,7 +433,7 @@ describe("onGitHubEvent", () => {
       "fake-token",
     );
     expect(
-      mockedComments.addFailedWorkComment.mock.calls[0][5].toString(),
+      String(mockedComments.addFailedWorkComment.mock.calls[0][5]),
     ).toBe("Error: build error");
   });
 });

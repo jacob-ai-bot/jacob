@@ -69,6 +69,7 @@ export function getRepoSettings(rootPath: string) {
       path.join(rootPath, "package.json"),
       "utf-8",
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     packageJson = JSON.parse(packageJsonContent);
   } catch (e) {
     // Ignore failures on repos where we can't load/parse package.json
@@ -85,7 +86,7 @@ export function getRepoSettings(rootPath: string) {
   }
   if (typeof packageJson?.dependencies === "object") {
     const settings: RepoSettings = settingsFromFile ?? {};
-    settings.packageDependencies = packageJson.dependencies;
+    settings.packageDependencies = packageJson.dependencies as Record<string, string>;
     return settings;
   }
   return settingsFromFile;

@@ -1,11 +1,11 @@
-import { Issue, Repository } from "@octokit/webhooks-types";
+import { type Issue, type Repository } from "@octokit/webhooks-types";
 
 import { getTypes, getImages } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
 import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
-  RepoSettings,
+  type RepoSettings,
   getSnapshotUrl,
   getStyles,
 } from "../utils";
@@ -17,7 +17,7 @@ import {
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
-import { ExtractedIssueInfoSchema, ExtractedIssueInfo } from "./extractedIssue";
+import { ExtractedIssueInfoSchema, type ExtractedIssueInfo } from "./extractedIssue";
 
 export async function editFiles(
   repository: Repository,
@@ -59,7 +59,7 @@ export async function editFiles(
   )) as ExtractedIssueInfo;
 
   // TODO: handle previousAssessments
-  const filesToUpdate = extractedIssue.filesToUpdate || [];
+  const filesToUpdate = extractedIssue.filesToUpdate ?? [];
 
   console.log(`[${repository.full_name}] Files to update:`, filesToUpdate);
   if (!filesToUpdate?.length) {
@@ -114,7 +114,7 @@ export async function editFiles(
     codeSystemPrompt,
     snapshotUrl,
     0.2,
-  )) as string;
+  ))!;
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
     console.log(`[${repository.full_name}] code`, code);

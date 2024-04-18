@@ -1,9 +1,9 @@
 import dedent from "ts-dedent";
-import { Repository } from "@octokit/webhooks-types";
-import { Endpoints } from "@octokit/types";
+import { type Repository } from "@octokit/webhooks-types";
+import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes } from "../analyze/sourceMap";
-import { parseTemplate, RepoSettings } from "../utils";
+import { parseTemplate, type RepoSettings } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { getIssue } from "../github/issue";
 import { concatenatePRFiles, createPRReview, getPRDiff } from "../github/pr";
@@ -80,7 +80,7 @@ export async function codeReview(
     codeReviewUserPrompt,
     codeReviewSystemPrompt,
     0.2,
-  )) as string;
+  )) ?? "";
 
   if (
     codeWithComments.length < 10 ||

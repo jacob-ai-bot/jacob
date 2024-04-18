@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { type Request, type Response } from "express";
 import { createOAuthUserAuth } from "@octokit/auth-oauth-user";
 
 export async function gitHubOAuthCallback(req: Request, res: Response) {
@@ -24,6 +24,6 @@ export async function gitHubOAuthCallback(req: Request, res: Response) {
 
     res.status(200).json({ data: { token } });
   } catch (error) {
-    res.status(500).json({ errors: [`${error}`] });
+    res.status(500).json({ errors: [String(error)] });
   }
 }

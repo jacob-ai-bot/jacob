@@ -8,6 +8,7 @@ export async function setNewBranch(rootPath: string, branchName: string) {
       "git rev-parse --abbrev-ref HEAD",
     )
   )
+    .stdout
     .toString()
     .trim();
   if (currentBranch === branchName) {
@@ -19,6 +20,7 @@ export async function setNewBranch(rootPath: string, branchName: string) {
   const branches = (
     await executeWithLogRequiringSuccess(rootPath, "git branch")
   )
+    .stdout
     .toString()
     .trim();
   if (branches.includes(branchName)) {

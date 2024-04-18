@@ -53,21 +53,22 @@ export function GitHubOAuth() {
   useEffect(() => {
     if (!readKey) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     const intervalId = setInterval(async () => {
       try {
         const response = await fetch(`/api/auth/accessToken/${readKey}`, {
           headers: { "Content-Type": "application/json" },
         });
         if (response.ok) {
-          const { data, errors }: ReadAccessTokenResponse =
-            await response.json();
+          const { data, errors } =
+            await response.json() as ReadAccessTokenResponse;
           if (data) {
             const { accessToken } = data;
             setAccessToken(accessToken);
             parent.postMessage(
               {
                 pluginMessage: ["SAVE_ACCESS_TOKEN", accessToken],
-                pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
+                pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID as unknown,
               },
               "https://www.figma.com",
             );
@@ -114,7 +115,7 @@ export function GitHubOAuth() {
         );
 
         if (accessTokenResponse.ok) {
-          const { data }: AuthJSONResponse = await accessTokenResponse.json();
+          const { data } = await accessTokenResponse.json() as AuthJSONResponse;
           const accessToken = data?.token;
           setAccessToken(accessToken);
 
@@ -122,10 +123,10 @@ export function GitHubOAuth() {
           searchParams.delete("code");
           setSearchParams(searchParams);
 
-          if (state !== cookies["writeKey"]) {
+          if (state !== cookies.writeKey) {
             setError(
               new Error(
-                `State does not match writeKey cookie: ${state} ${cookies["writeKey"]}`,
+                `State does not match writeKey cookie: ${state} ${cookies.writeKey}`,
               ),
             );
             return;
@@ -168,7 +169,7 @@ export function GitHubOAuth() {
 
     if (code && !attemptedLogin) {
       setAttemptedLogin(true);
-      handleLogin(code);
+      void handleLogin(code);
     }
 
     return () => {
@@ -189,7 +190,7 @@ export function GitHubOAuth() {
     }
 
     if (response.ok) {
-      const { data, errors }: CreateAccessTokenResponse = await response.json();
+      const { data, errors } = await response.json() as CreateAccessTokenResponse;
       if (data) {
         const { readKey, writeKey } = data;
         // Store read key, which will start a polling loop waiting for the access token:

@@ -1,13 +1,13 @@
 import dedent from "ts-dedent";
-import { Issue, Repository } from "@octokit/webhooks-types";
-import { Endpoints } from "@octokit/types";
+import { type Issue, type Repository } from "@octokit/webhooks-types";
+import { type Endpoints } from "@octokit/types";
 import fs from "fs";
 import path from "path";
 
 import { addCommitAndPush } from "../git/commit";
 import { addCommentToIssue } from "../github/issue";
 import { runBuildCheck } from "../build/node/check";
-import { extractFilePathWithArrow, PRCommand, RepoSettings } from "../utils";
+import { extractFilePathWithArrow, PRCommand, type RepoSettings } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
 
@@ -18,7 +18,7 @@ export type RetrievedIssue =
 
 export const MAX_ATTEMPTS_TO_FIX_BUILD_ERROR = 8;
 
-interface CheckAndCommitOptions {
+export interface CheckAndCommitOptions {
   repository: Repository;
   token: string;
   rootPath: string;

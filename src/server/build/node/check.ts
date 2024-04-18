@@ -1,10 +1,10 @@
-import stripAnsi from "strip-ansi";
+import type stripAnsi from "strip-ansi";
 import {
   executeWithLogRequiringSuccess,
   getSanitizedEnv,
   type ExecPromise,
-  RepoSettings,
-  ExecAsyncException,
+  type RepoSettings,
+  type ExecAsyncException,
 } from "../../utils";
 import { Language } from "../../utils/settings";
 import { dynamicImport } from "../../utils/dynamicImport";
@@ -14,7 +14,6 @@ const packageNameRegex =
   /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 
 export const NEXT_JS_ENV = {
-  NODE_ENV: "",
   NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
   GITHUB_ID: "GITHUB_ID",
   GITHUB_SECRET: "GITHUB_SECRET",
@@ -122,8 +121,8 @@ export async function runBuildCheck(
     // within a commonjs TypeScript module
 
     // See Option #4 here: https://github.com/TypeStrong/ts-node/discussions/1290
-    const stripAnsiFn = (await dynamicImport("strip-ansi"))
-      .default as typeof stripAnsi;
+    const stripAnsiFn = ((await dynamicImport("strip-ansi")) as { default: typeof stripAnsi })
+      .default;
     throw new Error(stripAnsiFn(output));
   }
 }

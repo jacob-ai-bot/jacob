@@ -2,15 +2,13 @@ import dedent from "ts-dedent";
 import fs from "fs";
 import path from "path";
 
-import { exec, ExecException } from "child_process";
+import { exec, type ExecException } from "child_process";
 import { promisify } from "util";
-import { RepoSettings, Language, Style } from "./settings";
+import { type RepoSettings, Language, Style } from "./settings";
 
-export { RepoSettings, getRepoSettings } from "./settings";
+export { type RepoSettings, getRepoSettings } from "./settings";
 
-export type TemplateParams = {
-  [key: string]: string;
-};
+export type TemplateParams = Record<string, string>;
 
 // Usage example
 // const agent = 'dev';
@@ -58,8 +56,9 @@ const replaceParams = (content: string, params: TemplateParams) => {
     // Replace each variable
     matches.forEach((match) => {
       const variableName = match.slice(2, -1);
-      if (params[variableName] !== undefined) {
-        content = content.replace(match, params[variableName]);
+      const param = params[variableName];
+      if (param !== undefined) {
+        content = content.replace(match, param);
       } else {
         requiredVariables.push(variableName);
       }
@@ -144,8 +143,16 @@ export async function execAsyncWithLog(
 ) {
   const promise = execAsync(command, options);
 
-  promise.child.stdout?.on("data", (d) => process.stdout.write(d));
-  promise.child.stderr?.on("data", (d) => process.stderr.write(d));
+  promise.child.stdout?.on("data", (d) => {
+    if (typeof d === "string" || d instanceof Uint8Array) {
+      process.stdout.write(d);
+    }
+  });
+  promise.child.stderr?.on("data", (d) => {
+    if (typeof d === "string" || d instanceof Uint8Array) {
+      process.stderr.write(d);
+    }
+  });
   promise.child.on("close", (code) => console.log(`*:EXIT:${code}`));
 
   return promise;
@@ -153,7 +160,6 @@ export async function execAsyncWithLog(
 
 export function getSanitizedEnv() {
   const {
-    NODE_ENV, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_PRIVATE_KEY, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_APP_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_CLIENT_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -200,7 +206,7 @@ export enum PRCommand {
 export const PR_COMMAND_VALUES = Object.values(PRCommand);
 
 export function enumFromStringValue<T>(
-  enm: { [s: string]: T },
+  enm: Record<string, T>,
   value?: string,
 ): T | undefined {
   return value && (Object.values(enm) as unknown as string[]).includes(value)

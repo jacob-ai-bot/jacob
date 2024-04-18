@@ -1,10 +1,10 @@
-import { Issue, Repository } from "@octokit/webhooks-types";
-import { Endpoints } from "@octokit/types";
+import { type Issue, type Repository } from "@octokit/webhooks-types";
+import { type Endpoints } from "@octokit/types";
 import dedent from "ts-dedent";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
-import { RepoSettings, parseTemplate } from "../utils";
+import { type RepoSettings, parseTemplate } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
@@ -41,7 +41,7 @@ export async function fixError(
   const restOfHeading =
     afterHeadingIndex === -1
       ? ""
-      : buildErrorSection.slice(0, afterHeadingIndex);
+      : buildErrorSection?.slice(0, afterHeadingIndex) ?? "";
   const attemptNumber = parseInt(
     restOfHeading.match(/Attempt\s+Number\s+(\d+)/)?.[1] ?? "",
     10,
@@ -50,9 +50,8 @@ export async function fixError(
   const errors =
     afterHeadingIndex === -1
       ? ""
-      : buildErrorSection
-          .slice(afterHeadingIndex + headingEndMarker.length)
-          .split(endOfErrorSectionMarker)[0];
+      : (buildErrorSection?.slice(afterHeadingIndex + headingEndMarker.length) ?? "")
+          .split(endOfErrorSectionMarker)[0] ?? "";
 
   const sourceMap =
     getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));
@@ -126,7 +125,7 @@ export async function fixError(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,
-      )) as string;
+      ))!;
 
       if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
         console.log(`[${repository.full_name}] code`, code);

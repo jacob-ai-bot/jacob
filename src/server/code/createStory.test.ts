@@ -8,11 +8,12 @@ import {
   beforeEach,
   vi,
 } from "vitest";
-import { Repository } from "@octokit/webhooks-types";
+import { type Repository } from "@octokit/webhooks-types";
 import fs from "fs";
 
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
 import { createStory, type PullRequest } from "./createStory";
+import { type CheckAndCommitOptions } from "./checkAndCommit";
 import { Language } from "../utils/settings";
 
 const mockedRequest = vi.hoisted(() => ({
@@ -85,6 +86,7 @@ describe("createStory", () => {
     );
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const systemPrompt = mockedRequest.sendGptVisionRequest.mock.calls[0][1];
     expect(systemPrompt).toContain(dedent`
       Act as a L8 Principal TypeScript Software Engineer at Facebook and create a new storybook story named src/components/ProfileInformation.stories.tsx.
@@ -127,8 +129,10 @@ describe("createStory", () => {
     );
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const checkAndCommitOptions =
-      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB commit: add storybook story src/components/ProfileInformation.stories.tsx",
     );
@@ -158,6 +162,7 @@ describe("createStory", () => {
     );
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const systemPrompt = mockedRequest.sendGptVisionRequest.mock.calls[0][1];
     expect(systemPrompt).toContain(dedent`
       Act as a L8 Principal JavaScript Software Engineer at Facebook and create a new storybook story named src/components/ProfileInformation.stories.jsx.
@@ -198,8 +203,10 @@ describe("createStory", () => {
     );
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const checkAndCommitOptions =
-      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB commit: add storybook story src/components/ProfileInformation.stories.jsx",
     );
