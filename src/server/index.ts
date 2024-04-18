@@ -18,7 +18,7 @@ const port = process.env.PORT ?? 4000;
 export const app = express();
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/api/auth/github/callback", (req, res, next) => void gitHubOAuthCallback(req, res));
+app.get("/api/auth/github/callback", (req, res) => void gitHubOAuthCallback(req, res));
 app.post("/api/auth/accessToken/", (req, res) => void createAccessTokenKeys(req, res));
 app.get("/api/auth/accessToken/:readKey", (req, res) => void getAccessToken(req, res));
 app.post("/api/auth/accessToken/:writeKey", express.json(), (req, res) => void postAccessToken(req, res));

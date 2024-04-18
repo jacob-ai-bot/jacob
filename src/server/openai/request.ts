@@ -1,5 +1,5 @@
 import { OpenAI } from "openai";
-import { encodingForModel } from "tiktoken-node";
+import { encode } from "gpt-tokenizer";
 import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
 import { parseTemplate, removeMarkdownCodeblocks } from "../utils";
@@ -35,8 +35,7 @@ export const getMaxTokensForResponse = async (
   model: Model,
 ): Promise<number> => {
   try {
-    const enc = encodingForModel(model);
-    const tokens = enc.encode(inputText);
+    const tokens = encode(inputText);
     const numberOfInputTokens = tokens.length;
 
     const maxContextTokens = CONTEXT_WINDOW[model];
