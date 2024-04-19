@@ -15,7 +15,7 @@ interface Body {
   shouldResize?: boolean;
 }
 
-export async function uploadImage(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const {
       image,
