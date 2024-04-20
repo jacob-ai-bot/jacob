@@ -62,7 +62,6 @@
     "react-router-dom": "^6.16.0",
     "semver": "^7.6.0",
     "server-only": "^0.0.1",
-    "smee-client": "^1.2.3",
     "strip-ansi": "^7.1.0",
     "superjson": "^2.2.1",
     "tmp-promise": "^3.0.3",

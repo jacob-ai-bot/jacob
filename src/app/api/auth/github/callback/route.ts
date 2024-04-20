@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
 
   const redirectUrl =
     process.env.NODE_ENV === "development"
-      ? `http://localhost:${process.env.PORT ?? 5173}/auth/github`
+      ? `http://localhost:${process.env.PORT ?? 3000}/auth/github`
       : undefined;
 
   const auth = createOAuthUserAuth({

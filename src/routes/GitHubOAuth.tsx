@@ -1,11 +1,13 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from 'next/navigation';
 import { useCookies } from "react-cookie";
 import GitHubButton from "react-github-btn";
 import "./GitHubOAuth.css";
 
 const githubOAuthURL = `https://github.com/login/oauth/authorize?client_id=${
-  import.meta.env.VITE_GITHUB_CLIENT_ID
+  process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
 }&scope=user`;
 
 type AuthJSONResponse = {
@@ -25,9 +27,9 @@ type ReadAccessTokenResponse = {
 
 const READ_KEY_POLLING_INTERVAL_MS = 5000;
 
-export function GitHubOAuth() {
+export function GitHubOAuth({ redirectURI }: { redirectURI: string }) {
   const [error, setError] = useState<Error | undefined>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const [attemptedLogin, setAttemptedLogin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
   const [readKey, setReadKey] = useState<string | undefined>();
@@ -46,9 +48,9 @@ export function GitHubOAuth() {
 
     setWriteKey(writeKeyParam);
     setCookie("writeKey", writeKeyParam);
-    searchParams.delete("writeKey");
-    setSearchParams(searchParams);
-  }, [writeKeyParam]);
+    // searchParams.delete("writeKey");
+    // setSearchParams(searchParams);
+  }, [redirectURI, setCookie, writeKeyParam]);
 
   useEffect(() => {
     if (!readKey) return;
@@ -68,7 +70,7 @@ export function GitHubOAuth() {
             parent.postMessage(
               {
                 pluginMessage: ["SAVE_ACCESS_TOKEN", accessToken],
-                pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID as unknown,
+                pluginId: process.env.NEXT_PUBLIC_FIGMA_PLUGIN_ID as unknown,
               },
               "https://www.figma.com",
             );
@@ -120,8 +122,8 @@ export function GitHubOAuth() {
           setAccessToken(accessToken);
 
           setError(undefined);
-          searchParams.delete("code");
-          setSearchParams(searchParams);
+          // searchParams.delete("code");
+          // setSearchParams(searchParams);
 
           if (state !== cookies.writeKey) {
             setError(
@@ -230,7 +232,7 @@ export function GitHubOAuth() {
             translating Figma designs into GitHub issues and PRs.
           </p>
           <div className="githubbutton">
-            <GitHubButton href={`${githubOAuthURL}&state=${writeKey}`}>
+            <GitHubButton href={`${githubOAuthURL}&state=${writeKey}&redirect_uri=${redirectURI}`}>
               Sign in with GitHub
             </GitHubButton>
           </div>

@@ -1,8 +1,5 @@
-import { App, createNodeMiddleware } from "@octokit/app";
-import SmeeClient from "smee-client";
+import { App } from "@octokit/app";
 import * as dotenv from "dotenv";
-import { type Application } from "express";
-import { text } from "body-parser";
 
 import {
   publishGitHubEventToQueue,
@@ -23,18 +20,6 @@ export const ghApp = new App({
   oauth: { clientId: "", clientSecret: "" },
 });
 
-let smeeClient: SmeeClient | undefined;
-if (
-  process.env.SMEE_URL &&
-  process.env.TARGET_URL &&
-  process.env.NODE_ENV !== "test"
-) {
-  smeeClient = new SmeeClient({
-    source: process.env.SMEE_URL,
-    target: process.env.TARGET_URL,
-    logger: console,
-  });
-}
 
 const errorHandler = (error: Error) => {
   console.error(`Error in webhook event: ${String(error)}`);
@@ -186,22 +171,3 @@ ghApp.webhooks.onAny(async ({ id, name }) => {
   console.log(`GitHub Webhook Handled: Event Name: ${name} (id: ${id})`);
 });
 
-export async function setupGitHubWebhook(app: Application): Promise<void> {
-  const ghMiddleware = createNodeMiddleware(ghApp);
-  app.post(
-    "/api/github/webhooks",
-    text({ type: "*/*" }),
-    (req, res, next) => void ghMiddleware(req, res, next),
-  );
-
-  const events = smeeClient?.start() as EventSource | undefined;
-  if (events) {
-    console.log("Smee event stream started");
-  }
-
-  process.on("SIGTERM", () => {
-    console.info("Gracefully shutting down smee event stream...");
-    events?.close();
-    process.exit(0);
-  });
-}

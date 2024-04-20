@@ -99,7 +99,7 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
    - Visit [GitHub's New App page](https://github.com/settings/apps/new) to create a new GitHub app. Fill in the basic details, including the app name and description.
    - Generate a Webhook Secret (run `openssl rand -base64 32` to generate a secret key)
    - Generate a `GITHUB_PRIVATE_KEY` and save it. This will be used in your `.env` configuration.
-   - Set the Callback URL to `http://localhost:5173/auth/github`.
+   - Set the Callback URL to `http://localhost:3000/auth/github`.
    - Set the Webhook URL to your smee.io channel URL. Create a smee channel at [smee.io](https://smee.io) if you haven't already. This will proxy GitHub webhooks to your local development environment.
    - Set the repository permissions to `Read & Write` for the following:
      - `Issues`
@@ -117,7 +117,7 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 
 2. **Running Smee**
 
-   - Start your smee client with the command `smee -u [Your smee.io URL] --target  http://localhost:5173`, ensuring it's forwarding to your local server's port.
+   - Start your smee client with the command `smee -u [Your smee.io URL] --target  http://localhost:3000`, ensuring it's forwarding to your local server's port.
 
 3. **JACoB Configuration**
 
