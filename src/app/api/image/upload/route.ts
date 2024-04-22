@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!imageType || !(imageType in IMAGE_TYPE)) {
+    const verifiedImageType = imageType as IMAGE_TYPE;
+    if (!imageType || !(Object.values(IMAGE_TYPE).includes(verifiedImageType))) {
       return NextResponse.json(
         {
           success: false,
@@ -43,7 +44,6 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const verifiedImageType = imageType as IMAGE_TYPE;
 
     let imageBuffer = Buffer.from(image, "base64");
     if (shouldResize) {
