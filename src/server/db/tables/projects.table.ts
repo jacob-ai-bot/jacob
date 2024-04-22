@@ -1,4 +1,4 @@
-import { Selectable, Insertable, Updateable, Queryable } from "orchid-orm";
+import type { Selectable, Insertable, Updateable, Queryable } from "orchid-orm";
 import { BaseTable } from "../baseTable";
 
 export type Project = Selectable<ProjectsTable>;

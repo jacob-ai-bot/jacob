@@ -1,11 +1,6 @@
 import { OpenAI } from "openai";
-import { encodingForModel } from "tiktoken-node";
-import {
-  SafeParseError,
-  SafeParseReturnType,
-  SafeParseSuccess,
-  ZodSchema,
-} from "zod";
+import { encode } from "gpt-tokenizer";
+import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
 import { parseTemplate, removeMarkdownCodeblocks } from "../utils";
 
@@ -40,8 +35,7 @@ export const getMaxTokensForResponse = async (
   model: Model,
 ): Promise<number> => {
   try {
-    const enc = encodingForModel(model);
-    const tokens = enc.encode(inputText);
+    const tokens = encode(inputText);
     const numberOfInputTokens = tokens.length;
 
     const maxContextTokens = CONTEXT_WINDOW[model];
@@ -101,14 +95,14 @@ export const sendGptRequest = async (
     const endTime = Date.now();
     console.log(`\n +++ ${model} Response time ${endTime - startTime} ms`);
 
-    const gptResponse = response.choices[0].message;
-    return gptResponse.content;
+    const gptResponse = response.choices[0]?.message;
+    return gptResponse?.content ?? null;
   } catch (error) {
     if (
       retries === 0 ||
       (error as { response?: Response })?.response?.status !== 429
     ) {
-      console.error(`Error in GPT request: ${error}`);
+      console.error(`Error in GPT request: ${String(error)}`);
       throw error;
     } else {
       console.log(
@@ -137,8 +131,8 @@ export const sendGptRequestWithSchema = async (
   systemPrompt: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   zodSchema: ZodSchema<any>,
-  maxRetries: number = 3,
-  temperature: number = 0.2,
+  maxRetries = 3,
+  temperature = 0.2,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;
@@ -161,6 +155,7 @@ export const sendGptRequestWithSchema = async (
 
       // Remove any code blocks from the response prior to attempting to parse it
       gptResponse = removeMarkdownCodeblocks(gptResponse);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       extractedInfo = parse(gptResponse);
 
       // if the response is an array of objects, validate each object individually and return the full array if successful
@@ -181,8 +176,9 @@ export const sendGptRequestWithSchema = async (
           );
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
         return (validatedInfo as SafeParseSuccess<any>[]).map(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           (result) => result.data,
         );
       }
@@ -191,16 +187,17 @@ export const sendGptRequestWithSchema = async (
       const validationResult = zodSchema.safeParse(
         extractedInfo,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ) as SafeParseReturnType<any, any>;
+      );
 
       if (validationResult.success) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return validationResult.data;
       }
 
       throw new Error(
         `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (validationResult as SafeParseError<any>).error,
+          (validationResult).error,
         )}`,
       );
     } catch (error) {
@@ -218,7 +215,7 @@ export const sendGptRequestWithSchema = async (
 export const sendGptVisionRequest = async (
   userPrompt: string,
   systemPrompt = "You are a helpful assistant.",
-  snapshotUrl: string = "",
+  snapshotUrl = "",
   temperature = 0.2,
   retries = 10,
   delay = 60000,

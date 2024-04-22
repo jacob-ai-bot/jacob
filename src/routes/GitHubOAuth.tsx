@@ -1,12 +1,14 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useCookies } from "react-cookie";
 import GitHubButton from "react-github-btn";
-import "./GitHubOAuth.css";
 
-const githubOAuthURL = `https://github.com/login/oauth/authorize?client_id=${
-  import.meta.env.VITE_GITHUB_CLIENT_ID
-}&scope=user`;
+import "./GitHubOAuth.css";
+import { Logo } from "~/images/Logo";
+
+const githubOAuthURL = `https://github.com/login/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID}&scope=user`;
 
 type AuthJSONResponse = {
   data?: { token: string };
@@ -25,9 +27,11 @@ type ReadAccessTokenResponse = {
 
 const READ_KEY_POLLING_INTERVAL_MS = 5000;
 
-export function GitHubOAuth() {
+export function GitHubOAuth({ redirectURI }: { redirectURI: string }) {
   const [error, setError] = useState<Error | undefined>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [attemptedLogin, setAttemptedLogin] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
   const [readKey, setReadKey] = useState<string | undefined>();
@@ -46,28 +50,32 @@ export function GitHubOAuth() {
 
     setWriteKey(writeKeyParam);
     setCookie("writeKey", writeKeyParam);
-    searchParams.delete("writeKey");
-    setSearchParams(searchParams);
-  }, [writeKeyParam]);
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.delete("writeKey");
+
+    router.replace(`${pathname}?${nextSearchParams.toString()}`);
+  }, [pathname, redirectURI, router, searchParams, setCookie, writeKeyParam]);
 
   useEffect(() => {
     if (!readKey) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     const intervalId = setInterval(async () => {
       try {
         const response = await fetch(`/api/auth/accessToken/${readKey}`, {
           headers: { "Content-Type": "application/json" },
         });
         if (response.ok) {
-          const { data, errors }: ReadAccessTokenResponse =
-            await response.json();
+          const { data, errors } =
+            (await response.json()) as ReadAccessTokenResponse;
           if (data) {
             const { accessToken } = data;
             setAccessToken(accessToken);
             parent.postMessage(
               {
                 pluginMessage: ["SAVE_ACCESS_TOKEN", accessToken],
-                pluginId: import.meta.env.VITE_FIGMA_PLUGIN_ID,
+                pluginId: process.env.NEXT_PUBLIC_FIGMA_PLUGIN_ID as unknown,
               },
               "https://www.figma.com",
             );
@@ -114,24 +122,27 @@ export function GitHubOAuth() {
         );
 
         if (accessTokenResponse.ok) {
-          const { data }: AuthJSONResponse = await accessTokenResponse.json();
+          const { data } =
+            (await accessTokenResponse.json()) as AuthJSONResponse;
           const accessToken = data?.token;
           setAccessToken(accessToken);
 
           setError(undefined);
-          searchParams.delete("code");
-          setSearchParams(searchParams);
 
-          if (state !== cookies["writeKey"]) {
+          const nextSearchParams = new URLSearchParams(searchParams.toString());
+          nextSearchParams.delete("code");
+
+          router.replace(`${pathname}?${nextSearchParams.toString()}`);
+
+          if (state !== cookies.writeKey) {
             setError(
               new Error(
-                `State does not match writeKey cookie: ${state} ${cookies["writeKey"]}`,
+                `State does not match writeKey cookie: ${state} ${cookies.writeKey}`,
               ),
             );
             return;
           }
 
-          // TODO - verify that the state matches the writeKey stored in a cookie
           const postAccessTokenResponse = await fetch(
             `/api/auth/accessToken/${state}`,
             {
@@ -168,12 +179,13 @@ export function GitHubOAuth() {
 
     if (code && !attemptedLogin) {
       setAttemptedLogin(true);
-      handleLogin(code);
+      void handleLogin(code);
     }
 
     return () => {
       abortController.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFigmaSignin = async () => {
@@ -189,7 +201,8 @@ export function GitHubOAuth() {
     }
 
     if (response.ok) {
-      const { data, errors }: CreateAccessTokenResponse = await response.json();
+      const { data, errors } =
+        (await response.json()) as CreateAccessTokenResponse;
       if (data) {
         const { readKey, writeKey } = data;
         // Store read key, which will start a polling loop waiting for the access token:
@@ -220,16 +233,22 @@ export function GitHubOAuth() {
   };
 
   return (
-    <div className={figma ? "figmacontainer" : "webcontainer"}>
-      <img src="/images/logo.svg" alt="JACoB Logo" className="logo" />
+    <div
+      className={
+        figma ? "figmacontainer" : "webcontainer p-4 sm:px-40 sm:py-24"
+      }
+    >
+      <Logo className="logo mb-4 h-[50px] w-auto sm:h-[100px]" />
       {!accessToken && !figma && (
         <>
           <p className="description">
             JACoB, your AI coding assistant, bridges design and development by
             translating Figma designs into GitHub issues and PRs.
           </p>
-          <div className="githubbutton">
-            <GitHubButton href={`${githubOAuthURL}&state=${writeKey}`}>
+          <div className="mt-4 flex scale-100 sm:scale-[2]">
+            <GitHubButton
+              href={`${githubOAuthURL}&state=${writeKey}&redirect_uri=${redirectURI}`}
+            >
               Sign in with GitHub
             </GitHubButton>
           </div>
@@ -242,7 +261,7 @@ export function GitHubOAuth() {
       )}
       {!accessToken && figma && (
         <>
-          <p>
+          <p className="mb-4">
             To link your Figma designs directly to code, start by connecting to
             GitHub.
           </p>

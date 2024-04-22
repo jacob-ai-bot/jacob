@@ -7,10 +7,11 @@ import {
   beforeEach,
   vi,
 } from "vitest";
-import { Issue, Repository } from "@octokit/webhooks-types";
+import { type Issue, type Repository } from "@octokit/webhooks-types";
 
 import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
 import { fixError, type PullRequest } from "./fixError";
+import { type CheckAndCommitOptions } from "./checkAndCommit";
 
 const mockedCheckAndCommit = vi.hoisted(() => ({
   checkAndCommit: vi
@@ -127,6 +128,7 @@ describe("fixError", () => {
     );
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
     expect(systemPrompt).toContain("-- Types\ntypes\n");
     expect(systemPrompt).toContain(
@@ -146,8 +148,10 @@ describe("fixError", () => {
     );
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const checkAndCommitOptions =
-      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB fix error: change some code",
     );

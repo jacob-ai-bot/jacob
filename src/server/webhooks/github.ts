@@ -1,8 +1,5 @@
-import { App, createNodeMiddleware } from "@octokit/app";
-import SmeeClient from "smee-client";
+import { App } from "@octokit/app";
 import * as dotenv from "dotenv";
-import { Application } from "express";
-import { text } from "body-parser";
 
 import {
   publishGitHubEventToQueue,
@@ -23,21 +20,9 @@ export const ghApp = new App({
   oauth: { clientId: "", clientSecret: "" },
 });
 
-let smeeClient: SmeeClient | undefined;
-if (
-  process.env.SMEE_URL &&
-  process.env.TARGET_URL &&
-  process.env.NODE_ENV !== "test"
-) {
-  smeeClient = new SmeeClient({
-    source: process.env.SMEE_URL,
-    target: process.env.TARGET_URL,
-    logger: console,
-  });
-}
 
 const errorHandler = (error: Error) => {
-  console.error(`Error in webhook event: ${error}`);
+  console.error(`Error in webhook event: ${String(error)}`);
 };
 
 ghApp.webhooks.onError(errorHandler);
@@ -57,7 +42,7 @@ ghApp.webhooks.on("issues.opened", async (event) => {
     console.log(
       `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob-ai-bot mention`,
     );
-    publishGitHubEventToQueue(event);
+    void publishGitHubEventToQueue(event);
   } else {
     console.log(
       `[${repository.full_name}] Issue #${payload.issue.number} has no @jacob-ai-bot mention`,
@@ -107,7 +92,7 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const appUsername = process.env.GITHUB_APP_USERNAME;
 
   const ottoShouldRespond =
-    payload.review.body?.includes("@jacob-ai-bot") ||
+    payload.review.body?.includes("@jacob-ai-bot") ??
     (appUsername && `${payload.pull_request.user.id}` === appUsername);
 
   if (
@@ -119,7 +104,7 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
     console.log(
       `[${repository.full_name}] PR #${payload.pull_request.number} should be processed`,
     );
-    publishGitHubEventToQueue(
+    void publishGitHubEventToQueue(
       event as WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit,
     );
   }
@@ -140,12 +125,12 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
     console.log(
       `[${repository.full_name}] Pull request comment body contains @jacob-ai-bot <cmd> mention (PR #${issue.number})`,
     );
-    publishGitHubEventToQueue(prCommentCreatedEvent);
+    void publishGitHubEventToQueue(prCommentCreatedEvent);
   } else if (comment.body?.includes("@jacob-ai-bot build")) {
     console.log(
       `[${repository.full_name}] Issue comment body contains @jacob-ai-bot build mention (Issue #${issue.number})`,
     );
-    publishGitHubEventToQueue(event);
+    void publishGitHubEventToQueue(event);
   } else {
     console.log(
       `[${repository.full_name}] Issue comment is not a PR comment or body has no @jacob-ai-bot <cmd> mention (Issue #${issue.number})`,
@@ -164,7 +149,7 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
     console.log(
       `[${repository.full_name}] Pull request body contains @jacob-ai-bot <cmd> mention (PR #${pull_request.number})`,
     );
-    publishGitHubEventToQueue(event);
+    void publishGitHubEventToQueue(event);
   } else {
     console.log(
       `[${repository.full_name}] Pull request body has no @jacob-ai-bot fix <cmd> mention (Issue #${pull_request.number})`,
@@ -179,28 +164,10 @@ ghApp.webhooks.on("installation_repositories.added", async (event) => {
 
   console.log(`[${repos}] Received installation repositories added event`);
 
-  publishGitHubEventToQueue(event);
+  void publishGitHubEventToQueue(event);
 });
 
 ghApp.webhooks.onAny(async ({ id, name }) => {
   console.log(`GitHub Webhook Handled: Event Name: ${name} (id: ${id})`);
 });
 
-export async function setupGitHubWebhook(app: Application): Promise<void> {
-  app.post(
-    "/api/github/webhooks",
-    text({ type: "*/*" }),
-    createNodeMiddleware(ghApp),
-  );
-
-  const events: EventSource | undefined = smeeClient?.start();
-  if (events) {
-    console.log("Smee event stream started");
-  }
-
-  process.on("SIGTERM", () => {
-    console.info("Gracefully shutting down smee event stream...");
-    events?.close();
-    process.exit(0);
-  });
-}

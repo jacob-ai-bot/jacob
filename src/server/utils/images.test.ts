@@ -27,7 +27,7 @@ describe("saveImages function", () => {
   const existingImages = "Images: /root/path/images/existingImage1.jpg\n";
   const s3BaseUrl = "https://bucket.s3.us-west-2.amazonaws.com/uploads/";
   const signature = "?AWSAccessKeyId=ABC&Expires=123&Signature=CBA";
-  vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+  vi.spyOn(fs, "writeFileSync").mockReturnValue(undefined);
   afterEach(() => {
     vi.clearAllMocks();
   });

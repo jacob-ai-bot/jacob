@@ -3,7 +3,7 @@ import AWS from "aws-sdk";
 import fetch from "node-fetch";
 import { promises as fsPromises } from "fs";
 import path from "path";
-import { RepoSettings } from "./settings";
+import { type RepoSettings } from "./settings";
 
 export enum IMAGE_TYPE {
   JPEG = "image/jpeg",
@@ -38,7 +38,7 @@ export const uploadToS3 = async (
 export const getSignedUrl = (
   imagePath: string,
   bucketName: string,
-  expiresInSeconds: number = 3600,
+  expiresInSeconds = 3600,
 ) => {
   const params = {
     Bucket: bucketName,
@@ -133,7 +133,11 @@ export const saveImages = async (
     if (!existingImages.includes(imageName!)) {
       const image = imageUrls.find((url) => url.includes(imageName!));
       if (image) {
-        const imageUrl = image.split("(")[1].split(")")[0];
+        const imageUrl = image.split("(")[1]?.split(")")[0];
+
+        if (!imageUrl) {
+          continue;
+        }
 
         // Download the image data
         const response = await fetch(imageUrl);

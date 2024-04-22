@@ -1,6 +1,6 @@
 import dedent from "ts-dedent";
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
-import { Issue, Repository } from "@octokit/webhooks-types";
+import { type Issue, type Repository } from "@octokit/webhooks-types";
 
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
 import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
@@ -142,7 +142,7 @@ describe("checkAndCommit", () => {
   test("checkAndCommit will append @jacob-ai-bot create story to PR", async () => {
     // Mock that all files exist (including the storybook directory) but not the story files.
     mockedFS.default.existsSync.mockImplementation(
-      (path) =>
+      (path) => typeof path === "string" &&
         !path.endsWith(".stories.tsx") && !path.endsWith(".stories.jsx"),
     );
 
@@ -216,7 +216,7 @@ describe("checkAndCommit", () => {
   test("checkAndCommit (JavaScript JSX) will append @jacob-ai-bot create story to PR", async () => {
     // Mock that all files exist (including the storybook directory) but not the story files.
     mockedFS.default.existsSync.mockImplementation(
-      (path) =>
+      (path) => typeof path === "string" &&
         !path.endsWith(".stories.tsx") && !path.endsWith(".stories.jsx"),
     );
 

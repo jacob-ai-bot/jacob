@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import ignore, { Ignore } from "ignore";
+import ignore, { type Ignore } from "ignore";
 import parseDiff from "parse-diff";
 import { removeMarkdownCodeblocks } from ".";
 
@@ -70,7 +70,7 @@ export const concatenateFiles = (
       const filePath = path.join(dir, file);
       const relativePath = path.relative(rootDir, filePath);
 
-      if (gitignore && gitignore.ignores(relativePath)) return;
+      if (gitignore?.ignores(relativePath)) return;
 
       if (fs.statSync(filePath).isDirectory()) {
         walkDir(filePath);
@@ -122,9 +122,9 @@ export const reconstructFiles = (
 ) => {
   const sections = concatFileContent.split(/__FILEPATH__(.*?)__\n/).slice(1);
 
-  for (let i = 0; i < sections.length; i += 2) {
-    const filePath = sections[i];
-    let fileContent = sections[i + 1];
+  for (let i = 0; i < sections.length - 1; i += 2) {
+    const filePath = sections[i]!;
+    let fileContent = sections[i + 1]!;
     const targetPath = path.join(outputPath, filePath);
 
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -132,7 +132,7 @@ export const reconstructFiles = (
     // keep doing this until the first line doesn't start with _
     while (
       fileContent?.length > 0 &&
-      fileContent.split("\n")[0].startsWith("_")
+      fileContent?.split("\n")[0]?.startsWith("_")
     ) {
       fileContent = fileContent.split("\n").slice(1).join("\n");
     }
@@ -154,9 +154,9 @@ export const extractPRCommentsFromFiles = (concatFileContent: string) => {
 
   const comments: CodeComment[] = [];
 
-  for (let i = 0; i < sections.length; i += 2) {
-    const path = sections[i];
-    const fileContent = sections[i + 1];
+  for (let i = 0; i < sections.length - 1; i += 2) {
+    const path = sections[i]!;
+    const fileContent = sections[i + 1]!;
     const lines = fileContent.split("\n");
 
     let lineNumber = 0;
@@ -235,10 +235,11 @@ export function getNewOrModifiedRangesMapFromDiff(diff: string) {
         ranges.push(currentRange);
       }
     });
-    if (!rangeMap[file.to]) {
+    const existingRanges = rangeMap[file.to];
+    if (!existingRanges) {
       rangeMap[file.to] = ranges;
     } else {
-      rangeMap[file.to].push(...ranges);
+      existingRanges.push(...ranges);
     }
   });
   return rangeMap;

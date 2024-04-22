@@ -1,9 +1,9 @@
-import ampq from "amqplib";
-import { Octokit } from "@octokit/core";
-import { EmitterWebhookEvent } from "@octokit/webhooks";
-import { Repository } from "@octokit/webhooks-types";
+import ampq, { type ConsumeMessage } from "amqplib";
+import { type Octokit } from "@octokit/core";
+import { type EmitterWebhookEvent } from "@octokit/webhooks";
+import { type Repository } from "@octokit/webhooks-types";
 import {
-  InstallationAccessTokenAuthentication,
+  type InstallationAccessTokenAuthentication,
   createAppAuth,
 } from "@octokit/auth-app";
 
@@ -58,33 +58,35 @@ async function initRabbitMQ() {
       arguments: { "x-consumer-timeout": 60 * 60 * 1000 },
     });
 
-    channel.prefetch(1);
-    channel.consume(
+    const onMessage = async (message: ConsumeMessage | null) => {
+      if (!message) {
+        console.error(`null message received from channel.consume()!`);
+        return;
+      }
+      console.log(`Received queue message: ${message.properties.messageId}`);
+      try {
+        const event = JSON.parse(
+          message.content.toString(),
+        ) as WebhookQueuedEvent;
+        await onGitHubEvent(event);
+        channel?.ack(message);
+      } catch (error) {
+        console.error(`Error parsing or processing message: ${String(error)}`);
+        channel?.ack(message);
+      }
+    };
+
+    await channel.prefetch(1);
+    await channel.consume(
       QUEUE_NAME,
-      async (message) => {
-        if (!message) {
-          console.error(`null message received from channel.consume()!`);
-          return;
-        }
-        console.log(`Received queue message: ${message.properties.messageId}`);
-        try {
-          const event = JSON.parse(
-            message.content.toString(),
-          ) as WebhookQueuedEvent;
-          await onGitHubEvent(event);
-          channel?.ack(message);
-        } catch (error) {
-          console.error(`Error parsing or processing message: ${error}`);
-          channel?.ack(message);
-        }
-      },
+      (msg) => void onMessage(msg),
       {
         noAck: false,
       },
     );
     console.log(`Initialized RabbitMQ`);
   } catch (error) {
-    console.error(`Error initializing RabbitMQ: ${error}`);
+    console.error(`Error initializing RabbitMQ: ${String(error)}`);
     return;
   }
 }
@@ -129,7 +131,7 @@ async function isNodeProject(
           ...repository.owner,
           name: repository.owner?.name ?? undefined,
           gravatar_id: repository.owner?.gravatar_id ?? "",
-          type: repository.owner?.type as "Bot" | "User" | "Organization",
+          type: repository.owner?.type,
         },
       },
       installationAuthentication.token,
@@ -205,7 +207,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
         });
       } finally {
         console.log(`[${repo.full_name}] cleaning up repo cloned to ${path}`);
-        cleanup();
+        await cleanup();
       }
     } catch (error) {
       try {
@@ -227,7 +229,7 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
         // NOTE: some repos don't have issues and we will fail to create an issue
         // Ignoring this error so we can continue to process the next repo and remove this event from the queue
         console.error(
-          `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : ${issueError}, original error:`,
+          `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : ${String(issueError)}, original error:`,
           error,
         );
         posthogClient.capture({
@@ -333,7 +335,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
     let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
     let prBranch: string | undefined;
-    if (prComment || prReview || prOpened) {
+    if (!!prComment || prReview || prOpened) {
       const result = await getPR(
         repository,
         installationAuthentication.token,
@@ -502,7 +504,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         console.log(
           `[${repository.full_name}] cleaning up repo cloned to ${path}`,
         );
-        cleanup();
+        await cleanup();
       }
     } catch (error) {
       await addFailedWorkComment(
@@ -627,5 +629,5 @@ export const publishGitHubEventToQueue = async (
 };
 
 if (process.env.NODE_ENV !== "test") {
-  initRabbitMQ();
+  void initRabbitMQ();
 }

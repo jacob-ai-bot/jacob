@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { type Request, type Response } from "express";
 import { createOAuthUserAuth } from "@octokit/auth-oauth-user";
 
 export async function gitHubOAuthCallback(req: Request, res: Response) {
@@ -6,7 +6,7 @@ export async function gitHubOAuthCallback(req: Request, res: Response) {
 
   const redirectUrl =
     process.env.NODE_ENV === "development"
-      ? `http://localhost:${process.env.PORT ?? 5173}/auth/github`
+      ? `http://localhost:${process.env.PORT ?? 3000}/auth/github`
       : undefined;
 
   const auth = createOAuthUserAuth({
@@ -24,6 +24,6 @@ export async function gitHubOAuthCallback(req: Request, res: Response) {
 
     res.status(200).json({ data: { token } });
   } catch (error) {
-    res.status(500).json({ errors: [`${error}`] });
+    res.status(500).json({ errors: [String(error)] });
   }
 }

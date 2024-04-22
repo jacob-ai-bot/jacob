@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   describe,
   expect,
@@ -141,6 +142,7 @@ describe("newIssueForFigmaFile", () => {
     expect(mockedOctokitRest.Octokit).toHaveBeenCalledOnce();
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
     expect(createIssueOptions.owner).toBe("test-login");
     expect(createIssueOptions.repo).toBe("test-repo");
@@ -214,6 +216,7 @@ describe("newIssueForFigmaFile", () => {
     expect(mockedOctokitRest.Octokit).toHaveBeenCalledOnce();
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
     expect(createIssueOptions.owner).toBe("test-login");
     expect(createIssueOptions.repo).toBe("test-repo");
@@ -294,6 +297,7 @@ describe("newIssueForFigmaFile", () => {
     expect(res.statusCode).toBe(200);
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
     expect(createIssueOptions.title).toBe(
       "Create new file => app/test-page/page.tsx",
@@ -348,6 +352,7 @@ describe("newIssueForFigmaFile", () => {
     expect(res.statusCode).toBe(200);
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
     expect(createIssueOptions.title).toBe(
       "Create new file => src/app/_components/Test-Component.tsx",
@@ -399,6 +404,7 @@ describe("newIssueForFigmaFile", () => {
     expect(res.statusCode).toBe(200);
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
     expect(createIssueOptions.title).toBe(
       "Create new file => mycomponentsdir/Test-Component.tsx",
@@ -453,6 +459,7 @@ describe("newIssueForFigmaFile", () => {
     );
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
     expect(createIssueOptions.body).not.toContain(
       "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",

@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { Repository } from "@octokit/webhooks-types";
+import type { Repository } from "@octokit/webhooks-types";
 
 export async function getFile(
   repository: Pick<Repository, "owner" | "name">,

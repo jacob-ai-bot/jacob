@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import { describe, beforeEach, afterEach, it, expect } from "vitest";
 
-import { parseTemplate, TemplateParams } from "../utils";
+import { parseTemplate, type TemplateParams } from "../utils";
 
 dotenv.config();
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";

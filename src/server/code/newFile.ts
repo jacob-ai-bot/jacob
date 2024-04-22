@@ -1,4 +1,4 @@
-import { Issue, Repository } from "@octokit/webhooks-types";
+import { type Issue, type Repository } from "@octokit/webhooks-types";
 import dedent from "ts-dedent";
 import fs from "fs";
 import path from "path";
@@ -7,7 +7,7 @@ import { getTypes, getImages } from "../analyze/sourceMap";
 import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
-  RepoSettings,
+  type RepoSettings,
   getSnapshotUrl,
   getStyles,
 } from "../utils";
@@ -58,7 +58,7 @@ export async function createNewFile(
     planSystemPrompt,
     snapshotUrl,
     0.2,
-  )) as string;
+  )) ?? "";
 
   const types = getTypes(rootPath, repoSettings);
   const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
@@ -95,7 +95,7 @@ export async function createNewFile(
     codeSystemPrompt,
     snapshotUrl,
     0.2,
-  )) as string;
+  ))!;
 
   if (code.length < 10) {
     console.log(`[${repository.full_name}] code`, code);
