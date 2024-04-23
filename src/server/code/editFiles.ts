@@ -17,7 +17,10 @@ import {
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
-import { ExtractedIssueInfoSchema, type ExtractedIssueInfo } from "./extractedIssue";
+import {
+  ExtractedIssueInfoSchema,
+  type ExtractedIssueInfo,
+} from "./extractedIssue";
 
 export async function editFiles(
   repository: Repository,

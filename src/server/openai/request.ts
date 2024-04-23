@@ -197,13 +197,14 @@ export const sendGptRequestWithSchema = async (
       throw new Error(
         `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (validationResult).error,
+          validationResult.error,
         )}`,
       );
     } catch (error) {
       console.log(
-        `Error occurred during GPT request: ${(error as { message?: string })
-          ?.message}`,
+        `Error occurred during GPT request: ${
+          (error as { message?: string })?.message
+        }`,
       );
       retries++;
     }

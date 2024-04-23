@@ -56,11 +56,12 @@ export async function respondToCodeReview(
   );
 
   // Call sendGptRequest with the review text and concatenated code file
-  const updatedCode = (await sendGptRequest(
-    responseToCodeReviewUserPrompt,
-    responseToCodeReviewSystemPrompt,
-    0.2,
-  )) ?? "";
+  const updatedCode =
+    (await sendGptRequest(
+      responseToCodeReviewUserPrompt,
+      responseToCodeReviewSystemPrompt,
+      0.2,
+    )) ?? "";
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
     console.log(`[${repository.full_name}] code`, code);

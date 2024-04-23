@@ -20,7 +20,6 @@ export const ghApp = new App({
   oauth: { clientId: "", clientSecret: "" },
 });
 
-
 const errorHandler = (error: Error) => {
   console.error(`Error in webhook event: ${String(error)}`);
 };
@@ -170,4 +169,3 @@ ghApp.webhooks.on("installation_repositories.added", async (event) => {
 ghApp.webhooks.onAny(async ({ id, name }) => {
   console.log(`GitHub Webhook Handled: Event Name: ${name} (id: ${id})`);
 });
-

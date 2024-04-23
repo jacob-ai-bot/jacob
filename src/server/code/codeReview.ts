@@ -76,11 +76,9 @@ export async function codeReview(
     "user",
     codeReviewTemplateParams,
   );
-  const codeWithComments = (await sendGptRequest(
-    codeReviewUserPrompt,
-    codeReviewSystemPrompt,
-    0.2,
-  )) ?? "";
+  const codeWithComments =
+    (await sendGptRequest(codeReviewUserPrompt, codeReviewSystemPrompt, 0.2)) ??
+    "";
 
   if (
     codeWithComments.length < 10 ||

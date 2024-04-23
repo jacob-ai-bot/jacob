@@ -138,9 +138,7 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
   }
 
   const { authorization } = req.headers;
-  const access_token = (authorization ?? "")
-    .trim()
-    .split(" ")[1] ?? "";
+  const access_token = (authorization ?? "").trim().split(" ")[1] ?? "";
 
   try {
     const { status: tokenStatus, data: tokenData } =
@@ -290,8 +288,8 @@ export const newIssueForFigmaFile = async (req: Request, res: Response) => {
       preferredFileName.endsWith(".jsx") || preferredFileName.endsWith(".tsx")
         ? preferredFileName
         : repoSettings?.language === Language.JavaScript
-        ? `${preferredFileName}.jsx`
-        : `${preferredFileName}.tsx`;
+          ? `${preferredFileName}.jsx`
+          : `${preferredFileName}.tsx`;
 
     const componentsDir =
       repoSettings?.directories?.components ?? nextComponentsDir;

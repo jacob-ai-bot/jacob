@@ -39,8 +39,8 @@ export function getEnv(repoSettings?: RepoSettings) {
     ...(typeof repoSettings?.env === "object"
       ? repoSettings.env
       : repoSettings?.packageDependencies?.next
-      ? NEXT_JS_ENV
-      : {}),
+        ? NEXT_JS_ENV
+        : {}),
   } as NodeJS.ProcessEnv;
 }
 
@@ -122,8 +122,9 @@ export async function runBuildCheck(
     // within a commonjs TypeScript module
 
     // See Option #4 here: https://github.com/TypeStrong/ts-node/discussions/1290
-    const stripAnsiFn = ((await dynamicImport("strip-ansi")) as { default: typeof stripAnsi })
-      .default;
+    const stripAnsiFn = (
+      (await dynamicImport("strip-ansi")) as { default: typeof stripAnsi }
+    ).default;
     throw new Error(stripAnsiFn(output));
   }
 }

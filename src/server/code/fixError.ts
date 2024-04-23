@@ -50,8 +50,11 @@ export async function fixError(
   const errors =
     afterHeadingIndex === -1
       ? ""
-      : (buildErrorSection?.slice(afterHeadingIndex + headingEndMarker.length) ?? "")
-          .split(endOfErrorSectionMarker)[0] ?? "";
+      : (
+          buildErrorSection?.slice(
+            afterHeadingIndex + headingEndMarker.length,
+          ) ?? ""
+        ).split(endOfErrorSectionMarker)[0] ?? "";
 
   const sourceMap =
     getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));

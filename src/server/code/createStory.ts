@@ -92,12 +92,13 @@ export async function createStory(
     "user",
     storyTemplateParams,
   );
-  const storybookCode = (await sendGptVisionRequest(
-    storyUserPrompt,
-    storySystemPrompt,
-    snapshotUrl,
-    0.2,
-  )) ?? "";
+  const storybookCode =
+    (await sendGptVisionRequest(
+      storyUserPrompt,
+      storySystemPrompt,
+      snapshotUrl,
+      0.2,
+    )) ?? "";
 
   saveNewFile(rootPath, storybookFilename, storybookCode);
 

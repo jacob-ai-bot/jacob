@@ -19,9 +19,7 @@ export default async function Home() {
             target="_blank"
           >
             <h3 className="text-2xl font-bold">JACoB Website →</h3>
-            <div className="text-lg">
-              An overview of JACoB.
-            </div>
+            <div className="text-lg">An overview of JACoB.</div>
           </Link>
           <Link
             className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/40 p-4 hover:bg-white/70"

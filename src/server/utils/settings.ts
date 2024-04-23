@@ -86,7 +86,10 @@ export function getRepoSettings(rootPath: string) {
   }
   if (typeof packageJson?.dependencies === "object") {
     const settings: RepoSettings = settingsFromFile ?? {};
-    settings.packageDependencies = packageJson.dependencies as Record<string, string>;
+    settings.packageDependencies = packageJson.dependencies as Record<
+      string,
+      string
+    >;
     return settings;
   }
   return settingsFromFile;

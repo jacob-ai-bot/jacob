@@ -77,13 +77,9 @@ async function initRabbitMQ() {
     };
 
     await channel.prefetch(1);
-    await channel.consume(
-      QUEUE_NAME,
-      (msg) => void onMessage(msg),
-      {
-        noAck: false,
-      },
-    );
+    await channel.consume(QUEUE_NAME, (msg) => void onMessage(msg), {
+      noAck: false,
+    });
     console.log(`Initialized RabbitMQ`);
   } catch (error) {
     console.error(`Error initializing RabbitMQ: ${String(error)}`);
@@ -276,20 +272,20 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       eventName === "pull_request"
         ? event.payload.pull_request.body
         : eventName === "pull_request_review"
-        ? event.payload.review.body
-        : eventName === "issue_comment"
-        ? event.payload.comment.body
-        : event.payload.issue.body;
+          ? event.payload.review.body
+          : eventName === "issue_comment"
+            ? event.payload.comment.body
+            : event.payload.issue.body;
     const distinctId =
       eventName === "pull_request"
         ? event.payload.pull_request.user.login
         : eventName === "issues"
-        ? event.payload.issue.user.login
-        : eventName === "pull_request_review"
-        ? event.payload.review.user.login
-        : eventName === "issue_comment"
-        ? event.payload.comment.user.login
-        : "";
+          ? event.payload.issue.user.login
+          : eventName === "pull_request_review"
+            ? event.payload.review.user.login
+            : eventName === "issue_comment"
+              ? event.payload.comment.user.login
+              : "";
 
     const prCommand = enumFromStringValue(
       PRCommand,
@@ -324,13 +320,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             prCommand: prCommand,
           }
         : prReview
-        ? { task: "prReview", prNumber: eventIssueOrPRNumber }
-        : issueComment
-        ? { task: "issueCommand", issueNumber: eventIssueOrPRNumber }
-        : {
-            task: "issueOpened",
-            issueNumber: eventIssueOrPRNumber,
-          }),
+          ? { task: "prReview", prNumber: eventIssueOrPRNumber }
+          : issueComment
+            ? { task: "issueCommand", issueNumber: eventIssueOrPRNumber }
+            : {
+                task: "issueOpened",
+                issueNumber: eventIssueOrPRNumber,
+              }),
     });
 
     let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;

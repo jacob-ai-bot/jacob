@@ -53,12 +53,13 @@ export async function createNewFile(
     "user",
     planTemplateParams,
   );
-  const plan = (await sendGptVisionRequest(
-    planUserPrompt,
-    planSystemPrompt,
-    snapshotUrl,
-    0.2,
-  )) ?? "";
+  const plan =
+    (await sendGptVisionRequest(
+      planUserPrompt,
+      planSystemPrompt,
+      snapshotUrl,
+      0.2,
+    )) ?? "";
 
   const types = getTypes(rootPath, repoSettings);
   const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(

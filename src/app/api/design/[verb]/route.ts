@@ -131,19 +131,20 @@ interface Params {
   verb: string;
 }
 
-export const POST = async (req: NextRequest, { params }: { params: Params }) => {
+export const POST = async (
+  req: NextRequest,
+  { params }: { params: Params },
+) => {
   const { verb } = params;
 
   console.log(`newIssueForFigmaFile: ${verb}`);
 
   if (verb !== "edit" && verb !== "new") {
-    return NextResponse.json({ message: "Invalid verb" }, { status: 400});
+    return NextResponse.json({ message: "Invalid verb" }, { status: 400 });
   }
 
   const authorization = req.headers.get("authorization");
-  const access_token = (authorization ?? "")
-    .trim()
-    .split(" ")[1] ?? "";
+  const access_token = (authorization ?? "").trim().split(" ")[1] ?? "";
 
   try {
     const { status: tokenStatus, data: tokenData } =
@@ -154,13 +155,19 @@ export const POST = async (req: NextRequest, { params }: { params: Params }) => 
 
     if (tokenStatus < 200 || tokenStatus >= 300) {
       console.log(`Error (${tokenStatus}) checking token: `, tokenData);
-      return NextResponse.json({ message: "Unauthorized: Unable to verify GitHub App installation" }, { status: 401 });
+      return NextResponse.json(
+        { message: "Unauthorized: Unable to verify GitHub App installation" },
+        { status: 401 },
+      );
     }
 
     console.log(`Authenticated as ${tokenData.user?.login}`);
 
     if (!req.body) {
-      return NextResponse.json({ message: "Missing request body" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Missing request body" },
+        { status: 400 },
+      );
     }
 
     const {
@@ -187,7 +194,10 @@ export const POST = async (req: NextRequest, { params }: { params: Params }) => 
 
     // TODO: require figmaMapCSS once new plugin is widely in use
     if (!figmaMap || !fileName || !repo) {
-      return NextResponse.json({ message: "Missing required parameters" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Missing required parameters" },
+        { status: 400 },
+      );
     }
 
     const { status: installationStatus, data: installationData } =
@@ -289,8 +299,8 @@ export const POST = async (req: NextRequest, { params }: { params: Params }) => 
       preferredFileName.endsWith(".jsx") || preferredFileName.endsWith(".tsx")
         ? preferredFileName
         : repoSettings?.language === Language.JavaScript
-        ? `${preferredFileName}.jsx`
-        : `${preferredFileName}.tsx`;
+          ? `${preferredFileName}.jsx`
+          : `${preferredFileName}.tsx`;
 
     const componentsDir =
       repoSettings?.directories?.components ?? nextComponentsDir;

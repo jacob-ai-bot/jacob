@@ -17,7 +17,12 @@ interface Body {
 
 export async function uploadImage(req: Request, res: Response) {
   try {
-    const { image, imageType, imageName, shouldResize = false } = req.body as Body;
+    const {
+      image,
+      imageType,
+      imageName,
+      shouldResize = false,
+    } = req.body as Body;
 
     if (!image || typeof image !== "string") {
       return res.status(400).json({
@@ -36,7 +41,10 @@ export async function uploadImage(req: Request, res: Response) {
 
     let imageBuffer = Buffer.from(image, "base64");
     if (shouldResize) {
-      imageBuffer = await resizeImageForGptVision(imageBuffer, verifiedImageType);
+      imageBuffer = await resizeImageForGptVision(
+        imageBuffer,
+        verifiedImageType,
+      );
     }
     const imagePath = await uploadToS3(
       imageBuffer,

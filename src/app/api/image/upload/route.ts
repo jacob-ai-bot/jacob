@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     const verifiedImageType = imageType as IMAGE_TYPE;
-    if (!imageType || !(Object.values(IMAGE_TYPE).includes(verifiedImageType))) {
+    if (!imageType || !Object.values(IMAGE_TYPE).includes(verifiedImageType)) {
       return NextResponse.json(
         {
           success: false,

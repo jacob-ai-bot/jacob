@@ -129,10 +129,10 @@ describe("createStory", () => {
     );
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0] as CheckAndCommitOptions;
+      checkAndCommitCalls[0][0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB commit: add storybook story src/components/ProfileInformation.stories.tsx",
     );
@@ -203,10 +203,10 @@ describe("createStory", () => {
     );
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      mockedCheckAndCommit.checkAndCommit.mock.calls[0][0] as CheckAndCommitOptions;
+      checkAndCommitCalls[0][0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB commit: add storybook story src/components/ProfileInformation.stories.jsx",
     );

@@ -142,8 +142,10 @@ describe("checkAndCommit", () => {
   test("checkAndCommit will append @jacob-ai-bot create story to PR", async () => {
     // Mock that all files exist (including the storybook directory) but not the story files.
     mockedFS.default.existsSync.mockImplementation(
-      (path) => typeof path === "string" &&
-        !path.endsWith(".stories.tsx") && !path.endsWith(".stories.jsx"),
+      (path) =>
+        typeof path === "string" &&
+        !path.endsWith(".stories.tsx") &&
+        !path.endsWith(".stories.jsx"),
     );
 
     const issue = issuesOpenedNewFilePayload.issue as Issue;
@@ -216,8 +218,10 @@ describe("checkAndCommit", () => {
   test("checkAndCommit (JavaScript JSX) will append @jacob-ai-bot create story to PR", async () => {
     // Mock that all files exist (including the storybook directory) but not the story files.
     mockedFS.default.existsSync.mockImplementation(
-      (path) => typeof path === "string" &&
-        !path.endsWith(".stories.tsx") && !path.endsWith(".stories.jsx"),
+      (path) =>
+        typeof path === "string" &&
+        !path.endsWith(".stories.tsx") &&
+        !path.endsWith(".stories.jsx"),
     );
 
     const issue = issuesOpenedNewFilePayload.issue as Issue;

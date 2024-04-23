@@ -7,7 +7,11 @@ import path from "path";
 import { addCommitAndPush } from "../git/commit";
 import { addCommentToIssue } from "../github/issue";
 import { runBuildCheck } from "../build/node/check";
-import { extractFilePathWithArrow, PRCommand, type RepoSettings } from "../utils";
+import {
+  extractFilePathWithArrow,
+  PRCommand,
+  type RepoSettings,
+} from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
 

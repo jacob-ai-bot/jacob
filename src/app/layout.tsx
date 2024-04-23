@@ -23,10 +23,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`bg-[#1d265d] text-white h-screen w-screen leading-relaxed text-center font-sans ${poppins.variable}`}>
-        <TRPCReactProvider>
-          {children}
-        </TRPCReactProvider>
+      <body
+        className={`h-screen w-screen bg-[#1d265d] text-center font-sans leading-relaxed text-white ${poppins.variable}`}
+      >
+        <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>
   );

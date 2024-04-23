@@ -7,8 +7,7 @@ export async function setNewBranch(rootPath: string, branchName: string) {
       rootPath,
       "git rev-parse --abbrev-ref HEAD",
     )
-  )
-    .stdout
+  ).stdout
     .toString()
     .trim();
   if (currentBranch === branchName) {
@@ -19,8 +18,7 @@ export async function setNewBranch(rootPath: string, branchName: string) {
   // now check to see if the branch already exists
   const branches = (
     await executeWithLogRequiringSuccess(rootPath, "git branch")
-  )
-    .stdout
+  ).stdout
     .toString()
     .trim();
   if (branches.includes(branchName)) {
