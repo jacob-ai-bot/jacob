@@ -11,6 +11,7 @@
     "lint:fix": "next lint --fix",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "listener": "tsx src/server/messaging/listener.ts",
     "db": "tsx src/server/db/dbScript.ts"
   },
   "dependencies": {

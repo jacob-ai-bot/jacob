@@ -46,7 +46,11 @@ const LOCALHOST_RABBITMQ_PORT = process.env.RABBITMQ_PORT ?? 5672;
 const RABBITMQ_URL =
   process.env.RABBITMQ_URL ?? `amqp://localhost:${LOCALHOST_RABBITMQ_PORT}`;
 
-async function initRabbitMQ() {
+export async function initRabbitMQ({ listener }: { listener: boolean }) {
+  if (channel) {
+    return;
+  }
+
   try {
     const connection = await ampq.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
@@ -57,6 +61,10 @@ async function initRabbitMQ() {
       durable: true,
       arguments: { "x-consumer-timeout": 60 * 60 * 1000 },
     });
+
+    if (!listener) {
+      return;
+    }
 
     const onMessage = async (message: ConsumeMessage | null) => {
       if (!message) {
@@ -606,7 +614,14 @@ export const publishGitHubEventToQueue = async (
 ) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { octokit, ...eventWithoutOctokit } = event;
-  channel?.sendToQueue(
+  await initRabbitMQ({ listener: false });
+  if (!channel) {
+    console.error(
+      `publishGitHubEventToQueue: ${event.id} ${event.name} : NO CHANNEL`,
+    );
+    return;
+  }
+  channel.sendToQueue(
     QUEUE_NAME,
     Buffer.from(JSON.stringify(eventWithoutOctokit)),
     {
@@ -623,7 +638,3 @@ export const publishGitHubEventToQueue = async (
     `[${repoName}] publishGitHubEventToQueue: ${event.id} ${event.name}`,
   );
 };
-
-if (process.env.NODE_ENV !== "test") {
-  void initRabbitMQ();
-}
