@@ -1,4 +1,4 @@
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 import { Octokit } from "@octokit/rest";
 import type { Repository } from "@octokit/webhooks-types";
 

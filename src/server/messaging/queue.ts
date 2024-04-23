@@ -621,6 +621,7 @@ export const publishGitHubEventToQueue = async (
     );
     return;
   }
+  console.log(`publishGitHubEventToQueue: ${event.id} ${event.name}`);
   channel.sendToQueue(
     QUEUE_NAME,
     Buffer.from(JSON.stringify(eventWithoutOctokit)),

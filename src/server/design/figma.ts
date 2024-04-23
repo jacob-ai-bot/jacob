@@ -1,4 +1,4 @@
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 import { type Request, type Response } from "express";
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";

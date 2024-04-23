@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 import {
   vi,
   describe,

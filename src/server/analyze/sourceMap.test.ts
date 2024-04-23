@@ -1,4 +1,4 @@
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 import { describe, expect, test } from "vitest";
 
 import { generateMapFromFiles } from "./sourceMap";

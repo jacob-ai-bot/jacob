@@ -1,4 +1,4 @@
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 
 import { cloneRepo } from "./clone";

@@ -1,6 +1,6 @@
 import { type Issue, type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";

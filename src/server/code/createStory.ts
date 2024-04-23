@@ -1,6 +1,6 @@
 import { type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 import fs from "fs";
 import path from "path";
 
