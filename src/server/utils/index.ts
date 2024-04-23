@@ -160,6 +160,7 @@ export async function execAsyncWithLog(
 
 export function getSanitizedEnv() {
   const {
+    NODE_ENV, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_PRIVATE_KEY, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_APP_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
     GITHUB_CLIENT_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -184,7 +185,7 @@ export async function executeWithLogRequiringSuccess(
   console.log(`*:${command} (cwd: ${path})`);
   return execAsyncWithLog(command, {
     cwd: path,
-    env: getSanitizedEnv(),
+    env: getSanitizedEnv() as NodeJS.ProcessEnv,
     ...options,
   });
 }

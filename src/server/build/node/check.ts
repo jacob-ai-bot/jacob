@@ -14,6 +14,7 @@ const packageNameRegex =
   /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 
 export const NEXT_JS_ENV = {
+  NODE_ENV: "",
   NEXTAUTH_SECRET: "NEXTAUTH_SECRET",
   GITHUB_ID: "GITHUB_ID",
   GITHUB_SECRET: "GITHUB_SECRET",
@@ -40,7 +41,7 @@ export function getEnv(repoSettings?: RepoSettings) {
       : repoSettings?.packageDependencies?.next
       ? NEXT_JS_ENV
       : {}),
-  };
+  } as NodeJS.ProcessEnv;
 }
 
 export async function runBuildCheck(
