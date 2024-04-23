@@ -121,7 +121,7 @@ export async function codeReview(
     })
     .filter(Boolean) as CodeComment[];
 
-  const appUsername = process.env.APP_USERNAME;
+  const appUsername = process.env.GITHUB_APP_USERNAME;
   const jacobCreatedThisPR =
     appUsername && `${existingPr.user.id}` === appUsername;
 
