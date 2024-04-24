@@ -8,9 +8,8 @@ import {
   afterEach,
   afterAll,
 } from "vitest";
-import { createMocks } from "node-mocks-http";
-
-import { newIssueForFigmaFile } from "./figma";
+import { createMockNextRequest } from "../../../../server/utils/testHelpers";
+import { POST as newIssueForFigmaFile } from "./route";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
@@ -24,7 +23,7 @@ vi.mock("@octokit/auth-app", () => mockedOctokitAuthApp);
 const mockedRepo = vi.hoisted(() => ({
   getFile: vi.fn().mockRejectedValue(new Error("File not found")),
 }));
-vi.mock("../github/repo", () => mockedRepo);
+vi.mock("~/server/github/repo", () => mockedRepo);
 
 const mockedCheckToken = vi.hoisted(() =>
   vi.fn().mockResolvedValue({
@@ -68,13 +67,14 @@ const mockedRequest = vi.hoisted(() => ({
     .fn()
     .mockResolvedValue("code-converted-from-figma-map"),
 }));
-vi.mock("../openai/request", () => mockedRequest);
+vi.mock("~/server/openai/request", () => mockedRequest);
 
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
 describe("newIssueForFigmaFile", () => {
   beforeEach(() => {
     process.env.PROMPT_FOLDER = originalPromptsFolder;
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -87,16 +87,18 @@ describe("newIssueForFigmaFile", () => {
   });
 
   test("edit with no parameters", async () => {
-    const { req, res } = createMocks({ params: { verb: "edit" } });
+    const req = createMockNextRequest({ method: "POST" });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, {
+      params: { verb: "edit" },
+    });
 
-    expect(res.statusCode).toBe(400);
+    expect(res.status).toBe(400);
   });
 
   test("edit", async () => {
-    const { req, res } = createMocks({
-      params: { verb: "edit" },
+    const req = createMockNextRequest({
+      method: "POST",
       body: {
         figmaMap: "test-figma-map",
         fileName: "test-filename.tsx",
@@ -110,9 +112,9 @@ describe("newIssueForFigmaFile", () => {
       },
     });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, { params: { verb: "edit" } });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status).toBe(200);
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
@@ -161,16 +163,18 @@ describe("newIssueForFigmaFile", () => {
   });
 
   test("new with no parameters", async () => {
-    const { req, res } = createMocks({ params: { verb: "new" } });
+    const req = createMockNextRequest({ method: "POST" });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, {
+      params: { verb: "new" },
+    });
 
-    expect(res.statusCode).toBe(400);
+    expect(res.status).toBe(400);
   });
 
   test("new", async () => {
-    const { req, res } = createMocks({
-      params: { verb: "new" },
+    const req = createMockNextRequest({
+      method: "POST",
       body: {
         figmaMap: "test-figma-map",
         specifiedFileName: "test-filename.tsx",
@@ -190,9 +194,9 @@ describe("newIssueForFigmaFile", () => {
       },
     });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, { params: { verb: "new" } });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status).toBe(200);
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
@@ -271,8 +275,8 @@ describe("newIssueForFigmaFile", () => {
       }
     });
 
-    const { req, res } = createMocks({
-      params: { verb: "new" },
+    const req = createMockNextRequest({
+      method: "POST",
       body: {
         figmaMap: "test-figma-map",
         specifiedFileName: "test page",
@@ -292,9 +296,9 @@ describe("newIssueForFigmaFile", () => {
       },
     });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, { params: { verb: "new" } });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status).toBe(200);
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -326,8 +330,8 @@ describe("newIssueForFigmaFile", () => {
       }
     });
 
-    const { req, res } = createMocks({
-      params: { verb: "new" },
+    const req = createMockNextRequest({
+      method: "POST",
       body: {
         figmaMap: "test-figma-map",
         specifiedFileName: "Test Component",
@@ -347,9 +351,9 @@ describe("newIssueForFigmaFile", () => {
       },
     });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, { params: { verb: "new" } });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status).toBe(200);
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -378,8 +382,8 @@ describe("newIssueForFigmaFile", () => {
       }
     });
 
-    const { req, res } = createMocks({
-      params: { verb: "new" },
+    const req = createMockNextRequest({
+      method: "POST",
       body: {
         figmaMap: "test-figma-map",
         specifiedFileName: "Test Component",
@@ -399,9 +403,9 @@ describe("newIssueForFigmaFile", () => {
       },
     });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, { params: { verb: "new" } });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status).toBe(200);
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -425,8 +429,8 @@ describe("newIssueForFigmaFile", () => {
       },
     });
 
-    const { req, res } = createMocks({
-      params: { verb: "new" },
+    const req = createMockNextRequest({
+      method: "POST",
       body: {
         figmaMap: "test-figma-map",
         fileName: "test-filename.tsx",
@@ -440,9 +444,9 @@ describe("newIssueForFigmaFile", () => {
       },
     });
 
-    await newIssueForFigmaFile(req, res);
+    const res = await newIssueForFigmaFile(req, { params: { verb: "new" } });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status).toBe(200);
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
