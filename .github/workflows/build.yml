@@ -13,6 +13,7 @@ env:
   NEXTAUTH_URL: http://localhost:3000
   GITHUB_CLIENT_ID: github-client-id
   GITHUB_CLIENT_SECRET: github-client-secret
+  DATABASE_URL: file:./db.sqlite
 
 jobs:
   build:
