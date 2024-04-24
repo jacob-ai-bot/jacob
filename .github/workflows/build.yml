@@ -9,6 +9,10 @@ on:
 env:
   OPENAI_API_KEY: open-ai-key
   POSTHOG_API_KEY: posthog-key
+  NEXTAUTH_SECRET: HXgMk6CxLZ9DY7Siv/pVoA30wRrj5QmvnND9HI4fW/g=
+  NEXTAUTH_URL: http://localhost:3000
+  GITHUB_CLIENT_ID: github-client-id
+  GITHUB_CLIENT_SECRET: github-client-secret
 
 jobs:
   build:
