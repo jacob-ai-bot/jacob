@@ -12,7 +12,8 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "listener": "tsx src/server/messaging/listener.ts",
-    "db": "tsx src/server/db/dbScript.ts"
+    "db": "tsx src/server/db/dbScript.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
