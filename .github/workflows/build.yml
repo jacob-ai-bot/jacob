@@ -14,7 +14,7 @@ env:
   GITHUB_CLIENT_ID: github-client-id
   GITHUB_CLIENT_SECRET: github-client-secret
   DATABASE_URL: file:./db.sqlite
-  GITHUB_APP_ID: github-app-id
+  GITHUB_APP_ID: 123456
   GITHUB_PRIVATE_KEY: github-private-key
   GITHUB_WEBHOOK_SECRET: github-webhook-secret
 
