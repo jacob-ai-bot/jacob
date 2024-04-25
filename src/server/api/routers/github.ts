@@ -127,4 +127,80 @@ export const githubRouter = createTRPCRouter({
         }
       },
     ),
+  createIssue: protectedProcedure
+    .input(
+      z.object({
+        repo: z.string(),
+        title: z.string(),
+        body: z.string().optional(),
+      }),
+    )
+    .mutation(
+      async ({
+        input: { repo, title, body },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        const octokit = new Octokit({ auth: accessToken });
+        const [repoOwner, repoName] = repo?.split("/") ?? [];
+
+        if (!repoOwner || !repoName) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid request",
+          });
+        }
+
+        // Creating a new GitHub issue
+        const {
+          data: { id },
+        } = await octokit.issues.create({
+          owner: repoOwner,
+          repo: repoName,
+          title,
+          body,
+        });
+
+        return { id };
+      },
+    ),
+  updateIssue: protectedProcedure
+    .input(
+      z.object({
+        repo: z.string(),
+        id: z.number(),
+        title: z.string().optional(),
+        body: z.string().optional(),
+      }),
+    )
+    .mutation(
+      async ({
+        input: { repo, id, title, body },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        const octokit = new Octokit({ auth: accessToken });
+        const [repoOwner, repoName] = repo.split("/");
+
+        if (!repoOwner || !repoName) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid request",
+          });
+        }
+
+        // Updating an existing GitHub issue
+        await octokit.issues.update({
+          owner: repoOwner,
+          repo: repoName,
+          issue_number: id,
+          title,
+          body,
+        });
+
+        return { id };
+      },
+    ),
 });
