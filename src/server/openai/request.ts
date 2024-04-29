@@ -2,7 +2,14 @@ import { OpenAI } from "openai";
 import { encode } from "gpt-tokenizer";
 import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
-import { parseTemplate, removeMarkdownCodeblocks } from "../utils";
+
+import {
+  type BaseEventData,
+  parseTemplate,
+  removeMarkdownCodeblocks,
+} from "../utils";
+import { db } from "~/server/db/db";
+import { TaskType } from "~/server/db/enums";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -26,6 +33,18 @@ const MAX_OUTPUT = {
   "gpt-4-0613": 8192,
   "gpt-4-vision-preview": 4096,
   "gpt-4-turbo-preview": 4096,
+};
+
+const ONE_MILLION = 1000000;
+const INPUT_TOKEN_COSTS = {
+  "gpt-4-0613": 30 / ONE_MILLION,
+  "gpt-4-vision-preview": 10 / ONE_MILLION,
+  "gpt-4-turbo-preview": 10 / ONE_MILLION,
+};
+const OUTPUT_TOKEN_COSTS = {
+  "gpt-4-0613": 60 / ONE_MILLION,
+  "gpt-4-vision-preview": 30 / ONE_MILLION,
+  "gpt-4-turbo-preview": 30 / ONE_MILLION,
 };
 
 type Model = keyof typeof CONTEXT_WINDOW;
@@ -61,6 +80,7 @@ export const sendGptRequest = async (
   userPrompt: string,
   systemPrompt = "You are a helpful assistant.",
   temperature = 0.2,
+  baseEventData: BaseEventData | undefined = undefined,
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
@@ -93,9 +113,56 @@ export const sendGptRequest = async (
       temperature,
     });
     const endTime = Date.now();
-    console.log(`\n +++ ${model} Response time ${endTime - startTime} ms`);
+    const duration = endTime - startTime;
+    console.log(`\n +++ ${model} Response time ${duration} ms`);
 
     const gptResponse = response.choices[0]?.message;
+
+    const inputTokens = response.usage?.prompt_tokens ?? 0;
+    const outputTokens = response.usage?.completion_tokens ?? 0;
+    const tokens = inputTokens + outputTokens;
+    const cost =
+      inputTokens * INPUT_TOKEN_COSTS[model] +
+      outputTokens * OUTPUT_TOKEN_COSTS[model];
+    const timestamp = new Date().toISOString();
+    if (baseEventData) {
+      // send an internal event to track the prompts, timestamp, cost, tokens, and other data
+      await db.events.insert({
+        ...baseEventData,
+        type: TaskType.prompt,
+        payload: {
+          type: TaskType.prompt,
+          metadata: {
+            timestamp,
+            cost,
+            tokens,
+            duration,
+            model,
+          },
+          request: {
+            prompts: messages.map((message) => ({
+              promptType: (message.role?.toUpperCase() ?? "User") as
+                | "User"
+                | "System"
+                | "Assistant",
+              prompt:
+                typeof message.content === "string"
+                  ? message.content
+                  : JSON.stringify(message.content),
+              timestamp,
+            })),
+          },
+          response: {
+            prompt: {
+              promptType: "Assistant",
+              prompt: gptResponse?.content ?? "",
+              timestamp,
+            },
+          },
+        },
+      });
+    }
+
     return gptResponse?.content ?? null;
   } catch (error) {
     if (
@@ -114,6 +181,7 @@ export const sendGptRequest = async (
             userPrompt,
             systemPrompt,
             temperature,
+            baseEventData,
             retries - 1,
             delay * 2,
           )
@@ -133,6 +201,7 @@ export const sendGptRequestWithSchema = async (
   zodSchema: ZodSchema<any>,
   maxRetries = 3,
   temperature = 0.2,
+  baseEventData?: BaseEventData,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;
@@ -147,6 +216,7 @@ export const sendGptRequestWithSchema = async (
         userPrompt,
         systemPrompt,
         temperature, // Use a lower temperature for retries
+        baseEventData,
       );
 
       if (!gptResponse) {
@@ -218,6 +288,7 @@ export const sendGptVisionRequest = async (
   systemPrompt = "You are a helpful assistant.",
   snapshotUrl = "",
   temperature = 0.2,
+  baseEventData: BaseEventData | undefined = undefined,
   retries = 10,
   delay = 60000,
 ): Promise<string | null> => {
@@ -250,6 +321,7 @@ export const sendGptVisionRequest = async (
     userPrompt,
     systemPrompt,
     temperature,
+    baseEventData,
     retries,
     delay,
     imagePrompt,

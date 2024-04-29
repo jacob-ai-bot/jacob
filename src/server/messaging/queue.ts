@@ -115,6 +115,7 @@ async function addProjectToDB(
   console.log(
     `[${repository.full_name}] onGitHubEvent: ${eventId} ${eventName} : DB project ID: ${project.id}`,
   );
+  return project;
 }
 
 async function isNodeProject(
@@ -262,7 +263,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName}`,
   );
 
-  await addProjectToDB(repository, event.id, eventName);
+  const project = await addProjectToDB(repository, event.id, eventName);
 
   const installationAuthentication = await authInstallation(installation?.id);
   if (installationAuthentication) {
@@ -294,6 +295,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             : eventName === "issue_comment"
               ? event.payload.comment.user.login
               : "";
+
+    const baseEventData = {
+      projectId: project.id,
+      repoFullName: repository.full_name,
+      userId: distinctId,
+      issueId: eventIssueOrPRNumber,
+    };
 
     const prCommand = enumFromStringValue(
       PRCommand,
@@ -380,6 +388,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               path,
               sourceMap,
               repoSettings,
+              baseEventData,
             );
             posthogClient.capture({
               distinctId,

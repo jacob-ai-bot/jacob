@@ -10,7 +10,7 @@ export const change = rakeDb(config.allDatabases, {
     tablePath: (tableName) => `./tables/${tableName}.table.ts`,
     ormPath: "./db.ts",
   }),
-  useCodeUpdater: true, // set to false to disable code updater
+  useCodeUpdater: false, // set to true to disable code updater
   commands: {
     async seed() {
       const { seed } = await import("./seed");

@@ -20,6 +20,13 @@ export type TemplateParams = Record<string, string>;
 // };
 // const rootPath = '/tmp/user-code-repo/';
 
+export interface BaseEventData {
+  projectId: number;
+  repoFullName: string;
+  userId: string;
+  issueId?: number;
+}
+
 export const parseTemplate = (
   agent: string,
   action: string,

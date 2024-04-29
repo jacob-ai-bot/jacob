@@ -10,6 +10,7 @@ import {
   type RepoSettings,
   getSnapshotUrl,
   getStyles,
+  type BaseEventData,
 } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
@@ -25,6 +26,7 @@ export async function createNewFile(
   rootPath: string,
   sourceMap: string,
   repoSettings?: RepoSettings,
+  baseEventData?: BaseEventData,
 ) {
   if (fs.existsSync(path.join(rootPath, newFileName))) {
     throw new Error(dedent`
@@ -96,6 +98,7 @@ export async function createNewFile(
     codeSystemPrompt,
     snapshotUrl,
     0.2,
+    baseEventData,
   ))!;
 
   if (code.length < 10) {
