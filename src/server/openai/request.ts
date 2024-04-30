@@ -199,16 +199,16 @@ export const sendGptRequestWithSchema = async (
   systemPrompt: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   zodSchema: ZodSchema<any>,
-  maxRetries = 3,
   temperature = 0.2,
-  baseEventData?: BaseEventData,
+  baseEventData: BaseEventData | undefined = undefined,
+  retries = 3,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;
-  let retries = 0; // Initialize a retries counter
+  let retryCount = 0; // Initialize a retry counter
 
   // Loop until a valid response is received or the maxRetries limit is reached
-  while (retries < maxRetries) {
+  while (retryCount < retries) {
     let gptResponse: string | null = null;
 
     try {
@@ -217,6 +217,7 @@ export const sendGptRequestWithSchema = async (
         systemPrompt,
         temperature, // Use a lower temperature for retries
         baseEventData,
+        0,
       );
 
       if (!gptResponse) {
@@ -276,7 +277,7 @@ export const sendGptRequestWithSchema = async (
           (error as { message?: string })?.message
         }`,
       );
-      retries++;
+      retryCount++;
     }
   }
 

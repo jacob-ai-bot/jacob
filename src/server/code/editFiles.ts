@@ -6,6 +6,7 @@ import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
   type RepoSettings,
+  type BaseEventData,
   getSnapshotUrl,
   getStyles,
 } from "../utils";
@@ -22,14 +23,25 @@ import {
   type ExtractedIssueInfo,
 } from "./extractedIssue";
 
-export async function editFiles(
-  repository: Repository,
-  token: string,
-  issue: Issue,
-  rootPath: string,
-  sourceMap: string,
-  repoSettings?: RepoSettings,
-) {
+export interface EditFilesParams extends BaseEventData {
+  repository: Repository;
+  token: string;
+  issue: Issue;
+  rootPath: string;
+  sourceMap: string;
+  repoSettings?: RepoSettings;
+}
+
+export async function editFiles(params: EditFilesParams) {
+  const {
+    repository,
+    token,
+    issue,
+    rootPath,
+    sourceMap,
+    repoSettings,
+    ...baseEventData
+  } = params;
   const snapshotUrl = getSnapshotUrl(issue.body);
   // Fallback to a source file list if we don't have a source map (e.g. JS projects)
   const sourceMapOrFileList = sourceMap || (await traverseCodebase(rootPath));
@@ -59,6 +71,7 @@ export async function editFiles(
     extractedIssueSystemPrompt,
     ExtractedIssueInfoSchema,
     0.2,
+    baseEventData,
   )) as ExtractedIssueInfo;
 
   // TODO: handle previousAssessments
@@ -117,6 +130,7 @@ export async function editFiles(
     codeSystemPrompt,
     snapshotUrl,
     0.2,
+    baseEventData,
   ))!;
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {

@@ -399,14 +399,15 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               },
             });
           } else {
-            await editFiles(
+            await editFiles({
+              ...baseEventData,
               repository,
-              installationAuthentication.token,
-              event.payload.issue,
-              path,
+              token: installationAuthentication.token,
+              issue: event.payload.issue,
+              rootPath: path,
               sourceMap,
               repoSettings,
-            );
+            });
             posthogClient.capture({
               distinctId,
               event: "Files Edited",
