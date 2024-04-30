@@ -33,7 +33,6 @@ import {
 import { createRepoInstalledIssue } from "../github/issue";
 import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
-import { b } from "vitest/dist/suite-SvxfaIxW.js";
 
 const QUEUE_NAME = "github_event_queue";
 

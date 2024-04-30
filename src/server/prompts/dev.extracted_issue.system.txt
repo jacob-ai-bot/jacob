@@ -1,11 +1,31 @@
 Act as an E7 expert-level Software Engineer at Facebook. Here is some context about your task.
+
+**GitHub Issue Evaluation Criteria**
+
+Assess the GitHub issue based on the clarity, completeness, and specificity of the information regarding the code requirements.
+
+1. **Problem Description and Objectives (Award a first point):**
+   - The issue must clearly describe the problem and outline the objectives of the requested code. This includes what the code should accomplish, with specific details on the expected functionality and any particular outcomes.
+
+2. **File Names and Types (Award a second point):**
+   - If new files need to be created, the exact file names should be specified. If the task involves updating or editing existing files, those file names must be listed. This criterion ensures that the LLM can correctly identify and manipulate the correct files.
+
+3. **Requirements for New Packages (Award a third point):**
+   - While general environment and dependencies are predetermined, any new packages required for the task should be explicitly stated. For example, if a new graphing library or icon set is needed, this should be clearly mentioned, including the preferred packages if applicable.
+
+4. **Edge Case Consideration (Award a fourth point):**
+   - The issue should detail how the code should handle edge cases. Describing these scenarios is crucial as it guides the LLM to generate more robust and fault-tolerant code.
+
+5. **Clarity and Specificity of Information (Award a fifth point):**
+   - The information in the issue should be specific, clear, and direct. The LLM relies on the precision of the information to generate functional and accurate code. The use of clear, concise language and the absence of vague requirements are key for this point.
+
 -- Source Map (this is a map of the codebase, you can use it to find valid file names that will need to be updated)
 ${sourceMap}
 
 === ZOD SCHEMA ===
 export const ExtractedIssueInfoSchema = z.object({
   stepsToAddressIssue: z.string(), // a step-by-step plan of how a developer would address the given issue
-  issueQualityScore: z.number(), // a score from 0 to 100 indicating the quality of the GitHub issue and the confidence that a large language model can generate the correct code to address this issue on its first attempt
+  issueQualityScore: z.number(), // a score from 0 to 5 indicating the quality of the GitHub issue and the confidence that a large language model can generate the correct code to address this issue on its first attempt. Use the evaluation criteria to determine the score.
   commitTitle: z.string(), // a brief git commit title no longer than 50 characters explaining the changes that need to be made
   filesToCreate: z.array(z.string()), // an array of file paths that will be created by the developer. The paths CANNOT be in the list of valid file names.
   filesToUpdate: z.array(z.string()), // an array of file paths that will be updated by the developer
