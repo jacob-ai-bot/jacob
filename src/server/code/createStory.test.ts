@@ -31,6 +31,11 @@ const mockedFiles = vi.hoisted(() => ({
 }));
 vi.mock("../utils/files", () => mockedFiles);
 
+const mockedEvents = vi.hoisted(() => ({
+  emitCodeEvent: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("~/server/utils/events", () => mockedEvents);
+
 const mockedIssue = vi.hoisted(() => ({
   getIssue: vi.fn().mockImplementation(
     () =>
@@ -140,6 +145,15 @@ describe("createStory", () => {
       "storybook-story-code",
     );
 
+    expect(mockedEvents.emitCodeEvent).toHaveBeenCalledTimes(1);
+    expect(mockedEvents.emitCodeEvent).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      codeBlock: "storybook-story-code",
+      fileName: "src/components/ProfileInformation.stories.tsx",
+      filePath: "/rootpath",
+      language: "TypeScript",
+    });
+
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
@@ -226,6 +240,15 @@ describe("createStory", () => {
       "src/components/ProfileInformation.stories.jsx",
       "storybook-story-code",
     );
+
+    expect(mockedEvents.emitCodeEvent).toHaveBeenCalledTimes(1);
+    expect(mockedEvents.emitCodeEvent).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      codeBlock: "storybook-story-code",
+      fileName: "src/components/ProfileInformation.stories.jsx",
+      filePath: "/rootpath",
+      language: "JavaScript",
+    });
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;

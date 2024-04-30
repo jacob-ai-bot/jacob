@@ -16,6 +16,7 @@ import {
 } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
 import { saveNewFile } from "../utils/files";
+import { emitCodeEvent } from "~/server/utils/events";
 import { Language } from "../utils/settings";
 
 export type PullRequest =
@@ -114,6 +115,14 @@ export async function createStory(params: CreateStoryParams) {
     )) ?? "";
 
   saveNewFile(rootPath, storybookFilename, storybookCode);
+
+  await emitCodeEvent({
+    ...baseEventData,
+    fileName: storybookFilename,
+    filePath: rootPath,
+    codeBlock: storybookCode,
+    language: repoSettings?.language ?? Language.TypeScript,
+  });
 
   await checkAndCommit({
     repository,

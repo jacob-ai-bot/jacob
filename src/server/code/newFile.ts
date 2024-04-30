@@ -3,8 +3,7 @@ import { dedent } from "ts-dedent";
 import fs from "fs";
 import path from "path";
 
-import { db } from "~/server/db/db";
-import { TaskType } from "~/server/db/enums";
+import { emitCodeEvent } from "~/server/utils/events";
 import { getTypes, getImages } from "../analyze/sourceMap";
 import {
   parseTemplate,
@@ -127,19 +126,13 @@ export async function createNewFile(params: CreateNewFileParams) {
 
   saveNewFile(rootPath, newFileName, code);
 
-  if (baseEventData) {
-    await db.events.insert({
-      ...baseEventData,
-      type: TaskType.code,
-      payload: {
-        type: TaskType.code,
-        fileName: newFileName,
-        filePath: path.join(rootPath, newFileName),
-        codeBlock: code,
-        language: repoSettings?.language ?? Language.TypeScript,
-      },
-    });
-  }
+  await emitCodeEvent({
+    ...baseEventData,
+    fileName: newFileName,
+    filePath: rootPath,
+    codeBlock: code,
+    language: repoSettings?.language ?? Language.TypeScript,
+  });
 
   await checkAndCommit({
     repository,
