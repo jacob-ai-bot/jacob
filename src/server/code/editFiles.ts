@@ -22,6 +22,7 @@ import {
   ExtractedIssueInfoSchema,
   type ExtractedIssueInfo,
 } from "./extractedIssue";
+import { emitCodeEvent } from "../utils/events";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -146,7 +147,10 @@ export async function editFiles(params: EditFilesParams) {
 
   await setNewBranch(rootPath, newBranch);
 
-  reconstructFiles(updatedCode, rootPath);
+  const files = reconstructFiles(updatedCode, rootPath);
+  await Promise.all(
+    files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
+  );
 
   await checkAndCommit({
     repository,

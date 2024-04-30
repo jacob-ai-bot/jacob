@@ -12,6 +12,7 @@ import { checkAndCommit } from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
+import { emitCodeEvent } from "~/server/utils/events";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -154,7 +155,10 @@ export async function fixError(params: FixErrorParams) {
         throw new Error("No code generated");
       }
 
-      reconstructFiles(updatedCode, rootPath);
+      const files = reconstructFiles(updatedCode, rootPath);
+      await Promise.all(
+        files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
+      );
 
       await checkAndCommit({
         repository,

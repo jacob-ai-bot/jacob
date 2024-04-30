@@ -1,17 +1,15 @@
 import { db } from "~/server/db/db";
 import { TaskType } from "~/server/db/enums";
-import { type BaseEventData } from "~/server/utils";
-import { type Language } from "~/server/utils/settings";
+import { type BaseEventData, getLanguageFromFileName } from "~/server/utils";
 
 interface EmitCodeEventParams extends BaseEventData {
   fileName: string;
   filePath: string;
   codeBlock: string;
-  language: Language;
 }
 
 export async function emitCodeEvent(params: EmitCodeEventParams) {
-  const { fileName, filePath, codeBlock, language, ...baseEventData } = params;
+  const { fileName, filePath, codeBlock, ...baseEventData } = params;
   if (baseEventData) {
     await db.events.insert({
       ...baseEventData,
@@ -21,7 +19,7 @@ export async function emitCodeEvent(params: EmitCodeEventParams) {
         fileName,
         filePath,
         codeBlock,
-        language,
+        language: getLanguageFromFileName(fileName),
       },
     });
   }

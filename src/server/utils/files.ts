@@ -121,6 +121,7 @@ export const reconstructFiles = (
   outputPath: string,
 ) => {
   const sections = concatFileContent.split(/__FILEPATH__(.*?)__\n/).slice(1);
+  const result = [];
 
   for (let i = 0; i < sections.length - 1; i += 2) {
     const filePath = sections[i]!;
@@ -140,7 +141,13 @@ export const reconstructFiles = (
     // if the code is wrapped in a code block, remove the code block
     fileContent = removeMarkdownCodeblocks(fileContent);
     fs.writeFileSync(targetPath, fileContent);
+    result.push({
+      fileName: filePath,
+      filePath: outputPath,
+      codeBlock: fileContent,
+    });
   }
+  return result;
 };
 
 export interface CodeComment {

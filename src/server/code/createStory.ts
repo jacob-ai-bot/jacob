@@ -121,7 +121,6 @@ export async function createStory(params: CreateStoryParams) {
     fileName: storybookFilename,
     filePath: rootPath,
     codeBlock: storybookCode,
-    language: repoSettings?.language ?? Language.TypeScript,
   });
 
   await checkAndCommit({

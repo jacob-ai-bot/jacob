@@ -67,7 +67,7 @@ export class EventsTable extends BaseTable {
           type: t.literal(TaskType.code),
           fileName: t.string(),
           filePath: t.string(),
-          language: t.nativeEnum(Language),
+          language: t.nativeEnum(Language).optional(),
           codeBlock: t.string(),
         }),
         t.object({

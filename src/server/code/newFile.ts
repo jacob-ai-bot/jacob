@@ -13,7 +13,6 @@ import {
   getStyles,
   type BaseEventData,
 } from "../utils";
-import { Language } from "../utils/settings";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
@@ -131,7 +130,6 @@ export async function createNewFile(params: CreateNewFileParams) {
     fileName: newFileName,
     filePath: rootPath,
     codeBlock: code,
-    language: repoSettings?.language ?? Language.TypeScript,
   });
 
   await checkAndCommit({

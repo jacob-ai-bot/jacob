@@ -48,9 +48,20 @@ const mockedSourceMap = vi.hoisted(() => ({
 vi.mock("../analyze/sourceMap", () => mockedSourceMap);
 
 const mockedFiles = vi.hoisted(() => ({
-  reconstructFiles: vi.fn().mockImplementation(() => undefined),
+  reconstructFiles: vi.fn().mockReturnValue([
+    {
+      fileName: "file.txt",
+      filePath: "/rootpath",
+      codeBlock: "fixed-file-content",
+    },
+  ]),
 }));
 vi.mock("../utils/files", () => mockedFiles);
+
+const mockedEvents = vi.hoisted(() => ({
+  emitCodeEvent: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("~/server/utils/events", () => mockedEvents);
 
 const mockedRequest = vi.hoisted(() => ({
   sendGptRequest: vi
@@ -158,6 +169,14 @@ describe("fixError", () => {
       "__FILEPATH__file.txt__fixed-file-content",
       "/rootpath",
     );
+
+    expect(mockedEvents.emitCodeEvent).toHaveBeenCalledTimes(1);
+    expect(mockedEvents.emitCodeEvent).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      codeBlock: "fixed-file-content",
+      fileName: "file.txt",
+      filePath: "/rootpath",
+    });
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;

@@ -271,3 +271,17 @@ export async function getStyles(rootPath: string, repoSettings?: RepoSettings) {
   // TODO: Add CSS styles
   return "";
 }
+
+export function getLanguageFromFileName(filePath: string) {
+  const extension = path.extname(filePath);
+  switch (extension) {
+    case ".ts":
+    case ".tsx":
+      return Language.TypeScript;
+    case ".js":
+    case ".jsx":
+      return Language.JavaScript;
+    default:
+      return;
+  }
+}

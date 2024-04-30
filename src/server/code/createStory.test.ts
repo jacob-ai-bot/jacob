@@ -151,7 +151,6 @@ describe("createStory", () => {
       codeBlock: "storybook-story-code",
       fileName: "src/components/ProfileInformation.stories.tsx",
       filePath: "/rootpath",
-      language: "TypeScript",
     });
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
@@ -247,7 +246,6 @@ describe("createStory", () => {
       codeBlock: "storybook-story-code",
       fileName: "src/components/ProfileInformation.stories.jsx",
       filePath: "/rootpath",
-      language: "JavaScript",
     });
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
