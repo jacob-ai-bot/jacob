@@ -4,7 +4,7 @@ import { dedent } from "ts-dedent";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
-import { type RepoSettings, parseTemplate } from "../utils";
+import { type RepoSettings, type BaseEventData, parseTemplate } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
@@ -16,16 +16,29 @@ import { reconstructFiles } from "../utils/files";
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
 
-export async function fixError(
-  repository: Repository,
-  token: string,
-  prIssue: Issue | null,
-  body: string | null,
-  rootPath: string,
-  branch: string,
-  repoSettings: RepoSettings | undefined,
-  existingPr: PullRequest,
-) {
+export interface FixErrorParams extends BaseEventData {
+  repository: Repository;
+  token: string;
+  prIssue: Issue | null;
+  body: string | null;
+  rootPath: string;
+  branch: string;
+  existingPr: PullRequest;
+  repoSettings?: RepoSettings;
+}
+
+export async function fixError(params: FixErrorParams) {
+  const {
+    repository,
+    token,
+    prIssue,
+    body,
+    rootPath,
+    branch,
+    repoSettings,
+    existingPr,
+    ...baseEventData
+  } = params;
   const regex = /jacob-issue-(\d+)-.*/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
@@ -58,7 +71,11 @@ export async function fixError(
 
   const sourceMap =
     getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));
-  const assessment = await assessBuildError({ sourceMap, errors });
+  const assessment = await assessBuildError({
+    ...baseEventData,
+    sourceMap,
+    errors,
+  });
   console.log(`[${repository.full_name}] Assessment of Error:`, assessment);
 
   try {
@@ -128,6 +145,7 @@ export async function fixError(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,
+        baseEventData,
       ))!;
 
       if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {

@@ -97,21 +97,30 @@ describe("fixError", () => {
   });
 
   test("fixError calls", async () => {
-    const issue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
+    const prIssue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
+    const mockEventData = {
+      projectId: 1,
+      repoFullName: "test-login/test-repo",
+      userId: "test-user",
+    };
 
-    await fixError(
-      { owner: { login: "test-login" }, name: "test-repo" } as Repository,
-      "token",
-      issue,
-      "## Error Message (Attempt Number 2):\n```\nbuild-error-info\n\n```\n## Something else\n\n",
-      "/rootpath",
-      "jacob-issue-48-test",
-      undefined,
-      { number: 48 } as PullRequest,
-    );
+    await fixError({
+      ...mockEventData,
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+      } as Repository,
+      token: "token",
+      prIssue,
+      body: "## Error Message (Attempt Number 2):\n```\nbuild-error-info\n\n```\n## Something else\n\n",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      existingPr: { number: 48 } as PullRequest,
+    });
 
     expect(mockedAssessBuildError.assessBuildError).toHaveBeenCalledTimes(1);
     expect(mockedAssessBuildError.assessBuildError).toHaveBeenLastCalledWith({
+      ...mockEventData,
       errors: "build-error-info\n\n",
       sourceMap: "source map",
     });
@@ -140,6 +149,9 @@ describe("fixError", () => {
     expect(systemPrompt).toContain(
       '-- Instructions\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__\ncode-with-error\n',
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const eventData = mockedRequest.sendGptRequest.mock.calls[0][3];
+    expect(eventData).toEqual(mockEventData);
 
     expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
     expect(mockedFiles.reconstructFiles).toHaveBeenLastCalledWith(

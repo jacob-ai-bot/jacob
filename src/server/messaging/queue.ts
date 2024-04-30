@@ -33,6 +33,7 @@ import {
 import { createRepoInstalledIssue } from "../github/issue";
 import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
+import { b } from "vitest/dist/suite-SvxfaIxW.js";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -480,18 +481,21 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               });
               break;
             case PRCommand.FixError:
-              await fixError(
+              await fixError({
+                ...baseEventData,
                 repository,
-                installationAuthentication.token,
-                eventName === "pull_request" ? null : event.payload.issue,
-                eventName === "pull_request"
-                  ? event.payload.pull_request.body
-                  : event.payload.comment.body,
-                path,
-                prBranch,
-                repoSettings,
+                token: installationAuthentication.token,
+                prIssue:
+                  eventName === "pull_request" ? null : event.payload.issue,
+                body:
+                  eventName === "pull_request"
+                    ? event.payload.pull_request.body
+                    : event.payload.comment.body,
+                rootPath: path,
+                branch: prBranch,
                 existingPr,
-              );
+                repoSettings,
+              });
               posthogClient.capture({
                 distinctId,
                 event: "Error Fix Started",
