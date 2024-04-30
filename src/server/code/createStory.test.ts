@@ -76,14 +76,23 @@ describe("createStory", () => {
       return (fsActual as typeof fs).readFileSync(file, options);
     });
 
-    await createStory(
-      { owner: { login: "test-login" }, name: "test-repo" } as Repository,
-      "token",
-      "/rootpath",
-      "jacob-issue-48-test",
-      undefined,
-      { number: 48 } as PullRequest,
-    );
+    const mockEventData = {
+      projectId: 1,
+      repoFullName: "test-login/test-repo",
+      userId: "test-user",
+    };
+
+    await createStory({
+      ...mockEventData,
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+      } as Repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      existingPr: { number: 48 } as PullRequest,
+    });
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -120,6 +129,9 @@ describe("createStory", () => {
       As in the example, be sure to define to include the line \`type Story = StoryObj<typeof meta>;\`
       DO NOT use the 'any' type because this will result in TypeScript build errors.
     `);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const eventData = mockedRequest.sendGptVisionRequest.mock.calls[0][4];
+    expect(eventData).toEqual(mockEventData);
 
     expect(mockedFiles.saveNewFile).toHaveBeenCalledTimes(1);
     expect(mockedFiles.saveNewFile).toHaveBeenLastCalledWith(
@@ -152,14 +164,24 @@ describe("createStory", () => {
       return (fsActual as typeof fs).readFileSync(file, options);
     });
 
-    await createStory(
-      { owner: { login: "test-login" }, name: "test-repo" } as Repository,
-      "token",
-      "/rootpath",
-      "jacob-issue-48-test",
-      { language: Language.JavaScript },
-      { number: 48 } as PullRequest,
-    );
+    const mockEventData = {
+      projectId: 1,
+      repoFullName: "test-login/test-repo",
+      userId: "test-user",
+    };
+
+    await createStory({
+      ...mockEventData,
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+      } as Repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      repoSettings: { language: Language.JavaScript },
+      existingPr: { number: 48 } as PullRequest,
+    });
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -194,6 +216,9 @@ describe("createStory", () => {
       DO NOT include backticks or ANY comments in your response. 
       ONLY respond with the full, complete working src/components/ProfileInformation.stories.jsx file.
     `);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const eventData = mockedRequest.sendGptVisionRequest.mock.calls[0][4];
+    expect(eventData).toEqual(mockEventData);
 
     expect(mockedFiles.saveNewFile).toHaveBeenCalledTimes(1);
     expect(mockedFiles.saveNewFile).toHaveBeenLastCalledWith(

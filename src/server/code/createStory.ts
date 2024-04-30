@@ -11,6 +11,7 @@ import {
   extractFilePathWithArrow,
   parseTemplate,
   type RepoSettings,
+  type BaseEventData,
   getSnapshotUrl,
 } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
@@ -20,14 +21,25 @@ import { Language } from "../utils/settings";
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
 
-export async function createStory(
-  repository: Repository,
-  token: string,
-  rootPath: string,
-  branch: string,
-  repoSettings: RepoSettings | undefined,
-  existingPr: PullRequest,
-) {
+export interface CreateStoryParams extends BaseEventData {
+  repository: Repository;
+  token: string;
+  rootPath: string;
+  branch: string;
+  repoSettings?: RepoSettings;
+  existingPr: PullRequest;
+}
+
+export async function createStory(params: CreateStoryParams) {
+  const {
+    repository,
+    token,
+    rootPath,
+    branch,
+    repoSettings,
+    existingPr,
+    ...baseEventData
+  } = params;
   const regex = /jacob-issue-(\d+)-.*/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
@@ -98,6 +110,7 @@ export async function createStory(
       storySystemPrompt,
       snapshotUrl,
       0.2,
+      baseEventData,
     )) ?? "";
 
   saveNewFile(rootPath, storybookFilename, storybookCode);

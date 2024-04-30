@@ -446,14 +446,15 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           }
           switch (prCommand) {
             case PRCommand.CreateStory:
-              await createStory(
+              await createStory({
+                ...baseEventData,
                 repository,
-                installationAuthentication.token,
-                path,
-                prBranch,
+                token: installationAuthentication.token,
+                rootPath: path,
+                branch: prBranch,
                 repoSettings,
                 existingPr,
-              );
+              });
               posthogClient.capture({
                 distinctId,
                 event: "Story Created",
