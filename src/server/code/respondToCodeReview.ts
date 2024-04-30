@@ -2,7 +2,7 @@ import { type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { parseTemplate, type RepoSettings } from "../utils";
+import { parseTemplate, type RepoSettings, type BaseEventData } from "../utils";
 import { reconstructFiles } from "../utils/files";
 import { sendGptRequest } from "../openai/request";
 import { concatenatePRFiles } from "../github/pr";
@@ -11,16 +11,29 @@ import { checkAndCommit } from "./checkAndCommit";
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
 
-export async function respondToCodeReview(
-  repository: Repository,
-  token: string,
-  rootPath: string,
-  repoSettings: RepoSettings | undefined,
-  branch: string,
-  existingPr: PullRequest,
-  state: "changes_requested" | "commented",
-  reviewBody: string | null,
-) {
+export interface RespondToCodeReviewParams extends BaseEventData {
+  repository: Repository;
+  token: string;
+  rootPath: string;
+  repoSettings?: RepoSettings;
+  branch: string;
+  existingPr: PullRequest;
+  state: "changes_requested" | "commented";
+  reviewBody: string | null;
+}
+
+export async function respondToCodeReview(params: RespondToCodeReviewParams) {
+  const {
+    repository,
+    token,
+    rootPath,
+    repoSettings,
+    branch,
+    existingPr,
+    state,
+    reviewBody,
+    ...baseEventData
+  } = params;
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
   const images = await getImages(rootPath, repoSettings);
@@ -61,6 +74,7 @@ export async function respondToCodeReview(
       responseToCodeReviewUserPrompt,
       responseToCodeReviewSystemPrompt,
       0.2,
+      baseEventData,
     )) ?? "";
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {

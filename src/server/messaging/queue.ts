@@ -421,16 +421,17 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           if (!prBranch || !existingPr) {
             throw new Error("prBranch and existingPr when handling prReview");
           }
-          await respondToCodeReview(
+          await respondToCodeReview({
+            ...baseEventData,
             repository,
-            installationAuthentication.token,
-            path,
+            token: installationAuthentication.token,
+            rootPath: path,
             repoSettings,
-            prBranch,
+            branch: prBranch,
             existingPr,
-            event.payload.review.state,
-            body,
-          );
+            state: event.payload.review.state,
+            reviewBody: body,
+          });
           posthogClient.capture({
             distinctId,
             event: "Code Review Responded",
