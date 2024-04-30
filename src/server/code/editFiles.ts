@@ -76,11 +76,15 @@ export async function editFiles(params: EditFilesParams) {
 
   // TODO: handle previousAssessments
   const filesToUpdate = extractedIssue.filesToUpdate ?? [];
+  const filesToCreate = extractedIssue.filesToCreate ?? [];
 
   console.log(`[${repository.full_name}] Files to update:`, filesToUpdate);
-  if (!filesToUpdate?.length) {
-    console.log("\n\n\n\n^^^^^^\n\n\n\nERROR: No files to update\n\n\n\n");
-    throw new Error("No files to update");
+  console.log(`[${repository.full_name}] Files to create:`, filesToCreate);
+  if (!filesToUpdate?.length && !filesToCreate?.length) {
+    console.log(
+      "\n\n\n\n^^^^^^\n\n\n\nERROR: No files to update or create\n\n\n\n",
+    );
+    throw new Error("No files to update or create");
   }
   const { code } = concatenateFiles(
     rootPath,
