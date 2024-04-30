@@ -3,6 +3,8 @@ import { dedent } from "ts-dedent";
 import fs from "fs";
 import path from "path";
 
+import { db } from "~/server/db/db";
+import { TaskType } from "~/server/db/enums";
 import { getTypes, getImages } from "../analyze/sourceMap";
 import {
   parseTemplate,
@@ -12,6 +14,7 @@ import {
   getStyles,
   type BaseEventData,
 } from "../utils";
+import { Language } from "../utils/settings";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
@@ -123,6 +126,20 @@ export async function createNewFile(params: CreateNewFileParams) {
   await setNewBranch(rootPath, newBranch);
 
   saveNewFile(rootPath, newFileName, code);
+
+  if (baseEventData) {
+    await db.events.insert({
+      ...baseEventData,
+      type: TaskType.code,
+      payload: {
+        type: TaskType.code,
+        fileName: newFileName,
+        filePath: path.join(rootPath, newFileName),
+        codeBlock: code,
+        language: repoSettings?.language ?? Language.TypeScript,
+      },
+    });
+  }
 
   await checkAndCommit({
     repository,
