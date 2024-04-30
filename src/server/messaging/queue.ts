@@ -380,16 +380,16 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
           const newFileName = extractFilePathWithArrow(issueTitle);
           if (newFileName) {
-            await createNewFile(
+            await createNewFile({
+              ...baseEventData,
               newFileName,
               repository,
-              installationAuthentication.token,
-              event.payload.issue,
-              path,
+              token: installationAuthentication.token,
+              issue: event.payload.issue,
+              rootPath: path,
               sourceMap,
               repoSettings,
-              baseEventData,
-            );
+            });
             posthogClient.capture({
               distinctId,
               event: "New File Created",

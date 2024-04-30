@@ -18,16 +18,27 @@ import { checkAndCommit } from "./checkAndCommit";
 import { saveNewFile } from "../utils/files";
 import { saveImages } from "../utils/images";
 
-export async function createNewFile(
-  newFileName: string,
-  repository: Repository,
-  token: string,
-  issue: Issue,
-  rootPath: string,
-  sourceMap: string,
-  repoSettings?: RepoSettings,
-  baseEventData?: BaseEventData,
-) {
+export interface CreateNewFileParams extends BaseEventData {
+  newFileName: string;
+  repository: Repository;
+  token: string;
+  issue: Issue;
+  rootPath: string;
+  sourceMap: string;
+  repoSettings?: RepoSettings;
+}
+
+export async function createNewFile(params: CreateNewFileParams) {
+  const {
+    newFileName,
+    repository,
+    token,
+    issue,
+    rootPath,
+    sourceMap,
+    repoSettings,
+    ...baseEventData
+  } = params;
   if (fs.existsSync(path.join(rootPath, newFileName))) {
     throw new Error(dedent`
       The issue requested that I create a new file named ${newFileName}, but a file with that name already exists.
