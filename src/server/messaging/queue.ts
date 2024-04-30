@@ -464,14 +464,15 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               });
               break;
             case PRCommand.CodeReview:
-              await codeReview(
+              await codeReview({
+                ...baseEventData,
                 repository,
-                installationAuthentication.token,
-                path,
-                prBranch,
+                token: installationAuthentication.token,
+                rootPath: path,
+                branch: prBranch,
                 repoSettings,
                 existingPr,
-              );
+              });
               posthogClient.capture({
                 distinctId,
                 event: "Code Review Started",

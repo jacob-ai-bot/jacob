@@ -53,6 +53,12 @@ vi.mock("../openai/request", () => mockedRequest);
 
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
+const mockEventData = {
+  projectId: 1,
+  repoFullName: "test-login/test-repo",
+  userId: "test-user",
+};
+
 describe("codeReview", () => {
   beforeEach(() => {
     process.env.PROMPT_FOLDER = originalPromptsFolder;
@@ -68,19 +74,22 @@ describe("codeReview", () => {
   });
 
   test("codeReview succeeds with an approved code review", async () => {
-    await codeReview(
-      { owner: { login: "test-login" }, name: "test-repo" } as Repository,
-      "token",
-      "/rootpath",
-      "jacob-issue-48-test",
-      undefined,
-      {
+    await codeReview({
+      ...mockEventData,
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+      } as Repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      existingPr: {
         number: 48,
         head: { sha: "abcdefg" },
         title: "pr-title",
         body: "pr-body",
       } as PullRequest,
-    );
+    });
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
 
@@ -116,6 +125,9 @@ describe("codeReview", () => {
     expect(userPrompt).toContain(
       "-- GitHub Issue:\nissue-title\nissue-body\n\n",
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const eventData = mockedRequest.sendGptRequest.mock.calls[0][3];
+    expect(eventData).toEqual(mockEventData);
 
     expect(mockedPR.createPRReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.createPRReview).toHaveBeenCalledWith({
@@ -137,14 +149,17 @@ describe("codeReview", () => {
       __COMMENT_END__
     `);
 
-    await codeReview(
-      { owner: { login: "test-login" }, name: "test-repo" } as Repository,
-      "token",
-      "/rootpath",
-      "jacob-issue-48-test",
-      undefined,
-      { number: 48, head: { sha: "abcdefg" } } as PullRequest,
-    );
+    await codeReview({
+      ...mockEventData,
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+      } as Repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      existingPr: { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+    });
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
@@ -169,14 +184,17 @@ describe("codeReview", () => {
   });
 
   test("codeReview still succeeds with an approved code review when branch name isn't from jacob", async () => {
-    await codeReview(
-      { owner: { login: "test-login" }, name: "test-repo" } as Repository,
-      "token",
-      "/rootpath",
-      "my-human-branch-name",
-      undefined,
-      { number: 48, head: { sha: "abcdefg" } } as PullRequest,
-    );
+    await codeReview({
+      ...mockEventData,
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+      } as Repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "my-human-branch-name",
+      existingPr: { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+    });
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
@@ -190,6 +208,9 @@ describe("codeReview", () => {
     const userPrompt = mockedRequest.sendGptRequest.mock.calls[0][0];
     expect(userPrompt).not.toContain("-- GitHub Issue:");
     expect(userPrompt).not.toContain("issue-body");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const eventData = mockedRequest.sendGptRequest.mock.calls[0][3];
+    expect(eventData).toEqual(mockEventData);
 
     expect(mockedPR.createPRReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.createPRReview).toHaveBeenCalledWith({
@@ -233,18 +254,18 @@ describe("codeReview", () => {
     });
     vi.spyOn(console, "warn");
 
-    await codeReview(
-      {
+    await codeReview({
+      ...mockEventData,
+      repository: {
         owner: { login: "test-login" },
         name: "test-repo",
         full_name: "test-login/test-repo",
       } as Repository,
-      "token",
-      "/rootpath",
-      "jacob-issue-48-test",
-      undefined,
-      { number: 48, head: { sha: "abcdefg" } } as PullRequest,
-    );
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      existingPr: { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+    });
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);

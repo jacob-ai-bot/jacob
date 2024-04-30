@@ -3,7 +3,7 @@ import { type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes } from "../analyze/sourceMap";
-import { parseTemplate, type RepoSettings } from "../utils";
+import { parseTemplate, type RepoSettings, type BaseEventData } from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { getIssue } from "../github/issue";
 import { concatenatePRFiles, createPRReview, getPRDiff } from "../github/pr";
@@ -18,14 +18,25 @@ export type PullRequest =
 type Issue =
   Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 
-export async function codeReview(
-  repository: Repository,
-  token: string,
-  rootPath: string,
-  branch: string,
-  repoSettings: RepoSettings | undefined,
-  existingPr: PullRequest,
-) {
+export interface CodeReviewParams extends BaseEventData {
+  repository: Repository;
+  token: string;
+  rootPath: string;
+  branch: string;
+  repoSettings?: RepoSettings;
+  existingPr: PullRequest;
+}
+
+export async function codeReview(params: CodeReviewParams) {
+  const {
+    repository,
+    token,
+    rootPath,
+    branch,
+    repoSettings,
+    existingPr,
+    ...baseEventData
+  } = params;
   const regex = /jacob-issue-(\d+)-.*/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
@@ -77,8 +88,12 @@ export async function codeReview(
     codeReviewTemplateParams,
   );
   const codeWithComments =
-    (await sendGptRequest(codeReviewUserPrompt, codeReviewSystemPrompt, 0.2)) ??
-    "";
+    (await sendGptRequest(
+      codeReviewUserPrompt,
+      codeReviewSystemPrompt,
+      0.2,
+      baseEventData,
+    )) ?? "";
 
   if (
     codeWithComments.length < 10 ||
