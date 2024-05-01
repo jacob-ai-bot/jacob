@@ -120,10 +120,9 @@ export class EventsTable extends BaseTable {
         }),
         t.object({
           type: t.literal(TaskType.pull_request),
-          id: t.string(),
           pullRequestId: t.number(),
           title: t.string(),
-          description: t.string(),
+          description: t.string().nullable(),
           link: t.string(),
           status: t.union(
             t.literal("open"),
@@ -132,10 +131,6 @@ export class EventsTable extends BaseTable {
           ),
           createdAt: t.string(),
           author: t.string(),
-          comments: t.array(defineComment(t)),
-          changedFiles: t.number(),
-          additions: t.number(),
-          deletions: t.number(),
         }),
         t.object({
           type: t.literal(TaskType.command),

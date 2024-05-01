@@ -93,6 +93,7 @@ export async function fixError(params: FixErrorParams) {
       );
 
       await checkAndCommit({
+        ...baseEventData,
         repository,
         token,
         rootPath,
@@ -161,6 +162,7 @@ export async function fixError(params: FixErrorParams) {
       );
 
       await checkAndCommit({
+        ...baseEventData,
         repository,
         token,
         rootPath,

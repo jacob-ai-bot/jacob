@@ -133,6 +133,7 @@ export async function createNewFile(params: CreateNewFileParams) {
   });
 
   await checkAndCommit({
+    ...baseEventData,
     repository,
     token,
     rootPath,

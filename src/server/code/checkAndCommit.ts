@@ -11,9 +11,11 @@ import {
   extractFilePathWithArrow,
   PRCommand,
   type RepoSettings,
+  type BaseEventData,
 } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
+import { emitPREvent } from "~/server/utils/events";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -22,7 +24,7 @@ export type RetrievedIssue =
 
 export const MAX_ATTEMPTS_TO_FIX_BUILD_ERROR = 8;
 
-export interface CheckAndCommitOptions {
+export interface CheckAndCommitOptions extends BaseEventData {
   repository: Repository;
   token: string;
   rootPath: string;
@@ -52,6 +54,7 @@ export async function checkAndCommit({
   newPrReviewers,
   creatingStory,
   buildErrorAttemptNumber,
+  ...baseEventData
 }: CheckAndCommitOptions) {
   let buildErrorMessage: string | undefined;
 
@@ -158,6 +161,7 @@ export async function checkAndCommit({
       newPrReviewers ?? [],
       buildErrorMessage !== undefined,
     );
+    await emitPREvent({ ...baseEventData, pullRequest });
     prNumber = pullRequest.number;
     prTitle = pullRequest.title;
     prUrl = pullRequest.html_url;

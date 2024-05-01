@@ -153,6 +153,7 @@ export async function editFiles(params: EditFilesParams) {
   );
 
   await checkAndCommit({
+    ...baseEventData,
     repository,
     token,
     rootPath,

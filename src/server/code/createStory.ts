@@ -124,6 +124,7 @@ export async function createStory(params: CreateStoryParams) {
   });
 
   await checkAndCommit({
+    ...baseEventData,
     repository,
     token,
     rootPath,

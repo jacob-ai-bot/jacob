@@ -62,6 +62,12 @@ const mockedIssue = vi.hoisted(() => ({
 }));
 vi.mock("../github/issue", () => mockedIssue);
 
+const mockEventData = {
+  projectId: 1,
+  repoFullName: "test-login/test-repo",
+  userId: "test-user",
+};
+
 describe("checkAndCommit", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -79,6 +85,7 @@ describe("checkAndCommit", () => {
     } as Repository;
 
     await checkAndCommit({
+      ...mockEventData,
       repository,
       token: "token",
       rootPath: "/rootpath",
@@ -155,6 +162,7 @@ describe("checkAndCommit", () => {
     } as Repository;
 
     await checkAndCommit({
+      ...mockEventData,
       repository,
       token: "token",
       rootPath: "/rootpath",
@@ -233,6 +241,7 @@ describe("checkAndCommit", () => {
     } as Repository;
 
     await checkAndCommit({
+      ...mockEventData,
       repository,
       token: "token",
       rootPath: "/rootpath",
@@ -310,6 +319,7 @@ describe("checkAndCommit", () => {
     } as Repository;
 
     await checkAndCommit({
+      ...mockEventData,
       repository,
       token: "token",
       rootPath: "/rootpath",
@@ -384,6 +394,7 @@ describe("checkAndCommit", () => {
 
     await expect(
       checkAndCommit({
+        ...mockEventData,
         repository,
         token: "token",
         rootPath: "/rootpath",
@@ -429,6 +440,7 @@ describe("checkAndCommit", () => {
     } as Repository;
 
     await checkAndCommit({
+      ...mockEventData,
       repository,
       token: "token",
       rootPath: "/rootpath",

@@ -90,6 +90,7 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
   );
 
   await checkAndCommit({
+    ...baseEventData,
     repository,
     token,
     rootPath,
