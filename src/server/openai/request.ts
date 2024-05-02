@@ -2,12 +2,15 @@ import { OpenAI } from "openai";
 import { encode } from "gpt-tokenizer";
 import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
-
+import { type Message } from "~/types";
 import {
-  type BaseEventData,
-  parseTemplate,
-  removeMarkdownCodeblocks,
-} from "../utils";
+  type ChatCompletionChunk,
+  type ChatCompletionCreateParamsStreaming,
+} from "openai/resources/index.mjs";
+import { type Stream } from "openai/streaming.mjs";
+
+import { type BaseEventData, parseTemplate } from "../utils";
+import { removeMarkdownCodeblocks } from "~/app/utils";
 import { db } from "~/server/db/db";
 import { TaskType } from "~/server/db/enums";
 
@@ -23,28 +26,24 @@ const openai = new OpenAI({
 });
 
 const CONTEXT_WINDOW = {
-  "gpt-4-0613": 8192,
-  "gpt-4-vision-preview": 128000,
-  "gpt-4-turbo-preview": 128000,
+  "gpt-4": 8192,
+  "gpt-4-turbo": 128000,
 };
 
-// Note that gpt-4-turbo-preview has a max_tokens limit of 4K, despite having a context window of 128K
+// Note that gpt-4-turbo has a max_tokens limit of 4K, despite having a context window of 128K
 const MAX_OUTPUT = {
-  "gpt-4-0613": 8192,
-  "gpt-4-vision-preview": 4096,
-  "gpt-4-turbo-preview": 4096,
+  "gpt-4": 8192,
+  "gpt-4-turbo": 4096,
 };
 
 const ONE_MILLION = 1000000;
 const INPUT_TOKEN_COSTS = {
-  "gpt-4-0613": 30 / ONE_MILLION,
-  "gpt-4-vision-preview": 10 / ONE_MILLION,
-  "gpt-4-turbo-preview": 10 / ONE_MILLION,
+  "gpt-4": 30 / ONE_MILLION,
+  "gpt-4-turbo": 10 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
-  "gpt-4-0613": 60 / ONE_MILLION,
-  "gpt-4-vision-preview": 30 / ONE_MILLION,
-  "gpt-4-turbo-preview": 30 / ONE_MILLION,
+  "gpt-4": 60 / ONE_MILLION,
+  "gpt-4-turbo": 30 / ONE_MILLION,
 };
 
 type Model = keyof typeof CONTEXT_WINDOW;
@@ -84,7 +83,7 @@ export const sendGptRequest = async (
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  model: Model = "gpt-4-turbo-preview",
+  model: Model = "gpt-4-turbo",
 ): Promise<string | null> => {
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
@@ -293,11 +292,9 @@ export const sendGptVisionRequest = async (
   retries = 10,
   delay = 60000,
 ): Promise<string | null> => {
-  let model: Model = "gpt-4-turbo-preview";
+  const model: Model = "gpt-4-turbo";
   let imagePrompt = null;
   if (snapshotUrl?.length > 0) {
-    model = "gpt-4-vision-preview";
-
     const prompt = parseTemplate("dev", "vision", "user", {});
 
     imagePrompt = {
@@ -328,4 +325,60 @@ export const sendGptVisionRequest = async (
     imagePrompt,
     model,
   );
+};
+
+export const OpenAIStream = async (
+  model: Model = "gpt-4-turbo",
+  messages: Message[],
+  systemPrompt = "You are a helpful friendly assistant.",
+  temperature = 1,
+): Promise<Stream<ChatCompletionChunk>> => {
+  try {
+    let max_tokens = 0;
+    const content =
+      systemPrompt +
+      messages.map((msg) => msg.role + " " + msg.content).join(" ");
+    try {
+      max_tokens = await getMaxTokensForResponse(content, model);
+    } catch (error) {
+      // update the model to 16K if the input text is too large
+      console.log(
+        "NOTE: Input text is too large to fit within the context window.",
+      );
+      model = "gpt-4";
+    }
+    try {
+      if (!max_tokens) {
+        max_tokens = await getMaxTokensForResponse(content, model);
+      }
+    } catch (error) {
+      console.log("Error in getMaxTokensForResponse: ", error);
+      max_tokens = Math.round(CONTEXT_WINDOW[model] / 2);
+    }
+    if (!max_tokens) {
+      max_tokens = Math.round(CONTEXT_WINDOW[model] / 2);
+    }
+
+    console.log(`\n +++ Calling ${model} with max_tokens: ${max_tokens} `);
+
+    const chatCompletionParams: ChatCompletionCreateParamsStreaming = {
+      model: model,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        ...messages.map((msg) => ({ role: msg.role, content: msg.content })),
+      ],
+      temperature,
+      max_tokens,
+      stream: true,
+    };
+
+    // Start the streaming session with OpenAI
+    return openai.chat.completions.create(chatCompletionParams);
+  } catch (error) {
+    console.error("Error creating chat completion:", error);
+    throw error;
+  }
 };

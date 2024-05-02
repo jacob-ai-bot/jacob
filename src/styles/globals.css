@@ -1,3 +1,249 @@
 @tailwind base;
 @tailwind components;
+
+@font-face {
+  font-family: "gooper";
+  src: url("/fonts/gooper-semibold.otf") format("opentype");
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Figtree&display=swap");
+
+*,
+*::before,
+*::after {
+  @apply m-0 box-border p-0;
+}
+
+html,
+body {
+  @apply min-h-full w-full bg-blueGray-900;
+}
+
+body {
+  @apply flex flex-col bg-beige font-poppins;
+}
+
+#__next {
+  @apply flex h-full min-h-screen w-full;
+}
+
+h1 {
+  @apply font-gooper text-4xl font-semibold;
+}
+
+.button-primary {
+  @apply flex h-12 w-full items-center justify-center rounded-lg bg-navy-blue shadow-lg sm:max-w-lg md:w-auto md:px-10;
+}
+
+.button-secondary {
+  @apply flex h-10 items-center justify-center rounded-xl border border-solid border-navy-blue px-4 shadow-sm transition-colors hover:bg-blue-500 hover:text-white md:px-8 lg:px-10;
+}
+
+.aspect-ratio-box {
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.markdown {
+  @apply font-figtree;
+  @apply text-base;
+  @apply leading-normal;
+  @apply font-light;
+  @apply text-neutral-300;
+}
+
+.markdown h1 {
+  @apply font-figtree;
+  @apply text-2xl;
+  @apply mt-1;
+  @apply mb-3;
+  @apply text-white;
+}
+
+.markdown h2 {
+  @apply text-xl;
+  @apply mt-1;
+  @apply mb-3;
+  @apply text-white;
+}
+
+.markdown h3 {
+  @apply text-lg;
+  @apply mt-1;
+  @apply mb-3;
+  @apply text-white;
+}
+
+.markdown h4 {
+  @apply text-base;
+  @apply mt-1;
+  @apply mb-3;
+  @apply text-white;
+}
+
+.markdown h5 {
+  @apply text-base;
+  @apply mt-1;
+  @apply mb-3;
+  @apply text-white;
+}
+
+.markdown hr {
+  @apply border-neutral-500;
+  @apply my-3;
+}
+
+.markdown p {
+  @apply my-3;
+}
+
+.markdown ul {
+  list-style: disc;
+  @apply p-2;
+}
+
+.markdown li {
+  @apply mb-1;
+}
+
+.markdown strong {
+  @apply text-white;
+  @apply font-semibold;
+}
+
+.markdown code {
+  @apply text-white;
+  @apply bg-blueGray-900/80;
+  @apply px-1;
+  @apply py-1;
+  @apply rounded-sm;
+}
+
+.markdown-chat {
+  @apply font-figtree;
+  @apply text-base;
+  @apply leading-relaxed;
+  @apply font-light;
+  @apply text-neutral-300;
+}
+
+.markdown-chat h1 {
+  @apply text-2xl;
+  @apply font-figtree;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-chat h2 {
+  @apply text-xl;
+  @apply font-figtree;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-chat h3 {
+  @apply text-lg;
+  @apply font-figtree;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-chat h4 {
+  @apply text-base;
+  @apply font-figtree;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-chat h5 {
+  @apply text-base;
+  @apply font-figtree;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-chat hr {
+  @apply border-neutral-500;
+  @apply my-3;
+}
+
+.markdown-chat p {
+  @apply font-figtree;
+  @apply my-3;
+}
+
+.markdown-chat ul {
+  @apply font-figtree;
+  list-style: disc;
+  @apply p-2;
+}
+
+.markdown-chat li {
+  @apply font-figtree;
+  @apply mb-1;
+}
+
+.markdown-chat strong {
+  @apply font-figtree;
+  @apply text-lg;
+  @apply font-semibold;
+  @apply text-light-blue;
+}
+
+.markdown-chat code {
+  @apply bg-gray-700/80;
+  @apply font-figtree;
+  @apply px-1;
+  @apply py-1;
+  @apply rounded-sm;
+}
+
+.markdown-chat a {
+  @apply font-figtree;
+  @apply text-light-blue;
+  @apply underline;
+}
+
+.markdown-issue code {
+  @apply text-blueGray-200;
+  @apply bg-blueGray-800;
+  @apply px-3;
+  @apply py-2;
+  @apply my-2;
+  @apply rounded-md;
+  @apply block;
+  @apply overflow-x-auto;
+  @apply whitespace-pre;
+  @apply border border-blueGray-700;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.5;
+  }
+}
+.blink {
+  animation: blink 1s linear infinite;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fade-in 0.5s ease-in-out;
+}
+
 @tailwind utilities;
