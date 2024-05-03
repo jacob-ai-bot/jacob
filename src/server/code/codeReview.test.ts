@@ -86,6 +86,7 @@ describe("codeReview", () => {
       existingPr: {
         number: 48,
         head: { sha: "abcdefg" },
+        user: {},
         title: "pr-title",
         body: "pr-body",
       } as PullRequest,
@@ -158,7 +159,11 @@ describe("codeReview", () => {
       token: "token",
       rootPath: "/rootpath",
       branch: "jacob-issue-48-test",
-      existingPr: { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+      existingPr: {
+        number: 48,
+        user: {},
+        head: { sha: "abcdefg" },
+      } as PullRequest,
     });
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
@@ -193,7 +198,11 @@ describe("codeReview", () => {
       token: "token",
       rootPath: "/rootpath",
       branch: "my-human-branch-name",
-      existingPr: { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+      existingPr: {
+        number: 48,
+        user: {},
+        head: { sha: "abcdefg" },
+      } as PullRequest,
     });
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
@@ -264,7 +273,11 @@ describe("codeReview", () => {
       token: "token",
       rootPath: "/rootpath",
       branch: "jacob-issue-48-test",
-      existingPr: { number: 48, head: { sha: "abcdefg" } } as PullRequest,
+      existingPr: {
+        number: 48,
+        user: {},
+        head: { sha: "abcdefg" },
+      } as PullRequest,
     });
 
     expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);

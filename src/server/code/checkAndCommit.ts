@@ -59,13 +59,23 @@ export async function checkAndCommit({
   let buildErrorMessage: string | undefined;
 
   try {
-    await runBuildCheck(rootPath, true, repoSettings);
+    await runBuildCheck({
+      ...baseEventData,
+      path: rootPath,
+      afterModifications: true,
+      repoSettings,
+    });
   } catch (error) {
     const { message } = error as Error;
     buildErrorMessage = message;
   }
 
-  await addCommitAndPush(rootPath, branch, commitMessage);
+  await addCommitAndPush({
+    ...baseEventData,
+    rootPath,
+    branchName: branch,
+    commitMessage,
+  });
 
   let issue: Issue | RetrievedIssue | undefined;
 

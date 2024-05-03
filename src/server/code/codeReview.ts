@@ -1,5 +1,5 @@
 import { dedent } from "ts-dedent";
-import { type Repository } from "@octokit/webhooks-types";
+import { type Repository, type PullRequest } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes } from "../analyze/sourceMap";
@@ -13,8 +13,7 @@ import {
   getNewOrModifiedRangesMapFromDiff,
 } from "../utils/files";
 
-export type PullRequest =
-  Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
+export type { PullRequest };
 type Issue =
   Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 

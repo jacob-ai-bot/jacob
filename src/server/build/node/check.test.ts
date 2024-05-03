@@ -40,6 +40,12 @@ const mockedUtils = vi.hoisted(() => ({
 }));
 vi.mock("../../utils", () => mockedUtils);
 
+const mockEventData = {
+  projectId: 1,
+  repoFullName: "test-login/test-repo",
+  userId: "test-user",
+};
+
 describe("getEnv", () => {
   test("default is empty object with CI added", () => {
     const env = getEnv();
@@ -88,155 +94,225 @@ describe("runBuildCheck and runNpmInstall", () => {
   });
 
   test("runBuildCheck succeeds with default commands and environment", async () => {
-    const result = await runBuildCheck(".", false);
+    const result = await runBuildCheck({
+      ...mockEventData,
+      path: ".",
+      afterModifications: false,
+    });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
-      ".",
-      "npm install",
       {
-        env: { CI: "true" },
-        timeout: INSTALL_TIMEOUT,
+        ...mockEventData,
+        directory: ".",
+        command: "npm install",
+        options: {
+          env: { CI: "true" },
+          timeout: INSTALL_TIMEOUT,
+        },
       },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
-      ".",
-      "npm run build --verbose && npx tsc --noEmit",
       {
-        env: { CI: "true" },
-        timeout: BUILD_TIMEOUT,
+        ...mockEventData,
+        directory: ".",
+        command: "npm run build --verbose && npx tsc --noEmit",
+        options: {
+          env: { CI: "true" },
+          timeout: BUILD_TIMEOUT,
+        },
       },
     );
   });
 
   test("runBuildCheck succeeds with default commands and environment for a Next.js project", async () => {
-    const result = await runBuildCheck(".", false, {
-      packageDependencies: { next: "1.0.0" },
+    const result = await runBuildCheck({
+      ...mockEventData,
+      path: ".",
+      afterModifications: false,
+      repoSettings: {
+        packageDependencies: { next: "1.0.0" },
+      },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
-      ".",
-      "npm install",
       {
-        env: {
-          CI: "true",
-          ...NEXT_JS_ENV,
+        ...mockEventData,
+        directory: ".",
+        command: "npm install",
+        options: {
+          env: {
+            CI: "true",
+            ...NEXT_JS_ENV,
+          },
+          timeout: INSTALL_TIMEOUT,
         },
-        timeout: INSTALL_TIMEOUT,
       },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
-      ".",
-      "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 npm run build --verbose && npx tsc --noEmit",
       {
-        env: {
-          CI: "true",
-          ...NEXT_JS_ENV,
+        ...mockEventData,
+        directory: ".",
+        command:
+          "__NEXT_TEST_MODE=1 SKIP_ENV_VALIDATION=1 npm run build --verbose && npx tsc --noEmit",
+        options: {
+          env: {
+            CI: "true",
+            ...NEXT_JS_ENV,
+          },
+          timeout: BUILD_TIMEOUT,
         },
-        timeout: BUILD_TIMEOUT,
       },
     );
   });
 
   test("runBuildCheck uses different default buildCommand when JavaScript is specific in settings", async () => {
-    await runBuildCheck(".", false, {
-      language: Language.JavaScript,
+    await runBuildCheck({
+      ...mockEventData,
+      path: ".",
+      afterModifications: false,
+      repoSettings: { language: Language.JavaScript },
     });
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
-      ".",
-      "npm run build --verbose",
-      { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "npm run build --verbose",
+        options: { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
+      },
     );
   });
 
   test("runBuildCheck uses env from settings", async () => {
-    const result = await runBuildCheck(".", false, { env: { custom: "1" } });
+    const result = await runBuildCheck({
+      ...mockEventData,
+      path: ".",
+      afterModifications: false,
+      repoSettings: { env: { custom: "1" } },
+    });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(2);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
-      ".",
-      "npm install",
-      { env: { CI: "true", custom: "1" }, timeout: INSTALL_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "npm install",
+        options: { env: { CI: "true", custom: "1" }, timeout: INSTALL_TIMEOUT },
+      },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
-      ".",
-      "npm run build --verbose && npx tsc --noEmit",
-      { env: { CI: "true", custom: "1" }, timeout: BUILD_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "npm run build --verbose && npx tsc --noEmit",
+        options: { env: { CI: "true", custom: "1" }, timeout: BUILD_TIMEOUT },
+      },
     );
   });
 
   test("runBuildCheck uses commands from settings - but skips formatCommand before modifications", async () => {
-    const result = await runBuildCheck(".", false, {
-      installCommand: "my-install",
-      formatCommand: "my-format",
-      buildCommand: "my-build",
-      testCommand: "my-test",
+    const result = await runBuildCheck({
+      ...mockEventData,
+      path: ".",
+      afterModifications: false,
+      repoSettings: {
+        installCommand: "my-install",
+        formatCommand: "my-format",
+        buildCommand: "my-build",
+        testCommand: "my-test",
+      },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(3);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
-      ".",
-      "my-install",
-      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "my-install",
+        options: { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
-      ".",
-      "my-build",
-      { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "my-build",
+        options: { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
+      },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "my-test",
-      { env: { CI: "true" }, timeout: TEST_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "my-test",
+        options: { env: { CI: "true" }, timeout: TEST_TIMEOUT },
+      },
     );
   });
 
   test("runBuildCheck uses commands from settings - including formatCommand after modifications", async () => {
-    const result = await runBuildCheck(".", true, {
-      installCommand: "my-install",
-      formatCommand: "my-format",
-      buildCommand: "my-build",
-      testCommand: "my-test",
+    const result = await runBuildCheck({
+      ...mockEventData,
+      path: ".",
+      afterModifications: true,
+      repoSettings: {
+        installCommand: "my-install",
+        formatCommand: "my-format",
+        buildCommand: "my-build",
+        testCommand: "my-test",
+      },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledTimes(4);
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       1,
-      ".",
-      "my-install",
-      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "my-install",
+        options: { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       2,
-      ".",
-      "my-format",
-      { env: { CI: "true" }, timeout: FORMAT_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "my-format",
+        options: { env: { CI: "true" }, timeout: FORMAT_TIMEOUT },
+      },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenNthCalledWith(
       3,
-      ".",
-      "my-build",
-      { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "my-build",
+        options: { env: { CI: "true" }, timeout: BUILD_TIMEOUT },
+      },
     );
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "my-test",
-      { env: { CI: "true" }, timeout: TEST_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "my-test",
+        options: { env: { CI: "true" }, timeout: TEST_TIMEOUT },
+      },
     );
   });
 
@@ -250,11 +326,16 @@ describe("runBuildCheck and runNpmInstall", () => {
         () => new Promise((_, reject) => reject(new Error("format error"))),
       );
 
-    const result = await runBuildCheck(".", true, {
-      installCommand: "my-install",
-      formatCommand: "my-format",
-      buildCommand: "my-build",
-      testCommand: "my-test",
+    const result = await runBuildCheck({
+      ...mockEventData,
+      path: ".",
+      afterModifications: true,
+      repoSettings: {
+        installCommand: "my-install",
+        formatCommand: "my-format",
+        buildCommand: "my-build",
+        testCommand: "my-test",
+      },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
@@ -280,62 +361,98 @@ describe("runBuildCheck and runNpmInstall", () => {
           ),
       );
 
-    await expect(() => runBuildCheck(".", true)).rejects.toThrowError(
+    await expect(
+      runBuildCheck({
+        ...mockEventData,
+        path: ".",
+        afterModifications: true,
+      }),
+    ).rejects.toThrowError(
       "Command failed: npm run build --verbose\nerror: special stdout only error",
     );
   });
 
   test("runNpmInstall succeeds with default commands and environment", async () => {
-    await runNpmInstall(".", "package-name");
+    await runNpmInstall({
+      ...mockEventData,
+      path: ".",
+      packageName: "package-name",
+    });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "npm add package-name",
       {
-        env: { CI: "true" },
-        timeout: INSTALL_TIMEOUT,
+        ...mockEventData,
+        directory: ".",
+        command: "npm add package-name",
+        options: {
+          env: { CI: "true" },
+          timeout: INSTALL_TIMEOUT,
+        },
       },
     );
   });
 
   test("runNpmInstall uses env from settings", async () => {
-    await runNpmInstall(".", "package-name", { env: { custom: "1" } });
-
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "npm add package-name",
-      { env: { CI: "true", custom: "1" }, timeout: INSTALL_TIMEOUT },
-    );
-  });
-
-  test("runNpmInstall uses installCommand from settings and understands yarn add", async () => {
-    await runNpmInstall(".", "package-name", {
-      installCommand: "yarn install",
+    await runNpmInstall({
+      ...mockEventData,
+      path: ".",
+      packageName: "package-name",
+      repoSettings: { env: { custom: "1" } },
     });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "yarn add package-name",
-      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "npm add package-name",
+        options: {
+          env: { CI: "true", custom: "1" },
+          timeout: INSTALL_TIMEOUT,
+        },
+      },
+    );
+  });
+
+  test("runNpmInstall uses installCommand from settings and understands yarn add", async () => {
+    await runNpmInstall({
+      ...mockEventData,
+      path: ".",
+      packageName: "package-name",
+      repoSettings: {
+        installCommand: "yarn install",
+      },
+    });
+
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
+    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "yarn add package-name",
+        options: { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      },
     );
   });
 
   test("runNpmInstall installs multiple packages", async () => {
-    const result = await runNpmInstall(
-      ".",
-      "package-name-1 package-name-2",
-      {},
-    );
+    const result = await runNpmInstall({
+      ...mockEventData,
+      path: ".",
+      packageName: "package-name-1 package-name-2",
+      repoSettings: {},
+    });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      ".",
-      "npm add package-name-1 package-name-2",
-      { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      {
+        ...mockEventData,
+        directory: ".",
+        command: "npm add package-name-1 package-name-2",
+        options: { env: { CI: "true" }, timeout: INSTALL_TIMEOUT },
+      },
     );
   });
 });

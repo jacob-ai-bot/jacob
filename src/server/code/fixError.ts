@@ -86,11 +86,12 @@ export async function fixError(params: FixErrorParams) {
     if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
       console.log(`[${repository.full_name}] Needs npm install`);
 
-      await runNpmInstall(
-        rootPath,
-        assessment.npmPackageToInstall.trim(),
+      await runNpmInstall({
+        ...baseEventData,
+        path: rootPath,
+        packageName: assessment.npmPackageToInstall.trim(),
         repoSettings,
-      );
+      });
 
       await checkAndCommit({
         ...baseEventData,

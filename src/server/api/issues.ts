@@ -39,7 +39,10 @@ export async function getExtractedIssues(req: Request, res: Response) {
 
   let cleanupClone: (() => Promise<void>) | undefined;
   try {
-    const { path, cleanup } = await cloneRepo(repo, undefined, token);
+    const { path, cleanup } = await cloneRepo({
+      repoName: repo,
+      token,
+    });
     cleanupClone = cleanup;
 
     const repoSettings = getRepoSettings(path);

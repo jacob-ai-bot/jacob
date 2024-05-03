@@ -134,9 +134,10 @@ export class EventsTable extends BaseTable {
         }),
         t.object({
           type: t.literal(TaskType.command),
-          command: t.string().optional(),
-          response: t.string().optional(),
-          directory: t.string().optional(),
+          command: t.string(),
+          response: t.string(),
+          directory: t.string(),
+          exitCode: t.number().nullable(),
         }),
       ]),
     ),

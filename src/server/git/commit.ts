@@ -1,35 +1,50 @@
 import {
   executeWithLogRequiringSuccess,
   type ExecAsyncException,
+  type BaseEventData,
 } from "../utils";
 
 const appName = process.env.GITHUB_APP_NAME ?? "";
 const appUsername = process.env.GITHUB_APP_USERNAME ?? "";
 
-export async function addCommitAndPush(
-  rootPath: string,
-  branchName: string,
-  commitMessage: string,
-) {
+export interface AddCommitAndPushParams extends BaseEventData {
+  rootPath: string;
+  branchName: string;
+  commitMessage: string;
+}
+
+export async function addCommitAndPush({
+  rootPath,
+  branchName,
+  commitMessage,
+  ...baseEventData
+}: AddCommitAndPushParams) {
   // Stage all files
-  await executeWithLogRequiringSuccess(rootPath, "git add .");
+  await executeWithLogRequiringSuccess({
+    ...baseEventData,
+    directory: rootPath,
+    command: "git add .",
+  });
 
   // Prepare author info
-  await executeWithLogRequiringSuccess(
-    rootPath,
-    `git config --local user.name "${appName}[bot]"`,
-  );
-  await executeWithLogRequiringSuccess(
-    rootPath,
-    `git config --local user.email "${appUsername}+${appName}[bot]@users.noreply.github.com"`,
-  );
+  await executeWithLogRequiringSuccess({
+    ...baseEventData,
+    directory: rootPath,
+    command: `git config --local user.name "${appName}[bot]"`,
+  });
+  await executeWithLogRequiringSuccess({
+    ...baseEventData,
+    directory: rootPath,
+    command: `git config --local user.email "${appUsername}+${appName}[bot]@users.noreply.github.com"`,
+  });
 
   // Commit files
   try {
-    await executeWithLogRequiringSuccess(
-      rootPath,
-      `git commit -m "${commitMessage.replace(/`/g, "\\`")}"`,
-    );
+    await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: rootPath,
+      command: `git commit -m "${commitMessage.replace(/`/g, "\\`")}"`,
+    });
   } catch (error) {
     // Log error and rethrow (so we can get better detail around 'nothing to commit' errors)
     const asyncException = (
@@ -43,8 +58,9 @@ export async function addCommitAndPush(
   }
 
   // Push branch to origin
-  return executeWithLogRequiringSuccess(
-    rootPath,
-    `git push --set-upstream origin ${branchName}`,
-  );
+  return executeWithLogRequiringSuccess({
+    ...baseEventData,
+    directory: rootPath,
+    command: `git push --set-upstream origin ${branchName}`,
+  });
 }

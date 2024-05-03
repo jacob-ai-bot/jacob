@@ -64,11 +64,10 @@ export const githubRouter = createTRPCRouter({
 
         let cleanupClone: (() => Promise<void>) | undefined;
         try {
-          const { path, cleanup } = await cloneRepo(
-            repo,
-            undefined,
-            accessToken,
-          );
+          const { path, cleanup } = await cloneRepo({
+            repoName: repo,
+            token: accessToken,
+          });
           cleanupClone = cleanup;
 
           const repoSettings = getRepoSettings(path);

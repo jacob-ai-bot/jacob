@@ -5,6 +5,7 @@ import {
   type ExecPromise,
   type RepoSettings,
   type ExecAsyncException,
+  type BaseEventData,
 } from "../../utils";
 import { Language } from "../../utils/settings";
 import { dynamicImport } from "../../utils/dynamicImport";
@@ -44,11 +45,18 @@ export function getEnv(repoSettings?: RepoSettings) {
   } as NodeJS.ProcessEnv;
 }
 
-export async function runBuildCheck(
-  path: string,
-  afterModifications: boolean,
-  repoSettings?: RepoSettings,
-): ExecPromise {
+export interface RunBuildCheckParams extends BaseEventData {
+  path: string;
+  afterModifications: boolean;
+  repoSettings?: RepoSettings;
+}
+
+export async function runBuildCheck({
+  path,
+  afterModifications,
+  repoSettings,
+  ...baseEventData
+}: RunBuildCheckParams): ExecPromise {
   const env = getEnv(repoSettings);
   const {
     installCommand = "npm install",
@@ -70,20 +78,26 @@ export async function runBuildCheck(
     }`;
 
   try {
-    await executeWithLogRequiringSuccess(path, installCommand, {
-      env,
-      timeout: INSTALL_TIMEOUT,
+    await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: path,
+      command: installCommand,
+      options: {
+        env,
+        timeout: INSTALL_TIMEOUT,
+      },
     });
     if (afterModifications && formatCommand) {
       try {
-        await executeWithLogRequiringSuccess(
-          path,
-          `${commandPrefix}${formatCommand}`,
-          {
+        await executeWithLogRequiringSuccess({
+          ...baseEventData,
+          directory: path,
+          command: `${commandPrefix}${formatCommand}`,
+          options: {
             env,
             timeout: FORMAT_TIMEOUT,
           },
-        );
+        });
       } catch (error) {
         // There are a variety of reasons why the formatCommand might fail
         // so we choose to ignore those errors and continue with the build
@@ -93,25 +107,27 @@ export async function runBuildCheck(
         );
       }
     }
-    const buildResult = await executeWithLogRequiringSuccess(
-      path,
-      `${commandPrefix}${baseBuildCommand}`,
-      {
+    const buildResult = await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: path,
+      command: `${commandPrefix}${baseBuildCommand}`,
+      options: {
         env,
         timeout: BUILD_TIMEOUT,
       },
-    );
+    });
     if (!testCommand) {
       return buildResult;
     }
-    return await executeWithLogRequiringSuccess(
-      path,
-      `${commandPrefix}${testCommand}`,
-      {
+    return await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: path,
+      command: `${commandPrefix}${testCommand}`,
+      options: {
         env,
         timeout: TEST_TIMEOUT,
       },
-    );
+    });
   } catch (error) {
     const { message, stdout, stderr } = error as ExecAsyncException;
     // Some tools (e.g. tsc) write to stdout instead of stderr
@@ -129,11 +145,18 @@ export async function runBuildCheck(
   }
 }
 
-export async function runNpmInstall(
-  path: string,
-  packageName: string,
-  repoSettings?: RepoSettings,
-) {
+export interface RunNpmInstallParams extends BaseEventData {
+  path: string;
+  packageName: string;
+  repoSettings?: RepoSettings;
+}
+
+export async function runNpmInstall({
+  path,
+  packageName,
+  repoSettings,
+  ...baseEventData
+}: RunNpmInstallParams) {
   const env = getEnv(repoSettings);
   const { installCommand = "npm install" } = repoSettings ?? {};
 
@@ -150,12 +173,13 @@ export async function runNpmInstall(
   // TODO: do we need an addCommand in jacob.json to better handle this generically?
   const installCommandFirstPart = installCommand.split(" ")[0];
   const command = `${installCommandFirstPart} add`;
-  return await executeWithLogRequiringSuccess(
-    path,
-    `${command} ${validatedPackageName}`,
-    {
+  return await executeWithLogRequiringSuccess({
+    ...baseEventData,
+    directory: path,
+    command: `${command} ${validatedPackageName}`,
+    options: {
       env,
       timeout: INSTALL_TIMEOUT,
     },
-  );
+  });
 }

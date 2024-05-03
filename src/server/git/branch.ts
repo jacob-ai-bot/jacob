@@ -1,12 +1,22 @@
-import { executeWithLogRequiringSuccess } from "../utils";
+import { executeWithLogRequiringSuccess, type BaseEventData } from "../utils";
 
-export async function setNewBranch(rootPath: string, branchName: string) {
+export interface SetNewBranchParams extends BaseEventData {
+  rootPath: string;
+  branchName: string;
+}
+
+export async function setNewBranch({
+  rootPath,
+  branchName,
+  ...baseEventData
+}: SetNewBranchParams) {
   // first check to see if we're already on that branch. If not, create it.
   const currentBranch = (
-    await executeWithLogRequiringSuccess(
-      rootPath,
-      "git rev-parse --abbrev-ref HEAD",
-    )
+    await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: rootPath,
+      command: "git rev-parse --abbrev-ref HEAD",
+    })
   ).stdout
     .toString()
     .trim();
@@ -17,22 +27,28 @@ export async function setNewBranch(rootPath: string, branchName: string) {
 
   // now check to see if the branch already exists
   const branches = (
-    await executeWithLogRequiringSuccess(rootPath, "git branch")
+    await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: rootPath,
+      command: "git branch",
+    })
   ).stdout
     .toString()
     .trim();
   if (branches.includes(branchName)) {
     console.log("Branch already exists: ", branchName);
     // Checkout the existing branch
-    return executeWithLogRequiringSuccess(
-      rootPath,
-      `git checkout ${branchName}`,
-    );
+    return executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: rootPath,
+      command: `git checkout ${branchName}`,
+    });
   }
 
   // Create a new branch
-  return executeWithLogRequiringSuccess(
-    rootPath,
-    `git checkout -b ${branchName}`,
-  );
+  return executeWithLogRequiringSuccess({
+    ...baseEventData,
+    directory: rootPath,
+    command: `git checkout -b ${branchName}`,
+  });
 }

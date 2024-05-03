@@ -121,7 +121,11 @@ export async function createNewFile(params: CreateNewFileParams) {
 
   const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
-  await setNewBranch(rootPath, newBranch);
+  await setNewBranch({
+    ...baseEventData,
+    rootPath,
+    branchName: newBranch,
+  });
 
   saveNewFile(rootPath, newFileName, code);
 

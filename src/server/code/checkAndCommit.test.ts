@@ -101,18 +101,19 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/rootpath",
-      true,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      path: "/rootpath",
+      afterModifications: true,
+    });
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
-    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
-      "/rootpath",
-      "jacob-issue-48-test",
-      "test-commit-message",
-    );
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      rootPath: "/rootpath",
+      branchName: "jacob-issue-48-test",
+      commitMessage: "test-commit-message",
+    });
 
     expect(mockedPR.markPRReadyForReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.markPRReadyForReview).toHaveBeenLastCalledWith(
@@ -178,18 +179,19 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/rootpath",
-      true,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      path: "/rootpath",
+      afterModifications: true,
+    });
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
-    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
-      "/rootpath",
-      "jacob-issue-48-test",
-      "test-commit-message",
-    );
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      rootPath: "/rootpath",
+      branchName: "jacob-issue-48-test",
+      commitMessage: "test-commit-message",
+    });
 
     expect(mockedPR.markPRReadyForReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.markPRReadyForReview).toHaveBeenLastCalledWith(
@@ -257,18 +259,19 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/rootpath",
-      true,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      path: "/rootpath",
+      afterModifications: true,
+    });
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
-    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
-      "/rootpath",
-      "jacob-issue-48-test",
-      "test-commit-message",
-    );
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      rootPath: "/rootpath",
+      branchName: "jacob-issue-48-test",
+      commitMessage: "test-commit-message",
+    });
 
     expect(mockedPR.markPRReadyForReview).toHaveBeenCalledTimes(1);
     expect(mockedPR.markPRReadyForReview).toHaveBeenLastCalledWith(
@@ -336,18 +339,19 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/rootpath",
-      true,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      path: "/rootpath",
+      afterModifications: true,
+    });
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
-    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
-      "/rootpath",
-      "jacob-issue-48-test",
-      "test-commit-message",
-    );
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      rootPath: "/rootpath",
+      branchName: "jacob-issue-48-test",
+      commitMessage: "test-commit-message",
+    });
 
     expect(mockedPR.markPRReadyForReview).not.toHaveBeenCalled();
     expect(mockedPR.createPR).not.toHaveBeenCalled();
@@ -414,18 +418,19 @@ describe("checkAndCommit", () => {
     );
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/rootpath",
-      true,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      path: "/rootpath",
+      afterModifications: true,
+    });
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
-    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
-      "/rootpath",
-      "jacob-issue-48-test",
-      "test-commit-message",
-    );
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      rootPath: "/rootpath",
+      branchName: "jacob-issue-48-test",
+      commitMessage: "test-commit-message",
+    });
 
     expect(mockedPR.markPRReadyForReview).not.toHaveBeenCalled();
     expect(mockedPR.createPR).not.toHaveBeenCalled();
@@ -455,18 +460,19 @@ describe("checkAndCommit", () => {
     });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/rootpath",
-      true,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      path: "/rootpath",
+      afterModifications: true,
+    });
 
     expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
-    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith(
-      "/rootpath",
-      "random-branch-name",
-      "test-commit-message",
-    );
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      rootPath: "/rootpath",
+      branchName: "random-branch-name",
+      commitMessage: "test-commit-message",
+    });
 
     expect(mockedPR.markPRReadyForReview).not.toHaveBeenCalled();
     expect(mockedPR.createPR).not.toHaveBeenCalled();

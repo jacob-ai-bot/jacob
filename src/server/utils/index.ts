@@ -2,9 +2,10 @@ import { dedent } from "ts-dedent";
 import fs from "fs";
 import path from "path";
 
-import { exec, type ExecException } from "child_process";
+import { exec, type ExecException, type PromiseWithChild } from "child_process";
 import { promisify } from "util";
 import { type RepoSettings, Language, Style } from "./settings";
+import { emitCommandEvent } from "./events";
 
 export { type RepoSettings, getRepoSettings } from "./settings";
 
@@ -144,23 +145,36 @@ export interface ExecAsyncException extends ExecException {
   stderr: string;
 }
 
-export async function execAsyncWithLog(
+interface PromiseWithChildAndResponse<T> extends PromiseWithChild<T> {
+  response: string;
+}
+
+function execAsyncWithLog(
   command: string,
   options: Parameters<typeof execAsync>[1],
 ) {
-  const promise = execAsync(command, options);
+  let response = "";
+  const promise = execAsync(command, options) as PromiseWithChildAndResponse<{
+    stdout: Buffer;
+    stderr: Buffer;
+  }>;
 
   promise.child.stdout?.on("data", (d) => {
     if (typeof d === "string" || d instanceof Uint8Array) {
       process.stdout.write(d);
+      response += d.toString();
     }
   });
   promise.child.stderr?.on("data", (d) => {
     if (typeof d === "string" || d instanceof Uint8Array) {
       process.stderr.write(d);
+      response += d.toString();
     }
   });
-  promise.child.on("close", (code) => console.log(`*:EXIT:${code}`));
+  promise.child.on("close", (code) => {
+    console.log(`*:EXIT:${code}`);
+    promise.response = response;
+  });
 
   return promise;
 }
@@ -182,19 +196,55 @@ export function getSanitizedEnv() {
   return baseEnv;
 }
 
-export type ExecPromise = ReturnType<typeof execAsyncWithLog>;
+// export type ExecPromise = ReturnType<typeof execAsyncWithLog>;
+export type ExecPromise = Promise<{
+  stdout: string | Buffer;
+  stderr: string | Buffer;
+}>;
 
-export async function executeWithLogRequiringSuccess(
-  path: string,
-  command: string,
-  options?: Parameters<typeof execAsync>[1],
-): ExecPromise {
-  console.log(`*:${command} (cwd: ${path})`);
+export interface ExecuteWithLogRequiringSuccessWithoutEventParams {
+  directory: string;
+  command: string;
+  options?: Parameters<typeof execAsync>[1];
+}
+
+export function executeWithLogRequiringSuccessWithoutEvent({
+  directory,
+  command,
+  options,
+}: ExecuteWithLogRequiringSuccessWithoutEventParams): ExecPromise {
+  console.log(`*:${command} (cwd: ${directory})`);
   return execAsyncWithLog(command, {
-    cwd: path,
+    cwd: directory,
     env: getSanitizedEnv() as NodeJS.ProcessEnv,
     ...options,
   });
+}
+
+export type ExecuteWithLogRequiringSuccessParams =
+  ExecuteWithLogRequiringSuccessWithoutEventParams & BaseEventData;
+
+export function executeWithLogRequiringSuccess({
+  directory,
+  command,
+  options,
+  ...baseEventData
+}: ExecuteWithLogRequiringSuccessParams): ExecPromise {
+  console.log(`*:${command} (cwd: ${directory})`);
+  const promise = execAsyncWithLog(command, {
+    cwd: directory,
+    env: getSanitizedEnv() as NodeJS.ProcessEnv,
+    ...options,
+  });
+  return promise.finally(() => {
+    void emitCommandEvent({
+      ...baseEventData,
+      directory,
+      command: command.replace(/x-access-token:[^@]+@/g, ""),
+      response: promise.response.replace(/x-access-token:[^@]+@/g, ""),
+      exitCode: promise.child.exitCode,
+    });
+  }) as ExecPromise;
 }
 
 export const extractFilePathWithArrow = (title?: string) => {

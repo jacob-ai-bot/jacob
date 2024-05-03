@@ -145,7 +145,11 @@ export async function editFiles(params: EditFilesParams) {
   }
   const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
 
-  await setNewBranch(rootPath, newBranch);
+  await setNewBranch({
+    ...baseEventData,
+    rootPath,
+    branchName: newBranch,
+  });
 
   const files = reconstructFiles(updatedCode, rootPath);
   await Promise.all(

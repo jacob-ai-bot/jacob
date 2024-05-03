@@ -37,6 +37,12 @@ const mockedTmpPromise = vi.hoisted(() => ({
 }));
 vi.mock("tmp-promise", () => mockedTmpPromise);
 
+const mockEventData = {
+  projectId: 1,
+  repoFullName: "test-login/test-repo",
+  userId: "test-user",
+};
+
 describe("cloneRepo", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -47,54 +53,77 @@ describe("cloneRepo", () => {
   });
 
   test("cloneRepo succeeds with repoName alone", async () => {
-    const result = await cloneRepo("organization/repo-name");
+    const result = await cloneRepo({
+      baseEventData: mockEventData,
+      repoName: "organization/repo-name",
+    });
     expect(result).toStrictEqual({ cleanup: mockCleanup, path: "/tmp/path" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalled();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      "/tmp/path",
-      "git clone  https://github.com/organization/repo-name.git .",
+      {
+        ...mockEventData,
+        directory: "/tmp/path",
+        command: "git clone  https://github.com/organization/repo-name.git .",
+      },
     );
   });
 
   test("cloneRepo succeeds with repoName and branch", async () => {
-    const result = await cloneRepo("organization/repo-name", "branch-name");
+    const result = await cloneRepo({
+      baseEventData: mockEventData,
+      repoName: "organization/repo-name",
+      branch: "branch-name",
+    });
     expect(result).toStrictEqual({ cleanup: mockCleanup, path: "/tmp/path" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalled();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      "/tmp/path",
-      "git clone -b branch-name https://github.com/organization/repo-name.git .",
+      {
+        ...mockEventData,
+        directory: "/tmp/path",
+        command:
+          "git clone -b branch-name https://github.com/organization/repo-name.git .",
+      },
     );
   });
 
   test("cloneRepo succeeds with repoName, branch, and token", async () => {
-    const result = await cloneRepo(
-      "organization/repo-name",
-      "branch-name",
-      "my-token",
-    );
+    const result = await cloneRepo({
+      baseEventData: mockEventData,
+      repoName: "organization/repo-name",
+      branch: "branch-name",
+      token: "my-token",
+    });
     expect(result).toStrictEqual({ cleanup: mockCleanup, path: "/tmp/path" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalled();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      "/tmp/path",
-      "git clone -b branch-name https://x-access-token:my-token@github.com/organization/repo-name.git .",
+      {
+        ...mockEventData,
+        directory: "/tmp/path",
+        command:
+          "git clone -b branch-name https://x-access-token:my-token@github.com/organization/repo-name.git .",
+      },
     );
   });
 
   test("cloneRepo succeeds with repoName and token", async () => {
-    const result = await cloneRepo(
-      "organization/repo-name",
-      undefined,
-      "my-token",
-    );
+    const result = await cloneRepo({
+      baseEventData: mockEventData,
+      repoName: "organization/repo-name",
+      token: "my-token",
+    });
     expect(result).toStrictEqual({ cleanup: mockCleanup, path: "/tmp/path" });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalled();
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenLastCalledWith(
-      "/tmp/path",
-      "git clone  https://x-access-token:my-token@github.com/organization/repo-name.git .",
+      {
+        ...mockEventData,
+        directory: "/tmp/path",
+        command:
+          "git clone  https://x-access-token:my-token@github.com/organization/repo-name.git .",
+      },
     );
   });
 
@@ -118,7 +147,11 @@ describe("cloneRepo", () => {
     );
     let errorString = "";
     try {
-      await cloneRepo("organization/repo-name", undefined, "my-token");
+      await cloneRepo({
+        baseEventData: mockEventData,
+        repoName: "organization/repo-name",
+        token: "my-token",
+      });
     } catch (error) {
       errorString = (error as Error).toString();
     }

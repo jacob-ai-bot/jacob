@@ -211,11 +211,14 @@ describe("onGitHubEvent", () => {
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/tmp/jacob/1",
-      false,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "jacob-ai-bot[bot]",
+      issueId: 47,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+    });
     expect(mockedNewFile.createNewFile).toHaveBeenCalledTimes(1);
   });
 
@@ -255,11 +258,14 @@ describe("onGitHubEvent", () => {
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/tmp/jacob/1",
-      false,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "jacob-ai-bot[bot]",
+      issueId: 49,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+    });
     expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
   });
 
@@ -332,11 +338,13 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/tmp/jacob/1",
-      false,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/jacob-setup",
+      userId: "cpirich",
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+    });
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
     const expectedRepo = {
       ...installationRepositoriesAddedPayload.repositories_added[0],
@@ -383,11 +391,14 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/tmp/jacob/1",
-      false,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "cpirich",
+      issueId: 125,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+    });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
 
@@ -400,11 +411,14 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/tmp/jacob/1",
-      false,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "cpirich",
+      issueId: 232,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+    });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
 
@@ -421,11 +435,14 @@ describe("onGitHubEvent", () => {
 
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith(
-      "/tmp/jacob/1",
-      false,
-      undefined,
-    );
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "cpirich",
+      issueId: 125,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+    });
     expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
     expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedComments.addFailedWorkComment.mock.calls[0][1]).toBe(125);

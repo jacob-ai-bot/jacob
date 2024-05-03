@@ -1,18 +1,28 @@
 import { dir, type DirectoryResult } from "tmp-promise";
 import {
+  type BaseEventData,
   executeWithLogRequiringSuccess,
   type ExecAsyncException,
+  executeWithLogRequiringSuccessWithoutEvent,
 } from "../utils";
 
 const HTTPS_PREFIX = "https://";
 const HTTPS_SUFFIX = "github.com/";
 const GIT_REPO_SUFFIX = ".git";
 
-export async function cloneRepo(
-  repoName: string,
-  branch?: string,
-  token?: string,
-): Promise<DirectoryResult> {
+export interface CloneRepoParams {
+  repoName: string;
+  branch?: string;
+  token?: string;
+  baseEventData?: BaseEventData;
+}
+
+export async function cloneRepo({
+  repoName,
+  branch,
+  token,
+  baseEventData,
+}: CloneRepoParams): Promise<DirectoryResult> {
   const tmpdir = process.env.TMP_DIR;
   const options = tmpdir
     ? { unsafeCleanup: true, tmpdir }
@@ -24,7 +34,18 @@ export async function cloneRepo(
   const tokenArg = token ? `x-access-token:${token}@` : "";
   const cloneCommand = `git clone ${args} ${HTTPS_PREFIX}${tokenArg}${HTTPS_SUFFIX}${repoName}${GIT_REPO_SUFFIX} .`;
   try {
-    await executeWithLogRequiringSuccess(path, cloneCommand);
+    if (baseEventData) {
+      await executeWithLogRequiringSuccess({
+        ...baseEventData,
+        directory: path,
+        command: cloneCommand,
+      });
+    } else {
+      await executeWithLogRequiringSuccessWithoutEvent({
+        directory: path,
+        command: cloneCommand,
+      });
+    }
   } catch (error) {
     if (token) {
       // Throw this error, but with the token redacted from the message (as newError)

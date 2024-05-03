@@ -177,12 +177,17 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
     let isNodeRepo: boolean | undefined;
     try {
       isNodeRepo = await isNodeProject(repository, installationAuthentication);
-      await addProjectToDB(repo, event.id, event.name);
-      const { path, cleanup } = await cloneRepo(
-        repo.full_name,
-        undefined,
-        installationAuthentication.token,
-      );
+      const project = await addProjectToDB(repo, event.id, event.name);
+      const baseEventData = {
+        projectId: project.id,
+        repoFullName: repo.full_name,
+        userId: distinctId,
+      };
+      const { path, cleanup } = await cloneRepo({
+        baseEventData,
+        repoName: repo.full_name,
+        token: installationAuthentication.token,
+      });
 
       console.log(`[${repo.full_name}] repo cloned to ${path}`);
 
@@ -190,7 +195,12 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
 
       try {
         if (isNodeRepo) {
-          await runBuildCheck(path, false, repoSettings);
+          await runBuildCheck({
+            ...baseEventData,
+            path,
+            afterModifications: false,
+            repoSettings,
+          });
         } else {
           console.log(
             `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : not a Node.js project - skipping runBuildCheck`,
@@ -358,11 +368,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     }
 
     try {
-      const { path, cleanup } = await cloneRepo(
-        repository.full_name,
-        prBranch,
-        installationAuthentication.token,
-      );
+      const { path, cleanup } = await cloneRepo({
+        baseEventData,
+        repoName: repository.full_name,
+        branch: prBranch,
+        token: installationAuthentication.token,
+      });
 
       console.log(`[${repository.full_name}] repo cloned to ${path}`);
 
@@ -374,7 +385,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           // Once npm install has been run, the source map becomes much more
           // detailed and is too large for our LLM context window.
           const sourceMap = getSourceMap(path, repoSettings);
-          await runBuildCheck(path, false, repoSettings);
+          await runBuildCheck({
+            ...baseEventData,
+            path,
+            afterModifications: false,
+            repoSettings,
+          });
 
           const issueTitle = event.payload.issue.title;
 
@@ -512,7 +528,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           // NOTE: important tht we are handing issueComment ONLY after handling prCommand
 
           // NOTE: The only command we support on issue comments is to run a build check
-          await runBuildCheck(path, false, repoSettings);
+          await runBuildCheck({
+            ...baseEventData,
+            path,
+            afterModifications: false,
+            repoSettings,
+          });
           await addCommentToIssue(
             repository,
             eventIssueOrPRNumber,
