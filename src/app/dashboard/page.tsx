@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Modal from "react-modal";
 import ChatComponent, { type ChatComponentHandle } from "./components/chat";
 import ChatHeader from "./components/chat/ChatHeader";
@@ -15,6 +15,7 @@ import {
   SidebarIcon,
 } from "~/types";
 import DevelopersGrid from "./components/developers";
+import { api } from "~/trpc/react";
 
 const CREATE_ISSUE_PROMPT =
   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
@@ -25,7 +26,6 @@ const DashboardPage: React.FC = () => {
   const [selectedDeveloper, setSelectedDeveloper] = useState<
     Developer | undefined
   >(undefined);
-  const [repos, setRepos] = useState<string[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string>("");
   const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
@@ -36,6 +36,10 @@ const DashboardPage: React.FC = () => {
   const chatRef = useRef(null);
 
   //** Repo */
+  const { data } = api.github.getRepos.useQuery();
+  const repos = data?.map((d) => d.full_name);
+  const selectedRepo1 = repos?.[0];
+
   const onSelectRepo = (repo: string) => {
     setSelectedRepo(repo);
     resetMessages();
