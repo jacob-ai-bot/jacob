@@ -51,13 +51,6 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
   }
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
 
-  //** Repo */
-
-  const onSelectRepo = (repo: string) => {
-    setSelectedRepo(repo);
-    resetMessages();
-  };
-
   //** Task */
   const onStartTask = (taskId: string) => {
     console.log("Starting task: ", taskId);
@@ -203,11 +196,6 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
 
   //** End Task */
 
-  //** Developer */
-  const closeModal = () => {
-    setModalIsOpen(false);
-  };
-
   const tasksInProgressOrDone = tasks.filter(
     (t) => t.status === TaskStatus.IN_PROGRESS || t.status === TaskStatus.DONE,
   );
@@ -221,7 +209,7 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
           <div className="hide-scrollbar flex h-screen w-full flex-col overflow-hidden bg-gray-900/90">
             <ChatHeader
               selectedRepo={`${org}/${repo}`}
-              selectedDeveloper={developer}
+              selectedDeveloper={selectedDeveloper}
             />
             <ChatComponent
               ref={chatRef}

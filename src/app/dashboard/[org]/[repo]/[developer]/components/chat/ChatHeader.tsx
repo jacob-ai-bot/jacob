@@ -5,11 +5,8 @@ import { api } from "~/trpc/react";
 
 interface ChatHeaderProps {
   shouldHideLogo?: boolean;
-  repos: string[] | undefined;
-  onSelectRepo: (repo: string) => void;
   selectedRepo?: string | undefined;
   selectedDeveloper?: Developer | undefined;
-  onShowDevelopers?: () => void;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({

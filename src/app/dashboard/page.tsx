@@ -19,7 +19,6 @@ const DashboardPage = async () => {
     redirect("/");
   }
 
-  console.log("data", data);
   const repos = data.map((d) => d.full_name);
 
   if (!repos[0]) {

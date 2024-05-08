@@ -1,6 +1,5 @@
 import { validateRepo } from "~/server/api/utils";
 import Dashboard from "./Dashboard";
-import { api } from "~/trpc/server";
 
 const DashboardPage = async ({
   params,
