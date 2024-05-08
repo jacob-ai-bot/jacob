@@ -1,9 +1,7 @@
-import React from "react";
+"use client";
 import { type Developer } from "~/types";
-import { DEVELOPERS } from "~/data/developers";
 
-// Developer Card Component
-const DeveloperCard: React.FC<{
+export const DeveloperCard: React.FC<{
   developer: Developer;
   onSelectDeveloper: (developer: Developer) => void;
 }> = ({ developer, onSelectDeveloper }) => {
@@ -28,7 +26,7 @@ const DeveloperCard: React.FC<{
       <div className="mt-6 w-full">
         <button
           onClick={() => onSelectDeveloper(developer)}
-          className="bg-dark-blue flex w-full items-center justify-center rounded-lg px-6 py-3 text-center text-sm font-medium text-white shadow-md transition duration-300 ease-in-out hover:bg-indigo-700"
+          className="flex w-full items-center justify-center rounded-lg bg-dark-blue px-6 py-3 text-center text-sm font-medium text-white shadow-md transition duration-300 ease-in-out hover:bg-indigo-700"
         >
           {developer.cta}
         </button>
@@ -37,30 +35,4 @@ const DeveloperCard: React.FC<{
   );
 };
 
-interface DevelopersGridProps {
-  onSelectDeveloper: (developer: Developer) => void;
-}
-
-// Main Component to display developers in a grid
-const DevelopersGrid: React.FC<DevelopersGridProps> = ({
-  onSelectDeveloper,
-}) => {
-  return (
-    <>
-      <h1 className="font-figtree mt-2 text-center text-white">
-        Choose a Developer
-      </h1>
-      <div className="mx-auto flex max-w-[1000px] flex-wrap justify-center p-8">
-        {DEVELOPERS.map((developer) => (
-          <DeveloperCard
-            key={developer.name}
-            developer={developer}
-            onSelectDeveloper={onSelectDeveloper}
-          />
-        ))}
-      </div>
-    </>
-  );
-};
-
-export default DevelopersGrid;
+export default DeveloperCard;

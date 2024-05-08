@@ -1,41 +1,48 @@
-import React, { type FC, useEffect } from "react";
+"use client";
 import { type Developer } from "~/types";
+import { useRouter } from "next/navigation";
+import { api } from "~/trpc/react";
 
 interface ChatHeaderProps {
   shouldHideLogo?: boolean;
-  repos: string[];
+  repos: string[] | undefined;
   onSelectRepo: (repo: string) => void;
-  selectedRepo: string;
-  selectedDeveloper?: Developer;
+  selectedRepo?: string | undefined;
+  selectedDeveloper?: Developer | undefined;
   onShowDevelopers?: () => void;
 }
 
-const ChatHeader: FC<ChatHeaderProps> = ({
+const ChatHeader: React.FC<ChatHeaderProps> = ({
   shouldHideLogo = false,
-  repos,
-  onSelectRepo,
   selectedRepo,
   selectedDeveloper,
-  onShowDevelopers,
 }) => {
-  useEffect(() => {
-    if (repos.length > 0 && !selectedRepo) {
-      const lastUsedRepo = localStorage.getItem("lastUsedRepo");
-      if (lastUsedRepo && repos.includes(lastUsedRepo)) {
-        onSelectRepo(lastUsedRepo);
-      } else if (repos.length > 0 && repos[0] !== undefined && !selectedRepo) {
-        onSelectRepo(repos[0]);
-      }
-    }
-  }, [repos, onSelectRepo, selectedRepo]);
+  const router = useRouter();
+  // useEffect(() => {
+  //   if (repos.length > 0 && !selectedRepo) {
+  //     const lastUsedRepo = localStorage.getItem("lastUsedRepo");
+  //     if (lastUsedRepo && repos.includes(lastUsedRepo)) {
+  //       onSelectRepo(lastUsedRepo);
+  //     } else if (repos.length > 0 && repos[0] !== undefined && !selectedRepo) {
+  //       onSelectRepo(repos[0]);
+  //     }
+  //   }
+  // }, [repos, onSelectRepo, selectedRepo]);
+  const { data } = api.github.getRepos.useQuery();
+  const repos = data?.map((d) => d.full_name) ?? [];
 
   const handleSelectRepo = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newRepo = event.target.value;
-    onSelectRepo(newRepo);
-    localStorage.setItem("lastUsedRepo", newRepo);
+    const [org, repo] = newRepo.split("/");
+    router.push(`/api/dashboard?org=${org}&repo=${repo}`);
   };
 
-  const getShortRepoName = (repo: string) => {
+  const onShowDevelopers = () => {
+    router.push(`/dashboard/${selectedRepo}`);
+  };
+
+  const getShortRepoName = (repo?: string) => {
+    if (!repo) return "";
     const shortName = repo.split("/")[1] ?? "";
     return shortName.length > 30
       ? shortName.substring(0, 30) + "..."
