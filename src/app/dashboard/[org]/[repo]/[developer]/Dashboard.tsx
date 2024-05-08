@@ -44,11 +44,6 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
   //** Data Fetching */
 
   // First get the github repos
-  const { data: reposData } = api.github.getRepos.useQuery();
-  const repos = reposData?.map((d) => d.full_name);
-  if (repos?.length && !selectedRepo) {
-    setSelectedRepo(repos[0]!);
-  }
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
 
   //** Task */

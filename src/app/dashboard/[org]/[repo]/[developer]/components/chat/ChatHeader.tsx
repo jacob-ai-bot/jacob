@@ -15,16 +15,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   selectedDeveloper,
 }) => {
   const router = useRouter();
-  // useEffect(() => {
-  //   if (repos.length > 0 && !selectedRepo) {
-  //     const lastUsedRepo = localStorage.getItem("lastUsedRepo");
-  //     if (lastUsedRepo && repos.includes(lastUsedRepo)) {
-  //       onSelectRepo(lastUsedRepo);
-  //     } else if (repos.length > 0 && repos[0] !== undefined && !selectedRepo) {
-  //       onSelectRepo(repos[0]);
-  //     }
-  //   }
-  // }, [repos, onSelectRepo, selectedRepo]);
   const { data } = api.github.getRepos.useQuery();
   const repos = data?.map((d) => d.full_name) ?? [];
 
