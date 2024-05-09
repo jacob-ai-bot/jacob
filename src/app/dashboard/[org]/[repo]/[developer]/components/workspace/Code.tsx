@@ -33,7 +33,7 @@ export const CodeComponent: React.FC<ComponentProps> = ({ codeFiles }) => (
         </div>
         <div className="group relative">
           <button
-            className="text-blueGray-500 hover:text-blueGray-400 absolute right-2 top-2 z-10 h-8 w-8 items-center justify-center rounded"
+            className="absolute right-2 top-2 z-10 h-8 w-8 items-center justify-center rounded text-blueGray-500 hover:text-blueGray-400"
             onClick={() => copyToClipboard(codeFile.codeBlock)}
             title="Copy to Clipboard"
           >

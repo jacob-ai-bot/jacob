@@ -100,11 +100,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
   return (
     <>
       <div className="flex h-screen w-full flex-grow flex-col overflow-hidden">
-        <div className="border-blueGray-600 mt-3 flex w-full overflow-x-auto border-b px-2">
+        <div className="mt-3 flex w-full overflow-x-auto border-b border-blueGray-600 px-2">
           {tasks?.map((task) => (
             <div
               key={task.id}
-              className={`mr-2 flex flex-shrink-0 items-center rounded-t-md px-2 py-2 ${selectedTask?.id === task.id ? "text-orange bg-slate-700" : "bg-blueGray-800 text-blueGray-500"} hover:text-orange transition duration-300 ease-in-out hover:bg-slate-700`}
+              className={`mr-2 flex flex-shrink-0 items-center rounded-t-md px-2 py-2 ${selectedTask?.id === task.id ? "bg-slate-700 text-orange" : "bg-blueGray-800 text-blueGray-500"} transition duration-300 ease-in-out hover:bg-slate-700 hover:text-orange`}
             >
               <button
                 className=" max-w-[30rem] truncate text-sm"
@@ -129,7 +129,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
               </div>
             </div>
           </div>
-          <div className="border-blueGray-600/50 text-blueGray-400  flex h-24 border-t-2 bg-black p-2 text-sm">
+          <div className="flex h-24  border-t-2 border-blueGray-600/50 bg-black p-2 text-sm text-blueGray-400">
             {selectedTask && (
               <>
                 <div className="mr-4">
@@ -182,7 +182,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           </div>
         </>
       </div>
-      <div className="border-blueGray-700 h-screen border-l ">
+      <div className="h-screen border-l border-blueGray-700 ">
         <Sidebar selectedIcon={selectedIcon} onIconClick={onIconClick} />
       </div>
     </>

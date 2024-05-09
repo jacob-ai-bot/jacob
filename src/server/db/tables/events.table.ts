@@ -23,6 +23,16 @@ export enum TaskSubType {
   CODE_REVIEW = "Code Review",
 }
 
+export type Task = {
+  type: TaskType.task;
+  id: string;
+  name: string;
+  subType: TaskSubType;
+  description: string;
+  storyPoints: number;
+  status: TaskStatus;
+};
+
 const defineComment = (t: JSONTypes) =>
   t.object({
     id: t.string(),

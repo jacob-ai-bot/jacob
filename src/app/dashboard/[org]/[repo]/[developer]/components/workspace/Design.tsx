@@ -11,7 +11,7 @@ export const DesignComponent: React.FC<ComponentProps> = ({ imageUrl }) => {
         <h2 className="text-lg font-semibold text-white">Design</h2>
         <hr className="my-2 border-t border-gray-700" />
       </div>
-      <div className="hide-scrollbar border-blueGray-700 h-full overflow-auto rounded-lg border bg-black p-4 font-mono text-sm text-white">
+      <div className="hide-scrollbar h-full overflow-auto rounded-lg border border-blueGray-700 bg-black p-4 font-mono text-sm text-white">
         {imageUrl ? (
           <div>
             <img src={imageUrl} alt="Design" className="h-auto w-full" />

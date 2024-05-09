@@ -7,7 +7,6 @@ import {
   constructNewOrEditSystemPrompt,
   type RepoSettings,
   type BaseEventData,
-  getSnapshotUrl,
   getStyles,
 } from "../utils";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
@@ -23,6 +22,7 @@ import {
   type ExtractedIssueInfo,
 } from "./extractedIssue";
 import { emitCodeEvent } from "../utils/events";
+import { getSnapshotUrl } from "~/app/utils";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;

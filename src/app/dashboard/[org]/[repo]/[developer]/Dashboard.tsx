@@ -9,15 +9,16 @@ import Workspace from "./components/workspace";
 import {
   type Message,
   TaskStatus,
-  type Task,
   Role,
   type Developer,
   SidebarIcon,
 } from "~/types";
+import { type Task } from "~/server/db/tables/events.table";
 import DevelopersGrid from "./components/developers";
 import { api } from "~/trpc/react";
 import { type GetServerSidePropsContext, type GetServerSideProps } from "next";
 import { DEVELOPERS } from "~/data/developers";
+import { TaskType } from "~/server/db/enums";
 
 const CREATE_ISSUE_PROMPT =
   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
@@ -29,7 +30,6 @@ interface DashboardParams {
 }
 
 const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
 
   const [selectedRepo, setSelectedRepo] = useState<string>("");
@@ -44,23 +44,40 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
   //** Data Fetching */
 
   // First get the github repos
+  // const { data: reposData } = api.github.getRepos.useQuery();
+  // const repos = reposData?.map((d) => d.full_name);
+  // if (repos?.length && !selectedRepo) {
+  //   setSelectedRepo(repos[0]!);
+  // }
+  const { data: tasks } = api.events.getEventPayload.useQuery({
+    org,
+    repo,
+    type: TaskType.task,
+  }) as { data: Task[] };
+
+  const { data: code } = api.events.getEventPayload.useQuery({
+    org,
+    repo,
+    type: TaskType.code,
+  }) as { data: [] };
+
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
 
   //** Task */
   const onStartTask = (taskId: string) => {
     console.log("Starting task: ", taskId);
     // set the task status to in progress
-    setTasks((tasks) =>
-      tasks.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            status: TaskStatus.IN_PROGRESS,
-          };
-        }
-        return t;
-      }),
-    );
+    // setTasks((tasks) =>
+    //   tasks.map((t) => {
+    //     if (t.id === taskId) {
+    //       return {
+    //         ...t,
+    //         status: TaskStatus.IN_PROGRESS,
+    //       };
+    //     }
+    //     return t;
+    //   }),
+    // );
   };
 
   const onNewTaskSelected = (task: Task) => {
@@ -70,7 +87,7 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
 
   const onRemoveTask = (taskId: string) => {
     console.log("Removing task: ", taskId);
-    setTasks((tasks) => tasks.filter((t) => t.id !== taskId));
+    // setTasks((tasks) => tasks.filter((t) => t.id !== taskId));
   };
 
   const resetMessages = (task?: Task) => {
@@ -191,13 +208,13 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
 
   //** End Task */
 
-  const tasksInProgressOrDone = tasks.filter(
-    (t) => t.status === TaskStatus.IN_PROGRESS || t.status === TaskStatus.DONE,
-  );
+  // const tasksInProgressOrDone = tasks.filter(
+  //   (t) => t.status === TaskStatus.IN_PROGRESS || t.status === TaskStatus.DONE,
+  // );
 
   return (
     <div className="h-screen w-full  bg-gray-800 ">
-      <div
+      {/* <div
         className={`grid h-full w-full bg-gray-900 ${tasksInProgressOrDone.length ? "grid-cols-12" : "mx-auto max-w-7xl grid-cols-6 bg-gray-900"}`}
       >
         <div className="col-span-4 max-w-7xl bg-gray-900">
@@ -238,7 +255,7 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
             onRemoveTask={onRemoveTask}
           />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -216,7 +216,7 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
                           <h3 className="mb-2 text-lg font-medium text-gray-200">
                             Request
                           </h3>
-                          <div className="hide-scrollbar border-blueGray-600 overflow-x-auto rounded-md border p-4">
+                          <div className="hide-scrollbar overflow-x-auto rounded-md border border-blueGray-600 p-4">
                             {selectedPromptDetails?.request.prompts.map(
                               (prompt, index) => (
                                 <div
@@ -247,7 +247,7 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
                           <h3 className="mb-2 text-lg font-medium text-gray-200">
                             Response
                           </h3>
-                          <div className="hide-scrollbar border-blueGray-600 mb-2 overflow-x-auto rounded-md border p-2 text-xs text-gray-200">
+                          <div className="hide-scrollbar mb-2 overflow-x-auto rounded-md border border-blueGray-600 p-2 text-xs text-gray-200">
                             <div
                               className={`markdown hide-scrollbar flex flex-col font-sans text-sm text-white`}
                               style={{ overflowWrap: "anywhere" }}

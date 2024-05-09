@@ -22,7 +22,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             <a
               href={issue.link}
               target="_blank"
-              className="bg-blueGray-500 hover:bg-blueGray-600 inline-flex items-center rounded px-4 py-1.5 font-bold  text-white duration-200"
+              className="inline-flex items-center rounded bg-blueGray-500 px-4 py-1.5 font-bold text-white  duration-200 hover:bg-blueGray-600"
             >
               <FontAwesomeIcon icon={faGithub} />
               <span className="ml-2 text-xs">Open in GitHub</span>
@@ -41,7 +41,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             <a
               href={issue.link}
               target="_blank"
-              className="text-light-blue font-sans text-2xl font-semibold"
+              className="font-sans text-2xl font-semibold text-light-blue"
             >
               {issue.title}
             </a>
@@ -59,7 +59,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             <hr className="my-3 border-t border-gray-500" />
             <Markdown
               remarkPlugins={[gfm]}
-              className={`markdown markdown-issue text-blueGray-300 text-sm`}
+              className={`markdown markdown-issue text-sm text-blueGray-300`}
             >
               {issue.description}
             </Markdown>
@@ -74,7 +74,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
                 className=" rounded-lg border border-gray-700 bg-gray-800  shadow"
               >
                 <div className="flex items-center space-x-2 rounded-t-lg border-b border-gray-700 bg-gray-900 px-4 py-2">
-                  <span className="text-blueGray-200 text-xs font-semibold">
+                  <span className="text-xs font-semibold text-blueGray-200">
                     {comment.username}
                   </span>
                   <span className="text-xs text-gray-500">
@@ -86,7 +86,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
                 </div>
                 <Markdown
                   remarkPlugins={[gfm]}
-                  className={`markdown text-blueGray-300 px-4 py-2 text-xs`}
+                  className={`markdown px-4 py-2 text-xs text-blueGray-300`}
                 >
                   {comment.content}
                 </Markdown>

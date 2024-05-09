@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedIcon, onIconClick }) => {
           key={name}
         >
           <div
-            className={`cursor-pointer transition-all duration-1000 ease-in-out ${selectedIcon === name ? "text-light-blue animate-pulse" : "text-beige/40 hover:text-white"}`}
+            className={`cursor-pointer transition-all duration-1000 ease-in-out ${selectedIcon === name ? "animate-pulse text-light-blue" : "text-beige/40 hover:text-white"}`}
             onClick={() => onIconClick(name)}
             data-tooltip-id={name}
             data-tooltip-content={name}

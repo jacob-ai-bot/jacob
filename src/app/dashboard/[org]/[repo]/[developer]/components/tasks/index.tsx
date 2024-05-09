@@ -49,22 +49,22 @@ const Tasks: React.FC<TasksProps> = ({
 
   if (isLoading) {
     return (
-      <div className="border-coolGray-400/20 text-blueGray-500 flex h-full min-h-screen w-full flex-col items-center justify-center space-x-2 space-y-4 border-x bg-gray-900 bg-slate-50/5 text-2xl">
-        <div className="border-light-blue h-12 w-12 animate-spin rounded-full border-b-2 border-t-2"></div>
+      <div className="flex h-full min-h-screen w-full flex-col items-center justify-center space-x-2 space-y-4 border-x border-coolGray-400/20 bg-gray-900 bg-slate-50/5 text-2xl text-blueGray-500">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-light-blue"></div>
         <div>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="border-coolGray-400/20 grid h-full min-h-screen w-full grid-rows-[1fr_auto] border-x bg-gray-900 bg-slate-50/5">
+    <div className="grid h-full min-h-screen w-full grid-rows-[1fr_auto] border-x border-coolGray-400/20 bg-gray-900 bg-slate-50/5">
       <div className="hide-scrollbar overflow-auto">
         {tasks.filter((t) => t.status === TaskStatus.TODO).length > 0 ? (
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="tasks">
               {(provided) => (
                 <div {...provided.droppableProps} ref={provided.innerRef}>
-                  <h2 className="text-light-blue mt-2 px-2 font-bold">
+                  <h2 className="mt-2 px-2 font-bold text-light-blue">
                     Next Task
                   </h2>
                   {tasks
@@ -83,7 +83,7 @@ const Tasks: React.FC<TasksProps> = ({
                           >
                             {index === 0 ? (
                               <>
-                                <div className="border-coolGray-400/20 border-b-2 p-2">
+                                <div className="border-b-2 border-coolGray-400/20 p-2">
                                   <SelectedTask task={task} onStart={onStart} />
                                 </div>
                                 <h2 className="my-2 ml-2 text-sm text-indigo-100/50">
@@ -109,7 +109,7 @@ const Tasks: React.FC<TasksProps> = ({
           </div>
         )}
       </div>
-      <div className="border-coolGray-400/20 border-t-2 ">
+      <div className="border-t-2 border-coolGray-400/20 ">
         <TaskStatusComponent tasks={tasks} />
       </div>
     </div>

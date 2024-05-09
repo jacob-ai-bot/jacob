@@ -12,12 +12,12 @@ import {
   parseTemplate,
   type RepoSettings,
   type BaseEventData,
-  getSnapshotUrl,
 } from "../utils";
 import { sendGptVisionRequest } from "../openai/request";
 import { saveNewFile } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
 import { Language } from "../utils/settings";
+import { getSnapshotUrl } from "~/app/utils";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
