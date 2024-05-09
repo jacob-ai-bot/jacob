@@ -2,12 +2,10 @@ import { z } from "zod";
 import { db } from "~/server/db/db";
 import { TaskType } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { validateRepo } from "../utils";
-import {
-  type TaskSubType,
-  type TaskStatus,
-} from "~/server/db/tables/events.table";
+import { Octokit } from "@octokit/rest";
+import { type TaskSubType, type TaskStatus } from "~/server/db/enums";
 import { type Language } from "~/types";
+import { validateRepo } from "../utils";
 
 type Task = {
   type: TaskType.task;
@@ -126,14 +124,12 @@ export const eventsRouter = createTRPCRouter({
       async ({
         input: { org, repo, type },
         ctx: {
-          session: { user },
+          session: { accessToken },
         },
       }) => {
-        // Check to ensure that the user has access to the repo
-        await validateRepo(org, repo);
+        await validateRepo(org, repo, accessToken);
         const events = await db.events
           .where({ type })
-          .where({ userId: user.id })
           .where({ repoFullName: `${org}/${repo}` });
 
         return events.map((e) => e.payload as EventPayload);

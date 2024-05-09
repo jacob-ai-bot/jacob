@@ -6,13 +6,9 @@ import ChatComponent, { type ChatComponentHandle } from "./components/chat";
 import ChatHeader from "./components/chat/ChatHeader";
 import Tasks from "./components/tasks";
 import Workspace from "./components/workspace";
-import {
-  type Message,
-  TaskStatus,
-  Role,
-  type Developer,
-  SidebarIcon,
-} from "~/types";
+import { type Message, Role, type Developer, SidebarIcon } from "~/types";
+import { TaskSubType, TaskStatus } from "~/server/db/enums";
+
 import { type Task } from "~/server/db/tables/events.table";
 import DevelopersGrid from "./components/developers";
 import { api } from "~/trpc/react";
@@ -30,8 +26,6 @@ interface DashboardParams {
 }
 
 const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
-  const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
-
   const [selectedRepo, setSelectedRepo] = useState<string>("");
   const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
@@ -43,23 +37,19 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
 
   //** Data Fetching */
 
-  // First get the github repos
-  // const { data: reposData } = api.github.getRepos.useQuery();
-  // const repos = reposData?.map((d) => d.full_name);
-  // if (repos?.length && !selectedRepo) {
-  //   setSelectedRepo(repos[0]!);
-  // }
   const { data: tasks } = api.events.getEventPayload.useQuery({
     org,
     repo,
     type: TaskType.task,
   }) as { data: Task[] };
+  console.log("tasks", tasks);
+  const selectedTask: Task | undefined = tasks?.[0];
 
-  const { data: code } = api.events.getEventPayload.useQuery({
-    org,
-    repo,
-    type: TaskType.code,
-  }) as { data: [] };
+  // const { data: code } = api.events.getEventPayload.useQuery({
+  //   org,
+  //   repo,
+  //   type: TaskType.code,
+  // }) as { data: [] };
 
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
 
@@ -81,7 +71,7 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
   };
 
   const onNewTaskSelected = (task: Task) => {
-    setSelectedTask(task);
+    // setSelectedTask(task);
     resetMessages(task);
   };
 
@@ -208,13 +198,15 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
 
   //** End Task */
 
-  // const tasksInProgressOrDone = tasks.filter(
-  //   (t) => t.status === TaskStatus.IN_PROGRESS || t.status === TaskStatus.DONE,
-  // );
+  const tasksInProgressOrDone =
+    tasks?.filter(
+      (t) =>
+        t.status === TaskStatus.IN_PROGRESS || t.status === TaskStatus.DONE,
+    ) ?? [];
 
   return (
     <div className="h-screen w-full  bg-gray-800 ">
-      {/* <div
+      <div
         className={`grid h-full w-full bg-gray-900 ${tasksInProgressOrDone.length ? "grid-cols-12" : "mx-auto max-w-7xl grid-cols-6 bg-gray-900"}`}
       >
         <div className="col-span-4 max-w-7xl bg-gray-900">
@@ -232,15 +224,16 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
             />
           </div>
         </div>
-        <div className="col-span-2 h-screen max-w-7xl bg-gray-900">
-          <Tasks
+        <div className="col-span-2 h-screen max-w-7xl bg-red-900">
+          {/* <Tasks
             tasks={tasks}
             onStart={onStartTask}
             setTasks={setTasks}
             onNewTaskSelected={onNewTaskSelected}
             isLoading={loadingTasks}
-          />
+          /> */}
         </div>
+        {/*
         <div
           className={`col-span-6 bg-gray-900/90 ${tasksInProgressOrDone.length ? "flex" : "hidden"}`}
         >
@@ -254,8 +247,8 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
             selectedTask={selectedTask}
             onRemoveTask={onRemoveTask}
           />
-        </div>
-      </div> */}
+        </div> */}
+      </div>
     </div>
   );
 };

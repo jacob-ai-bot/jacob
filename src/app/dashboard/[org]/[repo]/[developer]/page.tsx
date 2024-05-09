@@ -1,4 +1,3 @@
-import { validateRepo } from "~/server/api/utils";
 import Dashboard from "./Dashboard";
 
 const DashboardPage = async ({
@@ -7,8 +6,6 @@ const DashboardPage = async ({
   params: { org: string; repo: string; developer: string };
 }) => {
   const { org, repo, developer } = params;
-  // check to ensure the org and repo are valid and the user can access them
-  await validateRepo(org, repo);
 
   return <Dashboard org={org} repo={repo} developer={developer} />;
 };

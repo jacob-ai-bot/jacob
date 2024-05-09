@@ -1,16 +1,35 @@
-import { api } from "~/trpc/server";
+import { Octokit } from "@octokit/rest";
 
-export const validateRepo = async (org: string, repo: string) => {
-  // Fetch the list of repositories
-  const data = await api.github.getRepos();
-  if (!data?.length) {
-    throw new Error("No repos found");
-  }
+export const getAllRepos = async (accessToken: string) => {
+  const octokit = new Octokit({ auth: accessToken });
+  const {
+    data: { installations },
+  } = await octokit.rest.apps.listInstallationsForAuthenticatedUser();
+  const repoLists = await Promise.all(
+    installations.map(async (installation) => {
+      const {
+        data: { repositories },
+      } = await octokit.rest.apps.listInstallationReposForAuthenticatedUser({
+        installation_id: installation.id,
+      });
+      return repositories.map(({ id, node_id, full_name }) => ({
+        id,
+        node_id,
+        full_name,
+      }));
+    }),
+  );
+  return repoLists.flat();
+};
 
-  const repos = data.map((d) => d.full_name);
+export const validateRepo = async (
+  org: string,
+  repo: string,
+  accessToken: string,
+) => {
+  const repositories = await getAllRepos(accessToken);
+  const repos = repositories.map((r) => r.full_name);
   if (!repos.includes(`${org}/${repo}`)) {
-    console.error("Invalid org or repo");
-    throw new Error("Invalid org or repo");
+    throw new Error("Invalid repo");
   }
-  return true;
 };

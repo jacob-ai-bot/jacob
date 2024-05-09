@@ -13,6 +13,7 @@ import {
   type ExtractedIssueInfo,
 } from "~/server/code/extractedIssue";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
+import { getAllRepos } from "../utils";
 
 export const githubRouter = createTRPCRouter({
   getRepos: protectedProcedure.input(z.object({}).optional()).query(
@@ -21,27 +22,7 @@ export const githubRouter = createTRPCRouter({
         session: { accessToken },
       },
     }) => {
-      const octokit = new Octokit({ auth: accessToken });
-      const {
-        data: { installations },
-      } = await octokit.rest.apps.listInstallationsForAuthenticatedUser();
-      const repoLists = await Promise.all(
-        installations.map(async (installation) => {
-          const {
-            data: { repositories },
-          } = await octokit.rest.apps.listInstallationReposForAuthenticatedUser(
-            {
-              installation_id: installation.id,
-            },
-          );
-          return repositories.map(({ id, node_id, full_name }) => ({
-            id,
-            node_id,
-            full_name,
-          }));
-        }),
-      );
-      return repoLists.flat();
+      return await getAllRepos(accessToken);
     },
   ),
   getExtractedIssues: protectedProcedure

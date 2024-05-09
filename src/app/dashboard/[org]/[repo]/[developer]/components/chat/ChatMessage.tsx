@@ -44,15 +44,14 @@ export const ChatMessage: FC<Props> = ({
     toast.success("Copied to clipboard");
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
   const renderers: Partial<Components | any> = {
     code: ({
-      node,
       inline,
       className,
       children,
       ...props
     }: {
-      node: any;
       inline: boolean;
       className: string;
       children: React.ReactNode;
@@ -102,7 +101,7 @@ export const ChatMessage: FC<Props> = ({
       <ToastContainer />
       {content?.length > 0 && (
         <div
-          className={`markdown-chat flex flex-col font-figtree ${message.role === Role.ASSISTANT ? "border border-blueGray-600/50 " : "bg-gradient-to-l from-blueGray-700/50 to-blueGray-800/50"} hide-scrollbar max-w-[95%] rounded-md px-2  shadow-md`}
+          className={`markdown-chat flex flex-col text-left font-figtree ${message.role === Role.ASSISTANT ? "border border-blueGray-600/50 " : "bg-gradient-to-l from-blueGray-700/50 to-blueGray-800/50"} hide-scrollbar max-w-[95%] rounded-md px-2  shadow-md`}
           style={{ overflowWrap: "anywhere" }}
         >
           <Markdown

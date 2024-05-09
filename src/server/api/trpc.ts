@@ -100,15 +100,11 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     });
   }
 
-  const { accessToken, expires } = ctx.session;
-  const isTokenExpired =
-    expires != undefined && new Date(expires).getTime() < Date.now();
-
-  // Check if accessToken or expires is undefined or if token is expired
-  if (!accessToken || isTokenExpired) {
+  const { accessToken } = ctx.session;
+  if (!accessToken) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "User is not authenticated or token has expired",
+      message: "User is not authenticated",
     });
   }
   return next({

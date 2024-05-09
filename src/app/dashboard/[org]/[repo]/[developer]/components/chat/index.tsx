@@ -6,8 +6,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { type Message, Role, type Developer, type Task } from "~/types";
+import { type Message, Role, type Developer } from "~/types";
 import { Chat } from "./Chat";
+import { type Task } from "~/server/db/tables/events.table";
 
 const DEFAULT_PROMPT = "What can I help you with today?";
 

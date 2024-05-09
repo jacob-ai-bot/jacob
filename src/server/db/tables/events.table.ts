@@ -1,7 +1,7 @@
 import { type JSONTypes } from "orchid-core";
 import type { Selectable, Insertable, Updateable, Queryable } from "orchid-orm";
 import { BaseTable } from "../baseTable";
-import { TaskType } from "../enums";
+import { TaskType, TaskStatus, TaskSubType } from "../enums";
 import { Language } from "~/server/utils/settings";
 
 export type Event = Selectable<EventsTable>;
@@ -10,18 +10,6 @@ export type EventUpdate = Updateable<EventsTable>;
 export type EventQueryable = Queryable<EventsTable>;
 
 const TASK_TYPE_VALUES = Object.values(TaskType) as [TaskType, ...TaskType[]];
-
-export enum TaskStatus {
-  TODO = "todo",
-  IN_PROGRESS = "in_progress",
-  DONE = "done",
-}
-
-export enum TaskSubType {
-  CREATE_NEW_FILE = "Create New File",
-  EDIT_FILES = "Edit Files",
-  CODE_REVIEW = "Code Review",
-}
 
 export type Task = {
   type: TaskType.task;

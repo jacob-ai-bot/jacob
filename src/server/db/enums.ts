@@ -9,3 +9,15 @@ export enum TaskType {
   pull_request = "pull request",
   command = "command",
 }
+
+export enum TaskStatus {
+  TODO = "todo",
+  IN_PROGRESS = "in_progress",
+  DONE = "done",
+}
+
+export enum TaskSubType {
+  CREATE_NEW_FILE = "Create New File",
+  EDIT_FILES = "Edit Files",
+  CODE_REVIEW = "Code Review",
+}
