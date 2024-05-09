@@ -69,7 +69,7 @@ async function refreshGitHubAccessToken(token: JWT) {
     return {
       ...token,
       accessToken: refreshedTokens.access_token,
-      accessTokenExpires: new Date(refreshedTokens.expires_at ?? 0 * 1000),
+      accessTokenExpires: new Date((refreshedTokens.expires_at ?? 0) * 1000),
       refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
     };
   } catch (error) {
