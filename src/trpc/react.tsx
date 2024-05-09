@@ -29,12 +29,15 @@ const getQueryClient = () => {
 export const api = createTRPCReact<AppRouter>();
 
 // create persistent WebSocket connection
-const wsClient = createWSClient({
-  url:
-    process.env.NODE_ENV === "development"
-      ? "ws://localhost:3001"
-      : `ws://${window.location.host}`,
-});
+const wsClient =
+  typeof window !== "undefined"
+    ? createWSClient({
+        url:
+          process.env.NODE_ENV === "development"
+            ? "ws://localhost:3001"
+            : `ws://${window.location.host}`,
+      })
+    : undefined;
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
@@ -48,9 +51,9 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
             (op.direction === "down" && op.result instanceof Error),
         }),
         splitLink({
-          condition: (op) => op.type === "subscription",
+          condition: (op) => !!wsClient && op.type === "subscription",
           true: wsLink({
-            client: wsClient,
+            client: wsClient!,
             transformer: SuperJSON,
           }),
           false: unstable_httpBatchStreamLink({
