@@ -4,14 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "next build",
+    "build:1-next": "NODE_ENV=production next build",
+    "build:2-server": "tsc --project tsconfig.server.json",
+    "build": "run-s build:*",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start",
+    "start": "NODE_ENV=production tsx src/server/prodServer.cts",
     "lint:fix": "next lint --fix",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "listener": "tsx src/server/messaging/listener.ts",
+    "dev:wss": "PORT=3001 tsx watch src/server/wssDevServer.cts",
     "db": "tsx src/server/db/dbScript.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -64,6 +67,7 @@
     "tsx": "^4.7.2",
     "ts-dedent": "^2.2.0",
     "ts-morph": "^20.0.0",
+    "ws": "^8.17.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -77,6 +81,7 @@
     "@types/node": "^20.11.20",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
+    "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.0.3",
@@ -90,6 +95,7 @@
     "msw": "^2.2.14",
     "node-mocks-http": "^1.14.0",
     "nodemon": "^3.0.1",
+    "npm-run-all": "^4.1.5",
     "orchid-orm-test-factory": "^0.3.145",
     "postcss": "^8.4.34",
     "prettier": "^3.2.5",
