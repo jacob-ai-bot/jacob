@@ -2,8 +2,6 @@ import Link from "next/link";
 
 import { getServerAuthSession } from "~/server/auth";
 import { Logo } from "~/images/Logo";
-import { Repos } from "~/app/_components/Repos";
-import { Events } from "~/app/_components/Events";
 
 export default async function Home() {
   const session = await getServerAuthSession();
@@ -45,8 +43,6 @@ export default async function Home() {
             >
               {session ? "Sign out" : "Sign in"}
             </Link>
-            <Repos />
-            <Events />
           </div>
         </div>
       </div>
