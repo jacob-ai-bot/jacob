@@ -14,7 +14,7 @@ interface EmitCodeEventParams extends BaseEventData {
 
 export async function emitCodeEvent(params: EmitCodeEventParams) {
   const { fileName, filePath, codeBlock, ...baseEventData } = params;
-  const event = await db.events.insert({
+  const event = await db.events.selectAll().insert({
     ...baseEventData,
     type: TaskType.code,
     payload: {
@@ -34,7 +34,7 @@ interface EmitPREventParams extends BaseEventData {
 
 export async function emitPREvent(params: EmitPREventParams) {
   const { pullRequest, ...baseEventData } = params;
-  const event = await db.events.insert({
+  const event = await db.events.selectAll().insert({
     ...baseEventData,
     type: TaskType.pull_request,
     payload: {
@@ -60,7 +60,7 @@ interface EmitCommandEventParams extends BaseEventData {
 
 export async function emitCommandEvent(params: EmitCommandEventParams) {
   const { command, directory, response, exitCode, ...baseEventData } = params;
-  const event = await db.events.insert({
+  const event = await db.events.selectAll().insert({
     ...baseEventData,
     type: TaskType.command,
     payload: {
@@ -98,7 +98,7 @@ export async function emitPromptEvent(params: EmitPromptEventParams) {
   } = params;
   const timestamp = new Date().toISOString();
 
-  const event = await db.events.insert({
+  const event = await db.events.selectAll().insert({
     ...baseEventData,
     type: TaskType.prompt,
     payload: {
