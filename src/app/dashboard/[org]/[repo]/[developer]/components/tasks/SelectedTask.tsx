@@ -1,7 +1,7 @@
 // SelectedTask.tsx
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay } from "@fortawesome/free-solid-svg-icons";
-import { type Task } from "~/types";
+import { type Task } from "~/server/api/routers/events";
 import Markdown from "react-markdown";
 import gfm from "remark-gfm";
 

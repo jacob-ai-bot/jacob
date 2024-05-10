@@ -1,5 +1,4 @@
 import React from "react";
-import { type PullRequest } from "~/types";
 import Markdown from "react-markdown";
 import gfm from "remark-gfm";
 import { faCircleDot } from "@fortawesome/free-solid-svg-icons";
@@ -8,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ToastContainer } from "react-toastify";
 import { capitalize, statusStyles } from "~/app/utils";
 import { formatDistanceToNow } from "date-fns";
+import { type PullRequest } from "~/server/api/routers/events";
 
 type PullRequestComponentProps = {
   pullRequest?: PullRequest;
@@ -50,7 +50,7 @@ export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
             </a>
             <div className="mb-4 mt-2 flex items-baseline justify-between">
               <div className="text-xs">
-                #{pullRequest.id} opened on{" "}
+                #{pullRequest.pullRequestId} opened on{" "}
                 {new Date(pullRequest.createdAt).toLocaleDateString()} by{" "}
                 {pullRequest.author}
               </div>
@@ -70,7 +70,7 @@ export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
           <div className="relative py-3">
             <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
           </div>
-          {pullRequest.comments.map((comment, idx) => (
+          {/* {pullRequest.comments.map((comment, idx) => (
             <>
               <div
                 key={comment.id}
@@ -100,7 +100,7 @@ export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
                 <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
               </div>
             </>
-          ))}
+          ))} */}
         </div>
       )}
       <ToastContainer />

@@ -6,7 +6,8 @@ import {
   faCheckCircle,
   faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import { TaskStatus, type Task } from "~/types";
+import { type Task } from "~/server/api/routers/events";
+import { TaskStatus } from "~/server/db/enums";
 import { SidebarIcon } from "~/types";
 import { CodeComponent } from "./Code";
 import { DesignComponent } from "./Design";
@@ -25,7 +26,7 @@ type WorkspaceProps = {
 };
 
 const Workspace: React.FC<WorkspaceProps> = ({
-  tasks,
+  tasks = [],
   selectedIcon: _selectedIcon,
   selectedTask: _selectedTask,
   onRemoveTask,

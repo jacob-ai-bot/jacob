@@ -1,23 +1,24 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Dialog, Transition } from "@headlessui/react";
 import React, { Fragment, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes, faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { formatDistanceToNow } from "date-fns";
-import { type PromptDetails } from "~/types";
 import Markdown, { type Components } from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { ToastContainer, toast } from "react-toastify";
+import { type Prompt } from "~/server/api/routers/events";
 
 type ComponentProps = {
-  promptDetailsArray?: PromptDetails[];
+  promptDetailsArray?: Prompt[];
 };
 
 export const PromptsComponent: React.FC<ComponentProps> = ({
   promptDetailsArray,
 }) => {
   const [selectedPromptDetails, setSelectedPromptDetails] =
-    useState<PromptDetails | null>(null);
+    useState<Prompt | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const copyToClipboard = async (text: string) => {
@@ -63,7 +64,7 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
     },
   };
 
-  const openPanel = (promptDetails: PromptDetails) => {
+  const openPanel = (promptDetails: Prompt) => {
     setSelectedPromptDetails(promptDetails);
     setIsPanelOpen(true);
   };

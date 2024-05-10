@@ -1,5 +1,3 @@
-import React from "react";
-import { type Issue } from "~/types";
 import gfm from "remark-gfm";
 import { faCircleDot } from "@fortawesome/free-solid-svg-icons";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
@@ -7,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { capitalize, statusStyles } from "~/app/utils";
 import { formatDistanceToNow } from "date-fns";
 import Markdown from "react-markdown";
+import { type Issue } from "~/server/api/routers/events";
 
 type IssueComponentProps = {
   issue: Issue | undefined;
@@ -67,7 +66,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
           <div className="relative py-3">
             <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
           </div>
-          {issue.comments.map((comment, idx) => (
+          {/* {issue.comments.map((comment, idx) => (
             <>
               <div
                 key={comment.id}
@@ -97,7 +96,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
                 <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
               </div>
             </>
-          ))}
+          ))} */}
         </div>
       )}
     </div>

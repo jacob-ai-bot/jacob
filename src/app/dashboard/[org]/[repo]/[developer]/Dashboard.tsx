@@ -23,28 +23,28 @@ interface DashboardParams {
   org: string;
   repo: string;
   developer: string;
+  tasks: Task[];
 }
 
-const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
-  const [selectedRepo, setSelectedRepo] = useState<string>("");
+const Dashboard: React.FC<DashboardParams> = ({
+  org,
+  repo,
+  developer,
+  tasks: _tasks = [],
+}) => {
   const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(
     SidebarIcon.Plan,
   );
+  const [tasks, setTasks] = useState<Task[] | undefined>(_tasks);
+  const [selectedTask, setSelectedTask] = useState<Task | undefined>(
+    tasks?.[0],
+  );
 
   const chatRef = useRef(null);
 
   //** Data Fetching */
-
-  const { data: tasks } = api.events.getEventPayload.useQuery({
-    org,
-    repo,
-    type: TaskType.task,
-  }) as { data: Task[] };
-  console.log("tasks", tasks);
-  const selectedTask: Task | undefined = tasks?.[0];
-
   // const { data: code } = api.events.getEventPayload.useQuery({
   //   org,
   //   repo,
@@ -57,27 +57,27 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
   const onStartTask = (taskId: string) => {
     console.log("Starting task: ", taskId);
     // set the task status to in progress
-    // setTasks((tasks) =>
-    //   tasks.map((t) => {
-    //     if (t.id === taskId) {
-    //       return {
-    //         ...t,
-    //         status: TaskStatus.IN_PROGRESS,
-    //       };
-    //     }
-    //     return t;
-    //   }),
-    // );
+    setTasks((tasks) =>
+      tasks?.map((t) => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            status: TaskStatus.IN_PROGRESS,
+          };
+        }
+        return t;
+      }),
+    );
   };
 
   const onNewTaskSelected = (task: Task) => {
-    // setSelectedTask(task);
+    setSelectedTask(task);
     resetMessages(task);
   };
 
   const onRemoveTask = (taskId: string) => {
     console.log("Removing task: ", taskId);
-    // setTasks((tasks) => tasks.filter((t) => t.id !== taskId));
+    setTasks((tasks) => tasks?.filter((t) => t.id !== taskId));
   };
 
   const resetMessages = (task?: Task) => {
@@ -205,7 +205,7 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
     ) ?? [];
 
   return (
-    <div className="h-screen w-full  bg-gray-800 ">
+    <div className="h-screen w-full bg-gray-800 text-left ">
       <div
         className={`grid h-full w-full bg-gray-900 ${tasksInProgressOrDone.length ? "grid-cols-12" : "mx-auto max-w-7xl grid-cols-6 bg-gray-900"}`}
       >
@@ -224,55 +224,35 @@ const Dashboard: React.FC<DashboardParams> = ({ org, repo, developer }) => {
             />
           </div>
         </div>
-        <div className="col-span-2 h-screen max-w-7xl bg-red-900">
-          {/* <Tasks
-            tasks={tasks}
+        <div className="col-span-2 h-screen max-w-7xl bg-gray-900/70">
+          <Tasks
+            tasks={tasks ?? []}
             onStart={onStartTask}
             setTasks={setTasks}
             onNewTaskSelected={onNewTaskSelected}
             isLoading={loadingTasks}
-          /> */}
+          />
         </div>
-        {/*
+
         <div
           className={`col-span-6 bg-gray-900/90 ${tasksInProgressOrDone.length ? "flex" : "hidden"}`}
         >
           <Workspace
-            tasks={tasks?.filter(
-              (t) =>
-                t.status === TaskStatus.IN_PROGRESS ||
-                t.status === TaskStatus.DONE,
-            )}
+            tasks={
+              tasks?.filter(
+                (t) =>
+                  t.status === TaskStatus.IN_PROGRESS ||
+                  t.status === TaskStatus.DONE,
+              ) ?? []
+            }
             selectedIcon={selectedIcon}
             selectedTask={selectedTask}
             onRemoveTask={onRemoveTask}
           />
-        </div> */}
+        </div>
       </div>
     </div>
   );
 };
-
-// export const getServerSideProps: GetServerSideProps<{}, Params> = async (
-//   context: GetServerSidePropsContext<Params>,
-// ) => {
-//   const { repo, developer } = context.params;
-
-//   // Create a client
-//   const client = createTRPCClient<AppRouter>({
-//     url: "http://localhost:3000/api/trpc", // replace with your actual server URL
-//   });
-
-//   // Fetch repos and developer name
-//   const repos = await client.query("getRepos", {});
-//   const developerName = await client.query("getDeveloperName", { developer });
-
-//   return {
-//     props: {
-//       initialRepos: repos,
-//       initialDeveloperName: developerName,
-//     },
-//   };
-// };
 
 export default Dashboard;

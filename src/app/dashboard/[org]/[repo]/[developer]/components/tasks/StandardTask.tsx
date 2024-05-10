@@ -1,4 +1,4 @@
-import { type Task } from "~/types";
+import { type Task } from "~/server/api/routers/events";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGripVertical } from "@fortawesome/free-solid-svg-icons";
 

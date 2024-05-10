@@ -3,7 +3,8 @@ import Droppable from "./Droppable";
 
 import { SelectedTask } from "./SelectedTask";
 import { StandardTask } from "./StandardTask";
-import { type Task, TaskStatus } from "~/types";
+import { type Task } from "~/server/api/routers/events";
+import { TaskStatus } from "~/server/db/enums";
 import { TaskStatusComponent } from "./TaskStatus";
 
 interface TasksProps {
@@ -40,8 +41,8 @@ const Tasks: React.FC<TasksProps> = ({
     newTasks.splice(result.destination.index, 0, removed);
 
     // If the first task has changed, call onNewTaskSelected
-    if (tasks[0] !== newTasks[0]) {
-      onNewTaskSelected(newTasks[0]!);
+    if (tasks[0] !== newTasks[0] && newTasks[0]) {
+      onNewTaskSelected(newTasks[0]);
     }
 
     setTasks(newTasks);

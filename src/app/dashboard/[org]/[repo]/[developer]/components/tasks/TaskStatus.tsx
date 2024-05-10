@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
-import { TaskStatus, type Task } from "~/types";
+import { type Task } from "~/server/api/routers/events";
+import { TaskStatus } from "~/server/db/enums";
 
 // Constants for simplicity, these would be dynamically calculated in a real-world application
 const SPRINT_DURATION = 10;

@@ -4,12 +4,13 @@ import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { ToastContainer, toast } from "react-toastify";
-import { type CodeFile } from "~/types";
+
 import "react-toastify/dist/ReactToastify.css";
 import { removeMarkdownCodeblocks } from "~/app/utils";
+import { type Code } from "~/server/api/routers/events";
 
 type ComponentProps = {
-  codeFiles?: CodeFile[];
+  codeFiles?: Code[];
 };
 
 const copyToClipboard = async (text: string) => {

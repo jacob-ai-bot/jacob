@@ -2,12 +2,14 @@ import { z } from "zod";
 import { db } from "~/server/db/db";
 import { TaskType } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { Octokit } from "@octokit/rest";
-import { type TaskSubType, type TaskStatus } from "~/server/db/enums";
-import { type Language } from "~/types";
-import { validateRepo } from "../utils";
 
-type Task = {
+import { TaskStatus, TaskSubType } from "~/server/db/enums";
+import { type Language } from "~/types";
+import { getIssue, getPlanForTaskSubType, validateRepo } from "../utils";
+import { getSnapshotUrl } from "~/app/utils";
+import { extractFilePathWithArrow } from "~/server/utils";
+
+export type Task = {
   type: TaskType.task;
   id: string;
   name: string;
@@ -15,9 +17,18 @@ type Task = {
   description: string;
   storyPoints: number;
   status: TaskStatus;
+  imageUrl?: string;
+  currentPlanStep?: number;
+  statusDescription?: string;
+  plan?: Plan[];
+  issue?: Issue;
+  pullRequest?: PullRequest;
+  commands?: Command[];
+  codeFiles?: Code[];
+  prompts?: Prompt[];
 };
 
-type Code = {
+export type Code = {
   type: TaskType.code;
   fileName: string;
   filePath: string;
@@ -25,15 +36,15 @@ type Code = {
   codeBlock: string;
 };
 
-type Design = {
+export type Design = {
   type: TaskType.design;
 };
 
-type Terminal = {
+export type Terminal = {
   type: TaskType.terminal;
 };
 
-type Plan = {
+export type Plan = {
   type: TaskType.plan;
   id?: string;
   title: string;
@@ -42,7 +53,7 @@ type Plan = {
   isComplete: boolean;
 };
 
-type Prompt = {
+export type Prompt = {
   type: TaskType.prompt;
   metadata: {
     timestamp: string;
@@ -61,7 +72,7 @@ type Prompt = {
   };
 };
 
-type Issue = {
+export type Issue = {
   type: TaskType.issue;
   id: string;
   issueId: number;
@@ -81,7 +92,7 @@ type Issue = {
   filesToUpdate?: string[] | null;
 };
 
-type PullRequest = {
+export type PullRequest = {
   type: TaskType.pull_request;
   pullRequestId: number;
   title: string;
@@ -92,7 +103,7 @@ type PullRequest = {
   author: string;
 };
 
-type Command = {
+export type Command = {
   type: TaskType.command;
   command: string;
   response: string;
@@ -133,6 +144,115 @@ export const eventsRouter = createTRPCRouter({
           .where({ repoFullName: `${org}/${repo}` });
 
         return events.map((e) => e.payload as EventPayload);
+      },
+    ),
+  getTasks: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+      }),
+    )
+    .query(
+      async ({
+        input: { org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        await validateRepo(org, repo, accessToken);
+
+        // Fetch all events from the repo matching the `TaskType.issue`
+        const events = await db.events
+          .where({ repoFullName: `${org}/${repo}` })
+          .order({
+            createdAt: "DESC",
+          });
+
+        // Extract unique issue IDs
+        const uniqueIssueIds = [...new Set(events.map((e) => e.issueId))];
+
+        // Use the unique issue IDs to create a list of tasks
+        const tasks = await Promise.all(
+          uniqueIssueIds.map(async (issueId) => {
+            // Each task should have a single issue. Get the most recent issue
+            let issue = events.find((e) => e.type === TaskType.issue)
+              ?.payload as Issue;
+
+            if (!issue) {
+              // Fetch the issue from the GitHub API using Octokit
+              issue = await getIssue(org, repo, issueId!, accessToken);
+            }
+            const newFileName = extractFilePathWithArrow(issue.title);
+            const taskSubType = newFileName
+              ? TaskSubType.CREATE_NEW_FILE
+              : TaskSubType.EDIT_FILES;
+            if (newFileName) {
+              issue.filesToCreate = [newFileName];
+            }
+
+            const plan = getPlanForTaskSubType(taskSubType);
+
+            // Each issue should have a single pull request. Get the most recent pull request
+            const pullRequest = events.find(
+              (e) => e.type === TaskType.pull_request,
+            )?.payload as PullRequest;
+
+            // Get the most recent code event for each unique 'code.fileName' associated with the issue
+            const codeFiles = events
+              .filter((e) => e.type === TaskType.code && e.issueId === issueId)
+              .map((e) => e.payload as Code)
+              .reduce<Code[]>((acc, code) => {
+                if (!acc.some((c) => c.fileName === code.fileName)) {
+                  acc.push(code);
+                }
+                return acc;
+              }, []);
+
+            // Get the commands associated with the issue, sorted from least to most recent
+            const commands = events
+              .filter(
+                (e) => e.type === TaskType.command && e.issueId === issueId,
+              )
+              .map((e) => e.payload as Command)
+              .reverse();
+
+            // Get the prompts associated with the issue
+            const prompts = events
+              .filter(
+                (e) => e.type === TaskType.prompt && e.issueId === issueId,
+              )
+              .map((e) => e.payload as Prompt);
+
+            let imageUrl = "";
+            if (issue) {
+              imageUrl = getSnapshotUrl(issue.description) ?? "";
+            }
+
+            return {
+              id: `task-${issueId}`,
+              type: TaskType.task,
+              repo: `${org}/${repo}`,
+              name: issue?.title ?? "New Task",
+              subType: taskSubType,
+              description: issue.description,
+              status:
+                issue.status === "open"
+                  ? TaskStatus.IN_PROGRESS
+                  : TaskStatus.DONE,
+              storyPoints: 1, // TODO: Calculate story points
+              imageUrl,
+              issue,
+              plan,
+              pullRequest,
+              commands,
+              codeFiles,
+              prompts,
+            } as Task;
+          }),
+        );
+
+        return tasks;
       },
     ),
 });
