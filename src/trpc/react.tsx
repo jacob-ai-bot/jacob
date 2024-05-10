@@ -35,7 +35,7 @@ const wsClient =
         url:
           process.env.NODE_ENV === "development"
             ? "ws://localhost:3001"
-            : `ws://${window.location.host}`,
+            : `wss://${window.location.host}`,
       })
     : undefined;
 
