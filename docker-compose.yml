@@ -21,6 +21,15 @@ services:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
 
+  redis:
+    image: redis:7.2
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - "redis:/var/lib/redis"
+
 volumes:
   rabbit:
   pgdata:
+  redis:

@@ -8,8 +8,7 @@ import {
   parseTemplate,
   removeMarkdownCodeblocks,
 } from "../utils";
-import { db } from "~/server/db/db";
-import { TaskType } from "~/server/db/enums";
+import { emitPromptEvent } from "~/server/utils/events";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -124,42 +123,25 @@ export const sendGptRequest = async (
     const cost =
       inputTokens * INPUT_TOKEN_COSTS[model] +
       outputTokens * OUTPUT_TOKEN_COSTS[model];
-    const timestamp = new Date().toISOString();
     if (baseEventData) {
       // send an internal event to track the prompts, timestamp, cost, tokens, and other data
-      await db.events.insert({
+      await emitPromptEvent({
         ...baseEventData,
-        type: TaskType.prompt,
-        payload: {
-          type: TaskType.prompt,
-          metadata: {
-            timestamp,
-            cost,
-            tokens,
-            duration,
-            model,
-          },
-          request: {
-            prompts: messages.map((message) => ({
-              promptType: (message.role?.toUpperCase() ?? "User") as
-                | "User"
-                | "System"
-                | "Assistant",
-              prompt:
-                typeof message.content === "string"
-                  ? message.content
-                  : JSON.stringify(message.content),
-              timestamp,
-            })),
-          },
-          response: {
-            prompt: {
-              promptType: "Assistant",
-              prompt: gptResponse?.content ?? "",
-              timestamp,
-            },
-          },
-        },
+        cost,
+        tokens,
+        duration,
+        model,
+        requestPrompts: messages.map((message) => ({
+          promptType: (message.role?.toUpperCase() ?? "User") as
+            | "User"
+            | "System"
+            | "Assistant",
+          prompt:
+            typeof message.content === "string"
+              ? message.content
+              : JSON.stringify(message.content),
+        })),
+        responsePrompt: gptResponse?.content ?? "",
       });
     }
 

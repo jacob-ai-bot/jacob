@@ -2,6 +2,9 @@ import { db } from "~/server/db/db";
 import { TaskType } from "~/server/db/enums";
 import { type BaseEventData, getLanguageFromFileName } from "~/server/utils";
 import type { PullRequest } from "~/server/code/checkAndCommit";
+import { newRedisConnection } from "./redis";
+
+const redisConnection = newRedisConnection();
 
 interface EmitCodeEventParams extends BaseEventData {
   fileName: string;
@@ -11,7 +14,7 @@ interface EmitCodeEventParams extends BaseEventData {
 
 export async function emitCodeEvent(params: EmitCodeEventParams) {
   const { fileName, filePath, codeBlock, ...baseEventData } = params;
-  await db.events.insert({
+  const event = await db.events.insert({
     ...baseEventData,
     type: TaskType.code,
     payload: {
@@ -22,6 +25,7 @@ export async function emitCodeEvent(params: EmitCodeEventParams) {
       language: getLanguageFromFileName(fileName),
     },
   });
+  await redisConnection.publish("events", JSON.stringify(event));
 }
 
 interface EmitPREventParams extends BaseEventData {
@@ -30,7 +34,7 @@ interface EmitPREventParams extends BaseEventData {
 
 export async function emitPREvent(params: EmitPREventParams) {
   const { pullRequest, ...baseEventData } = params;
-  await db.events.insert({
+  const event = await db.events.insert({
     ...baseEventData,
     type: TaskType.pull_request,
     payload: {
@@ -44,6 +48,7 @@ export async function emitPREvent(params: EmitPREventParams) {
       author: pullRequest.user.login,
     },
   });
+  await redisConnection.publish("events", JSON.stringify(event));
 }
 
 interface EmitCommandEventParams extends BaseEventData {
@@ -55,7 +60,7 @@ interface EmitCommandEventParams extends BaseEventData {
 
 export async function emitCommandEvent(params: EmitCommandEventParams) {
   const { command, directory, response, exitCode, ...baseEventData } = params;
-  await db.events.insert({
+  const event = await db.events.insert({
     ...baseEventData,
     type: TaskType.command,
     payload: {
@@ -66,4 +71,59 @@ export async function emitCommandEvent(params: EmitCommandEventParams) {
       exitCode,
     },
   });
+  await redisConnection.publish("events", JSON.stringify(event));
+}
+
+interface EmitPromptEventParams extends BaseEventData {
+  tokens: number;
+  model: string;
+  cost: number;
+  duration: number;
+  requestPrompts: {
+    promptType: "User" | "System" | "Assistant";
+    prompt: string;
+  }[];
+  responsePrompt: string;
+}
+
+export async function emitPromptEvent(params: EmitPromptEventParams) {
+  const {
+    cost,
+    tokens,
+    model,
+    duration,
+    requestPrompts,
+    responsePrompt,
+    ...baseEventData
+  } = params;
+  const timestamp = new Date().toISOString();
+
+  const event = await db.events.insert({
+    ...baseEventData,
+    type: TaskType.prompt,
+    payload: {
+      type: TaskType.prompt,
+      metadata: {
+        timestamp,
+        cost,
+        tokens,
+        duration,
+        model,
+      },
+      request: {
+        prompts: requestPrompts.map((prompt) => ({
+          ...prompt,
+          timestamp,
+        })),
+      },
+      response: {
+        prompt: {
+          promptType: "Assistant",
+          prompt: responsePrompt,
+          timestamp,
+        },
+      },
+    },
+  });
+  await redisConnection.publish("events", JSON.stringify(event));
 }

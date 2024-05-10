@@ -43,6 +43,7 @@
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
     "gpt-tokenizer": "^2.1.2",
+    "ioredis": "^5.4.1",
     "jimp": "^0.22.10",
     "jsonc-parser": "^3.2.0",
     "next": "^14.2.1",
