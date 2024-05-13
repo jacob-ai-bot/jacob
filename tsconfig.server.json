@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "CommonJS",
+    "outDir": "dist",
+    "target": "ES2021",
+    "lib": ["ES2021", "DOM"],
+    "isolatedModules": false,
+    "checkJs": false,
+    "plugins": []
+  },
+  "include": ["next-env.d.ts", "src/server/prodServer.cts"]
+}

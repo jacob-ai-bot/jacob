@@ -17,6 +17,8 @@ env:
   GITHUB_APP_ID: 123456
   GITHUB_PRIVATE_KEY: github-private-key
   GITHUB_WEBHOOK_SECRET: github-webhook-secret
+  PUBSUB_REDIS_URL: redis://localhost:6379/0
+  PUBSUB_REDIS_TEST_URL: redis://localhost:6379/1
 
 jobs:
   build:

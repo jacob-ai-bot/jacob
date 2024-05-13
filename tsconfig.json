@@ -23,6 +23,8 @@
     "plugins": [{ "name": "next" }],
     "incremental": true,
 
+    "outDir": "dist",
+
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
@@ -34,6 +36,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.cts",
     "**/*.cjs",
     "**/*.js",
     ".next/types/**/*.ts"
