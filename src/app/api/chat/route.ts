@@ -8,9 +8,7 @@ import {
 import { OpenAIStream } from "~/server/openai/request";
 import { type NextRequest } from "next/server";
 
-export const config = {
-  runtime: "edge",
-};
+// export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {

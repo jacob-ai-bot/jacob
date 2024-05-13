@@ -3,14 +3,15 @@ import { encode } from "gpt-tokenizer";
 import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
 import { type Message } from "~/types";
-import {
-  type ChatCompletionChunk,
-  type ChatCompletionCreateParamsStreaming,
-} from "openai/resources/index.mjs";
-import { type Stream } from "openai/streaming.mjs";
+
 import { removeMarkdownCodeblocks } from "~/app/utils";
 import { parseTemplate, type BaseEventData } from "../utils";
 import { emitPromptEvent } from "../utils/events";
+import {
+  type ChatCompletionCreateParamsStreaming,
+  type ChatCompletionChunk,
+} from "openai/resources/chat/completions";
+import { type Stream } from "openai/streaming";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -26,22 +27,26 @@ const openai = new OpenAI({
 const CONTEXT_WINDOW = {
   "gpt-4": 8192,
   "gpt-4-turbo": 128000,
+  "gpt-4o": 128000,
 };
 
 // Note that gpt-4-turbo has a max_tokens limit of 4K, despite having a context window of 128K
 const MAX_OUTPUT = {
   "gpt-4": 8192,
   "gpt-4-turbo": 4096,
+  "gpt-4o": 4096,
 };
 
 const ONE_MILLION = 1000000;
 const INPUT_TOKEN_COSTS = {
   "gpt-4": 30 / ONE_MILLION,
   "gpt-4-turbo": 10 / ONE_MILLION,
+  "gpt-4o": 10 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4": 60 / ONE_MILLION,
   "gpt-4-turbo": 30 / ONE_MILLION,
+  "gpt-4o": 30 / ONE_MILLION,
 };
 
 type Model = keyof typeof CONTEXT_WINDOW;
@@ -81,7 +86,7 @@ export const sendGptRequest = async (
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  model: Model = "gpt-4-turbo",
+  model: Model = "gpt-4o",
 ): Promise<string | null> => {
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
@@ -274,7 +279,7 @@ export const sendGptVisionRequest = async (
   retries = 10,
   delay = 60000,
 ): Promise<string | null> => {
-  const model: Model = "gpt-4-turbo";
+  const model: Model = "gpt-4o";
   let imagePrompt = null;
   if (snapshotUrl?.length > 0) {
     const prompt = parseTemplate("dev", "vision", "user", {});
@@ -310,7 +315,7 @@ export const sendGptVisionRequest = async (
 };
 
 export const OpenAIStream = async (
-  model: Model = "gpt-4-turbo",
+  model: Model = "gpt-4o",
   messages: Message[],
   systemPrompt = "You are a helpful friendly assistant.",
   temperature = 1,
