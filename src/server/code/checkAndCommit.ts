@@ -15,7 +15,8 @@ import {
 } from "../utils";
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
-import { emitPREvent } from "~/server/utils/events";
+import { emitPREvent, emitTaskEvent } from "~/server/utils/events";
+import { TaskStatus, TaskSubType } from "../db/tables/events.table";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -285,6 +286,15 @@ export async function checkAndCommit({
       `;
 
       await addCommentToIssue(repository, issue.number, token, issueMessage);
+
+      await emitTaskEvent({
+        ...baseEventData,
+        issue,
+        subType: newFileName
+          ? TaskSubType.CREATE_NEW_FILE
+          : TaskSubType.EDIT_FILES,
+        status: TaskStatus.DONE,
+      });
     }
   }
 }

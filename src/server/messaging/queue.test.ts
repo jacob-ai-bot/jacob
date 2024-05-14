@@ -175,6 +175,11 @@ const mockedGetFile = vi.hoisted(() => ({
 }));
 vi.mock("../github/repo", () => mockedGetFile);
 
+const mockedEvents = vi.hoisted(() => ({
+  emitTaskEvent: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("~/server/utils/events", () => mockedEvents);
+
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
@@ -219,6 +224,7 @@ describe("onGitHubEvent", () => {
       path: "/tmp/jacob/1",
       afterModifications: false,
     });
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedNewFile.createNewFile).toHaveBeenCalledTimes(1);
   });
 
@@ -266,6 +272,7 @@ describe("onGitHubEvent", () => {
       path: "/tmp/jacob/1",
       afterModifications: false,
     });
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
   });
 
