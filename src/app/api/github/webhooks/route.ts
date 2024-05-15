@@ -4,7 +4,6 @@ import { type EmitterWebhookEventName } from "@octokit/webhooks";
 import { ghApp } from "~/server/webhooks/github";
 
 const handler = async (req: NextRequest) => {
-  console.log("Received webhook event");
   await ghApp.webhooks.verifyAndReceive({
     id: req.headers.get("X-GitHub-Delivery") ?? "",
     name: req.headers.get("X-GitHub-Event") as EmitterWebhookEventName,
