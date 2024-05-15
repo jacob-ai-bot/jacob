@@ -14,8 +14,6 @@ import fs from "fs";
 import {
   constructNewOrEditSystemPrompt,
   type TemplateParams,
-  removeMarkdownCodeblocks,
-  getSnapshotUrl,
   getStyles,
 } from "../utils";
 import { Language, Style } from "../utils/settings";

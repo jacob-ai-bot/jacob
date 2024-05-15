@@ -1,20 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import Modal from "react-modal";
+import React, { useRef, useState } from "react";
 import ChatComponent, { type ChatComponentHandle } from "./components/chat";
 import ChatHeader from "./components/chat/ChatHeader";
 import Tasks from "./components/tasks";
 import Workspace from "./components/workspace";
-import { type Message, Role, type Developer, SidebarIcon } from "~/types";
-import { TaskSubType, TaskStatus } from "~/server/db/enums";
+import { type Message, Role, SidebarIcon } from "~/types";
+import { TaskStatus } from "~/server/db/enums";
 
 import { type Task } from "~/server/db/tables/events.table";
-import DevelopersGrid from "./components/developers";
-import { api } from "~/trpc/react";
-import { type GetServerSidePropsContext, type GetServerSideProps } from "next";
 import { DEVELOPERS } from "~/data/developers";
-import { TaskType } from "~/server/db/enums";
 
 const CREATE_ISSUE_PROMPT =
   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
@@ -32,9 +27,8 @@ const Dashboard: React.FC<DashboardParams> = ({
   developer,
   tasks: _tasks = [],
 }) => {
-  const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
-  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
-  const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(
+  const [loadingTasks /* , setLoadingTasks */] = useState<boolean>(false);
+  const [selectedIcon /* , setSelectedIcon */] = useState<SidebarIcon>(
     SidebarIcon.Plan,
   );
   const [tasks, setTasks] = useState<Task[] | undefined>(_tasks);

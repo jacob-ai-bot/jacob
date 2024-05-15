@@ -7,13 +7,7 @@ import { promisify } from "util";
 import { type RepoSettings, Language, Style } from "./settings";
 import { emitCommandEvent } from "./events";
 
-import {
-  type Message,
-  Role,
-  type InternalEvent,
-  type Task,
-  SpecialPhrases,
-} from "~/types";
+import { type InternalEvent, type Task } from "~/types";
 
 export { type RepoSettings, getRepoSettings } from "./settings";
 

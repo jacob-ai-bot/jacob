@@ -6,7 +6,6 @@ import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ToastContainer } from "react-toastify";
 import { capitalize, statusStyles } from "~/app/utils";
-import { formatDistanceToNow } from "date-fns";
 import { type PullRequest } from "~/server/api/routers/events";
 
 type PullRequestComponentProps = {
