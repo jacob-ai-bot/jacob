@@ -16,7 +16,7 @@ import {
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
 import { emitPREvent, emitTaskEvent } from "~/server/utils/events";
-import { TaskStatus, TaskSubType } from "../db/tables/events.table";
+import { TaskStatus, TaskSubType } from "~/server/db/enums";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];

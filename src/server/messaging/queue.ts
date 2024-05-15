@@ -34,7 +34,7 @@ import { createRepoInstalledIssue } from "../github/issue";
 import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
-import { TaskSubType, TaskStatus } from "../db/tables/events.table";
+import { TaskStatus, TaskSubType } from "~/server/db/enums";
 
 const QUEUE_NAME = "github_event_queue";
 
