@@ -5,11 +5,7 @@ import { parse } from "jsonc-parser";
 import { type Message } from "~/types";
 
 import { removeMarkdownCodeblocks } from "~/app/utils";
-import {
-  fetchImageAsBase64,
-  parseTemplate,
-  type BaseEventData,
-} from "../utils";
+import { parseTemplate, type BaseEventData } from "../utils";
 import { emitPromptEvent } from "../utils/events";
 import {
   type ChatCompletionCreateParamsStreaming,
