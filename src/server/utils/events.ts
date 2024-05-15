@@ -1,11 +1,10 @@
 import { type Issue } from "@octokit/webhooks-types";
 
 import { db } from "~/server/db/db";
-import { TaskType } from "~/server/db/enums";
+import { TaskType, type TaskSubType, type TaskStatus } from "~/server/db/enums";
 import { type BaseEventData, getLanguageFromFileName } from "~/server/utils";
 import type { PullRequest } from "~/server/code/checkAndCommit";
 import { newRedisConnection } from "./redis";
-import { type TaskSubType, type TaskStatus } from "../db/tables/events.table";
 import { type RetrievedIssue } from "~/server/code/checkAndCommit";
 
 const redisConnection = newRedisConnection();
