@@ -7,11 +7,11 @@ export async function GET(request: NextRequest) {
 
   if (org && repo) {
     const response = NextResponse.redirect(
-      new URL(`/dashboard/${org}/${repo}`, request.nextUrl),
+      new URL(`/dashboard/${org}/${repo}`, request.nextUrl.href),
     );
     response.cookies.set("lastUsedRepo", `${org}/${repo}`);
     return response;
   }
 
-  return NextResponse.redirect(new URL("/", request.nextUrl));
+  return NextResponse.redirect(new URL("/", request.nextUrl.href));
 }
