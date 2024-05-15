@@ -9,7 +9,6 @@ import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
   type RepoSettings,
-  getSnapshotUrl,
   getStyles,
   type BaseEventData,
 } from "../utils";
@@ -18,6 +17,7 @@ import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveNewFile } from "../utils/files";
 import { saveImages } from "../utils/images";
+import { getSnapshotUrl } from "~/app/utils";
 
 export interface CreateNewFileParams extends BaseEventData {
   newFileName: string;

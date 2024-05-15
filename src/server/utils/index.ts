@@ -7,6 +7,8 @@ import { promisify } from "util";
 import { type RepoSettings, Language, Style } from "./settings";
 import { emitCommandEvent } from "./events";
 
+import { type InternalEvent, type Task } from "~/types";
+
 export { type RepoSettings, getRepoSettings } from "./settings";
 
 export type TemplateParams = Record<string, string>;
@@ -237,6 +239,7 @@ export function executeWithLogRequiringSuccess({
     ...options,
   });
   return promise.finally(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     void emitCommandEvent({
       ...baseEventData,
       directory,
@@ -270,32 +273,6 @@ export function enumFromStringValue<T>(
   return value && (Object.values(enm) as unknown as string[]).includes(value)
     ? (value as unknown as T)
     : undefined;
-}
-
-export function removeMarkdownCodeblocks(text: string) {
-  return (
-    text
-      .split("\n")
-      // Filter out lines that start with optional whitespace followed by ```
-      // Explanation of the regex:
-      // ^ - Matches the start of a line
-      // \s* - Matches zero or more whitespace characters
-      // ``` - Matches the literal string ```
-      .filter((line) => !line.match(/^\s*```/))
-      .join("\n")
-  );
-}
-
-// The snapshot url of a Figma design might be found in the issue body. If so, we want to extract it.
-// Here is the specific format that a snapshot url will be in:  \`\`\`![snapshot](${snapshotUrl})\`\`\``
-// This function will extract the snapshotUrl from the issue body
-export function getSnapshotUrl(
-  issueBody: string | null | undefined,
-): string | undefined {
-  if (!issueBody) return undefined;
-  const regex = /\[snapshot\]\((.+)\)/;
-  const match = issueBody.match(regex);
-  return match ? match[1]?.trim() : undefined;
 }
 
 export async function getStyles(rootPath: string, repoSettings?: RepoSettings) {
@@ -335,3 +312,39 @@ export function getLanguageFromFileName(filePath: string) {
       return;
   }
 }
+
+export const capitalize = (s: string): string => {
+  if (typeof s !== "string") return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+export const findTaskForInternalEvent = (
+  tasks: Task[],
+  internalEvent: InternalEvent,
+): Task | undefined => {
+  // The task id is in the format: `task-${repo}-${issueId}` where repo and issueId are from the internal event
+  const taskId = `task-${internalEvent.repo}-${internalEvent.issueId}`;
+  const parentTask = tasks.find((task) => task.id === taskId);
+  console.log("Parent task: ", parentTask);
+  console.log("taskId: ", taskId);
+  console.log("tasks: ", tasks);
+  if (!parentTask) {
+    console.log("ERROR - Parent task not found!");
+    console.log("internalEvent: ", internalEvent);
+    console.log("repo: ", internalEvent.repo);
+    console.log("issueId: ", internalEvent.issueId);
+  }
+  return parentTask;
+};
+
+// Function to fetch the image and convert it to base64
+export const fetchImageAsBase64 = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const base64Image = buffer.toString("base64");
+  const contentType = response.headers.get("content-type");
+  console.log("contentType: ", contentType);
+  const mimeType = contentType ?? "application/octet-stream";
+  return `data:${mimeType};base64,${base64Image}`;
+};

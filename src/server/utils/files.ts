@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import ignore, { type Ignore } from "ignore";
 import parseDiff from "parse-diff";
-import { removeMarkdownCodeblocks } from ".";
+import { removeMarkdownCodeblocks } from "~/app/utils";
 
 type LineLengthMap = Record<string, number>;
 
