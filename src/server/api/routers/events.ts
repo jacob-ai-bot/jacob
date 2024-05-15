@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "~/server/db/db";
-import { TaskType } from "~/server/db/enums";
+import { TaskType, type TodoStatus } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
@@ -124,6 +124,13 @@ type EventPayload =
   | Issue
   | PullRequest
   | Command;
+
+export type Todo = {
+  id: string;
+  description: string;
+  name: string;
+  status: TodoStatus;
+};
 
 export const eventsRouter = createTRPCRouter({
   getEventPayload: protectedProcedure

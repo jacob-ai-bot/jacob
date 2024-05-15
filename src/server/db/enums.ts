@@ -17,6 +17,13 @@ export enum TaskStatus {
   ERROR = "error",
 }
 
+export enum TodoStatus {
+  TODO = "todo",
+  IN_PROGRESS = "in_progress",
+  DONE = "done",
+  ERROR = "error",
+}
+
 export enum TaskSubType {
   CREATE_NEW_FILE = "Create New File",
   EDIT_FILES = "Edit Files",

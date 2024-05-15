@@ -25,11 +25,11 @@ export const githubRouter = createTRPCRouter({
       return await getAllRepos(accessToken);
     },
   ),
-  getExtractedIssues: protectedProcedure
-    .input(z.object({ repo: z.string(), ids: z.array(z.number()) }))
+  getTodos: protectedProcedure
+    .input(z.object({ repo: z.string(), max: z.number().optional() }))
     .query(
       async ({
-        input: { repo, ids },
+        input: { repo, max = 10 },
         ctx: {
           session: { accessToken },
         },
