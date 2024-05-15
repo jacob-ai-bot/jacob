@@ -179,14 +179,14 @@ export const eventsRouter = createTRPCRouter({
 
         // Use the unique issue IDs to create a list of tasks
         const tasks = await Promise.all(
-          uniqueIssueIds.map(async (issueId) => {
+          (uniqueIssueIds.filter(Boolean) as number[]).map(async (issueId) => {
             // Each task should have a single issue. Get the most recent issue
             let issue = events.find((e) => e.type === TaskType.issue)
               ?.payload as Issue;
 
             if (!issue) {
               // Fetch the issue from the GitHub API using Octokit
-              issue = await getIssue(org, repo, issueId!, accessToken);
+              issue = await getIssue(org, repo, issueId, accessToken);
             }
             const newFileName = extractFilePathWithArrow(issue.title);
             const taskSubType = newFileName
