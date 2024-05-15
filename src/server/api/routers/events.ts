@@ -11,17 +11,15 @@ import { extractFilePathWithArrow } from "~/server/utils";
 
 import { observable } from "@trpc/server/observable";
 
-import { type Event, EventsTable } from "~/server/db/tables/events.table";
+import {
+  type Event,
+  type Task as EventsTask,
+  EventsTable,
+} from "~/server/db/tables/events.table";
 import { newRedisConnection } from "~/server/utils/redis";
 
-export type Task = {
-  type: TaskType.task;
-  id: string;
-  name: string;
-  subType: TaskSubType;
-  description: string;
-  storyPoints: number;
-  status: TaskStatus;
+export interface Task extends EventsTask {
+  issueId: number;
   imageUrl?: string;
   currentPlanStep?: number;
   statusDescription?: string;
@@ -31,7 +29,7 @@ export type Task = {
   commands?: Command[];
   codeFiles?: Code[];
   prompts?: Prompt[];
-};
+}
 
 export type Code = {
   type: TaskType.code;
@@ -127,12 +125,6 @@ type EventPayload =
   | PullRequest
   | Command;
 
-export type EmittedEvent = {
-  issueId: number;
-  payload: EventPayload;
-  task?: Task;
-};
-
 export const eventsRouter = createTRPCRouter({
   getEventPayload: protectedProcedure
     .input(
@@ -206,34 +198,16 @@ export const eventsRouter = createTRPCRouter({
 
   onAdd: protectedProcedure.subscription(() => {
     // return an `observable` with a callback which is triggered immediately
-    return observable<EmittedEvent>((emit) => {
-      const onAdd = (channel: string, _data: string) => {
-        // First check to see if the new event has an issueId that is not currently in the database
-        console.log("Received event:", _data);
-        const data = JSON.parse(_data) as Event;
-
-        // db.events
-        //   .findByOptional({
-        //     issueId: data.issueId,
-        //   })
-        //   .then((existingEvent) => {
-        //     console.log("Existing event:", existingEvent);
-        console.log("Data in then", data);
-        // if (!existingEvent) {
-        // we need to create a new empty task for this issueId
-        const task = createTaskForIssue(
-          data.payload as Issue,
-          [data],
-          data.repoFullName,
-        );
-        // }
-        const payload = data.payload as EventPayload;
-        console.log("Emitting new event:", payload);
-        emit.next({ issueId: data.issueId ?? 0, payload, task });
-        // })
-        // .catch((err) => {
-        //   console.error("Error in onAdd:", err);
-        // });
+    return observable<Event>((emit) => {
+      const onRedisMessage = (_channel: string, message: string) => {
+        try {
+          emit.next(JSON.parse(message) as Event);
+        } catch (error) {
+          console.error("Failed to parse event in redis message", {
+            message,
+            error,
+          });
+        }
       };
 
       // trigger `onAdd()` when `add` is triggered in our event emitter
@@ -252,7 +226,7 @@ export const eventsRouter = createTRPCRouter({
           }
         })
         .then(() => {
-          redisConnection.on("message", onAdd);
+          redisConnection.on("message", onRedisMessage);
         });
 
       // unsubscribe function when client disconnects or stops subscribing

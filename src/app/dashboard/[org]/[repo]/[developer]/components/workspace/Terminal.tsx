@@ -1,4 +1,4 @@
-import { type Command } from "~/types";
+import { type Command } from "~/server/api/routers/events";
 import AnsiToHtml from "ansi-to-html";
 import { useRef, useEffect } from "react";
 

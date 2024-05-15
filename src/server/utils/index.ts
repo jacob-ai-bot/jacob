@@ -7,8 +7,6 @@ import { promisify } from "util";
 import { type RepoSettings, Language, Style } from "./settings";
 import { emitCommandEvent } from "./events";
 
-import { type InternalEvent, type Task } from "~/types";
-
 export { type RepoSettings, getRepoSettings } from "./settings";
 
 export type TemplateParams = Record<string, string>;
@@ -316,25 +314,6 @@ export function getLanguageFromFileName(filePath: string) {
 export const capitalize = (s: string): string => {
   if (typeof s !== "string") return "";
   return s.charAt(0).toUpperCase() + s.slice(1);
-};
-
-export const findTaskForInternalEvent = (
-  tasks: Task[],
-  internalEvent: InternalEvent,
-): Task | undefined => {
-  // The task id is in the format: `task-${repo}-${issueId}` where repo and issueId are from the internal event
-  const taskId = `task-${internalEvent.repo}-${internalEvent.issueId}`;
-  const parentTask = tasks.find((task) => task.id === taskId);
-  console.log("Parent task: ", parentTask);
-  console.log("taskId: ", taskId);
-  console.log("tasks: ", tasks);
-  if (!parentTask) {
-    console.log("ERROR - Parent task not found!");
-    console.log("internalEvent: ", internalEvent);
-    console.log("repo: ", internalEvent.repo);
-    console.log("issueId: ", internalEvent.issueId);
-  }
-  return parentTask;
 };
 
 // Function to fetch the image and convert it to base64

@@ -60,74 +60,69 @@ const Dashboard: React.FC<DashboardParams> = ({
   //   },
   // });
   api.events.onAdd.useSubscription(undefined, {
-    onData(data) {
-      console.log("Event data: ", data);
-      debugger;
-      if (!data?.payload) {
-        console.error("No payload found in event data");
-        return;
-      }
-      const issueId = data.issueId;
-      const payload = data.payload;
+    onData(event) {
+      const { issueId, payload } = event;
+      const existingTask = tasks.find((t) => t.issueId === issueId);
       if (payload.type === TaskType.task) {
-        setTasks([...tasks, payload]);
-        setSelectedTask(payload);
-      } else {
-        // get the task for the data's issueId
-        const task = tasks.find((t) => t.issue?.issueId === issueId);
-        if (!task) {
-          const newTask = data.task;
-          if (!newTask) {
-            console.error("No task found for issueId");
-            return;
-          }
-          if (newTask.name === "New Task") {
-            setSelectedIcon(getSidebarIconForType(payload.type));
-            return;
-          }
-          setTasks([...tasks, newTask]);
-          // Note that by calling the server to get the updated tasks,
-          // we will also get the new data that was just added
-          setSelectedTask(newTask);
-          setSelectedIcon(getSidebarIconForType(payload.type));
+        if (existingTask) {
+          console.log(
+            "ignoring task (for now) - because it already exists",
+            payload,
+          );
           return;
         }
+        if (!issueId) {
+          console.warn("No issueId found in task event", event);
+          return;
+        }
+        console.log("adding new task", payload);
+        const newTask = { ...payload, issueId };
+        setTasks([...tasks, newTask]);
+        setSelectedTask(newTask);
+      } else {
+        // get the task for the data's issueId
+        if (!existingTask) {
+          console.warn("No existing task found for issueId", {
+            event,
+            issueId,
+          });
+          return;
+        }
+        const newTask = { ...existingTask };
         // update the task with the new payload
         if (payload.type === TaskType.issue) {
-          task.issue = payload;
+          newTask.issue = payload;
         }
         if (payload.type === TaskType.pull_request) {
-          task.pullRequest = payload;
+          newTask.pullRequest = payload;
         }
         if (payload.type === TaskType.code) {
           // Loop throught the code files and update the task with the new code if it exists, add it if it doesn't
           const codeFile = payload;
-          const codeFiles = task.codeFiles ?? [];
-          const index = codeFiles.findIndex(
+          const newCodeFiles = [...(newTask.codeFiles ?? [])];
+          const index = newCodeFiles.findIndex(
             (c) => c.fileName === codeFile.fileName,
           );
           if (index !== -1) {
-            codeFiles[index] = codeFile;
+            newCodeFiles[index] = codeFile;
           } else {
-            codeFiles.push(codeFile);
+            newCodeFiles.push(codeFile);
           }
-          task.codeFiles = codeFiles;
+          newTask.codeFiles = newCodeFiles;
         }
         if (payload.type === TaskType.command) {
           // add the command to the task.commands array
-          // if the task.commands array doesn't exist, create it
-          task.commands = task.commands ?? [];
-          task.commands.push(payload);
+          newTask.commands = [...(newTask.commands ?? []), payload];
         }
         if (payload.type === TaskType.prompt) {
           // add the prompt to the task.prompts array
-          // if the task.prompts array doesn't exist, create it
-          task.prompts = task.prompts ?? [];
-          task.prompts.push(payload);
+          newTask.prompts = [...(newTask.prompts ?? []), payload];
         }
 
         // update the task in the tasks array
-        setTasks((tasks) => tasks.map((t) => (t.id === task.id ? task : t)));
+        setTasks((tasks) =>
+          tasks.map((t) => (t.id === existingTask.id ? newTask : t)),
+        );
 
         setSelectedIcon(getSidebarIconForType(payload.type));
       }

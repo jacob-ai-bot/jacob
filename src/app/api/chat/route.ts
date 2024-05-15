@@ -1,4 +1,5 @@
-import { type Task, type Message, type Developer } from "~/types";
+import { type Message, type Developer } from "~/types";
+import { type Task } from "~/server/api/routers/events";
 
 import {
   chatCreateIssueSystem,

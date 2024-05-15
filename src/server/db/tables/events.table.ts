@@ -16,7 +16,7 @@ export type Task = {
   id: string;
   name: string;
   subType: TaskSubType;
-  description: string;
+  description?: string;
   storyPoints: number;
   status: TaskStatus;
 };

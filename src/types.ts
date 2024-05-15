@@ -13,44 +13,6 @@ export enum SpecialPhrases {
   UPDATE_TASK = "<<UPDATE_TASK>>",
 }
 
-export enum TaskStatus {
-  TODO = "todo",
-  IN_PROGRESS = "in_progress",
-  DONE = "done",
-  ERROR = "error",
-}
-
-export enum TaskType {
-  CREATE_NEW_FILE = "Create New File",
-  EDIT_FILES = "Edit Files",
-  CODE_REVIEW = "Code Review",
-}
-
-export type Task = {
-  id: string;
-  repo: string;
-  name: string;
-  type: TaskType;
-  description: string;
-  storyPoints: number;
-  status: TaskStatus;
-  imageUrl?: string;
-  currentPlanStep?: number;
-  statusDescription?: string;
-  plan?: Plan[];
-  issue?: Issue;
-  pullRequest?: PullRequest;
-  commands?: Command[];
-  codeFiles?: CodeFile[];
-  prompts?: PromptDetails[];
-};
-
-export type Command = {
-  command: string;
-  response: string;
-  directory?: string;
-};
-
 export enum Language {
   TypeScript = "TypeScript",
   JavaScript = "JavaScript",
@@ -143,35 +105,6 @@ export type PromptDetails = {
   response: {
     prompt: Prompt;
   };
-};
-
-export enum InternalEventType {
-  Task = "Task",
-  Code = "Code",
-  Design = "Design",
-  Command = "Command",
-  Plan = "Plan",
-  Prompt = "Prompt",
-  Issue = "Issue",
-  PullRequest = "Pull Request",
-}
-
-// This is the InternalEvent type from the otto-mvp repo
-export type InternalEvent = {
-  id?: string;
-  type: InternalEventType;
-  repo: string;
-  issueId?: number | undefined;
-  pullRequestId?: number | undefined;
-  userId: string;
-  payload:
-    | Task
-    | Plan
-    | Issue
-    | PullRequest
-    | Command
-    | CodeFile
-    | PromptDetails;
 };
 
 export type NewIssue = {
