@@ -293,6 +293,7 @@ const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
 
   return {
     id: `task-${issueId}`,
+    issueId,
     type: TaskType.task,
     repo,
     name: issue?.title ?? "New Task",
