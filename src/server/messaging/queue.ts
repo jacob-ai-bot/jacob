@@ -33,6 +33,8 @@ import {
 import { createRepoInstalledIssue } from "../github/issue";
 import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
+import { emitTaskEvent } from "../utils/events";
+import { TaskSubType, TaskStatus } from "../db/tables/events.table";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -381,6 +383,18 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
       try {
         if (issueOpened) {
+          const issueTitle = event.payload.issue.title;
+          const newFileName = extractFilePathWithArrow(issueTitle);
+
+          await emitTaskEvent({
+            ...baseEventData,
+            issue: event.payload.issue,
+            subType: newFileName
+              ? TaskSubType.CREATE_NEW_FILE
+              : TaskSubType.EDIT_FILES,
+            status: TaskStatus.IN_PROGRESS,
+          });
+
           // Ensure that we capture a source map BEFORE we run the build check.
           // Once npm install has been run, the source map becomes much more
           // detailed and is too large for our LLM context window.
@@ -392,9 +406,6 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             repoSettings,
           });
 
-          const issueTitle = event.payload.issue.title;
-
-          const newFileName = extractFilePathWithArrow(issueTitle);
           if (newFileName) {
             await createNewFile({
               ...baseEventData,

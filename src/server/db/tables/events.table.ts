@@ -57,7 +57,7 @@ export class EventsTable extends BaseTable {
           id: t.string(),
           name: t.string(),
           subType: t.nativeEnum(TaskSubType),
-          description: t.string(),
+          description: t.string().optional(),
           storyPoints: t.number(),
           status: t.nativeEnum(TaskStatus),
         }),
