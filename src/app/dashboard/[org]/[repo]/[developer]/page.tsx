@@ -12,8 +12,6 @@ const DashboardPage = async ({
     repo,
   });
 
-  console.log("tasks", tasks);
-
   return (
     <Dashboard org={org} repo={repo} developer={developer} tasks={tasks} />
   );

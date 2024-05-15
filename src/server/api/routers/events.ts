@@ -127,6 +127,12 @@ type EventPayload =
   | PullRequest
   | Command;
 
+export type EmittedEvent = {
+  issueId: number;
+  payload: EventPayload;
+  task?: Task;
+};
+
 export const eventsRouter = createTRPCRouter({
   getEventPayload: protectedProcedure
     .input(
@@ -175,7 +181,9 @@ export const eventsRouter = createTRPCRouter({
           });
 
         // Extract unique issue IDs
-        const uniqueIssueIds = [...new Set(events.map((e) => e.issueId))];
+        const uniqueIssueIds = [
+          ...new Set(events.map((e) => e.issueId)),
+        ].filter((issueId) => issueId);
 
         // Use the unique issue IDs to create a list of tasks
         const tasks = await Promise.all(
@@ -184,76 +192,11 @@ export const eventsRouter = createTRPCRouter({
             let issue = events.find((e) => e.type === TaskType.issue)
               ?.payload as Issue;
 
-            if (!issue) {
+            if (!issue && org && repo && issueId && accessToken) {
               // Fetch the issue from the GitHub API using Octokit
               issue = await getIssue(org, repo, issueId, accessToken);
             }
-            const newFileName = extractFilePathWithArrow(issue.title);
-            const taskSubType = newFileName
-              ? TaskSubType.CREATE_NEW_FILE
-              : TaskSubType.EDIT_FILES;
-            if (newFileName) {
-              issue.filesToCreate = [newFileName];
-            }
-
-            const plan = getPlanForTaskSubType(taskSubType);
-
-            // Each issue should have a single pull request. Get the most recent pull request
-            const pullRequest = events.find(
-              (e) => e.type === TaskType.pull_request,
-            )?.payload as PullRequest;
-
-            // Get the most recent code event for each unique 'code.fileName' associated with the issue
-            const codeFiles = events
-              .filter((e) => e.type === TaskType.code && e.issueId === issueId)
-              .map((e) => e.payload as Code)
-              .reduce<Code[]>((acc, code) => {
-                if (!acc.some((c) => c.fileName === code.fileName)) {
-                  acc.push(code);
-                }
-                return acc;
-              }, []);
-
-            // Get the commands associated with the issue, sorted from least to most recent
-            const commands = events
-              .filter(
-                (e) => e.type === TaskType.command && e.issueId === issueId,
-              )
-              .map((e) => e.payload as Command)
-              .reverse();
-
-            // Get the prompts associated with the issue
-            const prompts = events
-              .filter(
-                (e) => e.type === TaskType.prompt && e.issueId === issueId,
-              )
-              .map((e) => e.payload as Prompt);
-
-            let imageUrl = "";
-            if (issue) {
-              imageUrl = getSnapshotUrl(issue.description) ?? "";
-            }
-
-            return {
-              id: `task-${issueId}`,
-              type: TaskType.task,
-              repo: `${org}/${repo}`,
-              name: issue?.title ?? "New Task",
-              subType: taskSubType,
-              description: issue.description,
-              status:
-                issue.status === "open"
-                  ? TaskStatus.IN_PROGRESS
-                  : TaskStatus.DONE,
-              storyPoints: 1, // TODO: Calculate story points
-              imageUrl,
-              issue,
-              plan,
-              pullRequest,
-              commands,
-              codeFiles,
-              prompts,
-            } as Task;
+            return createTaskForIssue(issue, events, `${org}/${repo}`);
           }),
         );
 
@@ -263,10 +206,34 @@ export const eventsRouter = createTRPCRouter({
 
   onAdd: protectedProcedure.subscription(() => {
     // return an `observable` with a callback which is triggered immediately
-    return observable<Event>((emit) => {
-      const onAdd = (channel: string, data: Event) => {
-        // emit data to client
-        emit.next(data);
+    return observable<EmittedEvent>((emit) => {
+      const onAdd = (channel: string, _data: string) => {
+        // First check to see if the new event has an issueId that is not currently in the database
+        console.log("Received event:", _data);
+        const data = JSON.parse(_data) as Event;
+
+        // db.events
+        //   .findByOptional({
+        //     issueId: data.issueId,
+        //   })
+        //   .then((existingEvent) => {
+        //     console.log("Existing event:", existingEvent);
+        console.log("Data in then", data);
+        // if (!existingEvent) {
+        // we need to create a new empty task for this issueId
+        const task = createTaskForIssue(
+          data.payload as Issue,
+          [data],
+          data.repoFullName,
+        );
+        // }
+        const payload = data.payload as EventPayload;
+        console.log("Emitting new event:", payload);
+        emit.next({ issueId: data.issueId ?? 0, payload, task });
+        // })
+        // .catch((err) => {
+        //   console.error("Error in onAdd:", err);
+        // });
       };
 
       // trigger `onAdd()` when `add` is triggered in our event emitter
@@ -306,3 +273,65 @@ export const eventsRouter = createTRPCRouter({
       return event;
     }),
 });
+
+const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
+  const issueId = issue.issueId;
+  const newFileName = extractFilePathWithArrow(issue.title);
+  const taskSubType = newFileName
+    ? TaskSubType.CREATE_NEW_FILE
+    : TaskSubType.EDIT_FILES;
+  if (newFileName) {
+    issue.filesToCreate = [newFileName];
+  }
+
+  const plan = getPlanForTaskSubType(taskSubType);
+
+  // Each issue should have a single pull request. Get the most recent pull request
+  const pullRequest = events.find((e) => e.type === TaskType.pull_request)
+    ?.payload as PullRequest;
+
+  // Get the most recent code event for each unique 'code.fileName' associated with the issue
+  const codeFiles = events
+    .filter((e) => e.type === TaskType.code && e.issueId === issueId)
+    .map((e) => e.payload as Code)
+    .reduce<Code[]>((acc, code) => {
+      if (!acc.some((c) => c.fileName === code.fileName)) {
+        acc.push(code);
+      }
+      return acc;
+    }, []);
+
+  // Get the commands associated with the issue, sorted from least to most recent
+  const commands = events
+    .filter((e) => e.type === TaskType.command && e.issueId === issueId)
+    .map((e) => e.payload as Command)
+    .reverse();
+
+  // Get the prompts associated with the issue
+  const prompts = events
+    .filter((e) => e.type === TaskType.prompt && e.issueId === issueId)
+    .map((e) => e.payload as Prompt);
+
+  let imageUrl = "";
+  if (issue) {
+    imageUrl = getSnapshotUrl(issue.description) ?? "";
+  }
+
+  return {
+    id: `task-${issueId}`,
+    type: TaskType.task,
+    repo,
+    name: issue?.title ?? "New Task",
+    subType: taskSubType,
+    description: issue.description,
+    status: issue.status === "open" ? TaskStatus.IN_PROGRESS : TaskStatus.DONE,
+    storyPoints: 1, // TODO: Calculate story points
+    imageUrl,
+    issue,
+    plan,
+    pullRequest,
+    commands,
+    codeFiles,
+    prompts,
+  } as Task;
+};

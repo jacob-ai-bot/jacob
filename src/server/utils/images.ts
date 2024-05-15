@@ -38,7 +38,7 @@ export const uploadToS3 = async (
 export const getSignedUrl = (
   imagePath: string,
   bucketName: string,
-  expiresInSeconds = 3600,
+  expiresInSeconds = 3600 * 24,
 ) => {
   const params = {
     Bucket: bucketName,

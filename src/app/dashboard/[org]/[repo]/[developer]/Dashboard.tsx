@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ChatComponent, { type ChatComponentHandle } from "./components/chat";
 import ChatHeader from "./components/chat/ChatHeader";
 import Tasks from "./components/tasks";
@@ -8,11 +8,17 @@ import Workspace from "./components/workspace";
 import { type Message, Role, SidebarIcon } from "~/types";
 import { TaskStatus } from "~/server/db/enums";
 
-import { type Task } from "~/server/db/tables/events.table";
+import { type Task } from "~/server/api/routers/events";
+import { api } from "~/trpc/react";
 import { DEVELOPERS } from "~/data/developers";
+import { TaskType } from "~/server/db/enums";
+import { getSidebarIconForType } from "~/app/utils";
 
-const CREATE_ISSUE_PROMPT =
-  "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
+// const CREATE_ISSUE_PROMPT =
+//   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
+
+const DEMO_PROMPT =
+  "Hallo! I'm ready to help you with your tasks. It looks like you currently have one GitHub task assigned to you. The task is to create a new Checkout form. Here is a link to the Figma design: [Checkout form](https://www.figma.com/file/L1QVjEXUIniizBjw0dRnBw/JACoB-Home-Page?type=design&node-id=73-81&mode=design&t=vTxaMbZbl5n0G1Xx-4). Click that link to open the JACoB Figma plugin and jump back here when you're finished. If you have any questions, feel free to ask!";
 
 interface DashboardParams {
   org: string;
@@ -28,22 +34,108 @@ const Dashboard: React.FC<DashboardParams> = ({
   tasks: _tasks = [],
 }) => {
   const [loadingTasks /* , setLoadingTasks */] = useState<boolean>(false);
-  const [selectedIcon /* , setSelectedIcon */] = useState<SidebarIcon>(
+  const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(
     SidebarIcon.Plan,
   );
-  const [tasks, setTasks] = useState<Task[] | undefined>(_tasks);
+  const [tasks, setTasks] = useState<Task[]>(_tasks ?? []);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(
     tasks?.[0],
   );
 
   const chatRef = useRef(null);
 
+  useEffect(() => {
+    resetMessages();
+  }, []);
+
   //** Data Fetching */
-  // const { data: code } = api.events.getEventPayload.useQuery({
-  //   org,
-  //   repo,
-  //   type: TaskType.code,
-  // }) as { data: [] };
+  // trpc.post.onAdd.useSubscription(undefined, {
+  //   onData(post) {
+  //     addMessages([post]);
+  //   },
+  //   onError(err) {
+  //     console.error('Subscription error:', err);
+  //     // we might have missed a message - invalidate cache
+  //     utils.post.infinite.invalidate();
+  //   },
+  // });
+  api.events.onAdd.useSubscription(undefined, {
+    onData(data) {
+      console.log("Event data: ", data);
+      debugger;
+      if (!data?.payload) {
+        console.error("No payload found in event data");
+        return;
+      }
+      const issueId = data.issueId;
+      const payload = data.payload;
+      if (payload.type === TaskType.task) {
+        setTasks([...tasks, payload]);
+        setSelectedTask(payload);
+      } else {
+        // get the task for the data's issueId
+        const task = tasks.find((t) => t.issue?.issueId === issueId);
+        if (!task) {
+          const newTask = data.task;
+          if (!newTask) {
+            console.error("No task found for issueId");
+            return;
+          }
+          if (newTask.name === "New Task") {
+            setSelectedIcon(getSidebarIconForType(payload.type));
+            return;
+          }
+          setTasks([...tasks, newTask]);
+          // Note that by calling the server to get the updated tasks,
+          // we will also get the new data that was just added
+          setSelectedTask(newTask);
+          setSelectedIcon(getSidebarIconForType(payload.type));
+          return;
+        }
+        // update the task with the new payload
+        if (payload.type === TaskType.issue) {
+          task.issue = payload;
+        }
+        if (payload.type === TaskType.pull_request) {
+          task.pullRequest = payload;
+        }
+        if (payload.type === TaskType.code) {
+          // Loop throught the code files and update the task with the new code if it exists, add it if it doesn't
+          const codeFile = payload;
+          const codeFiles = task.codeFiles ?? [];
+          const index = codeFiles.findIndex(
+            (c) => c.fileName === codeFile.fileName,
+          );
+          if (index !== -1) {
+            codeFiles[index] = codeFile;
+          } else {
+            codeFiles.push(codeFile);
+          }
+          task.codeFiles = codeFiles;
+        }
+        if (payload.type === TaskType.command) {
+          // add the command to the task.commands array
+          // if the task.commands array doesn't exist, create it
+          task.commands = task.commands ?? [];
+          task.commands.push(payload);
+        }
+        if (payload.type === TaskType.prompt) {
+          // add the prompt to the task.prompts array
+          // if the task.prompts array doesn't exist, create it
+          task.prompts = task.prompts ?? [];
+          task.prompts.push(payload);
+        }
+
+        // update the task in the tasks array
+        setTasks((tasks) => tasks.map((t) => (t.id === task.id ? task : t)));
+
+        setSelectedIcon(getSidebarIconForType(payload.type));
+      }
+    },
+    onError(err) {
+      console.error("Subscription error:", err);
+    },
+  });
 
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
 
@@ -87,7 +179,7 @@ const Dashboard: React.FC<DashboardParams> = ({
       messages = [
         {
           role: Role.ASSISTANT,
-          content: selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
+          content: DEMO_PROMPT, //selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
         },
       ];
     }

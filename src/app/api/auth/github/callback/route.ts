@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
   // and caches the authentication for successive calls
   try {
     const { token } = await auth();
-
     return NextResponse.json({ data: { token } });
   } catch (error) {
     return NextResponse.json({ errors: [String(error)] }, { status: 500 });

@@ -5,7 +5,11 @@ import { parse } from "jsonc-parser";
 import { type Message } from "~/types";
 
 import { removeMarkdownCodeblocks } from "~/app/utils";
-import { parseTemplate, type BaseEventData } from "../utils";
+import {
+  fetchImageAsBase64,
+  parseTemplate,
+  type BaseEventData,
+} from "../utils";
 import { emitPromptEvent } from "../utils/events";
 import {
   type ChatCompletionCreateParamsStreaming,
@@ -196,6 +200,10 @@ export const sendGptRequestWithSchema = async (
   // Loop until a valid response is received or the maxRetries limit is reached
   while (retryCount < retries) {
     let gptResponse: string | null = null;
+    // if retries is greater than 0, slightly modify the system prompt to avoid hitting the same issue via cache
+    if (retries > 0) {
+      systemPrompt = `attempt #${retryCount + 1}) ${systemPrompt}`;
+    }
 
     try {
       gptResponse = await sendGptRequest(
@@ -284,6 +292,12 @@ export const sendGptVisionRequest = async (
   if (snapshotUrl?.length > 0) {
     const prompt = parseTemplate("dev", "vision", "user", {});
 
+    // download the image data if needed
+    // const url = await fetchImageAsBase64(snapshotUrl);
+    // if (!url) {
+    //   throw new Error("Failed to download image data");
+    // }
+
     imagePrompt = {
       role: "user",
       content: [
@@ -332,7 +346,7 @@ export const OpenAIStream = async (
       console.log(
         "NOTE: Input text is too large to fit within the context window.",
       );
-      model = "gpt-4";
+      model = "gpt-4o";
     }
     try {
       if (!max_tokens) {

@@ -1,4 +1,5 @@
-import { type Message, Role, SpecialPhrases } from "~/types";
+import { TaskType } from "~/server/db/enums";
+import { type Message, Role, SpecialPhrases, SidebarIcon } from "~/types";
 
 export const statusStyles = {
   open: "bg-green-700 text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
@@ -61,4 +62,24 @@ export function getIssueDescriptionFromMessages(messages: Message[]) {
 export const capitalize = (s: string): string => {
   if (typeof s !== "string") return "";
   return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+export const getSidebarIconForType = (type: TaskType) => {
+  switch (type) {
+    case TaskType.task:
+      return SidebarIcon.Plan;
+    case TaskType.command:
+      return SidebarIcon.Terminal;
+    case TaskType.issue:
+      return SidebarIcon.Issues;
+    case TaskType.prompt:
+      return SidebarIcon.Prompts;
+    case TaskType.code:
+      return SidebarIcon.Code;
+    case TaskType.pull_request:
+      return SidebarIcon.PullRequests;
+    default:
+      console.error("Unknown task type: ", type);
+      return SidebarIcon.Plan;
+  }
 };

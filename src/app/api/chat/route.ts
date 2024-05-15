@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       systemPrompt = chatShowFigmaSystem;
     }
     const temperature = 0.3;
-    const model = "gpt-4";
+    const model = "gpt-4o";
 
     if (issue) {
       systemPrompt = systemPrompt.replace("{{issue}}", JSON.stringify(issue));

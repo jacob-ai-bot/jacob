@@ -336,3 +336,15 @@ export const findTaskForInternalEvent = (
   }
   return parentTask;
 };
+
+// Function to fetch the image and convert it to base64
+export const fetchImageAsBase64 = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const base64Image = buffer.toString("base64");
+  const contentType = response.headers.get("content-type");
+  console.log("contentType: ", contentType);
+  const mimeType = contentType ?? "application/octet-stream";
+  return `data:${mimeType};base64,${base64Image}`;
+};
