@@ -5,16 +5,13 @@ export async function GET(request: NextRequest) {
   const org = searchParams.get("org");
   const repo = searchParams.get("repo");
 
-  console.log("request URL", request.url);
-  console.log("request nextUrl", String(request.nextUrl));
-  console.log("nextUrl origin", request.nextUrl.origin);
   if (org && repo) {
     const response = NextResponse.redirect(
-      `${request.nextUrl.origin}/dashboard/${org}/${repo}`,
+      new URL(`/dashboard/${org}/${repo}`, process.env.NEXTAUTH_URL),
     );
     response.cookies.set("lastUsedRepo", `${org}/${repo}`);
     return response;
   }
 
-  return NextResponse.redirect(`${request.nextUrl.origin}/`);
+  return NextResponse.redirect(new URL(`/`, process.env.NEXTAUTH_URL));
 }
