@@ -8,6 +8,7 @@ import {
   type RepoSettings,
   type BaseEventData,
   getStyles,
+  generateJacobBranchName,
 } from "../utils";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
 import {
@@ -143,7 +144,7 @@ export async function editFiles(params: EditFilesParams) {
     console.log(`[${repository.full_name}] No code generated. Exiting...`);
     throw new Error("No code generated");
   }
-  const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
+  const newBranch = generateJacobBranchName(issue.number);
 
   await setNewBranch({
     ...baseEventData,

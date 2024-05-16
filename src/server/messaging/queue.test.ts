@@ -155,7 +155,7 @@ const mockedPR = vi.hoisted(() => ({
     .mockImplementation(
       () =>
         new Promise((resolve) =>
-          resolve({ data: { head: { ref: "test-branch" } } }),
+          resolve({ data: { head: { ref: "jacob-issue-567-237894572349" } } }),
         ),
     ),
 }));
@@ -422,7 +422,7 @@ describe("onGitHubEvent", () => {
       projectId: 777,
       repoFullName: "PioneerSquareLabs/t3-starter-template",
       userId: "cpirich",
-      issueId: 232,
+      issueId: 567,
       path: "/tmp/jacob/1",
       afterModifications: false,
     });

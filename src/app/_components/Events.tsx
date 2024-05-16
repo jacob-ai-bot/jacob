@@ -22,6 +22,7 @@ export function Events() {
       projectId: 39,
       repoFullName: "PioneerSquareLabs/t3-starter-template",
       issueId: null,
+      pullRequestId: null,
       userId: "cpirich",
       payload: {
         type: TaskType.command,

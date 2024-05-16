@@ -4,7 +4,12 @@ import { dedent } from "ts-dedent";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
-import { type RepoSettings, type BaseEventData, parseTemplate } from "../utils";
+import {
+  type RepoSettings,
+  type BaseEventData,
+  parseTemplate,
+  extractIssueNumberFromBranchName,
+} from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
@@ -16,6 +21,8 @@ import { emitCodeEvent } from "~/server/utils/events";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
+type RetrievedIssue =
+  Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 
 export interface FixErrorParams extends BaseEventData {
   repository: Repository;
@@ -40,14 +47,20 @@ export async function fixError(params: FixErrorParams) {
     existingPr,
     ...baseEventData
   } = params;
-  const regex = /jacob-issue-(\d+)-.*/;
-  const match = branch.match(regex);
-  const issueNumber = parseInt(match?.[1] ?? "", 10);
-  const result = await getIssue(repository, token, issueNumber);
-  console.log(
-    `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
-  );
-  const issue = result.data;
+
+  const issueNumber = extractIssueNumberFromBranchName(branch);
+  let issue: RetrievedIssue | undefined;
+  if (issueNumber) {
+    const result = await getIssue(repository, token, issueNumber);
+    issue = result.data;
+    console.log(
+      `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+    );
+  } else {
+    console.log(
+      `[${repository.full_name}] No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
+    );
+  }
 
   const buildErrorSection = (body?.split("## Error Message") ?? [])[1];
   const headingEndMarker = "\n```\n";
@@ -123,7 +136,7 @@ export async function fixError(params: FixErrorParams) {
 
       const codeTemplateParams = {
         code,
-        issueBody: issue.body ?? "",
+        issueBody: issue?.body ?? "",
         causeOfErrors,
         ideasForFixingErrors,
         suggestedFixes,

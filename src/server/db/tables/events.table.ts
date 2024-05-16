@@ -49,6 +49,7 @@ export class EventsTable extends BaseTable {
     userId: t.text(),
     repoFullName: t.text(0, Infinity).unique(),
     issueId: t.integer().nullable(),
+    pullRequestId: t.integer().nullable(),
     type: t.enum("task_type", TASK_TYPE_VALUES),
     payload: t.json((t) =>
       t.discriminatedUnion("type", [

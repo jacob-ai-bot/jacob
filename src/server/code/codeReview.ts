@@ -3,7 +3,12 @@ import { type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes } from "../analyze/sourceMap";
-import { parseTemplate, type RepoSettings, type BaseEventData } from "../utils";
+import {
+  parseTemplate,
+  extractIssueNumberFromBranchName,
+  type RepoSettings,
+  type BaseEventData,
+} from "../utils";
 import { sendGptRequest } from "../openai/request";
 import { getIssue } from "../github/issue";
 import { concatenatePRFiles, createPRReview, getPRDiff } from "../github/pr";
@@ -37,18 +42,19 @@ export async function codeReview(params: CodeReviewParams) {
     existingPr,
     ...baseEventData
   } = params;
-  const regex = /jacob-issue-(\d+)-.*/;
-  const match = branch.match(regex);
-  const issueNumber = parseInt(match?.[1] ?? "", 10);
+  const issueNumber = extractIssueNumberFromBranchName(branch);
   let issue: Issue | undefined;
-  try {
+  if (issueNumber) {
     const result = await getIssue(repository, token, issueNumber);
     issue = result.data;
     console.log(
       `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
     );
-    // eslint-disable-next-line no-empty
-  } catch (e) {}
+  } else {
+    console.log(
+      `[${repository.full_name}] No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
+    );
+  }
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);

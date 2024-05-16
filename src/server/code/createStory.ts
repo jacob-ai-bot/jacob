@@ -9,6 +9,7 @@ import { checkAndCommit } from "./checkAndCommit";
 import { getIssue } from "../github/issue";
 import {
   extractFilePathWithArrow,
+  extractIssueNumberFromBranchName,
   parseTemplate,
   type RepoSettings,
   type BaseEventData,
@@ -21,6 +22,8 @@ import { getSnapshotUrl } from "~/app/utils";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
+type RetrievedIssue =
+  Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 
 export interface CreateStoryParams extends BaseEventData {
   repository: Repository;
@@ -41,18 +44,23 @@ export async function createStory(params: CreateStoryParams) {
     existingPr,
     ...baseEventData
   } = params;
-  const regex = /jacob-issue-(\d+)-.*/;
-  const match = branch.match(regex);
-  const issueNumber = parseInt(match?.[1] ?? "", 10);
-  const result = await getIssue(repository, token, issueNumber);
-  console.log(
-    `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
-  );
-  const issue = result.data;
+  const issueNumber = extractIssueNumberFromBranchName(branch);
+  let issue: RetrievedIssue | undefined;
+  if (issueNumber) {
+    const result = await getIssue(repository, token, issueNumber);
+    issue = result.data;
+    console.log(
+      `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
+    );
+  } else {
+    console.log(
+      `[${repository.full_name}] No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
+    );
+  }
 
-  const newFileName = extractFilePathWithArrow(issue.title);
+  const newFileName = extractFilePathWithArrow(issue?.title);
   const newFileExtension = newFileName ? path.extname(newFileName) : "";
-  if (!newFileName || !newFileExtension) {
+  if (!issue || !newFileName || !newFileExtension) {
     throw new Error(
       "createStory: Unable to extract file name and extension from issue title",
     );

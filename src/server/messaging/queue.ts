@@ -25,6 +25,7 @@ import {
   PR_COMMAND_VALUES,
   enumFromStringValue,
   getRepoSettings,
+  extractIssueNumberFromBranchName,
 } from "../utils";
 import {
   addFailedWorkComment,
@@ -280,6 +281,9 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
   const installationAuthentication = await authInstallation(installation?.id);
   if (installationAuthentication) {
     const issueOpened = eventName === "issues";
+    const issueOpenedTitle = issueOpened
+      ? event.payload.issue.title
+      : undefined;
     const prOpened = eventName === "pull_request";
     const prComment =
       eventName === "issue_comment" && event.payload.issue?.pull_request;
@@ -312,7 +316,14 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       projectId: project.id,
       repoFullName: repository.full_name,
       userId: distinctId,
-      issueId: eventIssueOrPRNumber,
+      issueId:
+        eventName === "issues" || eventName === "issue_comment"
+          ? event.payload.issue.number
+          : undefined,
+      pullRequestId:
+        eventName === "pull_request" || eventName === "pull_request_review"
+          ? event.payload.pull_request.number
+          : undefined,
     };
 
     const prCommand = enumFromStringValue(
@@ -367,6 +378,25 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       );
       existingPr = result.data;
       prBranch = existingPr.head.ref;
+      if (baseEventData.issueId) {
+        console.error("Unexpected issueId when handling PR event");
+      }
+      baseEventData.issueId = extractIssueNumberFromBranchName(prBranch);
+    }
+
+    const newFileName = issueOpenedTitle
+      ? extractFilePathWithArrow(issueOpenedTitle)
+      : undefined;
+
+    if (issueOpened) {
+      await emitTaskEvent({
+        ...baseEventData,
+        issue: event.payload.issue,
+        subType: newFileName
+          ? TaskSubType.CREATE_NEW_FILE
+          : TaskSubType.EDIT_FILES,
+        status: TaskStatus.IN_PROGRESS,
+      });
     }
 
     try {
@@ -383,18 +413,6 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
       try {
         if (issueOpened) {
-          const issueTitle = event.payload.issue.title;
-          const newFileName = extractFilePathWithArrow(issueTitle);
-
-          await emitTaskEvent({
-            ...baseEventData,
-            issue: event.payload.issue,
-            subType: newFileName
-              ? TaskSubType.CREATE_NEW_FILE
-              : TaskSubType.EDIT_FILES,
-            status: TaskStatus.IN_PROGRESS,
-          });
-
           // Ensure that we capture a source map BEFORE we run the build check.
           // Once npm install has been run, the source map becomes much more
           // detailed and is too large for our LLM context window.

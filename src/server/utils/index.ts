@@ -196,7 +196,17 @@ export function getSanitizedEnv() {
   return baseEnv;
 }
 
-// export type ExecPromise = ReturnType<typeof execAsyncWithLog>;
+export function generateJacobBranchName(issueNumber: number) {
+  return `jacob-issue-${issueNumber}-${Date.now()}`;
+}
+
+export function extractIssueNumberFromBranchName(branch: string) {
+  const regex = /jacob-issue-(\d+)-.*/;
+  const match = branch.match(regex);
+  const issueNumber = parseInt(match?.[1] ?? "", 10);
+  return isNaN(issueNumber) ? undefined : issueNumber;
+}
+
 export type ExecPromise = Promise<{
   stdout: string | Buffer;
   stderr: string | Buffer;

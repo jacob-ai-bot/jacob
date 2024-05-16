@@ -9,6 +9,7 @@ import { addCommentToIssue } from "../github/issue";
 import { runBuildCheck } from "../build/node/check";
 import {
   extractFilePathWithArrow,
+  extractIssueNumberFromBranchName,
   PRCommand,
   type RepoSettings,
   type BaseEventData,
@@ -83,19 +84,17 @@ export async function checkAndCommit({
   if (actingOnIssue) {
     issue = actingOnIssue;
   } else {
-    const regex = /jacob-issue-(\d+)-.*/;
-    const match = branch.match(regex);
-    const issueNumber = parseInt(match?.[1] ?? "", 10);
-    if (isNaN(issueNumber)) {
-      console.log(
-        `[${repository.full_name}] No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
-      );
-    } else {
+    const issueNumber = extractIssueNumberFromBranchName(branch);
+    if (issueNumber) {
       const result = await getIssue(repository, token, issueNumber);
       console.log(
         `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
       );
       issue = result.data;
+    } else {
+      console.log(
+        `[${repository.full_name}] No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
+      );
     }
   }
 

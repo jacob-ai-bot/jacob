@@ -8,6 +8,7 @@ import { getTypes, getImages } from "../analyze/sourceMap";
 import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
+  generateJacobBranchName,
   type RepoSettings,
   getStyles,
   type BaseEventData,
@@ -119,7 +120,7 @@ export async function createNewFile(params: CreateNewFileParams) {
     throw new Error("No code generated");
   }
 
-  const newBranch = `jacob-issue-${issue.number}-${Date.now()}`;
+  const newBranch = generateJacobBranchName(issue.number);
 
   await setNewBranch({
     ...baseEventData,

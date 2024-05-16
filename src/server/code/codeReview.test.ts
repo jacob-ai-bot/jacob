@@ -205,7 +205,7 @@ describe("codeReview", () => {
       } as PullRequest,
     });
 
-    expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
+    expect(mockedIssue.getIssue).not.toHaveBeenCalled();
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
