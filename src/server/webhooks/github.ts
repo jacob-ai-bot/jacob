@@ -53,13 +53,14 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 ghApp.webhooks.on("issues.edited", async (event) => {
   const { payload } = event;
   const { repository } = payload;
-  // Only add a new issue to the queue if the issue body contains the @jacob-ai-bot mention
+  // Only add a new issue to the queue if the issue body contains the @jacob-ai-bot mention for the first time
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} edited event`,
   );
   if (
     payload?.issue.body?.includes("@jacob-ai-bot") &&
-    !payload?.issue.body?.includes(codeReviewCommandSuggestion)
+    !payload?.issue.body?.includes(codeReviewCommandSuggestion) &&
+    !payload.changes?.body?.from?.includes("@jacob-ai-bot")
   ) {
     console.log(
       `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob-ai-bot mention`,
