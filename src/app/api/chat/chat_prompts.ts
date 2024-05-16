@@ -103,7 +103,7 @@ Your job is to have a very short, concise, friendly conversation with the client
 
 Here is the issue draft you have so far:
 \`\`\` json (stringified)
-{{issue}}
+{{todo}}
 \`\`\`
 
 
@@ -199,7 +199,7 @@ Your goal is to have a productive conversation, gather all the necessary details
 
 export const chatShowFigmaSystem = `Here is the issue you have so far:
 \`\`\` json (stringified)
-{{issue}}
+{{todo}}
 \`\`\`
 
 This issue contains a link to a specific Figma file. You MUST use markdown to wrap that entire, specific link in markdown to render a clickable link to the file.

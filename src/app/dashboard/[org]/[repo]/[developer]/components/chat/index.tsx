@@ -8,13 +8,13 @@ import {
 } from "react";
 import { type Message, Role, type Developer } from "~/types";
 import { Chat } from "./Chat";
-import { type Task } from "~/server/db/tables/events.table";
+import { type Todo } from "~/server/api/routers/events";
 
 const DEFAULT_PROMPT = "What can I help you with today?";
 
 type Props = {
   developer: Developer | undefined;
-  task: Task | undefined;
+  todo: Todo | undefined;
   handleCreateNewTask: () => void;
   handleUpdateIssue: () => void;
   headerHeight?: number;
@@ -29,7 +29,7 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
   ChatComponentHandle,
   Props
 > = (
-  { developer, task, handleCreateNewTask, handleUpdateIssue, headerHeight = 0 },
+  { developer, todo, handleCreateNewTask, handleUpdateIssue, headerHeight = 0 },
   ref,
 ) => {
   useImperativeHandle(ref, () => ({
@@ -116,7 +116,7 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
       body: JSON.stringify({
         messages: updatedMessages,
         prompt,
-        task,
+        todo,
         developer,
       }),
     });

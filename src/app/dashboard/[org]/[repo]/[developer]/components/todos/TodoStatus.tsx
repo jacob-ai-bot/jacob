@@ -1,51 +1,53 @@
 import { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
-import { type Task } from "~/server/api/routers/events";
-import { TaskStatus } from "~/server/db/enums";
+import { type Todo } from "~/server/api/routers/events";
+import { TodoStatus } from "~/server/db/enums";
 
 // Constants for simplicity, these would be dynamically calculated in a real-world application
 const SPRINT_DURATION = 10;
 
-const calculateVelocity = (tasks: Task[]): number => {
-  const completedTasks = tasks.filter(
-    (task) => task.status === TaskStatus.DONE,
+const calculateVelocity = (todos: Todo[] = []): number => {
+  const completedTodos = todos.filter(
+    (todo) => todo.status === TodoStatus.DONE,
   );
-  const totalPoints = completedTasks.reduce(
-    (acc, task) => acc + task.storyPoints,
-    0,
-  );
+  // TODO: add story points to the todo type
+  // const totalPoints = completedTodos.reduce(
+  //   (acc, todo) => acc + todo.storyPoints,
+  //   0,
+  // );
+  const totalPoints = completedTodos.length;
   return totalPoints / SPRINT_DURATION;
 };
 
-interface TaskStatusProps {
-  tasks: Task[];
+interface TodoStatusProps {
+  todos: Todo[];
 }
 
-export const TaskStatusComponent = ({ tasks }: TaskStatusProps) => {
+export const TodoStatusComponent = ({ todos }: TodoStatusProps) => {
   const [collapsed, setCollapsed] = useState(true);
 
-  const completedTasks = tasks.filter(
-    (task) => task.status === TaskStatus.DONE,
+  const completedTodos = todos.filter(
+    (todo) => todo.status === TodoStatus.DONE,
   );
-  const inProgressTasks = tasks.filter(
-    (task) => task.status === TaskStatus.IN_PROGRESS,
+  const inProgressTodos = todos.filter(
+    (todo) => todo.status === TodoStatus.IN_PROGRESS,
   );
 
   const totalProgress = useMemo(
     () =>
-      ((completedTasks?.length ?? 0) / (inProgressTasks?.length || 1)) * 100,
-    [inProgressTasks, completedTasks],
+      ((completedTodos?.length ?? 0) / (inProgressTodos?.length || 1)) * 100,
+    [inProgressTodos, completedTodos],
   );
   const velocity = useMemo(
-    () => calculateVelocity(inProgressTasks),
-    [inProgressTasks],
+    () => calculateVelocity(inProgressTodos),
+    [inProgressTodos],
   );
 
   return (
     <div className="border-b border-blueGray-700 bg-blueGray-700/20 pb-1 text-blueGray-300  transition-all duration-300">
       <header className="flex items-center justify-between border-b-2 border-blueGray-700/20 bg-blueGray-900/20 px-4 py-2">
-        <h2 className="text-md font-bold ">Task Progress</h2>
+        <h2 className="text-md font-bold ">Todo Progress</h2>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hover:text-green-500"
@@ -61,7 +63,7 @@ export const TaskStatusComponent = ({ tasks }: TaskStatusProps) => {
         <div className="px-4 py-2">
           <div className="mb-2 flex items-center justify-between text-blueGray-300">
             <div className="text-sm">0%</div>
-            <p className="text-[8pt] text-blueGray-400">Tasks Completed</p>
+            <p className="text-[8pt] text-blueGray-400">Todos Completed</p>
             <div className="text-sm">100%</div>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-coolGray-600">
@@ -79,9 +81,9 @@ export const TaskStatusComponent = ({ tasks }: TaskStatusProps) => {
               </p>
             </div>
             <div className="rounded-md bg-blueGray-700/70 p-2 backdrop-blur-md">
-              <p className="text-[10px] text-orange">Task Complete</p>
+              <p className="text-[10px] text-orange">Todo Complete</p>
               <p className="text-lg font-semibold text-coolGray-300">
-                {completedTasks.length}/{tasks.length}
+                {completedTodos.length}/{todos.length}
               </p>
             </div>
           </div>
@@ -100,7 +102,7 @@ export const TaskStatusComponent = ({ tasks }: TaskStatusProps) => {
             {Math.round(velocity * 100)}
           </p>
           <p className="flex h-6 w-8 items-center justify-center rounded-full bg-orange p-1 text-[8px] font-semibold text-coolGray-900">
-            {completedTasks.length}/{tasks.length}
+            {completedTodos.length}/{todos.length}
           </p>
         </div>
       )}
@@ -108,4 +110,4 @@ export const TaskStatusComponent = ({ tasks }: TaskStatusProps) => {
   );
 };
 
-export default TaskStatusComponent;
+export default TodoStatusComponent;

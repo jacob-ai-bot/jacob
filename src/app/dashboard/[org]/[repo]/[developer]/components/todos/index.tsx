@@ -1,25 +1,25 @@
 import { DragDropContext, Draggable, type DropResult } from "@hello-pangea/dnd";
 import Droppable from "./Droppable";
 
-import { SelectedTask } from "./SelectedTask";
-import { StandardTask } from "./StandardTask";
-import { type Task } from "~/server/api/routers/events";
-import { TaskStatus } from "~/server/db/enums";
-import { TaskStatusComponent } from "./TaskStatus";
+import { DetailedTodoCard } from "./DetailedTodoCard";
+import { TodoCard } from "./TodoCard";
+import { type Todo } from "~/server/api/routers/events";
+import { TodoStatus } from "~/server/db/enums";
+import { TodoStatusComponent } from "./TodoStatus";
 
-interface TasksProps {
-  tasks: Task[];
-  setTasks: (tasks: Task[]) => void;
-  onStart: (taskId: string) => void;
-  onNewTaskSelected: (task: Task) => void;
+interface TodosProps {
+  todos: Todo[];
+  setTodos: (todos: Todo[]) => void;
+  onStart: (todoId: string) => void;
+  onNewTodoSelected: (todo: Todo) => void;
   isLoading?: boolean;
 }
 
-const Tasks: React.FC<TasksProps> = ({
-  tasks = [],
+const Todos: React.FC<TodosProps> = ({
+  todos = [],
   onStart,
-  onNewTaskSelected,
-  setTasks,
+  onNewTodoSelected,
+  setTodos,
   isLoading = false,
 }) => {
   const handleDragEnd = (result: DropResult) => {
@@ -27,25 +27,25 @@ const Tasks: React.FC<TasksProps> = ({
     if (!result.destination) {
       return;
     }
-    if (!tasks?.length) {
-      console.log("No tasks");
+    if (!todos?.length) {
+      console.log("No todos");
       return;
     }
 
-    const newTasks = Array.from(tasks);
-    const [removed] = newTasks.splice(result.source.index, 1);
+    const newTodos = Array.from(todos);
+    const [removed] = newTodos.splice(result.source.index, 1);
     if (!removed) {
-      console.log("No task removed");
+      console.log("No todo removed");
       return;
     }
-    newTasks.splice(result.destination.index, 0, removed);
+    newTodos.splice(result.destination.index, 0, removed);
 
-    // If the first task has changed, call onNewTaskSelected
-    if (tasks[0] !== newTasks[0] && newTasks[0]) {
-      onNewTaskSelected(newTasks[0]);
+    // If the first todo has changed, call onNewTodoSelected
+    if (todos[0] !== newTodos[0] && newTodos[0]) {
+      onNewTodoSelected(newTodos[0]);
     }
 
-    setTasks(newTasks);
+    setTodos(newTodos);
   };
 
   if (isLoading) {
@@ -60,20 +60,20 @@ const Tasks: React.FC<TasksProps> = ({
   return (
     <div className="grid h-full min-h-screen w-full grid-rows-[1fr_auto] border-x border-coolGray-400/20 bg-gray-900 bg-slate-50/5">
       <div className="hide-scrollbar overflow-auto">
-        {tasks.filter((t) => t.status === TaskStatus.TODO).length > 0 ? (
+        {todos.filter((t) => t.status === TodoStatus.TODO).length > 0 ? (
           <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="tasks">
+            <Droppable droppableId="todos">
               {(provided) => (
                 <div {...provided.droppableProps} ref={provided.innerRef}>
                   <h2 className="mt-2 px-2 font-bold text-light-blue">
-                    Next Task
+                    Next Todo
                   </h2>
-                  {tasks
-                    .filter((t) => t.status === TaskStatus.TODO)
-                    .map((task, index) => (
+                  {todos
+                    .filter((t) => t.status === TodoStatus.TODO)
+                    .map((todo, index) => (
                       <Draggable
-                        key={task.id}
-                        draggableId={task.id.toString()}
+                        key={todo.id}
+                        draggableId={todo.id.toString()}
                         index={index}
                       >
                         {(provided) => (
@@ -85,14 +85,17 @@ const Tasks: React.FC<TasksProps> = ({
                             {index === 0 ? (
                               <>
                                 <div className="border-b-2 border-coolGray-400/20 p-2">
-                                  <SelectedTask task={task} onStart={onStart} />
+                                  <DetailedTodoCard
+                                    todo={todo}
+                                    onStart={onStart}
+                                  />
                                 </div>
                                 <h2 className="my-2 ml-2 text-sm text-indigo-100/50">
-                                  Suggested Tasks
+                                  Suggested Todos
                                 </h2>
                               </>
                             ) : (
-                              <StandardTask task={task} />
+                              <TodoCard todo={todo} />
                             )}
                           </div>
                         )}
@@ -105,29 +108,29 @@ const Tasks: React.FC<TasksProps> = ({
           </DragDropContext>
         ) : (
           <div className="flex h-full flex-col items-center justify-center">
-            <h2 className="mb-4 text-2xl text-gray-200">No tasks available</h2>
+            <h2 className="mb-4 text-2xl text-gray-200">No todos available</h2>
             <p className="text-gray-400">Chat with JACoB to get started</p>
           </div>
         )}
       </div>
       <div className="border-t-2 border-coolGray-400/20 ">
-        <TaskStatusComponent tasks={tasks} />
+        <TodoStatusComponent todos={todos} />
       </div>
     </div>
   );
 };
 
-export default Tasks;
+export default Todos;
 
 // TODO: add the delete button back in
 /* <button
     onClick={() => {
     if (
         window.confirm(
-        "Are you sure you want to remove this task?",
+        "Are you sure you want to remove this todo?",
         )
     ) {
-        onRemove(task.id);
+        onRemove(todo.id);
     }
     }}
     className="absolute left-1 top-0 text-red-500"

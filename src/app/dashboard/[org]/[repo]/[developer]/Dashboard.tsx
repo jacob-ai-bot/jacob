@@ -3,22 +3,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import ChatComponent, { type ChatComponentHandle } from "./components/chat";
 import ChatHeader from "./components/chat/ChatHeader";
-import Tasks from "./components/tasks";
+
 import Workspace from "./components/workspace";
 import { type Message, Role, SidebarIcon } from "~/types";
 import { TaskStatus } from "~/server/db/enums";
 
-import { type Task } from "~/server/api/routers/events";
+import { type Todo, type Task } from "~/server/api/routers/events";
 import { api } from "~/trpc/react";
 import { DEVELOPERS } from "~/data/developers";
 import { TaskType } from "~/server/db/enums";
 import { getSidebarIconForType } from "~/app/utils";
+import Todos from "./components/todos";
 
-// const CREATE_ISSUE_PROMPT =
-//   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
-
-const DEMO_PROMPT =
-  "Hallo! I'm ready to help you with your tasks. It looks like you currently have one GitHub task assigned to you. The task is to create a new Checkout form. Here is a link to the Figma design: [Checkout form](https://www.figma.com/file/L1QVjEXUIniizBjw0dRnBw/JACoB-Home-Page?type=design&node-id=73-81&mode=design&t=vTxaMbZbl5n0G1Xx-4). Click that link to open the JACoB Figma plugin and jump back here when you're finished. If you have any questions, feel free to ask!";
+const CREATE_ISSUE_PROMPT =
+  "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
 
 interface DashboardParams {
   org: string;
@@ -33,7 +31,6 @@ const Dashboard: React.FC<DashboardParams> = ({
   developer,
   tasks: _tasks = [],
 }) => {
-  const [loadingTasks /* , setLoadingTasks */] = useState<boolean>(false);
   const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(
     SidebarIcon.Plan,
   );
@@ -41,24 +38,26 @@ const Dashboard: React.FC<DashboardParams> = ({
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(
     tasks?.[0],
   );
+  const [todos, setTodos] = useState<Todo[] | undefined>();
+
+  const [selectedTodo, setSelectedTodo] = useState<Todo | undefined>(undefined);
 
   const chatRef = useRef(null);
 
-  useEffect(() => {
-    resetMessages();
-  }, []);
-
   //** Data Fetching */
-  // trpc.post.onAdd.useSubscription(undefined, {
-  //   onData(post) {
-  //     addMessages([post]);
-  //   },
-  //   onError(err) {
-  //     console.error('Subscription error:', err);
-  //     // we might have missed a message - invalidate cache
-  //     utils.post.infinite.invalidate();
-  //   },
-  // });
+  const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
+  const { data: tempTodos, isLoading: loadingTodos } =
+    api.github.getTodos.useQuery({
+      repo: `${org}/${repo}`,
+    });
+  useEffect(() => {
+    setTodos(tempTodos);
+    if (tempTodos?.length && tempTodos[0]) {
+      onNewTodoSelected(tempTodos[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tempTodos]);
+
   api.events.onAdd.useSubscription(undefined, {
     onData(event) {
       const { issueId, payload } = event;
@@ -132,7 +131,14 @@ const Dashboard: React.FC<DashboardParams> = ({
     },
   });
 
-  const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
+  useEffect(() => {
+    resetMessages([
+      {
+        role: Role.ASSISTANT,
+        content: selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
+      },
+    ]);
+  }, [selectedDeveloper]);
 
   //** Task */
   const onStartTask = (taskId: string) => {
@@ -151,9 +157,14 @@ const Dashboard: React.FC<DashboardParams> = ({
     );
   };
 
-  const onNewTaskSelected = (task: Task) => {
-    setSelectedTask(task);
-    resetMessages(task);
+  const onNewTodoSelected = (todo: Todo) => {
+    setSelectedTodo(todo);
+    resetMessages([
+      {
+        role: Role.ASSISTANT,
+        content: `I'm ready to help with the *${todo.name}* task. Want to start working on this?`,
+      },
+    ]);
   };
 
   const onRemoveTask = (taskId: string) => {
@@ -161,23 +172,7 @@ const Dashboard: React.FC<DashboardParams> = ({
     setTasks((tasks) => tasks?.filter((t) => t.id !== taskId));
   };
 
-  const resetMessages = (task?: Task) => {
-    let messages: Message[] | undefined;
-    if (task) {
-      messages = [
-        {
-          role: Role.ASSISTANT,
-          content: `I'm ready to help with the *${task.name}* task. Want to start working on this?`,
-        },
-      ];
-    } else {
-      messages = [
-        {
-          role: Role.ASSISTANT,
-          content: DEMO_PROMPT, //selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
-        },
-      ];
-    }
+  const resetMessages = (messages?: Message[] | undefined) => {
     if (chatRef?.current) {
       const { resetChat }: ChatComponentHandle = chatRef.current;
       resetChat(messages);
@@ -299,19 +294,19 @@ const Dashboard: React.FC<DashboardParams> = ({
             <ChatComponent
               ref={chatRef}
               developer={selectedDeveloper}
-              task={selectedTask}
+              todo={selectedTodo}
               handleCreateNewTask={handleCreateNewTask}
               handleUpdateIssue={handleUpdateIssue}
             />
           </div>
         </div>
         <div className="col-span-2 h-screen max-w-7xl bg-gray-900/70">
-          <Tasks
-            tasks={tasks ?? []}
+          <Todos
+            todos={todos ?? []}
             onStart={onStartTask}
-            setTasks={setTasks}
-            onNewTaskSelected={onNewTaskSelected}
-            isLoading={loadingTasks}
+            setTodos={setTodos}
+            onNewTodoSelected={onNewTodoSelected}
+            isLoading={loadingTodos}
           />
         </div>
 

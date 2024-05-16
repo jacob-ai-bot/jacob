@@ -14,6 +14,8 @@ import {
 } from "~/server/code/extractedIssue";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { getAllRepos } from "../utils";
+import { type Todo } from "./events";
+import { TodoStatus } from "~/server/db/enums";
 
 export const githubRouter = createTRPCRouter({
   getRepos: protectedProcedure.input(z.object({}).optional()).query(
@@ -25,18 +27,18 @@ export const githubRouter = createTRPCRouter({
       return await getAllRepos(accessToken);
     },
   ),
-  getExtractedIssues: protectedProcedure
-    .input(z.object({ repo: z.string(), ids: z.array(z.number()) }))
+  getTodos: protectedProcedure
+    .input(z.object({ repo: z.string(), max: z.number().optional() }))
     .query(
       async ({
-        input: { repo, ids },
+        input: { repo, max = 10 },
         ctx: {
           session: { accessToken },
         },
       }) => {
         const [repoOwner, repoName] = repo?.split("/") ?? [];
 
-        if (!repoOwner || !repoName || ids.length === 0) {
+        if (!repoOwner || !repoName) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Invalid request",
@@ -54,6 +56,24 @@ export const githubRouter = createTRPCRouter({
           const repoSettings = getRepoSettings(path);
           const sourceMap =
             getSourceMap(path, repoSettings) || (await traverseCodebase(path));
+
+          const octokit = new Octokit({ auth: accessToken });
+
+          const { data: issues } = await octokit.issues.listForRepo({
+            owner: repoOwner,
+            repo: repoName,
+            state: "open",
+          });
+
+          // remove the pull requests
+          const issuesWithoutPullRequests = issues.filter(
+            ({ pull_request }) => !pull_request,
+          );
+
+          const ids = issuesWithoutPullRequests
+            .map((issue) => issue.number)
+            .filter(Boolean)
+            .slice(0, max);
 
           const issueData = await Promise.all(
             ids.map((issueNumber) =>
@@ -94,10 +114,14 @@ export const githubRouter = createTRPCRouter({
                 0.2,
               )) as ExtractedIssueInfo;
 
-              return {
-                issueNumber: issue.number,
+              const todo: Todo = {
+                id: `todo-${issue.id}`,
+                description: `${issue.title}\n\n${issueBody}`,
+                name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
+                status: TodoStatus.TODO,
                 ...extractedIssue,
               };
+              return todo;
             }),
           );
 
