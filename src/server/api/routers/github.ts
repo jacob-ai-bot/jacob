@@ -3,17 +3,14 @@ import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { cloneRepo } from "~/server/git/clone";
-import { getSourceMap } from "~/server/analyze/sourceMap";
-import { traverseCodebase } from "~/server/analyze/traverse";
-import { parseTemplate, getRepoSettings } from "~/server/utils";
 import { getIssue } from "~/server/github/issue";
+
 import {
-  ExtractedIssueInfoSchema,
-  type ExtractedIssueInfo,
-} from "~/server/code/extractedIssue";
-import { sendGptRequestWithSchema } from "~/server/openai/request";
-import { getAllRepos } from "../utils";
+  cloneAndGetSourceMap,
+  getAllRepos,
+  getExtractedIssue,
+  validateRepo,
+} from "../utils";
 import { type Todo } from "./events";
 import { TodoStatus } from "~/server/db/enums";
 
@@ -27,6 +24,30 @@ export const githubRouter = createTRPCRouter({
       return await getAllRepos(accessToken);
     },
   ),
+  getExtractedIssue: protectedProcedure
+    .input(z.object({ repo: z.string(), issueText: z.string() }))
+    .query(
+      async ({
+        input: { repo, issueText },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        const [repoOwner, repoName] = repo?.split("/") ?? [];
+
+        if (!repoOwner || !repoName || !issueText?.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid request",
+          });
+        }
+        await validateRepo(repoOwner, repoName, accessToken);
+
+        const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
+        const extractedIssue = await getExtractedIssue(sourceMap, issueText);
+        return extractedIssue;
+      },
+    ),
   getTodos: protectedProcedure
     .input(z.object({ repo: z.string(), max: z.number().optional() }))
     .query(
@@ -44,101 +65,70 @@ export const githubRouter = createTRPCRouter({
             message: "Invalid request",
           });
         }
+        await validateRepo(repoOwner, repoName, accessToken);
 
-        let cleanupClone: (() => Promise<void>) | undefined;
-        try {
-          const { path, cleanup } = await cloneRepo({
-            repoName: repo,
-            token: accessToken,
-          });
-          cleanupClone = cleanup;
+        const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
+        const octokit = new Octokit({ auth: accessToken });
 
-          const repoSettings = getRepoSettings(path);
-          const sourceMap =
-            getSourceMap(path, repoSettings) || (await traverseCodebase(path));
+        const { data: unassignedIssues } = await octokit.issues.listForRepo({
+          owner: repoOwner,
+          repo: repoName,
+          state: "open",
+          assignee: "none",
+        });
 
-          const octokit = new Octokit({ auth: accessToken });
+        const { data: myIssues } = await octokit.issues.listForRepo({
+          owner: repoOwner,
+          repo: repoName,
+          state: "open",
+          assignee: user.login,
+        });
 
-          const { data: unassignedIssues } = await octokit.issues.listForRepo({
-            owner: repoOwner,
-            repo: repoName,
-            state: "open",
-            assignee: "none",
-          });
+        const issues = [...unassignedIssues, ...myIssues];
 
-          const { data: myIssues } = await octokit.issues.listForRepo({
-            owner: repoOwner,
-            repo: repoName,
-            state: "open",
-            assignee: user.id,
-          });
+        // remove the pull requests
+        const issuesWithoutPullRequests = issues.filter(
+          ({ pull_request }) => !pull_request,
+        );
 
-          const issues = [...unassignedIssues, ...myIssues];
+        const ids = issuesWithoutPullRequests
+          .map((issue) => issue.number)
+          .filter(Boolean)
+          .slice(0, max);
 
-          // remove the pull requests
-          const issuesWithoutPullRequests = issues.filter(
-            ({ pull_request }) => !pull_request,
-          );
-
-          const ids = issuesWithoutPullRequests
-            .map((issue) => issue.number)
-            .filter(Boolean)
-            .slice(0, max);
-
-          const issueData = await Promise.all(
-            ids.map((issueNumber) =>
-              getIssue(
-                { name: repoName, owner: { login: repoOwner } },
-                accessToken,
-                issueNumber,
-              ),
+        const issueData = await Promise.all(
+          ids.map((issueNumber) =>
+            getIssue(
+              { name: repoName, owner: { login: repoOwner } },
+              accessToken,
+              issueNumber,
             ),
-          );
+          ),
+        );
 
-          const extractedIssues = await Promise.all(
-            issueData.map(async ({ data: issue }) => {
-              const issueBody = issue.body ? `\n${issue.body}` : "";
-              const issueText = `${issue.title}${issueBody}`;
+        const extractedIssues = await Promise.all(
+          issueData.map(async ({ data: issue }) => {
+            const issueBody = issue.body ? `\n${issue.body}` : "";
+            const issueText = `${issue.title}${issueBody}`;
 
-              const extractedIssueTemplateParams = {
-                sourceMap,
-                issueText,
-              };
+            const extractedIssue = await getExtractedIssue(
+              sourceMap,
+              issueText,
+            );
 
-              const extractedIssueSystemPrompt = parseTemplate(
-                "dev",
-                "extracted_issue",
-                "system",
-                extractedIssueTemplateParams,
-              );
-              const extractedIssueUserPrompt = parseTemplate(
-                "dev",
-                "extracted_issue",
-                "user",
-                extractedIssueTemplateParams,
-              );
-              const extractedIssue = (await sendGptRequestWithSchema(
-                extractedIssueUserPrompt,
-                extractedIssueSystemPrompt,
-                ExtractedIssueInfoSchema,
-                0.2,
-              )) as ExtractedIssueInfo;
+            const todo: Todo = {
+              id: `issue-${issue.number}`,
+              description: `${issue.title}\n\n${issueBody}`,
+              name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
+              status: TodoStatus.TODO,
+              issueId: issue.number,
+              ...extractedIssue,
+            };
+            return todo;
+          }),
+        );
 
-              const todo: Todo = {
-                id: `todo-${issue.id}`,
-                description: `${issue.title}\n\n${issueBody}`,
-                name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
-                status: TodoStatus.TODO,
-                ...extractedIssue,
-              };
-              return todo;
-            }),
-          );
-
-          return extractedIssues;
-        } finally {
-          await cleanupClone?.();
-        }
+        return extractedIssues;
       },
     ),
   createIssue: protectedProcedure

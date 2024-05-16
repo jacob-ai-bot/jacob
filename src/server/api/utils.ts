@@ -3,6 +3,15 @@ import { TaskSubType, TaskType } from "../db/enums";
 import { type Plan } from "~/server/api/routers/events";
 import { PLANS } from "~/data/plans";
 import { type Issue } from "./routers/events";
+import { getRepoSettings, parseTemplate } from "../utils";
+import { sendGptRequestWithSchema } from "../openai/request";
+import {
+  type ExtractedIssueInfo,
+  ExtractedIssueInfoSchema,
+} from "../code/extractedIssue";
+import { cloneRepo } from "../git/clone";
+import { getSourceMap } from "../analyze/sourceMap";
+import { traverseCodebase } from "../analyze/traverse";
 
 export const getAllRepos = async (accessToken: string) => {
   const octokit = new Octokit({ auth: accessToken });
@@ -87,4 +96,57 @@ export const getPlanForTaskSubType = (taskSubType: TaskSubType) => {
       break;
   }
   return plan;
+};
+
+export const getExtractedIssue = async (
+  sourceMap: string,
+  issueText: string,
+) => {
+  const extractedIssueTemplateParams = {
+    sourceMap,
+    issueText,
+  };
+
+  const extractedIssueSystemPrompt = parseTemplate(
+    "dev",
+    "extracted_issue",
+    "system",
+    extractedIssueTemplateParams,
+  );
+  const extractedIssueUserPrompt = parseTemplate(
+    "dev",
+    "extracted_issue",
+    "user",
+    extractedIssueTemplateParams,
+  );
+  const extractedIssue = (await sendGptRequestWithSchema(
+    extractedIssueUserPrompt,
+    extractedIssueSystemPrompt,
+    ExtractedIssueInfoSchema,
+    0.2,
+  )) as ExtractedIssueInfo;
+  return extractedIssue;
+};
+
+export const cloneAndGetSourceMap = async (
+  repo: string,
+  accessToken: string,
+) => {
+  let cleanupClone: (() => Promise<void>) | undefined;
+  try {
+    const { path, cleanup } = await cloneRepo({
+      repoName: repo,
+      token: accessToken,
+    });
+    cleanupClone = cleanup;
+
+    const repoSettings = getRepoSettings(path);
+    const sourceMap =
+      getSourceMap(path, repoSettings) || (await traverseCodebase(path));
+    return sourceMap;
+  } finally {
+    if (cleanupClone) {
+      await cleanupClone();
+    }
+  }
 };

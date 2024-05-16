@@ -3,9 +3,8 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClipboard } from "@fortawesome/free-solid-svg-icons";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 
-import "react-toastify/dist/ReactToastify.css";
 import { removeMarkdownCodeblocks } from "~/app/utils";
 import { type Code } from "~/server/api/routers/events";
 
@@ -20,7 +19,6 @@ const copyToClipboard = async (text: string) => {
 
 export const CodeComponent: React.FC<ComponentProps> = ({ codeFiles }) => (
   <div className="w-full p-2 pt-0 text-gray-100">
-    <ToastContainer />
     {codeFiles?.map((codeFile, index) => (
       <div key={index} className="mb-2 last:mb-0">
         <div className="py-2">

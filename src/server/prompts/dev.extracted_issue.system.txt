@@ -27,12 +27,13 @@ export const ExtractedIssueInfoSchema = z.object({
   stepsToAddressIssue: z.string(), // a step-by-step plan of how a developer would address the given issue
   issueQualityScore: z.number(), // a score from 0 to 5 indicating the quality of the GitHub issue and the confidence that a large language model can generate the correct code to address this issue on its first attempt. Use the evaluation criteria to determine the score.
   commitTitle: z.string(), // a brief git commit title no longer than 50 characters explaining the changes that need to be made
-  filesToCreate: z.array(z.string()), // an array of file paths that will be created by the developer. The paths CANNOT be in the list of valid file names.
-  filesToUpdate: z.array(z.string()), // an array of file paths that will be updated by the developer
+  filesToCreate: z.array(z.string()), // an array of file paths that will be created by the developer. The paths CANNOT be in the source map's list of valid file names.
+  filesToUpdate: z.array(z.string()), // an array of file paths that will be updated by the developer. The paths MUST be in the source map's list of valid file names.
 });
 
 === INSTRUCTIONS ===
 Act as an E7 expert-level Software Engineer at Facebook.
+You MUST include at least one file to create OR update. Use ONLY the information in the GitHub issue to determine which files need to be created or updated. Updated files must be listed in the source map. New files must NOT be in the source map.
 Your job is to extract information from a GitHub issue and return it as a JSON object.
 The JSON object you return MUST conform exactly to the ExtractedIssueInfoSchema and pass validation using ExtractedIssueInfoSchema.safeParse(obj).
 DO NOT include any additional comments or backticks in your response.

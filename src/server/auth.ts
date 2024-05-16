@@ -5,7 +5,7 @@ import {
   type TokenSet,
 } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import GitHubProvider from "next-auth/providers/github";
+import GitHubProvider, { type GithubProfile } from "next-auth/providers/github";
 
 import { env } from "~/env";
 
@@ -19,10 +19,15 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      login: string;
       // ...other properties
       // role: UserRole;
     } & DefaultSession["user"];
     accessToken: string;
+  }
+
+  export interface Profile {
+    login: string;
   }
 
   // interface User {
@@ -36,6 +41,7 @@ declare module "next-auth/jwt" {
     accessToken?: string;
     refreshToken?: string;
     accessTokenExpires?: Date;
+    login?: string;
   }
 }
 
@@ -96,15 +102,17 @@ export const authOptions: NextAuthOptions = {
         user: {
           ...session.user,
           id: token.sub,
+          login: token.login,
         },
       };
     },
-    async jwt({ token, account }) {
+    async jwt({ token, account, profile }) {
       // Persist the OAuth access_token and or the user id to the token right after signin
-      if (account) {
+      if (account && profile) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.accessTokenExpires = new Date((account.expires_at ?? 0) * 1000);
+        token.login = profile.login;
         return token;
       }
 
@@ -125,6 +133,15 @@ export const authOptions: NextAuthOptions = {
         params: {
           scope: "read:user",
         },
+      },
+      profile(profile: GithubProfile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name ?? profile.login,
+          login: profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+        };
       },
     }),
     /**

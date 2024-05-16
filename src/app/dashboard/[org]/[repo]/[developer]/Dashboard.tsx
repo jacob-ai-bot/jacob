@@ -10,10 +10,15 @@ import { TaskStatus } from "~/server/db/enums";
 
 import { type Todo, type Task } from "~/server/api/routers/events";
 import { api } from "~/trpc/react";
+import { trpcClient } from "~/trpc/client";
 import { DEVELOPERS } from "~/data/developers";
 import { TaskType } from "~/server/db/enums";
-import { getSidebarIconForType } from "~/app/utils";
+import {
+  getIssueDescriptionFromMessages,
+  getSidebarIconForType,
+} from "~/app/utils";
 import Todos from "./components/todos";
+import { toast } from "react-toastify";
 
 const CREATE_ISSUE_PROMPT =
   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
@@ -132,12 +137,10 @@ const Dashboard: React.FC<DashboardParams> = ({
   });
 
   useEffect(() => {
-    resetMessages([
-      {
-        role: Role.ASSISTANT,
-        content: selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
-      },
-    ]);
+    if (selectedDeveloper) {
+      resetMessages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDeveloper]);
 
   //** Task */
@@ -173,14 +176,21 @@ const Dashboard: React.FC<DashboardParams> = ({
   };
 
   const resetMessages = (messages?: Message[] | undefined) => {
+    const _messages = messages ?? [
+      {
+        role: Role.ASSISTANT,
+        content: selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
+      },
+    ];
     if (chatRef?.current) {
       const { resetChat }: ChatComponentHandle = chatRef.current;
-      resetChat(messages);
+      resetChat(_messages);
     }
   };
 
   // TODO: refactor this
-  const handleCreateNewTask = async () => {
+  const handleCreateNewTask = async (messages: Message[]) => {
+    console.log("TODO: Create new task with messages", messages);
     // // first, get all the messages that are from the assistant and try to find the most recent the gitub issue mentioned by the assistant (note that the messages will need to be read one by one from last to first in the messages array)
     // // The issue will be surrounded by code blocks with triple backticks and the word github on the first line
     // // i.e. ```github <here is the issue to extract>```
@@ -228,48 +238,76 @@ const Dashboard: React.FC<DashboardParams> = ({
   };
 
   // TODO: refactor this
-  const handleUpdateIssue = async () => {
-    // // get the first task from the tasks array that has a status of TaskStatus.TODO
-    // const task = tasks.find((t) => t.status === TaskStatus.TODO);
-    // // send the task to the /api/jacob/update-issue endpoint
-    // if (!task?.issue) {
-    //   console.error("No task or issue found to update issue");
-    //   return;
-    // }
-    // const updatedIssue = task.issue;
-    // // get the new issue description from the messages
-    // const newIssueDescription = getIssueDescriptionFromMessages(messages) ?? "";
-    // // To kick off the JACoB process, add the text @jacob-ai-bot to the body of the issue
-    // updatedIssue.description = `${newIssueDescription}\n\ntask assigned to: @jacob-ai-bot`;
-    // // if the updatedIssue type is CREATE_NEW_FILE, the task title must have an arrow (=>) followed by the name of the new file to create
-    // // i.e. "Create a new file => new-file-name.js"
-    // if (task.type === TaskType.CREATE_NEW_FILE) {
-    //   const newFileName = extractFilePathWithArrow(updatedIssue.title);
-    //   if (!newFileName && updatedIssue.filesToCreate?.length) {
-    //     updatedIssue.title += ` => ${updatedIssue.filesToCreate[0]}`;
-    //   }
-    // }
-    // const response = await fetch("/api/jacob/update-issue", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ issue: updatedIssue }),
-    // });
-    // // the response should have the updated issue object. Add it to the task and update the task in the tasks array
-    // const data = (await response.json()) as {
-    //   message: Text;
-    // };
-    // if (!response.ok) {
-    //   console.error("Failed to update issue:", data.message);
-    //   return;
-    // }
-    // // Remove this task from the list of tasks
-    // // A new one will be added when the issue is updated
-    // const newTasks = tasks.filter((t) => t.id !== task.id);
-    // setTasks(newTasks);
-    // // reset the messages (send in the first task)
-    // newTasks.length ? onNewTaskSelected(newTasks[0]!) : handleReset();
+  const handleUpdateIssue = async (messages: Message[]) => {
+    try {
+      if (chatRef?.current) {
+        const { setLoading }: ChatComponentHandle = chatRef.current;
+        setLoading(true);
+      }
+      if (!selectedTodo?.issueId) {
+        throw new Error("No issueId to update");
+      }
+      // get the new issue description from the messages
+      let description = getIssueDescriptionFromMessages(messages) ?? "";
+      const extractedIssue = await trpcClient.github.getExtractedIssue.query({
+        repo: `${org}/${repo}`,
+        issueText: `${selectedTodo.commitTitle} ${description}`,
+      });
+      if (!extractedIssue) {
+        throw new Error("Failed to extract issue from message");
+      }
+
+      if (extractedIssue.stepsToAddressIssue) {
+        description += `\n\nSteps to Address Issue: ${extractedIssue.stepsToAddressIssue}`;
+      }
+      if (extractedIssue.filesToCreate?.length) {
+        description += `\n\nFiles to Create: ${extractedIssue.filesToCreate.join(
+          ", ",
+        )}`;
+      }
+      if (extractedIssue.filesToUpdate?.length) {
+        description += `\n\nFiles to Update: ${extractedIssue.filesToUpdate.join(
+          ", ",
+        )}`;
+      }
+      description += `\n\ntask assigned to: @jacob-ai-bot`;
+
+      // if we're creating a new file, the task title must have an arrow (=>) followed by the name of the new file to create
+      // i.e. "Create a new file => new-file-name.js"
+      let title =
+        extractedIssue.commitTitle ?? selectedTodo.name ?? "New Issue";
+      if (extractedIssue.filesToCreate?.length) {
+        title += ` => ${extractedIssue.filesToCreate[0]}`;
+      }
+      const { id: updatedIssueId } = await trpcClient.github.updateIssue.mutate(
+        {
+          repo: `${org}/${repo}`,
+          id: selectedTodo.issueId,
+          title,
+          body: description,
+        },
+      );
+
+      if (!updatedIssueId) {
+        throw new Error("Failed to update issue");
+      }
+
+      // Remove this todo from the list of todos and
+      // A new one will be added when the issue is updated
+      const newTodos = todos?.filter((t) => t.id !== selectedTodo.id) ?? [];
+      setTodos(newTodos);
+      // reset the messages (send in the first task)
+      newTodos.length ? onNewTodoSelected(newTodos[0]!) : resetMessages();
+      toast.success("Issue updated successfully");
+    } catch (error) {
+      console.error("Failed to update issue", error);
+      toast.error("Failed to update issue");
+    } finally {
+      if (chatRef?.current) {
+        const { setLoading }: ChatComponentHandle = chatRef.current;
+        setLoading(false);
+      }
+    }
   };
 
   //** End Task */

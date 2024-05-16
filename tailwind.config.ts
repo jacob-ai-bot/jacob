@@ -6,6 +6,9 @@ export default {
   content: ["./src/**/*.tsx"],
   theme: {
     extend: {
+      animation: {
+        "bounce-fast": "bounce 0.5s infinite",
+      },
       colors: {
         beige: "#FFFAF6",
         "dark-beige": "#fcf3ed",

@@ -4,7 +4,6 @@ import gfm from "remark-gfm";
 import { faCircleDot } from "@fortawesome/free-solid-svg-icons";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { ToastContainer } from "react-toastify";
 import { capitalize, statusStyles } from "~/app/utils";
 import { type PullRequest } from "~/server/api/routers/events";
 
@@ -102,7 +101,6 @@ export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
           ))} */}
         </div>
       )}
-      <ToastContainer />
     </div>
   );
 };

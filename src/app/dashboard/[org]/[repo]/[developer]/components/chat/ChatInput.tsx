@@ -15,9 +15,14 @@ import { type Message, Role } from "~/types";
 interface Props {
   onSend: (message: Message) => void;
   isResponding?: boolean;
+  loading?: boolean;
 }
 
-export const ChatInput: FC<Props> = ({ onSend, isResponding = false }) => {
+export const ChatInput: FC<Props> = ({
+  onSend,
+  isResponding = false,
+  loading = false,
+}) => {
   const [content, setContent] = useState<string>();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -45,7 +50,7 @@ export const ChatInput: FC<Props> = ({ onSend, isResponding = false }) => {
     // if it's responding, don't allow the user to send a message
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (isResponding) return;
+      if (isResponding || loading) return;
       handleSend();
     }
   };
@@ -60,7 +65,7 @@ export const ChatInput: FC<Props> = ({ onSend, isResponding = false }) => {
   return (
     <div
       className={`flex w-full max-w-4xl flex-col items-start rounded-lg border border-gray-600 p-4 backdrop-blur-md ${
-        isResponding ? "opacity-50" : ""
+        isResponding || loading ? "opacity-50" : ""
       }`}
     >
       <textarea

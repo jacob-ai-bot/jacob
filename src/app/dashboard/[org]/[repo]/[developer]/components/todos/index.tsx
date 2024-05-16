@@ -51,8 +51,12 @@ const Todos: React.FC<TodosProps> = ({
   if (isLoading) {
     return (
       <div className="flex h-full min-h-screen w-full flex-col items-center justify-center space-x-2 space-y-4 border-x border-coolGray-400/20 bg-gray-900 bg-slate-50/5 text-2xl text-blueGray-500">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-light-blue"></div>
         <div>Loading...</div>
+        <div className="flex flex-row items-center justify-center space-x-2">
+          <div className="h-6 w-6 animate-bounce rounded-full bg-light-blue [animation-delay:-0.3s]"></div>
+          <div className="h-6 w-6 animate-bounce rounded-full bg-pink [animation-delay:-0.15s]"></div>
+          <div className="h-6 w-6 animate-bounce rounded-full bg-orange"></div>
+        </div>
       </div>
     );
   }
