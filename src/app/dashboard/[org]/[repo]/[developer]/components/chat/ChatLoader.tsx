@@ -2,7 +2,7 @@ import { type FC } from "react";
 
 export const ChatLoader: FC = () => {
   return (
-    <div className="flex-start bg-red flex flex-col">
+    <div className="flex-start flex flex-col">
       <div
         className={`flex w-fit items-center rounded-2xl bg-blueGray-700/80 px-4 py-2 text-neutral-900`}
         style={{ overflowWrap: "anywhere" }}
