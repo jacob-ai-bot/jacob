@@ -114,13 +114,14 @@ export const githubRouter = createTRPCRouter({
                 0.2,
               )) as ExtractedIssueInfo;
 
-              return {
+              const todo: Todo = {
                 id: `todo-${issue.id}`,
-                description: `${issue.title}${issueBody}`,
-                name: extractedIssue.commitTitle,
+                description: `${issue.title}\n\n${issueBody}`,
+                name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
                 status: TodoStatus.TODO,
                 ...extractedIssue,
-              } as Todo;
+              };
+              return todo;
             }),
           );
 
