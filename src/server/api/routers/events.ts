@@ -17,6 +17,7 @@ import {
   EventsTable,
 } from "~/server/db/tables/events.table";
 import { newRedisConnection } from "~/server/utils/redis";
+import { type ExtractedIssueInfo } from "~/server/code/extractedIssue";
 
 export interface Task extends EventsTask {
   issueId: number;
@@ -125,12 +126,12 @@ type EventPayload =
   | PullRequest
   | Command;
 
-export type Todo = {
+export interface Todo extends ExtractedIssueInfo {
   id: string;
   description: string;
   name: string;
   status: TodoStatus;
-};
+}
 
 export const eventsRouter = createTRPCRouter({
   getEventPayload: protectedProcedure

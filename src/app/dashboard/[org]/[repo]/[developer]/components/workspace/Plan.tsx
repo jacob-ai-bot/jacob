@@ -46,7 +46,7 @@ export const PlanComponent: React.FC<ComponentProps> = ({
                       ? faCheckCircle
                       : faCircleDot
                 }
-                className={`text-xl ${isCurrentStep ? "animate-pulse text-orange" : plan.isComplete ? "text-light-blue" : "rounded-full border-2 border-blueGray-500 text-transparent"}`}
+                className={`h-3 w-3 text-xl ${isCurrentStep ? "animate-pulse text-orange" : plan.isComplete ? "text-light-blue" : "rounded-full border-2 border-blueGray-500 text-transparent"}`}
               />
             </header>
             <div className="mt-2 text-gray-300">

@@ -14,6 +14,8 @@ import {
 } from "~/server/code/extractedIssue";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { getAllRepos } from "../utils";
+import { type Todo } from "./events";
+import { TodoStatus } from "~/server/db/enums";
 
 export const githubRouter = createTRPCRouter({
   getRepos: protectedProcedure.input(z.object({}).optional()).query(
@@ -36,7 +38,7 @@ export const githubRouter = createTRPCRouter({
       }) => {
         const [repoOwner, repoName] = repo?.split("/") ?? [];
 
-        if (!repoOwner || !repoName || ids.length === 0) {
+        if (!repoOwner || !repoName) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Invalid request",
@@ -54,6 +56,24 @@ export const githubRouter = createTRPCRouter({
           const repoSettings = getRepoSettings(path);
           const sourceMap =
             getSourceMap(path, repoSettings) || (await traverseCodebase(path));
+
+          const octokit = new Octokit({ auth: accessToken });
+
+          const { data: issues } = await octokit.issues.listForRepo({
+            owner: repoOwner,
+            repo: repoName,
+            state: "open",
+          });
+
+          // remove the pull requests
+          const issuesWithoutPullRequests = issues.filter(
+            ({ pull_request }) => !pull_request,
+          );
+
+          const ids = issuesWithoutPullRequests
+            .map((issue) => issue.number)
+            .filter(Boolean)
+            .slice(0, max);
 
           const issueData = await Promise.all(
             ids.map((issueNumber) =>
@@ -95,9 +115,12 @@ export const githubRouter = createTRPCRouter({
               )) as ExtractedIssueInfo;
 
               return {
-                issueNumber: issue.number,
+                id: `todo-${issue.id}`,
+                description: `${issue.title}${issueBody}`,
+                name: extractedIssue.commitTitle,
+                status: TodoStatus.TODO,
                 ...extractedIssue,
-              };
+              } as Todo;
             }),
           );
 

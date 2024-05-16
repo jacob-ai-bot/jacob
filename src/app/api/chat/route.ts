@@ -1,5 +1,5 @@
 import { type Message, type Developer } from "~/types";
-import { type Task } from "~/server/api/routers/events";
+import { type Todo } from "~/server/api/routers/events";
 
 import {
   chatCreateIssueSystem,
@@ -13,23 +13,21 @@ import { type NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, task, developer } = (await req.json()) as {
+    const { messages, todo, developer } = (await req.json()) as {
       messages: Message[];
-      task: Task;
+      todo: Todo;
       developer: Developer;
     };
 
-    const issue = task?.issue ?? undefined;
-
-    let systemPrompt = issue ? chatClarifyIssueSystem : chatCreateIssueSystem;
-    if (issue?.description?.includes("figma.com")) {
+    let systemPrompt = todo ? chatClarifyIssueSystem : chatCreateIssueSystem;
+    if (todo?.description?.includes("figma.com")) {
       systemPrompt = chatShowFigmaSystem;
     }
     const temperature = 0.3;
     const model = "gpt-4o";
 
-    if (issue) {
-      systemPrompt = systemPrompt.replace("{{issue}}", JSON.stringify(issue));
+    if (todo) {
+      systemPrompt = systemPrompt.replace("{{todo}}", JSON.stringify(todo));
     }
     if (developer?.personalityProfile) {
       systemPrompt = systemPrompt.replace(

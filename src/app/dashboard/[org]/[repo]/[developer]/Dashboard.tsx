@@ -3,10 +3,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import ChatComponent, { type ChatComponentHandle } from "./components/chat";
 import ChatHeader from "./components/chat/ChatHeader";
-import Tasks from "./components/todos";
+
 import Workspace from "./components/workspace";
 import { type Message, Role, SidebarIcon } from "~/types";
-import { TaskStatus, TodoStatus } from "~/server/db/enums";
+import { TaskStatus } from "~/server/db/enums";
 
 import { type Todo, type Task } from "~/server/api/routers/events";
 import { api } from "~/trpc/react";
@@ -31,7 +31,6 @@ const Dashboard: React.FC<DashboardParams> = ({
   developer,
   tasks: _tasks = [],
 }) => {
-  const [loadingTasks /* , setLoadingTasks */] = useState<boolean>(false);
   const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(
     SidebarIcon.Plan,
   );
@@ -39,28 +38,25 @@ const Dashboard: React.FC<DashboardParams> = ({
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(
     tasks?.[0],
   );
-  const [todos, setTodos] = useState<Todo[] | undefined>([
-    {
-      id: "1",
-      name: "Create a new file",
-      description: "Create a new file in the project",
-      status: TodoStatus.TODO,
-    },
-    {
-      id: "2",
-      name: "Create another new file",
-      description: "Create a new file in the project",
-      status: TodoStatus.TODO,
-    },
-  ]);
+  const [todos, setTodos] = useState<Todo[] | undefined>();
+
   const [selectedTodo, setSelectedTodo] = useState<Todo | undefined>(undefined);
-  const [loadingTodos, setLoadingTodos] = useState<boolean>(false);
 
   const chatRef = useRef(null);
 
   //** Data Fetching */
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
-  // const {data:todos, loading: loadingTodos} = api.github.getTodos({org, repo});
+  const { data: tempTodos, isLoading: loadingTodos } =
+    api.github.getTodos.useQuery({
+      repo: `${org}/${repo}`,
+    });
+  useEffect(() => {
+    setTodos(tempTodos);
+    if (tempTodos?.length && tempTodos[0]) {
+      onNewTodoSelected(tempTodos[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tempTodos]);
 
   api.events.onAdd.useSubscription(undefined, {
     onData(event) {
@@ -298,7 +294,7 @@ const Dashboard: React.FC<DashboardParams> = ({
             <ChatComponent
               ref={chatRef}
               developer={selectedDeveloper}
-              task={selectedTask}
+              todo={selectedTodo}
               handleCreateNewTask={handleCreateNewTask}
               handleUpdateIssue={handleUpdateIssue}
             />
@@ -310,7 +306,7 @@ const Dashboard: React.FC<DashboardParams> = ({
             onStart={onStartTask}
             setTodos={setTodos}
             onNewTodoSelected={onNewTodoSelected}
-            isLoading={loadingTasks}
+            isLoading={loadingTodos}
           />
         </div>
 
