@@ -131,6 +131,7 @@ export interface Todo extends ExtractedIssueInfo {
   description: string;
   name: string;
   status: TodoStatus;
+  issueId?: number;
 }
 
 export const eventsRouter = createTRPCRouter({

@@ -15,14 +15,15 @@ const DEFAULT_PROMPT = "What can I help you with today?";
 type Props = {
   developer: Developer | undefined;
   todo: Todo | undefined;
-  handleCreateNewTask: () => void;
-  handleUpdateIssue: () => void;
+  handleCreateNewTask: (messages: Message[]) => void;
+  handleUpdateIssue: (messages: Message[]) => void;
   headerHeight?: number;
 };
 
 export interface ChatComponentHandle {
   handleChat: (message: Message) => void;
   resetChat: (messages?: Message[]) => void;
+  setLoading: (isLoading: boolean) => void;
 }
 
 const ChatComponentInner: React.ForwardRefRenderFunction<
@@ -38,6 +39,9 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
     },
     resetChat(messages?: Message[]) {
       void handleReset(messages);
+    },
+    setLoading(isLoading: boolean) {
+      void setLoading(isLoading);
     },
   }));
 
@@ -173,7 +177,6 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
 
     setResponding(false);
   };
-
   return (
     <div className="flex h-full flex-col" style={{ height }}>
       <Chat

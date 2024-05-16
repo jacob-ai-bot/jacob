@@ -11,8 +11,8 @@ interface Props {
   loading: boolean;
   onSend: (message: Message) => void;
   onReset: () => void;
-  onCreateNewTask: () => void;
-  onUpdateIssue: () => void;
+  onCreateNewTask: (messages: Message[]) => void;
+  onUpdateIssue: (messages: Message[]) => void;
   isResponding?: boolean;
   shouldHideLogo?: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -50,6 +50,7 @@ export const Chat: FC<Props> = ({
         {messages.map((message, index) => (
           <div key={index} className="my-1 sm:my-2">
             <ChatMessage
+              messageHistory={messages}
               message={message}
               isResponding={isResponding}
               onCreateNewTask={onCreateNewTask}

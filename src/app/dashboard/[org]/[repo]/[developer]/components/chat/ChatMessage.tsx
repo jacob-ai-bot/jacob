@@ -11,13 +11,15 @@ import "react-toastify/dist/ReactToastify.css";
 
 interface Props {
   message: Message;
-  onCreateNewTask: () => void;
-  onUpdateIssue: () => void;
+  messageHistory: Message[];
+  onCreateNewTask: (messages: Message[]) => void;
+  onUpdateIssue: (messages: Message[]) => void;
   isResponding?: boolean;
 }
 
 export const ChatMessage: FC<Props> = ({
   message,
+  messageHistory,
   onCreateNewTask,
   onUpdateIssue,
 }) => {
@@ -118,7 +120,7 @@ export const ChatMessage: FC<Props> = ({
           <div className="mt-2 flex justify-center self-center">
             <div
               className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-gray-400 bg-white px-6 py-2"
-              onClick={onCreateNewTask}
+              onClick={() => onCreateNewTask(messageHistory)}
             >
               <div className="text-center text-xs font-medium text-black">
                 Add Task to Queue
@@ -135,7 +137,7 @@ export const ChatMessage: FC<Props> = ({
           <div className="mt-2 flex justify-center self-center">
             <div
               className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-gray-400 bg-white px-6 py-2"
-              onClick={onUpdateIssue}
+              onClick={() => onUpdateIssue(messageHistory)}
             >
               <div className="text-center text-xs font-medium text-black">
                 Update GitHub Issue
