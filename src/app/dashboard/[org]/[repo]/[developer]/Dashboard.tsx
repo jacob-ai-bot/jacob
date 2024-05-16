@@ -192,8 +192,8 @@ const Dashboard: React.FC<DashboardParams> = ({
   };
 
   // TODO: refactor this
-  const handleCreateNewTask = async (messages: Message[]) => {
-    console.log("TODO: Create new task with messages", messages);
+  // const handleCreateNewTask = async (messages: Message[]) => {
+  //   console.log("TODO: Create new task with messages", messages);
     // // first, get all the messages that are from the assistant and try to find the most recent the gitub issue mentioned by the assistant (note that the messages will need to be read one by one from last to first in the messages array)
     // // The issue will be surrounded by code blocks with triple backticks and the word github on the first line
     // // i.e. ```github <here is the issue to extract>```
@@ -238,9 +238,52 @@ const Dashboard: React.FC<DashboardParams> = ({
     //   console.error("Failed to create issue:", response.statusText);
     //   return;
     // }
+  // };
+  const handleCreateNewTask = async (messages: Message[]) => {
+    try {
+      if (chatRef?.current) {
+        const { setLoading }: ChatComponentHandle = chatRef.current;
+        setLoading(true);
+      }
+
+      const issueText = getIssueDescriptionFromMessages(messages);
+      if (!issueText) {
+        throw new Error("No issue found in messages");
+      }
+
+      const issueResponse = await trpcClient.github.getExtractedIssue.query({
+        repo: `${org}/${repo}`,
+        issueText,
+      });
+      if (!issueResponse?. || !issueResponse.description) {
+        throw new Error("Failed to extract issue title or description");
+      }
+
+      const newIssue: NewIssue = {
+        title: issueResponse.title,
+        description: issueResponse.description,
+        repo: selectedRepo,
+      };
+
+      const createResponse = await trpcClient.github.createIssue.mutate({
+        issue: newIssue,
+      });
+      if (!createResponse?.id) {
+        throw new Error("Failed to create issue");
+      }
+
+      toast.success("Issue created successfully");
+    } catch (error) {
+      console.error("Failed to create issue", error);
+      toast.error("Failed to create issue");
+    } finally {
+      if (chatRef?.current) {
+        const { setLoading }: ChatComponentHandle = chatRef.current;
+        setLoading(false);
+      }
+    }
   };
 
-  // TODO: refactor this
   const handleUpdateIssue = async (messages: Message[]) => {
     try {
       if (chatRef?.current) {
