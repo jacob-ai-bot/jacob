@@ -9,6 +9,7 @@ import {
 import { type Message, Role, type Developer } from "~/types";
 import { Chat } from "./Chat";
 import { type Todo } from "~/server/api/routers/events";
+import { toast } from "react-toastify";
 
 const DEFAULT_PROMPT = "What can I help you with today?";
 
@@ -106,76 +107,81 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
   };
 
   const handleSend = async (message: Message) => {
-    const updatedMessages = [...messages, message];
+    try {
+      const updatedMessages = [...messages, message];
 
-    setMessages(updatedMessages);
-    setLoading(true);
-    setResponding(true);
+      setMessages(updatedMessages);
+      setLoading(true);
+      setResponding(true);
 
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: updatedMessages,
-        prompt,
-        todo,
-        developer,
-      }),
-    });
-
-    if (!response.ok || !response.body) {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: updatedMessages,
+          prompt,
+          todo,
+          developer,
+        }),
+      });
       setLoading(false);
-      throw new Error(response.statusText);
-    }
 
-    const runner = ChatCompletionStreamingRunner.fromReadableStream(
-      response.body,
-    );
-    if (!runner) {
-      setLoading(false);
-      throw new Error("No reader");
-    }
-    let completedText = "";
-    let isFirst = true;
+      if (!response.ok || !response.body) {
+        throw new Error(response.statusText);
+      }
 
-    while (!runner.ended) {
-      for await (const chunk of runner) {
-        // The chunk is already a parsed object, but let's ensure it's in the expected format
-        if (!chunk.choices[0]?.delta) {
-          continue;
-        }
-        const chunkValue = chunk.choices[0].delta.content ?? ""; // Assuming chunk.data is the content we're interested in
+      const runner = ChatCompletionStreamingRunner.fromReadableStream(
+        response.body,
+      );
+      if (!runner) {
+        throw new Error("No reader");
+      }
+      let completedText = "";
+      let isFirst = true;
 
-        completedText += chunkValue;
-        if (isFirst) {
-          isFirst = false;
-          setMessages((messages) => [
-            ...messages,
-            {
-              role: Role.ASSISTANT,
-              content: chunkValue,
-            },
-          ]);
-        } else {
-          setMessages((messages) => {
-            const lastMessage = messages[messages.length - 1];
+      while (!runner.ended) {
+        for await (const chunk of runner) {
+          // The chunk is already a parsed object, but let's ensure it's in the expected format
+          if (!chunk.choices[0]?.delta) {
+            continue;
+          }
+          const chunkValue = chunk.choices[0].delta.content ?? ""; // Assuming chunk.data is the content we're interested in
 
-            if (lastMessage) {
-              const updatedMessage = {
-                ...lastMessage,
-                content: completedText,
-              };
-              return [...messages.slice(0, -1), updatedMessage];
-            }
-            return messages;
-          });
+          completedText += chunkValue;
+          if (isFirst) {
+            isFirst = false;
+            setMessages((messages) => [
+              ...messages,
+              {
+                role: Role.ASSISTANT,
+                content: chunkValue,
+              },
+            ]);
+          } else {
+            setMessages((messages) => {
+              const lastMessage = messages[messages.length - 1];
+
+              if (lastMessage) {
+                const updatedMessage = {
+                  ...lastMessage,
+                  content: completedText,
+                };
+                return [...messages.slice(0, -1), updatedMessage];
+              }
+              return messages;
+            });
+          }
         }
       }
+    } catch (error) {
+      console.error(error);
+      toast.error("An error occurred while processing your request");
+    } finally {
+      setLoading(false);
+      setResponding(false);
     }
-
-    setResponding(false);
   };
   return (
     <div className="flex h-full flex-col" style={{ height }}>

@@ -197,8 +197,8 @@ export const sendGptRequestWithSchema = async (
   while (retryCount < retries) {
     let gptResponse: string | null = null;
     // if retries is greater than 0, slightly modify the system prompt to avoid hitting the same issue via cache
-    if (retries > 0) {
-      systemPrompt = `attempt #${retryCount + 1}) ${systemPrompt}`;
+    if (retryCount > 0) {
+      systemPrompt = `Attempt #${retryCount + 1} - ${systemPrompt}`;
     }
 
     try {

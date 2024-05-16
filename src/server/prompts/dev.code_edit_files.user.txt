@@ -7,6 +7,7 @@ ${plan}
 
 -- Notes:
 Any code or suggested imports in the Technical Specification above is example code and may contain bugs or incorrect information or approaches.
+Use this code and plan as GUIDANCE ONLY! Review this code, silently review it for issues or incompleteness, then take a deep breath and rewrite this draft file from scratch using your expert knowledge.
 ALWAYS use the source map and types when writing your final code.
 
 -- Instructions:

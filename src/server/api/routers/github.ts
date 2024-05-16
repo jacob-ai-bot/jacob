@@ -3,16 +3,8 @@ import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { cloneRepo } from "~/server/git/clone";
-import { getSourceMap } from "~/server/analyze/sourceMap";
-import { traverseCodebase } from "~/server/analyze/traverse";
-import { parseTemplate, getRepoSettings } from "~/server/utils";
 import { getIssue } from "~/server/github/issue";
-import {
-  ExtractedIssueInfoSchema,
-  type ExtractedIssueInfo,
-} from "~/server/code/extractedIssue";
-import { sendGptRequestWithSchema } from "~/server/openai/request";
+
 import {
   cloneAndGetSourceMap,
   getAllRepos,

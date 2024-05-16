@@ -7,7 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import Markdown, { type Components } from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { type Prompt } from "~/server/api/routers/events";
 
 type ComponentProps = {
@@ -268,7 +268,6 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
           </Dialog>
         </Transition>
       </div>
-      <ToastContainer />
     </div>
   );
 };

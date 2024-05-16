@@ -18,9 +18,7 @@ import {
   getSidebarIconForType,
 } from "~/app/utils";
 import Todos from "./components/todos";
-import { TEST_MESSAGES } from "~/data/messages";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 const CREATE_ISSUE_PROMPT =
   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
@@ -139,7 +137,10 @@ const Dashboard: React.FC<DashboardParams> = ({
   });
 
   useEffect(() => {
-    resetMessages();
+    if (selectedDeveloper) {
+      resetMessages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDeveloper]);
 
   //** Task */
@@ -181,7 +182,6 @@ const Dashboard: React.FC<DashboardParams> = ({
         content: selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
       },
     ];
-    messages = TEST_MESSAGES; // TODO: REMOVE THIS!!!
     if (chatRef?.current) {
       const { resetChat }: ChatComponentHandle = chatRef.current;
       resetChat(_messages);
@@ -190,6 +190,7 @@ const Dashboard: React.FC<DashboardParams> = ({
 
   // TODO: refactor this
   const handleCreateNewTask = async (messages: Message[]) => {
+    console.log("TODO: Create new task with messages", messages);
     // // first, get all the messages that are from the assistant and try to find the most recent the gitub issue mentioned by the assistant (note that the messages will need to be read one by one from last to first in the messages array)
     // // The issue will be surrounded by code blocks with triple backticks and the word github on the first line
     // // i.e. ```github <here is the issue to extract>```
@@ -269,7 +270,7 @@ const Dashboard: React.FC<DashboardParams> = ({
           ", ",
         )}`;
       }
-      description += `task assigned to: @jacob-ai-bot`;
+      description += `\n\ntask assigned to: @jacob-ai-bot`;
 
       // if we're creating a new file, the task title must have an arrow (=>) followed by the name of the new file to create
       // i.e. "Create a new file => new-file-name.js"
@@ -319,7 +320,6 @@ const Dashboard: React.FC<DashboardParams> = ({
 
   return (
     <div className="h-screen w-full bg-gray-800 text-left ">
-      <ToastContainer />
       <div
         className={`grid h-full w-full bg-gray-900 ${tasksInProgressOrDone.length ? "grid-cols-12" : "mx-auto max-w-7xl grid-cols-6 bg-gray-900"}`}
       >

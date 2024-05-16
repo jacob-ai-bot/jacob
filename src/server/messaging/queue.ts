@@ -613,6 +613,12 @@ export type WebhookIssueOpenedEvent = EmitterWebhookEvent<"issues"> & {
   };
 };
 
+export type WebhookIssueEditedEvent = EmitterWebhookEvent<"issues"> & {
+  payload: {
+    action: "edited";
+  };
+};
+
 export type WebhookIssueCommentCreatedEvent =
   EmitterWebhookEvent<"issue_comment"> & {
     payload: {
@@ -659,6 +665,7 @@ export type WebhookInstallationRepositoriesAddedEvent =
 
 export type WebhookQueuedEvent =
   | WebhookIssueOpenedEvent
+  | WebhookIssueEditedEvent
   | WebhookIssueCommentCreatedEvent
   | WebhookPRCommentCreatedEvent
   | WebhookPullRequestOpenedEvent

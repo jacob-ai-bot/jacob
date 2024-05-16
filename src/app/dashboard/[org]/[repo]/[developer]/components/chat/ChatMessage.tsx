@@ -6,15 +6,14 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { faArrowRight, faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 interface Props {
   message: Message;
   messageHistory: Message[];
   onCreateNewTask: (messages: Message[]) => void;
   onUpdateIssue: (messages: Message[]) => void;
-  isResponding?: boolean;
+  loading?: boolean;
 }
 
 export const ChatMessage: FC<Props> = ({
@@ -22,6 +21,7 @@ export const ChatMessage: FC<Props> = ({
   messageHistory,
   onCreateNewTask,
   onUpdateIssue,
+  loading = false,
 }) => {
   const [content, setContent] = useState<string>(message.content);
 
@@ -100,10 +100,9 @@ export const ChatMessage: FC<Props> = ({
     <div
       className={`flex flex-col ${message.role === Role.ASSISTANT ? "items-start" : "items-end"}`}
     >
-      <ToastContainer />
       {content?.length > 0 && (
         <div
-          className={`markdown-chat flex flex-col text-left font-figtree ${message.role === Role.ASSISTANT ? "border border-blueGray-600/50 " : "bg-gradient-to-l from-blueGray-700/50 to-blueGray-800/50"} hide-scrollbar max-w-[95%] rounded-md px-2  shadow-md`}
+          className={`markdown-chat flex flex-col text-left font-figtree ${message.role === Role.ASSISTANT ? "max-w-[100%]" : "max-w-[95%] bg-gradient-to-l from-blueGray-700/50 to-blueGray-800/50"} hide-scrollbar rounded-md px-2  shadow-md`}
           style={{ overflowWrap: "anywhere" }}
         >
           <Markdown
@@ -119,11 +118,11 @@ export const ChatMessage: FC<Props> = ({
         message.content.includes(SpecialPhrases.CREATE_TASK) && (
           <div className="mt-2 flex justify-center self-center">
             <div
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-gray-400 bg-white px-6 py-2"
+              className={`inline-flex  items-center justify-center gap-2 rounded border border-gray-400 bg-white px-6 py-2 ${loading ? "cursor-wait opacity-50 " : "cursor-pointer "}`}
               onClick={() => onCreateNewTask(messageHistory)}
             >
               <div className="text-center text-xs font-medium text-black">
-                Add Task to Queue
+                {loading ? "Creating Issue..." : "Create New Issue"}
               </div>
               <div className="relative text-black">
                 <FontAwesomeIcon icon={faArrowRight} />
@@ -136,11 +135,11 @@ export const ChatMessage: FC<Props> = ({
         message.content.includes(SpecialPhrases.UPDATE_TASK) && (
           <div className="mt-2 flex justify-center self-center">
             <div
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-gray-400 bg-white px-6 py-2"
+              className={`inline-flex items-center justify-center gap-2 rounded border border-gray-400 bg-white px-6 py-2 ${loading ? "cursor-wait opacity-50 " : "cursor-pointer "}`}
               onClick={() => onUpdateIssue(messageHistory)}
             >
               <div className="text-center text-xs font-medium text-black">
-                Update GitHub Issue
+                {loading ? "Updating Issue..." : "Update GitHub Issue"}
               </div>
               <div className="relative text-black">
                 <FontAwesomeIcon icon={faArrowRight} />
