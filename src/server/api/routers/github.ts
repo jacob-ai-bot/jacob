@@ -54,7 +54,7 @@ export const githubRouter = createTRPCRouter({
       async ({
         input: { repo, max = 10 },
         ctx: {
-          session: { accessToken },
+          session: { accessToken, user },
         },
       }) => {
         const [repoOwner, repoName] = repo?.split("/") ?? [];
@@ -70,11 +70,21 @@ export const githubRouter = createTRPCRouter({
         const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
         const octokit = new Octokit({ auth: accessToken });
 
-        const { data: issues } = await octokit.issues.listForRepo({
+        const { data: unassignedIssues } = await octokit.issues.listForRepo({
           owner: repoOwner,
           repo: repoName,
           state: "open",
+          assignee: "none",
         });
+
+        const { data: myIssues } = await octokit.issues.listForRepo({
+          owner: repoOwner,
+          repo: repoName,
+          state: "open",
+          assignee: user.login,
+        });
+
+        const issues = [...unassignedIssues, ...myIssues];
 
         // remove the pull requests
         const issuesWithoutPullRequests = issues.filter(
