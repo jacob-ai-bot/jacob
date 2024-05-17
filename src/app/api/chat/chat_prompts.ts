@@ -21,7 +21,7 @@ Phase 5: Write GitHub Issue
 Write a draft of the GitHub issue including:
 - Title summarizing the feature/fix 
 - Description of the requirements with all key details
-- A "#### Files:" section that has a bullet listing the specific name of the file to be created or updated
+- Either a "#### New Files:" or a "#### Files to Update:" section that has bullet(s) listing the specific name(s) of the file to be created or updated
 - Acceptance criteria checklist for what done looks like
 
 Note: Here is the criteria for a good GitHub issue write-up. Ensure your draft meets these criteria to earn a 5/5 rating.
@@ -33,7 +33,7 @@ Assess the GitHub issue based on the clarity, completeness, and specificity of t
    - The issue must clearly describe the problem and outline the objectives of the requested code. This includes what the code should accomplish, with specific details on the expected functionality and any particular outcomes.
 
 2. **File Names and Types (Award a second point):**
-   - If new files need to be created, the exact file names should be specified. If the task involves updating or editing existing files, those file names must be listed. This criterion ensures that the LLM can correctly identify and manipulate the correct files.
+- If new files need to be created, the exact file names should be specified. If the task involves updating or editing existing files, those file names must be listed. This criterion ensures that the LLM can correctly identify and manipulate the correct files. Note that you MUST have either a "#### New Files:" section or a "#### Files to Update:" section with bullet point(s) listing the file name(s) to be created or updated.
 
 3. **Requirements for New Packages (Award a third point):**
    - While general environment and dependencies are predetermined, any new packages required for the task should be explicitly stated. For example, if a new graphing library or icon set is needed, this should be clearly mentioned, including the preferred packages if applicable.
@@ -125,7 +125,7 @@ Phase 5: Write GitHub Issue
 Write a draft of the GitHub issue including:
 - Title summarizing the feature/fix 
 - Description of the requirements with all key details
-- A "#### Files:" section that has a bullet listing the specific name of the file to be created or updated
+- Either a "#### New Files:" or a "#### Files to Update:" section that has bullet(s) listing the specific name(s) of the file to be created or updated
 - Acceptance criteria checklist for what done looks like
 
 Note: Here is the criteria for a good GitHub issue write-up. Ensure your draft meets these criteria to earn a 5/5 rating.
@@ -137,7 +137,7 @@ Assess the GitHub issue based on the clarity, completeness, and specificity of t
    - The issue must clearly describe the problem and outline the objectives of the requested code. This includes what the code should accomplish, with specific details on the expected functionality and any particular outcomes.
 
 2. **File Names and Types (Award a second point):**
-   - If new files need to be created, the exact file names should be specified. If the task involves updating or editing existing files, those file names must be listed. This criterion ensures that the LLM can correctly identify and manipulate the correct files.
+   - If new files need to be created, the exact file names should be specified. If the task involves updating or editing existing files, those file names must be listed. This criterion ensures that the LLM can correctly identify and manipulate the correct files. Note that you MUST have either a "#### New Files:" section or a "#### Files to Update:" section with bullet point(s) listing the file name(s) to be created or updated.
 
 3. **Requirements for New Packages (Award a third point):**
    - While general environment and dependencies are predetermined, any new packages required for the task should be explicitly stated. For example, if a new graphing library or icon set is needed, this should be clearly mentioned, including the preferred packages if applicable.

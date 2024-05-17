@@ -54,6 +54,7 @@ const Dashboard: React.FC<DashboardParams> = ({
   const { data: tempTodos, isLoading: loadingTodos } =
     api.github.getTodos.useQuery({
       repo: `${org}/${repo}`,
+      mode: selectedDeveloper?.mode,
     });
   useEffect(() => {
     setTodos(tempTodos);
@@ -191,54 +192,6 @@ const Dashboard: React.FC<DashboardParams> = ({
     }
   };
 
-  // TODO: refactor this
-  // const handleCreateNewTask = async (messages: Message[]) => {
-  //   console.log("TODO: Create new task with messages", messages);
-    // // first, get all the messages that are from the assistant and try to find the most recent the gitub issue mentioned by the assistant (note that the messages will need to be read one by one from last to first in the messages array)
-    // // The issue will be surrounded by code blocks with triple backticks and the word github on the first line
-    // // i.e. ```github <here is the issue to extract>```
-    // const issueText = getIssueDescriptionFromMessages(messages);
-    // if (!issueText) {
-    //   console.error("No issue found in messages");
-    //   console.log("messages", messages);
-    //   return;
-    // }
-    // // call an llm to extract the issue title and description from the issueText
-    // const issueResponse = await fetch("/api/dashboard/github-issue", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ issueText }),
-    // });
-    // if (!issueResponse.ok) {
-    //   console.error("Failed to extract issue:", issueResponse.statusText);
-    //   return;
-    // }
-    // const data = await issueResponse.json();
-    // const { title, description } = data;
-    // if (!title || !description) {
-    //   console.error("Failed to extract issue title or description");
-    //   return;
-    // }
-    // const newIssue: NewIssue = {
-    //   title,
-    //   description,
-    //   repo: selectedRepo,
-    // };
-    // // send the new issue to the /api/jacob/create-issue endpoint
-    // const response = await fetch("/api/jacob/create-issue", {
-    //   method: "PUT",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ issue: newIssue }),
-    // });
-    // if (!response.ok) {
-    //   console.error("Failed to create issue:", response.statusText);
-    //   return;
-    // }
-  // };
   const handleCreateNewTask = async (messages: Message[]) => {
     try {
       if (chatRef?.current) {
@@ -251,27 +204,21 @@ const Dashboard: React.FC<DashboardParams> = ({
         throw new Error("No issue found in messages");
       }
 
-      const issueResponse = await trpcClient.github.getExtractedIssue.query({
-        repo: `${org}/${repo}`,
+      const { title, body } = await trpcClient.github.extractIssue.query({
         issueText,
       });
-      if (!issueResponse?. || !issueResponse.description) {
+      if (!title || !body) {
         throw new Error("Failed to extract issue title or description");
       }
 
-      const newIssue: NewIssue = {
-        title: issueResponse.title,
-        description: issueResponse.description,
-        repo: selectedRepo,
-      };
-
       const createResponse = await trpcClient.github.createIssue.mutate({
-        issue: newIssue,
+        repo: `${org}/${repo}`,
+        title,
+        body,
       });
       if (!createResponse?.id) {
         throw new Error("Failed to create issue");
       }
-
       toast.success("Issue created successfully");
     } catch (error) {
       console.error("Failed to create issue", error);
