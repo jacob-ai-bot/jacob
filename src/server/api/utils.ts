@@ -78,26 +78,6 @@ export const validateRepo = async (
   }
 };
 
-export const getPlanForTaskSubType = (taskSubType: TaskSubType) => {
-  // set the plan
-  let plan: Plan[] = [];
-  switch (taskSubType) {
-    case TaskSubType.CREATE_NEW_FILE:
-      plan = PLANS[TaskSubType.CREATE_NEW_FILE];
-      break;
-    case TaskSubType.EDIT_FILES:
-      plan = PLANS[TaskSubType.EDIT_FILES];
-      break;
-    case TaskSubType.CODE_REVIEW:
-      plan = PLANS[TaskSubType.CODE_REVIEW];
-      break;
-    default:
-      console.error("Unknown task type: ", taskSubType);
-      break;
-  }
-  return plan;
-};
-
 export const getExtractedIssue = async (
   sourceMap: string,
   issueText: string,

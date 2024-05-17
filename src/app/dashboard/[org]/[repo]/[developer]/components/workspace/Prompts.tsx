@@ -72,7 +72,6 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
   const closePanel = () => {
     setIsPanelOpen(false);
   };
-  console.log("promptDetailsArray", promptDetailsArray);
 
   return (
     <div className="min-h-full w-full flex-grow flex-col overflow-clip p-2 pt-0">

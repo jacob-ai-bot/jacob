@@ -262,7 +262,6 @@ export const githubRouter = createTRPCRouter({
           IssueSchema,
           temperature,
         )) as unknown as Issue;
-        console.log("Extracted issue data:", issueData);
 
         // Add the @jacob-ai-bot tag to the issue body
         issueData.body += "\n\n@jacob-ai-bot";

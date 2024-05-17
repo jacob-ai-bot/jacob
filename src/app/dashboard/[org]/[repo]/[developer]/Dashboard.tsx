@@ -19,7 +19,7 @@ import {
 } from "~/app/utils";
 import Todos from "./components/todos";
 import { toast } from "react-toastify";
-
+import { getPlanForTaskSubType } from "~/app/utils";
 const CREATE_ISSUE_PROMPT =
   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
 
@@ -76,16 +76,25 @@ const Dashboard: React.FC<DashboardParams> = ({
               "ignoring task (for now) - because it already exists",
               payload,
             );
+
+            existingTask.plan = getPlanForTaskSubType(payload.subType);
+            existingTask.status = TaskStatus.DONE;
+            existingTask.currentPlanStep = existingTask.plan?.length;
+            existingTask.statusDescription = "Task completed";
+            setTasks([existingTask, ...tasks]);
+            setSelectedTask(existingTask);
             return;
           }
           if (!issueId) {
             console.warn("No issueId found in task event", event);
             return;
           }
-          console.log("adding new task", payload);
-          const newTask = { ...payload, issueId };
-          setTasks([...tasks, newTask]);
+          const newTask: Task = { ...payload, issueId };
+          // add the plan to the new task
+          newTask.plan = getPlanForTaskSubType(payload.subType);
+          setTasks([newTask, ...tasks]);
           setSelectedTask(newTask);
+          setSelectedIcon(SidebarIcon.Plan);
         } else {
           // get the task for the data's issueId
           if (!existingTask) {
@@ -130,7 +139,7 @@ const Dashboard: React.FC<DashboardParams> = ({
           setTasks((tasks) =>
             tasks.map((t) => (t.id === existingTask.id ? newTask : t)),
           );
-
+          setSelectedTask(newTask);
           setSelectedIcon(getSidebarIconForType(payload.type));
         }
       },
@@ -149,7 +158,6 @@ const Dashboard: React.FC<DashboardParams> = ({
 
   //** Task */
   const onStartTask = (taskId: string) => {
-    console.log("Starting task: ", taskId);
     // set the task status to in progress
     setTasks((tasks) =>
       tasks?.map((t) => {
@@ -354,6 +362,8 @@ const Dashboard: React.FC<DashboardParams> = ({
             }
             selectedIcon={selectedIcon}
             selectedTask={selectedTask}
+            setSelectedIcon={setSelectedIcon}
+            setSelectedTask={setSelectedTask}
             onRemoveTask={onRemoveTask}
           />
         </div>

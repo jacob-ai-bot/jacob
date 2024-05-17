@@ -5,7 +5,7 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
 import { type Language } from "~/types";
-import { getIssue, getPlanForTaskSubType, validateRepo } from "../utils";
+import { getIssue, validateRepo } from "../utils";
 import { getSnapshotUrl } from "~/app/utils";
 import { extractFilePathWithArrow } from "~/server/utils";
 
@@ -289,7 +289,7 @@ const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
     issue.filesToCreate = [newFileName];
   }
 
-  const plan = getPlanForTaskSubType(taskSubType);
+  // const plan = getPlanForTaskSubType(taskSubType);
 
   // Each issue should have a single pull request. Get the most recent pull request
   const pullRequest = events.find((e) => e.type === TaskType.pull_request)
@@ -334,7 +334,6 @@ const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
     storyPoints: 1, // TODO: Calculate story points
     imageUrl,
     issue,
-    plan,
     pullRequest,
     commands,
     codeFiles,

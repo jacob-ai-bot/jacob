@@ -17,42 +17,35 @@ import { PromptsComponent } from "./Prompts";
 import { PullRequestComponent } from "./PullRequest";
 import { TerminalComponent } from "./Terminal";
 import Sidebar from "../Sidebar";
+import { set } from "date-fns";
 
 type WorkspaceProps = {
   tasks: Task[];
   selectedIcon: SidebarIcon;
   selectedTask?: Task;
+  setSelectedIcon: (icon: SidebarIcon) => void;
+  setSelectedTask: (task: Task | undefined) => void;
   onRemoveTask: (taskId: string) => void;
 };
 
 const Workspace: React.FC<WorkspaceProps> = ({
   tasks = [],
-  selectedIcon: _selectedIcon,
-  selectedTask: _selectedTask,
+  selectedIcon,
+  selectedTask,
+  setSelectedIcon,
+  setSelectedTask,
   onRemoveTask,
 }) => {
-  const [selectedTask, setSelectedTask] = useState<Task | undefined>(
-    _selectedTask,
-  );
-  const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(_selectedIcon);
-
   // if new tasks are added, update selectedTask to the first task
   useEffect(() => {
     if (tasks && tasks.length > 0 && !selectedTask) {
       setSelectedTask(tasks[0]);
     }
-  }, [tasks, selectedTask]);
+  }, [tasks, selectedTask, setSelectedTask]);
 
-  // if the selected icon changes, update the selected icon
-  useEffect(() => {
-    setSelectedIcon(_selectedIcon);
-  }, [_selectedIcon]);
-
-  const renderComponent = () => {
+  const renderComponent = (selectedTask: Task | undefined) => {
     if (!selectedTask) {
       return null;
-    } else {
-      console.log("Selected task: ", selectedTask);
     }
     switch (selectedIcon) {
       case SidebarIcon.Plan: {
@@ -126,7 +119,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           <div className="flex" style={{ height: "calc(100vh - 9rem)" }}>
             <div className="hide-scrollbar h-full w-full overflow-y-auto">
               <div className="flex h-full w-full flex-grow p-4">
-                {renderComponent()}
+                {renderComponent(selectedTask)}
               </div>
             </div>
           </div>
