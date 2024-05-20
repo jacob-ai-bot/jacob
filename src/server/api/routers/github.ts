@@ -221,8 +221,8 @@ export const githubRouter = createTRPCRouter({
       },
     ),
   extractIssue: protectedProcedure
-    .input(z.object({ issueText: z.string() }))
-    .query(async ({ input: { issueText } }) => {
+    .input(z.object({ messages: z.string() }))
+    .query(async ({ input: { messages } }) => {
       try {
         // Define a Zod schema for the expected response format
         const IssueSchema = z.object({
@@ -233,9 +233,9 @@ export const githubRouter = createTRPCRouter({
 
         // Type for the expected issue details parsed from the text block
         type Issue = z.infer<typeof IssueSchema>;
-        const userPrompt = `Extract the title and body from the following GitHub issue text block:
+        const userPrompt = `Extract the title and body from the following messages that contain a GitHub issue:
         \`\`\`
-        ${issueText}
+        ${messages}
         \`\`\`
         First, use this information to determine if this issue is for creating a new file or editing an existing file. It is CRITICAL that you do this BEFORE proceeding with any other steps.
         It is critical that the body is a copy of ALL of the information from the issue, including all markdown formatting, code, examples, etc. 

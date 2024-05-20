@@ -6,11 +6,11 @@ import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { capitalize, statusStyles } from "~/app/utils";
 import { type PullRequest } from "~/server/api/routers/events";
+import { renderers } from "../chat/ChatMessage";
 
 type PullRequestComponentProps = {
   pullRequest?: PullRequest;
 };
-
 export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
   pullRequest,
 }) => (
@@ -37,11 +37,11 @@ export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
       </div>
     ) : (
       <div className="hide-scrollbar h-full overflow-auto pb-20 pt-2">
-        <article className="rounded-lg bg-gray-800 p-6 font-mono shadow">
+        <article className="markdown rounded-lg bg-gray-800 p-6 shadow">
           <a
             href={pullRequest.link}
             target="_blank"
-            className="font-sans text-2xl font-semibold text-light-blue"
+            className="font-sans text-2xl font-semibold text-white"
           >
             {pullRequest.title}
           </a>
@@ -60,6 +60,7 @@ export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
           <Markdown
             remarkPlugins={[gfm]}
             className={`text-sm text-blueGray-300`}
+            components={renderers}
           >
             {pullRequest.description}
           </Markdown>

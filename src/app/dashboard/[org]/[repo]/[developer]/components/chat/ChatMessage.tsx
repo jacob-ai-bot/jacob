@@ -16,6 +16,61 @@ interface Props {
   loading?: boolean;
 }
 
+const copyToClipboard = async (text: string) => {
+  await navigator.clipboard.writeText(text);
+  toast.success("Copied to clipboard");
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
+export const renderers: Partial<Components | any> = {
+  code: ({
+    inline,
+    className,
+    children,
+    ...props
+  }: {
+    inline: boolean;
+    className: string;
+    children: React.ReactNode;
+  }) => {
+    const match = /language-(\w+)/.exec(className || "");
+    if (!inline && match) {
+      return (
+        <div className="relative">
+          <button
+            className="absolute right-2 top-0 rounded bg-gray-800 p-1 text-white"
+            onClick={() => copyToClipboard(String(children))}
+          >
+            <FontAwesomeIcon icon={faClipboard} />
+          </button>
+          <SyntaxHighlighter
+            style={oneDark}
+            language={match[1]}
+            PreTag="div"
+            {...props}
+          >
+            {String(children).replace(/\n$/, "")}
+          </SyntaxHighlighter>
+        </div>
+      );
+    } else if (inline) {
+      // Render inline code with `<code>` instead of `<div>`
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    } else {
+      // Fallback for non-highlighted code
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+  },
+};
+
 export const ChatMessage: FC<Props> = ({
   message,
   messageHistory,
@@ -40,61 +95,6 @@ export const ChatMessage: FC<Props> = ({
       setContent(message.content);
     }
   }, [message.content, message.role]);
-
-  const copyToClipboard = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
-  const renderers: Partial<Components | any> = {
-    code: ({
-      inline,
-      className,
-      children,
-      ...props
-    }: {
-      inline: boolean;
-      className: string;
-      children: React.ReactNode;
-    }) => {
-      const match = /language-(\w+)/.exec(className || "");
-      if (!inline && match) {
-        return (
-          <div className="relative">
-            <button
-              className="absolute right-2 top-0 rounded bg-gray-800 p-1 text-white"
-              onClick={() => copyToClipboard(String(children))}
-            >
-              <FontAwesomeIcon icon={faClipboard} />
-            </button>
-            <SyntaxHighlighter
-              style={oneDark}
-              language={match[1]}
-              PreTag="div"
-              {...props}
-            >
-              {String(children).replace(/\n$/, "")}
-            </SyntaxHighlighter>
-          </div>
-        );
-      } else if (inline) {
-        // Render inline code with `<code>` instead of `<div>`
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      } else {
-        // Fallback for non-highlighted code
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      }
-    },
-  };
 
   return (
     <div

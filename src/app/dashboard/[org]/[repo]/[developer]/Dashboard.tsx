@@ -13,10 +13,7 @@ import { api } from "~/trpc/react";
 import { trpcClient } from "~/trpc/client";
 import { DEVELOPERS } from "~/data/developers";
 import { TaskType } from "~/server/db/enums";
-import {
-  getIssueDescriptionFromMessages,
-  getSidebarIconForType,
-} from "~/app/utils";
+import { getSidebarIconForType } from "~/app/utils";
 import Todos from "./components/todos";
 import { toast } from "react-toastify";
 import { getPlanForTaskSubType } from "~/app/utils";
@@ -79,9 +76,8 @@ const Dashboard: React.FC<DashboardParams> = ({
 
             existingTask.plan = getPlanForTaskSubType(payload.subType);
             existingTask.status = TaskStatus.DONE;
-            existingTask.currentPlanStep = existingTask.plan?.length;
+            existingTask.currentPlanStep = existingTask.plan?.length - 1;
             existingTask.statusDescription = "Task completed";
-            setTasks([existingTask, ...tasks]);
             setSelectedTask(existingTask);
             return;
           }
@@ -207,13 +203,12 @@ const Dashboard: React.FC<DashboardParams> = ({
         setLoading(true);
       }
 
-      const issueText = getIssueDescriptionFromMessages(messages);
-      if (!issueText) {
-        throw new Error("No issue found in messages");
-      }
-
       const { title, body } = await trpcClient.github.extractIssue.query({
-        issueText,
+        messages: messages
+          .filter((m) => m.role === Role.ASSISTANT)
+          .slice(-3)
+          .map((m) => m.content)
+          .join("\n"),
       });
       if (!title || !body) {
         throw new Error("Failed to extract issue title or description");
@@ -249,10 +244,21 @@ const Dashboard: React.FC<DashboardParams> = ({
         throw new Error("No issueId to update");
       }
       // get the new issue description from the messages
-      let description = getIssueDescriptionFromMessages(messages) ?? "";
+
+      const data = await trpcClient.github.extractIssue.query({
+        messages: messages
+          .filter((m) => m.role === Role.ASSISTANT)
+          .slice(-3)
+          .map((m) => m.content)
+          .join("\n"),
+      });
+      let description = data.body;
+      if (!data.title || !description) {
+        throw new Error("Failed to extract issue title or description");
+      }
       const extractedIssue = await trpcClient.github.getExtractedIssue.query({
         repo: `${org}/${repo}`,
-        issueText: `${selectedTodo.commitTitle} ${description}`,
+        issueText: `${data.title} ${description}`,
       });
       if (!extractedIssue) {
         throw new Error("Failed to extract issue from message");
@@ -277,7 +283,7 @@ const Dashboard: React.FC<DashboardParams> = ({
       // i.e. "Create a new file => new-file-name.js"
       let title =
         extractedIssue.commitTitle ?? selectedTodo.name ?? "New Issue";
-      if (extractedIssue.filesToCreate?.length) {
+      if (extractedIssue.filesToCreate?.length && !title.includes("=>")) {
         title += ` => ${extractedIssue.filesToCreate[0]}`;
       }
       const { id: updatedIssueId } = await trpcClient.github.updateIssue.mutate(

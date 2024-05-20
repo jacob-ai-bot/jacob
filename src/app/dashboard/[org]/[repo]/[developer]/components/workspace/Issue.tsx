@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { capitalize, statusStyles } from "~/app/utils";
 import Markdown from "react-markdown";
 import { type Issue } from "~/server/api/routers/events";
+import { renderers } from "../chat/ChatMessage";
 
 type IssueComponentProps = {
   issue: Issue | undefined;
@@ -34,17 +35,17 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => (
       </div>
     ) : (
       <div className="hide-scrollbar h-full overflow-auto pb-20 pt-2">
-        <article className="rounded-lg bg-gray-800 p-6 font-mono  shadow">
+        <article className="markdown rounded-lg bg-gray-800 p-6 shadow">
           <a
             href={issue.link}
             target="_blank"
-            className="font-sans text-2xl font-semibold text-light-blue"
+            className="font-sans text-2xl font-semibold text-white"
           >
             {issue.title}
           </a>
           <div className="mb-4 mt-2 flex items-baseline justify-between">
             <div className="text-xs">
-              #{issue.id} opened on{" "}
+              #{issue.issueId} opened on{" "}
               {new Date(issue.createdAt).toLocaleDateString()} by {issue.author}
             </div>
             <span className={statusStyles[issue.status]}>
@@ -52,10 +53,11 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => (
               {capitalize(issue.status)}
             </span>
           </div>
-          <hr className="my-3 border-t border-gray-500" />
+          <hr className="my-3 w-full border-t border-gray-200" />
           <Markdown
             remarkPlugins={[gfm]}
-            className={`markdown markdown-issue text-sm text-blueGray-300`}
+            className={`text-sm text-blueGray-300`}
+            components={renderers}
           >
             {issue.description}
           </Markdown>
