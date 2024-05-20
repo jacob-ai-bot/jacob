@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTimes,
@@ -17,7 +17,6 @@ import { PromptsComponent } from "./Prompts";
 import { PullRequestComponent } from "./PullRequest";
 import { TerminalComponent } from "./Terminal";
 import Sidebar from "../Sidebar";
-import { set } from "date-fns";
 
 type WorkspaceProps = {
   tasks: Task[];

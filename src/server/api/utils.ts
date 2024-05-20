@@ -1,7 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { TaskSubType, TaskType } from "../db/enums";
-import { type Plan } from "~/server/api/routers/events";
-import { PLANS } from "~/data/plans";
+import { TaskType } from "../db/enums";
 import { type Issue } from "./routers/events";
 import { getRepoSettings, parseTemplate } from "../utils";
 import { sendGptRequestWithSchema } from "../openai/request";

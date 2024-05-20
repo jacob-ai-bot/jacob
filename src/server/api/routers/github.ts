@@ -11,7 +11,7 @@ import {
   getExtractedIssue,
   validateRepo,
 } from "../utils";
-import { Issue, type Todo } from "./events";
+import { type Todo } from "./events";
 import { TodoStatus } from "~/server/db/enums";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { Mode } from "~/types";
