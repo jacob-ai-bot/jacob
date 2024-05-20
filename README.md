@@ -249,8 +249,7 @@ Ensure your system meets the RAM requirements for the chosen models:
 By integrating Ollama, you leverage local processing of language models, enhancing privacy and reducing latency in your development workflow with JACoB.
 
 ## Contributing
-
-We welcome contributions! From language support to framework integrations, there's always room for new features and improvements. Check our [Contribution Guidelines](https://docs.jacb.ai/contributing) and join our [Discord](https://discord.gg/NWzF9rUe) community for discussions and support.
+We welcome contributions! From language support to framework integrations, there's always room for new features and improvements. Check our [Contribution Guidelines](https://docs.jacb.ai/contributing) and join our [Discord](https://discord.gg/sSDbPR4BUH) community for discussions and support.
 
 ## Additional Resources
 
