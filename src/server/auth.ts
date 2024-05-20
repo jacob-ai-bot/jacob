@@ -125,6 +125,7 @@ export const authOptions: NextAuthOptions = {
       return refreshGitHubAccessToken(token);
     },
   },
+  jwt: { maxAge: 8 * 60 * 60 }, // 8 hours (to match GitHub's token expiration time)
   providers: [
     GitHubProvider({
       clientId: env.GITHUB_CLIENT_ID,
