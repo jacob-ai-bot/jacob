@@ -63,78 +63,81 @@ const Dashboard: React.FC<DashboardParams> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tempTodos]);
 
-  api.events.onAdd.useSubscription(undefined, {
-    onData(event) {
-      const { issueId, payload } = event;
-      const existingTask = tasks.find((t) => t.issueId === issueId);
-      if (payload.type === TaskType.task) {
-        if (existingTask) {
-          console.log(
-            "ignoring task (for now) - because it already exists",
-            payload,
-          );
-          return;
-        }
-        if (!issueId) {
-          console.warn("No issueId found in task event", event);
-          return;
-        }
-        console.log("adding new task", payload);
-        const newTask = { ...payload, issueId };
-        setTasks([...tasks, newTask]);
-        setSelectedTask(newTask);
-      } else {
-        // get the task for the data's issueId
-        if (!existingTask) {
-          console.warn("No existing task found for issueId", {
-            event,
-            issueId,
-          });
-          return;
-        }
-        const newTask = { ...existingTask };
-        // update the task with the new payload
-        if (payload.type === TaskType.issue) {
-          newTask.issue = payload;
-        }
-        if (payload.type === TaskType.pull_request) {
-          newTask.pullRequest = payload;
-        }
-        if (payload.type === TaskType.code) {
-          // Loop throught the code files and update the task with the new code if it exists, add it if it doesn't
-          const codeFile = payload;
-          const newCodeFiles = [...(newTask.codeFiles ?? [])];
-          const index = newCodeFiles.findIndex(
-            (c) => c.fileName === codeFile.fileName,
-          );
-          if (index !== -1) {
-            newCodeFiles[index] = codeFile;
-          } else {
-            newCodeFiles.push(codeFile);
+  api.events.onAdd.useSubscription(
+    { org, repo },
+    {
+      onData(event) {
+        const { issueId, payload } = event;
+        const existingTask = tasks.find((t) => t.issueId === issueId);
+        if (payload.type === TaskType.task) {
+          if (existingTask) {
+            console.log(
+              "ignoring task (for now) - because it already exists",
+              payload,
+            );
+            return;
           }
-          newTask.codeFiles = newCodeFiles;
-        }
-        if (payload.type === TaskType.command) {
-          // add the command to the task.commands array
-          newTask.commands = [...(newTask.commands ?? []), payload];
-        }
-        if (payload.type === TaskType.prompt) {
-          // add the prompt to the task.prompts array
-          newTask.prompts = [...(newTask.prompts ?? []), payload];
-        }
+          if (!issueId) {
+            console.warn("No issueId found in task event", event);
+            return;
+          }
+          console.log("adding new task", payload);
+          const newTask = { ...payload, issueId };
+          setTasks([...tasks, newTask]);
+          setSelectedTask(newTask);
+        } else {
+          // get the task for the data's issueId
+          if (!existingTask) {
+            console.warn("No existing task found for issueId", {
+              event,
+              issueId,
+            });
+            return;
+          }
+          const newTask = { ...existingTask };
+          // update the task with the new payload
+          if (payload.type === TaskType.issue) {
+            newTask.issue = payload;
+          }
+          if (payload.type === TaskType.pull_request) {
+            newTask.pullRequest = payload;
+          }
+          if (payload.type === TaskType.code) {
+            // Loop throught the code files and update the task with the new code if it exists, add it if it doesn't
+            const codeFile = payload;
+            const newCodeFiles = [...(newTask.codeFiles ?? [])];
+            const index = newCodeFiles.findIndex(
+              (c) => c.fileName === codeFile.fileName,
+            );
+            if (index !== -1) {
+              newCodeFiles[index] = codeFile;
+            } else {
+              newCodeFiles.push(codeFile);
+            }
+            newTask.codeFiles = newCodeFiles;
+          }
+          if (payload.type === TaskType.command) {
+            // add the command to the task.commands array
+            newTask.commands = [...(newTask.commands ?? []), payload];
+          }
+          if (payload.type === TaskType.prompt) {
+            // add the prompt to the task.prompts array
+            newTask.prompts = [...(newTask.prompts ?? []), payload];
+          }
 
-        // update the task in the tasks array
-        setTasks((tasks) =>
-          tasks.map((t) => (t.id === existingTask.id ? newTask : t)),
-        );
+          // update the task in the tasks array
+          setTasks((tasks) =>
+            tasks.map((t) => (t.id === existingTask.id ? newTask : t)),
+          );
 
-        setSelectedIcon(getSidebarIconForType(payload.type));
-      }
+          setSelectedIcon(getSidebarIconForType(payload.type));
+        }
+      },
+      onError(err) {
+        console.error("Subscription error:", err);
+      },
     },
-    onError(err) {
-      console.error("Subscription error:", err);
-    },
-  });
+  );
 
   useEffect(() => {
     if (selectedDeveloper) {

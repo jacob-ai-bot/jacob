@@ -7,14 +7,17 @@ export function Events() {
   const { mutate: addMutate } = api.events.add.useMutation();
 
   // subscribe to new posts and add
-  api.events.onAdd.useSubscription(undefined, {
-    onData(event) {
-      console.log("Subscription data:", event);
+  api.events.onAdd.useSubscription(
+    { org: "PioneerSquareLabs", repo: "t3-starter-template" },
+    {
+      onData(event) {
+        console.log("Subscription data:", event);
+      },
+      onError(err) {
+        console.error("Subscription error:", err);
+      },
     },
-    onError(err) {
-      console.error("Subscription error:", err);
-    },
-  });
+  );
 
   const onAddEvent = async () => {
     addMutate({

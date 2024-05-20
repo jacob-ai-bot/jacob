@@ -205,45 +205,67 @@ export const eventsRouter = createTRPCRouter({
       },
     ),
 
-  onAdd: protectedProcedure.subscription(() => {
-    // return an `observable` with a callback which is triggered immediately
-    return observable<Event>((emit) => {
-      const onRedisMessage = (_channel: string, message: string) => {
-        try {
-          emit.next(JSON.parse(message) as Event);
-        } catch (error) {
-          console.error("Failed to parse event in redis message", {
-            message,
-            error,
-          });
-        }
-      };
+  onAdd: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+      }),
+    )
+    .subscription(
+      async ({
+        input: { org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        await validateRepo(org, repo, accessToken);
 
-      // trigger `onAdd()` when `add` is triggered in our event emitter
-      const redisConnection = newRedisConnection();
-      void redisConnection
-        .subscribe("events", (err, count) => {
-          if (err) {
-            // Just like other commands, subscribe() can fail for some reasons,
-            // ex network issues.
-            console.error("Failed to subscribe:", err);
-          } else {
-            // `count` represents the number of channels this client are currently subscribed to.
-            console.log(
-              `Subscribed successfully! This client is currently subscribed to ${String(count)} channels.`,
-            );
-          }
-        })
-        .then(() => {
-          redisConnection.on("message", onRedisMessage);
+        // return an `observable` with a callback which is triggered immediately
+        return observable<Event>((emit) => {
+          const onRedisMessage = (_channel: string, message: string) => {
+            try {
+              const event = JSON.parse(message) as Event;
+              if (
+                event.repoFullName.toLowerCase() ===
+                `${org}/${repo}`.toLowerCase()
+              ) {
+                emit.next(event);
+              }
+            } catch (error) {
+              console.error("Failed to parse event in redis message", {
+                message,
+                error,
+              });
+            }
+          };
+
+          // trigger `onAdd()` when `add` is triggered in our event emitter
+          const redisConnection = newRedisConnection();
+          void redisConnection
+            .subscribe("events", (err, count) => {
+              if (err) {
+                // Just like other commands, subscribe() can fail for some reasons,
+                // ex network issues.
+                console.error("Failed to subscribe:", err);
+              } else {
+                // `count` represents the number of channels this client are currently subscribed to.
+                console.log(
+                  `Subscribed successfully! This client is currently subscribed to ${String(count)} channels.`,
+                );
+              }
+            })
+            .then(() => {
+              redisConnection.on("message", onRedisMessage);
+            });
+
+          // unsubscribe function when client disconnects or stops subscribing
+          return () => {
+            void redisConnection.quit();
+          };
         });
-
-      // unsubscribe function when client disconnects or stops subscribing
-      return () => {
-        void redisConnection.quit();
-      };
-    });
-  }),
+      },
+    ),
   add: protectedProcedure
     .input(
       EventsTable.schema().omit({ id: true, createdAt: true, updatedAt: true }),
