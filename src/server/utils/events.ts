@@ -1,4 +1,5 @@
 import { type Issue } from "@octokit/webhooks-types";
+import { DateTime } from "luxon";
 
 import { db } from "~/server/db/db";
 import { TaskType, type TaskSubType, type TaskStatus } from "~/server/db/enums";
@@ -6,6 +7,22 @@ import { type BaseEventData, getLanguageFromFileName } from "~/server/utils";
 import type { PullRequest } from "~/server/code/checkAndCommit";
 import { newRedisConnection } from "./redis";
 import { type RetrievedIssue } from "~/server/code/checkAndCommit";
+
+export const EVENT_RETENTION_TIME_IN_SECONDS = 14 * 24 * 60 * 60;
+
+export function purgeEvents() {
+  return db.events
+    .where({
+      createdAt: {
+        lte: DateTime.now()
+          .minus({
+            seconds: EVENT_RETENTION_TIME_IN_SECONDS,
+          })
+          .toISO() as unknown as number,
+      },
+    })
+    .delete();
+}
 
 const redisConnection = newRedisConnection();
 

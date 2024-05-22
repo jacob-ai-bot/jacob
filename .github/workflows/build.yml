@@ -13,7 +13,8 @@ env:
   NEXTAUTH_URL: http://localhost:3000
   GITHUB_CLIENT_ID: github-client-id
   GITHUB_CLIENT_SECRET: github-client-secret
-  DATABASE_URL: file:./db.sqlite
+  DATABASE_URL: postgres://postgres:postgres@postgres:5432/jacob_dev
+  DATABASE_TEST_URL: postgres://postgres:postgres@postgres:5432/jacob_test
   GITHUB_APP_ID: 123456
   GITHUB_PRIVATE_KEY: github-private-key
   GITHUB_WEBHOOK_SECRET: github-webhook-secret
@@ -23,12 +24,27 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: node:20.11.0
+    services:
+      postgres:
+        image: ankane/pgvector:v0.5.0
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           node-version-file: .tool-versions
+          cache: 'npm'
       - run: npm install
       - run: npm run lint
       - run: npm run build
+      - run: npm run db create
+      - run: npm run db migrate
       - run: npm test

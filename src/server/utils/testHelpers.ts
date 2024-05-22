@@ -1,3 +1,7 @@
+import { testTransaction } from "orchid-orm";
+import { db } from "~/server/db/db";
+import { beforeEach, afterEach, beforeAll, afterAll } from "vitest";
+
 import { createMocks } from "node-mocks-http";
 import type { NextRequest } from "next/server";
 
@@ -16,3 +20,21 @@ export function createMockNextRequest(
   };
   return nextReq;
 }
+
+export const useTestDatabase = () => {
+  beforeAll(async () => {
+    await testTransaction.start(db);
+  });
+
+  beforeEach(async () => {
+    await testTransaction.start(db);
+  });
+
+  afterEach(async () => {
+    await testTransaction.rollback(db);
+  });
+
+  afterAll(async () => {
+    await testTransaction.close(db);
+  });
+};
