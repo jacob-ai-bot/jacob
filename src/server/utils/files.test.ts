@@ -130,7 +130,10 @@ describe("concatenateFiles", () => {
       `),
     );
 
-    const { code, lineLengthMap } = concatenateFiles("./");
+    const { code, lineLengthMap } = concatenateFiles("./", undefined, [
+      "file1.js",
+      "file2.js",
+    ]);
     expect(code).toBe(
       dedent`
         __FILEPATH__file1.js__
@@ -143,6 +146,38 @@ describe("concatenateFiles", () => {
       `,
     );
     expect(lineLengthMap).toStrictEqual({ "file1.js": 2, "file2.js": 2 });
+  });
+
+  it("ignores existing files when not asked for, but leaves placeholders for new files", () => {
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    vi.spyOn(fs, "statSync").mockReturnValue({
+      isDirectory: () => false,
+    } as Stats);
+    vi.spyOn(fs, "readdirSync").mockReturnValue([
+      "file1.js",
+      "file2.js",
+    ] as unknown as Dirent[]);
+    vi.spyOn(fs, "readFileSync").mockReturnValue(
+      Buffer.from(dedent`
+        console.log("line1");
+        console.log("line2");
+
+      `),
+    );
+
+    const { code, lineLengthMap } = concatenateFiles(
+      "./",
+      undefined,
+      undefined,
+      ["file3.js"],
+    );
+    expect(code).toBe(
+      dedent`
+        __FILEPATH__file3.js__
+
+      `,
+    );
+    expect(lineLengthMap).toStrictEqual({});
   });
 
   it("concatenates files with modified range markers inserted", () => {
@@ -164,13 +199,17 @@ describe("concatenateFiles", () => {
       `),
     );
 
-    const { code, lineLengthMap } = concatenateFiles("./", {
-      "file1.js": [{ start: 1, end: 3 }],
-      "file2.js": [
-        { start: 2, end: 2 },
-        { start: 4, end: 4 },
-      ],
-    });
+    const { code, lineLengthMap } = concatenateFiles(
+      "./",
+      {
+        "file1.js": [{ start: 1, end: 3 }],
+        "file2.js": [
+          { start: 2, end: 2 },
+          { start: 4, end: 4 },
+        ],
+      },
+      ["file1.js", "file2.js"],
+    );
     expect(code).toBe(
       dedent`
         __FILEPATH__file1.js__

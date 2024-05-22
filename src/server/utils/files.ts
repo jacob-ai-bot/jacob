@@ -26,6 +26,7 @@ export const concatenateFiles = (
     fileNamesToInclude,
     fileNamesToCreate,
   );
+  const includesExistingFiles = !!fileNamesToInclude?.length;
   const lineLengthMap: LineLengthMap = {};
   let gitignore: Ignore | null = null;
   const gitignorePath = path.join(rootDir, ".gitignore");
@@ -37,7 +38,7 @@ export const concatenateFiles = (
   const output: string[] = [];
 
   const shouldIncludeFile = (relativePath: string, fileName: string) => {
-    if (!fileNamesToInclude || fileNamesToInclude.length === 0) return true;
+    // if (!fileNamesToInclude || fileNamesToInclude.length === 0) return false;
 
     const absolutePath = path.join(rootDir, relativePath); // Calculate the absolute path
 
@@ -45,7 +46,7 @@ export const concatenateFiles = (
     const normalizedRelativePath = path.normalize(relativePath).toLowerCase();
     const normalizedAbsolutePath = path.normalize(absolutePath).toLowerCase();
 
-    for (const fileToInclude of fileNamesToInclude) {
+    for (const fileToInclude of fileNamesToInclude ?? []) {
       const normalizedFileToInclude = path
         .normalize(fileToInclude)
         .toLowerCase();
@@ -107,7 +108,9 @@ export const concatenateFiles = (
     });
   };
 
-  walkDir(rootDir);
+  if (includesExistingFiles) {
+    walkDir(rootDir);
+  }
 
   (fileNamesToCreate ?? []).forEach((fileName) =>
     output.push(`__FILEPATH__${fileName}__\n`),
