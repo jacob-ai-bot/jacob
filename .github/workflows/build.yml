@@ -43,7 +43,7 @@ jobs:
           node-version-file: .tool-versions
           cache: 'npm'
       - run: npm install
-      - run: npm run lint
+      - run: npm run typecheck
       - run: npm run build
       - run: npm run db create
       - run: npm run db migrate
