@@ -18,7 +18,7 @@ export const DetailedTodoCard: React.FC<Props> = ({ todo, onStart }) => {
       <div className="flex items-center text-coolGray-50">
         <h3 className="truncate text-sm font-medium">{todo.name}</h3>
       </div>
-      <div className="markdown mt-1 overflow-hidden overflow-ellipsis text-xs text-slate-300">
+      <div className="markdown-issue mt-1 overflow-hidden overflow-ellipsis text-xs text-slate-300">
         <Markdown remarkPlugins={[gfm]} className={`px-1 py-1`}>
           {description.length > 300
             ? `${description.slice(0, 500)}...`

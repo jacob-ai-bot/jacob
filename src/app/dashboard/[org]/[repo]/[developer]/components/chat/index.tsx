@@ -62,7 +62,7 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
   const checkIfAtBottom = () => {
     if (!sidebarRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = sidebarRef.current;
-    const _isAtBottom = scrollHeight - scrollTop <= clientHeight + 120; // give a little buffer so the arrow isn't covering action items
+    const _isAtBottom = scrollHeight - scrollTop <= clientHeight + 180; // give a little buffer so the arrow isn't covering action items
     setIsAtBottom(_isAtBottom);
   };
 

@@ -1,4 +1,6 @@
-import { TaskType } from "~/server/db/enums";
+import { PLANS } from "~/data/plans";
+import { type Plan } from "~/server/api/routers/events";
+import { TaskSubType, TaskType } from "~/server/db/enums";
 import { type Message, Role, SpecialPhrases, SidebarIcon } from "~/types";
 
 export const statusStyles = {
@@ -39,7 +41,7 @@ export function getIssueDescriptionFromMessages(messages: Message[]) {
   // Issue descriptions are always contained in code blocks towards the end of the conversation
   // To find the issue description, get the most recent message from the assistant that is not a
   // special phrase and has a code block
-  const messageWithIssue = messages
+  let messageWithIssue = messages
     .filter(
       (m) =>
         m.role === Role.ASSISTANT &&
@@ -50,7 +52,15 @@ export function getIssueDescriptionFromMessages(messages: Message[]) {
     .reverse()
     .find((message) => message?.content.includes("```"));
 
-  if (!messageWithIssue) return null;
+  if (!messageWithIssue) {
+    messageWithIssue = messages
+      .filter((m) => m.role === Role.ASSISTANT)
+      .reverse()
+      .find((message) => message?.content.includes("```"));
+  }
+  if (!messageWithIssue) {
+    return null;
+  }
 
   // find the first code block in the message
   const regex = /```(?:markdown)?(.*?)```/s;
@@ -82,4 +92,24 @@ export const getSidebarIconForType = (type: TaskType) => {
       console.error("Unknown task type: ", type);
       return SidebarIcon.Plan;
   }
+};
+
+export const getPlanForTaskSubType = (taskSubType: TaskSubType) => {
+  // set the plan
+  let plan: Plan[] = [];
+  switch (taskSubType) {
+    case TaskSubType.CREATE_NEW_FILE:
+      plan = PLANS[TaskSubType.CREATE_NEW_FILE];
+      break;
+    case TaskSubType.EDIT_FILES:
+      plan = PLANS[TaskSubType.EDIT_FILES];
+      break;
+    case TaskSubType.CODE_REVIEW:
+      plan = PLANS[TaskSubType.CODE_REVIEW];
+      break;
+    default:
+      console.error("Unknown task type: ", taskSubType);
+      break;
+  }
+  return plan;
 };

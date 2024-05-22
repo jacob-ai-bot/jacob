@@ -1,7 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { TaskSubType, TaskType } from "../db/enums";
-import { type Plan } from "~/server/api/routers/events";
-import { PLANS } from "~/data/plans";
+import { TaskType } from "../db/enums";
 import { type Issue } from "./routers/events";
 import { getRepoSettings, parseTemplate } from "../utils";
 import { sendGptRequestWithSchema } from "../openai/request";
@@ -76,26 +74,6 @@ export const validateRepo = async (
   if (!repos.includes(`${org}/${repo}`)) {
     throw new Error("Invalid repo");
   }
-};
-
-export const getPlanForTaskSubType = (taskSubType: TaskSubType) => {
-  // set the plan
-  let plan: Plan[] = [];
-  switch (taskSubType) {
-    case TaskSubType.CREATE_NEW_FILE:
-      plan = PLANS[TaskSubType.CREATE_NEW_FILE];
-      break;
-    case TaskSubType.EDIT_FILES:
-      plan = PLANS[TaskSubType.EDIT_FILES];
-      break;
-    case TaskSubType.CODE_REVIEW:
-      plan = PLANS[TaskSubType.CODE_REVIEW];
-      break;
-    default:
-      console.error("Unknown task type: ", taskSubType);
-      break;
-  }
-  return plan;
 };
 
 export const getExtractedIssue = async (
