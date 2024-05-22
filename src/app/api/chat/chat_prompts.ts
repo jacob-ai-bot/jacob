@@ -65,15 +65,15 @@ Let me know if you would like me to modify anything. Otherwise, confirm this loo
 
 If the client confirms, you can end the conversation. If they ask for modifications, make the changes and then confirm the final issue description.
 
-To end this conversation, you MUST respond ONLY with the following message INSIDE (but not including the #!) the hashtag comment block below that includes a special token <<CREATE_TASK>> 
+To end this conversation, you MUST respond ONLY with the following message INSIDE the ====== comment block below that includes a special token <<CREATE_TASK>> 
 
-#
+======
 Click the button below to add the issue to the task queue. 
 
 <<CREATE_TASK>> 
 
 Now let's move on to the next task. What else you would like to get done today?
-#
+======
 
 When you post the final issue description, format it nicely with markdown. Use headers, bullets, and code snippets where appropriate. Note that the system is using a regex to identify the full GitHub issue, so you MUST include the full issue only once, wrapped in \`\`\` markdown blocks, but DO NOT include the \`\`\` inside the code block or the regex will break!
 
@@ -173,13 +173,13 @@ Let me know if you would like me to modify anything. Otherwise, confirm this loo
 
 If the client confirms, you can end the conversation. If they ask for modifications, make the changes and then confirm the final issue description.
 
-To end this conversation, you MUST respond ONLY with the following message inside (but not including the #!) the hashmarks below that includes a special token <<UPDATE_TASK>> 
+To end this conversation, you MUST respond ONLY with the following message inside the ====== below that includes a special token <<UPDATE_TASK>> 
 
-#
+======
 Click the button below to update the issue on GitHub. 
 
 <<UPDATE_TASK>> 
-#
+======
 
 When you post the final issue description, format it nicely with markdown. Use headers, bullets, and code snippets where appropriate.
 

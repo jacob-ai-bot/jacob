@@ -37,8 +37,6 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
       .findBy({ writeKey, accessToken: null })
       .update({ accessToken });
 
-    console.log(`postAccessToken: updated rows: ${rowsUpdated}`);
-
     if (rowsUpdated === 0) {
       return NextResponse.json({ errors: ["Not Found"] }, { status: 404 });
     } else {

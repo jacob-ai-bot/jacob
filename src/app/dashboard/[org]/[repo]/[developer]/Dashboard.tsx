@@ -44,7 +44,7 @@ const Dashboard: React.FC<DashboardParams> = ({
 
   const [selectedTodo, setSelectedTodo] = useState<Todo | undefined>(undefined);
 
-  const chatRef = useRef(null);
+  const chatRef = useRef<ChatComponentHandle>(null);
 
   //** Data Fetching */
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
@@ -74,20 +74,24 @@ const Dashboard: React.FC<DashboardParams> = ({
               payload,
             );
 
-            existingTask.plan = getPlanForTaskSubType(payload.subType);
-            existingTask.status = TaskStatus.DONE;
-            existingTask.currentPlanStep = existingTask.plan?.length - 1;
-            existingTask.statusDescription = "Task completed";
-            setSelectedTask(existingTask);
+            setSelectedTask({
+              ...existingTask,
+              plan: getPlanForTaskSubType(payload.subType),
+              status: TaskStatus.DONE,
+              currentPlanStep: (existingTask.plan?.length ?? 1) - 1,
+              statusDescription: "Task completed",
+            });
             return;
           }
           if (!issueId) {
             console.warn("No issueId found in task event", event);
             return;
           }
-          const newTask: Task = { ...payload, issueId };
-          // add the plan to the new task
-          newTask.plan = getPlanForTaskSubType(payload.subType);
+          const newTask = {
+            ...payload,
+            issueId,
+            plan: getPlanForTaskSubType(payload.subType),
+          };
           setTasks([newTask, ...tasks]);
           setSelectedTask(newTask);
           setSelectedIcon(SidebarIcon.Plan);
@@ -190,23 +194,17 @@ const Dashboard: React.FC<DashboardParams> = ({
         content: selectedDeveloper?.startingMessage ?? CREATE_ISSUE_PROMPT,
       },
     ];
-    if (chatRef?.current) {
-      const { resetChat }: ChatComponentHandle = chatRef.current;
-      resetChat(_messages);
-    }
+    chatRef?.current?.resetChat(_messages);
   };
 
   const handleCreateNewTask = async (messages: Message[]) => {
     try {
-      if (chatRef?.current) {
-        const { setLoading }: ChatComponentHandle = chatRef.current;
-        setLoading(true);
-      }
+      chatRef?.current?.setLoading(true);
 
       const { title, body } = await trpcClient.github.extractIssue.query({
         messages: messages
           .filter((m) => m.role === Role.ASSISTANT)
-          .slice(-3)
+          .slice(-3) // Only look at the last 3 messages so we don't accidently grab an issue that was already created
           .map((m) => m.content)
           .join("\n"),
       });
@@ -227,19 +225,13 @@ const Dashboard: React.FC<DashboardParams> = ({
       console.error("Failed to create issue", error);
       toast.error("Failed to create issue");
     } finally {
-      if (chatRef?.current) {
-        const { setLoading }: ChatComponentHandle = chatRef.current;
-        setLoading(false);
-      }
+      chatRef?.current?.setLoading(true);
     }
   };
 
   const handleUpdateIssue = async (messages: Message[]) => {
     try {
-      if (chatRef?.current) {
-        const { setLoading }: ChatComponentHandle = chatRef.current;
-        setLoading(true);
-      }
+      chatRef?.current?.setLoading(true);
       if (!selectedTodo?.issueId) {
         throw new Error("No issueId to update");
       }
@@ -248,50 +240,28 @@ const Dashboard: React.FC<DashboardParams> = ({
       const data = await trpcClient.github.extractIssue.query({
         messages: messages
           .filter((m) => m.role === Role.ASSISTANT)
-          .slice(-3)
+          .slice(-3) // Only look at the last 3 messages so we don't accidently grab an issue that was already created
           .map((m) => m.content)
           .join("\n"),
       });
-      let description = data.body;
-      if (!data.title || !description) {
+      if (!data.title || !data.body) {
         throw new Error("Failed to extract issue title or description");
       }
-      const extractedIssue = await trpcClient.github.getExtractedIssue.query({
-        repo: `${org}/${repo}`,
-        issueText: `${data.title} ${description}`,
-      });
-      if (!extractedIssue) {
+      const { title, body } =
+        await trpcClient.github.getIssueTitleAndBody.query({
+          repo: `${org}/${repo}`,
+          title: data.title,
+          body: data.body,
+        });
+      if (!title || !body) {
         throw new Error("Failed to extract issue from message");
-      }
-
-      if (extractedIssue.stepsToAddressIssue) {
-        description += `\n\nSteps to Address Issue: ${extractedIssue.stepsToAddressIssue}`;
-      }
-      if (extractedIssue.filesToCreate?.length) {
-        description += `\n\nFiles to Create: ${extractedIssue.filesToCreate.join(
-          ", ",
-        )}`;
-      }
-      if (extractedIssue.filesToUpdate?.length) {
-        description += `\n\nFiles to Update: ${extractedIssue.filesToUpdate.join(
-          ", ",
-        )}`;
-      }
-      description += `\n\ntask assigned to: @jacob-ai-bot`;
-
-      // if we're creating a new file, the task title must have an arrow (=>) followed by the name of the new file to create
-      // i.e. "Create a new file => new-file-name.js"
-      let title =
-        extractedIssue.commitTitle ?? selectedTodo.name ?? "New Issue";
-      if (extractedIssue.filesToCreate?.length && !title.includes("=>")) {
-        title += ` => ${extractedIssue.filesToCreate[0]}`;
       }
       const { id: updatedIssueId } = await trpcClient.github.updateIssue.mutate(
         {
           repo: `${org}/${repo}`,
           id: selectedTodo.issueId,
           title,
-          body: description,
+          body,
         },
       );
 
@@ -310,10 +280,7 @@ const Dashboard: React.FC<DashboardParams> = ({
       console.error("Failed to update issue", error);
       toast.error("Failed to update issue");
     } finally {
-      if (chatRef?.current) {
-        const { setLoading }: ChatComponentHandle = chatRef.current;
-        setLoading(false);
-      }
+      chatRef?.current?.setLoading(true);
     }
   };
 

@@ -26,17 +26,17 @@ export const githubRouter = createTRPCRouter({
       return await getAllRepos(accessToken);
     },
   ),
-  getExtractedIssue: protectedProcedure
-    .input(z.object({ repo: z.string(), issueText: z.string() }))
+  getIssueTitleAndBody: protectedProcedure
+    .input(z.object({ repo: z.string(), title: z.string(), body: z.string() }))
     .query(
       async ({
-        input: { repo, issueText },
+        input: { repo, title, body },
         ctx: {
           session: { accessToken },
         },
       }) => {
         const [repoOwner, repoName] = repo?.split("/") ?? [];
-
+        const issueText = `${title} ${body}`;
         if (!repoOwner || !repoName || !issueText?.length) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -47,7 +47,34 @@ export const githubRouter = createTRPCRouter({
 
         const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
         const extractedIssue = await getExtractedIssue(sourceMap, issueText);
-        return extractedIssue;
+        if (!extractedIssue) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Issue not found",
+          });
+        }
+        if (extractedIssue.stepsToAddressIssue) {
+          body += `\n\nSteps to Address Issue: ${extractedIssue.stepsToAddressIssue}`;
+        }
+        if (extractedIssue.filesToCreate?.length) {
+          body += `\n\nFiles to Create: ${extractedIssue.filesToCreate.join(
+            ", ",
+          )}`;
+        }
+        if (extractedIssue.filesToUpdate?.length) {
+          body += `\n\nFiles to Update: ${extractedIssue.filesToUpdate.join(
+            ", ",
+          )}`;
+        }
+        body += `\n\ntask assigned to: @jacob-ai-bot`;
+
+        // if we're creating a new file, the task title must have an arrow (=>) followed by the name of the new file to create
+        // i.e. "Create a new file => new-file-name.js"
+        let newTitle = extractedIssue.commitTitle ?? "New Issue";
+        if (extractedIssue.filesToCreate?.length && !title.includes("=>")) {
+          newTitle += ` => ${extractedIssue.filesToCreate[0]}`;
+        }
+        return { title: newTitle, body };
       },
     ),
   getTodos: protectedProcedure
