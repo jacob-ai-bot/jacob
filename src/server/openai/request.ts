@@ -21,6 +21,7 @@ const openai = new OpenAI({
     "x-portkey-mode": "proxy openai",
     "x-portkey-cache": "simple",
     "x-portkey-retry-count": "3",
+    "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
   },
 });
 
