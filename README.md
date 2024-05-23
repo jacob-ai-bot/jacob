@@ -39,7 +39,7 @@ Here's a high-level overview to see how JACoB works. This video shows the Figma 
 
 [![Overview](http://img.youtube.com/vi/9Hdk2o27NaY/0.jpg)](https://www.youtube.com/watch?v=9Hdk2o27NaY "JACoB Overview")
 
-We also put togehter a fun little JACoB "trailer" video for the socials. [Watch on YouTube](https://www.youtube.com/watch?v=G_yS5Y0o80Q)
+We also put together a fun little JACoB "trailer" video for the socials. [Watch on YouTube](https://www.youtube.com/watch?v=G_yS5Y0o80Q)
 
 [![Trailer](http://img.youtube.com/vi/G_yS5Y0o80Q/0.jpg)](https://www.youtube.com/watch?v=G_yS5Y0o80Q "JACoB Trailer")
 
