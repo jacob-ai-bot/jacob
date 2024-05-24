@@ -2,8 +2,9 @@ import { dedent } from "ts-dedent";
 import { Octokit } from "@octokit/rest";
 import type { Repository } from "@octokit/webhooks-types";
 
-export const codeReviewCommandSuggestion =
-  "Please note: I am available to do code reviews in this repo if you add the comment `@jacob-ai-bot code review` to a pull request.";
+import { PRCommand } from "../utils";
+
+export const codeReviewCommandSuggestion = `Please note: I am available to do code reviews in this repo if you add the comment \`${PRCommand.CodeReview}\` to a pull request.`;
 
 export function addCommentToIssue(
   repository: Repository,

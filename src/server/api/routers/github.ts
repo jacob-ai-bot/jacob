@@ -11,6 +11,7 @@ import {
   getExtractedIssue,
   validateRepo,
 } from "../utils";
+import { AT_MENTION } from "~/server/utils";
 import { type Todo } from "./events";
 import { TodoStatus } from "~/server/db/enums";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
@@ -66,7 +67,7 @@ export const githubRouter = createTRPCRouter({
             ", ",
           )}`;
         }
-        body += `\n\ntask assigned to: @jacob-ai-bot`;
+        body += `\n\ntask assigned to: ${AT_MENTION}`;
 
         // if we're creating a new file, the task title must have an arrow (=>) followed by the name of the new file to create
         // i.e. "Create a new file => new-file-name.js"
@@ -291,7 +292,7 @@ export const githubRouter = createTRPCRouter({
         )) as unknown as Issue;
 
         // Add the @jacob-ai-bot tag to the issue body
-        issueData.body += "\n\n@jacob-ai-bot";
+        issueData.body += `\n\n${AT_MENTION}`;
 
         return issueData;
       } catch (error) {

@@ -266,17 +266,19 @@ export const extractFilePathWithArrow = (title?: string) => {
   return match ? match[1]?.trim() : null;
 };
 
+export const AT_MENTION = "@jacob-ai-bot";
+
 export enum PRCommand {
-  Build = "@jacob-ai-bot build",
-  FixError = "@jacob-ai-bot fix error",
-  CreateStory = "@jacob-ai-bot create story",
-  CodeReview = "@jacob-ai-bot code review",
+  Build = `${AT_MENTION} build`,
+  FixError = `${AT_MENTION} fix error`,
+  CreateStory = `${AT_MENTION} create story`,
+  CodeReview = `${AT_MENTION} code review`,
 }
 
 export const PR_COMMAND_VALUES = Object.values(PRCommand);
 
 export enum IssueCommand {
-  Build = "@jacob-ai-bot build",
+  Build = `${AT_MENTION} build`,
 }
 
 export const ISSUE_COMMAND_VALUES = Object.values(IssueCommand);

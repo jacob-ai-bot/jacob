@@ -6,7 +6,7 @@ import {
   type WebhookPRCommentCreatedEventWithOctokit,
   type WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit,
 } from "../messaging/queue";
-import { PR_COMMAND_VALUES } from "../utils";
+import { AT_MENTION } from "../utils";
 import { codeReviewCommandSuggestion } from "../github/issue";
 
 dotenv.config();
@@ -35,16 +35,16 @@ ghApp.webhooks.on("issues.opened", async (event) => {
   );
   // NOTE: We avoid reacting to our own command suggestion in the repo installed message
   if (
-    payload?.issue.body?.includes("@jacob-ai-bot") &&
+    payload?.issue.body?.includes(AT_MENTION) &&
     !payload?.issue.body?.includes(codeReviewCommandSuggestion)
   ) {
     console.log(
-      `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob-ai-bot mention`,
+      `[${repository.full_name}] Issue #${payload.issue.number} contains ${AT_MENTION} mention`,
     );
     void publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `[${repository.full_name}] Issue #${payload.issue.number} has no @jacob-ai-bot mention`,
+      `[${repository.full_name}] Issue #${payload.issue.number} has no ${AT_MENTION} mention`,
     );
   }
 });
@@ -58,17 +58,17 @@ ghApp.webhooks.on("issues.edited", async (event) => {
     `[${repository.full_name}] Received issue #${payload.issue.number} edited event`,
   );
   if (
-    payload?.issue.body?.includes("@jacob-ai-bot") &&
+    payload?.issue.body?.includes(AT_MENTION) &&
     !payload?.issue.body?.includes(codeReviewCommandSuggestion) &&
-    !payload.changes?.body?.from?.includes("@jacob-ai-bot")
+    !payload.changes?.body?.from?.includes(AT_MENTION)
   ) {
     console.log(
-      `[${repository.full_name}] Issue #${payload.issue.number} contains @jacob-ai-bot mention`,
+      `[${repository.full_name}] Issue #${payload.issue.number} contains ${AT_MENTION} mention`,
     );
     void publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `[${repository.full_name}] Issue #${payload.issue.number} has no @jacob-ai-bot mention`,
+      `[${repository.full_name}] Issue #${payload.issue.number} has no ${AT_MENTION} mention`,
     );
   }
 });
@@ -102,12 +102,12 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   );
   const appUsername = process.env.GITHUB_APP_USERNAME;
 
-  const ottoShouldRespond =
-    payload.review.body?.includes("@jacob-ai-bot") ??
+  const shouldRespond =
+    payload.review.body?.includes(AT_MENTION) ??
     (appUsername && `${payload.pull_request.user.id}` === appUsername);
 
   if (
-    ottoShouldRespond &&
+    shouldRespond &&
     payload.action === "submitted" &&
     (payload.review.state === "changes_requested" ||
       payload.review.state === "commented")
@@ -127,24 +127,21 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
   console.log(
     `[${repository.full_name}] Received issue #${issue.number} comment created event`,
   );
-  if (
-    issue.pull_request &&
-    PR_COMMAND_VALUES.some((cmd) => comment.body?.includes(cmd))
-  ) {
+  if (issue.pull_request && comment.body?.includes(AT_MENTION)) {
     const prCommentCreatedEvent =
       event as WebhookPRCommentCreatedEventWithOctokit;
     console.log(
-      `[${repository.full_name}] Pull request comment body contains @jacob-ai-bot <cmd> mention (PR #${issue.number})`,
+      `[${repository.full_name}] Pull request comment body contains ${AT_MENTION} mention (PR #${issue.number})`,
     );
     void publishGitHubEventToQueue(prCommentCreatedEvent);
-  } else if (comment.body?.includes("@jacob-ai-bot build")) {
+  } else if (comment.body?.includes(AT_MENTION)) {
     console.log(
-      `[${repository.full_name}] Issue comment body contains @jacob-ai-bot build mention (Issue #${issue.number})`,
+      `[${repository.full_name}] Issue comment body contains ${AT_MENTION} mention (Issue #${issue.number})`,
     );
     void publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `[${repository.full_name}] Issue comment is not a PR comment or body has no @jacob-ai-bot <cmd> mention (Issue #${issue.number})`,
+      `[${repository.full_name}] Issue comment is not a PR comment or body has no ${AT_MENTION} mention (Issue #${issue.number})`,
     );
   }
 });
@@ -156,14 +153,14 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
     `[${repository.full_name}] Received PR #${pull_request.number} comment created event`,
   );
 
-  if (PR_COMMAND_VALUES.some((cmd) => pull_request.body?.includes(cmd))) {
+  if (pull_request.body?.includes(AT_MENTION)) {
     console.log(
-      `[${repository.full_name}] Pull request body contains @jacob-ai-bot <cmd> mention (PR #${pull_request.number})`,
+      `[${repository.full_name}] Pull request body contains ${AT_MENTION} mention (PR #${pull_request.number})`,
     );
     void publishGitHubEventToQueue(event);
   } else {
     console.log(
-      `[${repository.full_name}] Pull request body has no @jacob-ai-bot fix <cmd> mention (Issue #${pull_request.number})`,
+      `[${repository.full_name}] Pull request body has no ${AT_MENTION} mention (Issue #${pull_request.number})`,
     );
   }
 });
