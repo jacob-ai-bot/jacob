@@ -267,12 +267,19 @@ export const extractFilePathWithArrow = (title?: string) => {
 };
 
 export enum PRCommand {
+  Build = "@jacob-ai-bot build",
   FixError = "@jacob-ai-bot fix error",
   CreateStory = "@jacob-ai-bot create story",
   CodeReview = "@jacob-ai-bot code review",
 }
 
 export const PR_COMMAND_VALUES = Object.values(PRCommand);
+
+export enum IssueCommand {
+  Build = "@jacob-ai-bot build",
+}
+
+export const ISSUE_COMMAND_VALUES = Object.values(IssueCommand);
 
 export function enumFromStringValue<T>(
   enm: Record<string, T>,

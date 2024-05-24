@@ -20,6 +20,8 @@ import pullRequestOpenedPayload from "../../data/test/webhooks/pull_request.open
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
 import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
+import issueCommentCreatedIssueCommandUnknownPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.unknown.json";
+import issueCommentCreatedIssueCommandOnPRUnknownPayload from "../../data/test/webhooks/issue_comment.created.issueCommandOnPR.unknown.json";
 import issueCommentCreatedIssueCommandBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.build.json";
 import issueCommentCreatedIssueCommandOnPRBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommandOnPR.build.json";
 import installationRepositoriesAddedPayload from "../../data/test/webhooks/installation_repositories.added.json";
@@ -81,71 +83,50 @@ const mockedSourceMap = vi.hoisted(() => ({
 vi.mock("../analyze/sourceMap", () => mockedSourceMap);
 
 const mockedCheck = vi.hoisted(() => ({
-  runBuildCheck: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  runBuildCheck: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../build/node/check", () => mockedCheck);
 
 const mockedNewFile = vi.hoisted(() => ({
-  createNewFile: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  createNewFile: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/newFile", () => mockedNewFile);
 
 const mockedEditFiles = vi.hoisted(() => ({
-  editFiles: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  editFiles: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/editFiles", () => mockedEditFiles);
 
 const mockedCodeReview = vi.hoisted(() => ({
-  codeReview: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  codeReview: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/codeReview", () => mockedCodeReview);
 
 const mockedCreateStory = vi.hoisted(() => ({
-  createStory: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  createStory: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/createStory", () => mockedCreateStory);
 
 const mockedFixError = vi.hoisted(() => ({
-  fixError: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  fixError: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/fixError", () => mockedFixError);
 
 const mockedRespondToCodeReview = vi.hoisted(() => ({
-  respondToCodeReview: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  respondToCodeReview: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/respondToCodeReview", () => mockedRespondToCodeReview);
 
 const mockedComments = vi.hoisted(() => ({
-  addStartingWorkComment: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
-  addFailedWorkComment: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  addStartingWorkComment: vi.fn().mockResolvedValue(undefined),
+  addFailedWorkComment: vi.fn().mockResolvedValue(undefined),
+  addUnsupportedCommandComment: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../github/comments", () => mockedComments);
 
 const mockedIssue = vi.hoisted(() => ({
-  addCommentToIssue: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
-  createRepoInstalledIssue: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  addCommentToIssue: vi.fn().mockResolvedValue(undefined),
+  createRepoInstalledIssue: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../github/issue", () => mockedIssue);
 
@@ -389,9 +370,31 @@ describe("onGitHubEvent", () => {
     );
   });
 
-  test("issue command - build", async () => {
+  test("issue command - unknown", async () => {
     await onGitHubEvent({
       id: "10",
+      name: "issue_comment",
+      payload: issueCommentCreatedIssueCommandUnknownPayload,
+    } as WebhookIssueCommentCreatedEvent);
+
+    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
+    expect(mockedComments.addUnsupportedCommandComment).toHaveBeenCalledOnce();
+  });
+
+  test("PR command - unknown", async () => {
+    await onGitHubEvent({
+      id: "11",
+      name: "issue_comment",
+      payload: issueCommentCreatedIssueCommandOnPRUnknownPayload,
+    } as WebhookIssueCommentCreatedEvent);
+
+    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
+    expect(mockedComments.addUnsupportedCommandComment).toHaveBeenCalledOnce();
+  });
+
+  test("issue command - build", async () => {
+    await onGitHubEvent({
+      id: "12",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
@@ -411,7 +414,7 @@ describe("onGitHubEvent", () => {
 
   test("issue command - build - on PR", async () => {
     await onGitHubEvent({
-      id: "11",
+      id: "13",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandOnPRBuildPayload,
     } as WebhookIssueCommentCreatedEvent);
@@ -435,7 +438,7 @@ describe("onGitHubEvent", () => {
     );
 
     await onGitHubEvent({
-      id: "12",
+      id: "14",
       name: "issue_comment",
       payload: issueCommentCreatedIssueCommandBuildPayload,
     } as WebhookIssueCommentCreatedEvent);

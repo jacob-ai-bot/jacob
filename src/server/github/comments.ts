@@ -2,7 +2,11 @@ import { dedent } from "ts-dedent";
 import type { Repository } from "@octokit/webhooks-types";
 
 import { addCommentToIssue } from "../github/issue";
-import { PRCommand, type ExecAsyncException } from "../utils";
+import {
+  type IssueCommand,
+  PRCommand,
+  type ExecAsyncException,
+} from "../utils";
 
 interface AddStartingWorkCommentBaseParams {
   repository: Repository;
@@ -27,6 +31,7 @@ interface AddStartingWorkCommentPRCommandParams {
 
 interface AddStartingWorkCommentIssueCommandParams {
   task: "issueCommand";
+  issueCommand: IssueCommand;
   issueNumber: number;
 }
 
@@ -84,6 +89,8 @@ export function addStartingWorkComment(options: AddStartingWorkCommentParams) {
         case PRCommand.CodeReview:
           updateMessage = "I'm starting a code review on this PR.";
           break;
+        case PRCommand.Build:
+          updateMessage = "I will attempt to build this repository.";
       }
       const message = dedent`JACoB here...\n
         ${updateMessage}
@@ -140,5 +147,21 @@ export function addFailedWorkComment(
       `;
     }
   }
+  return addCommentToIssue(repository, issueOrPRNumber, token, message);
+}
+
+export function addUnsupportedCommandComment(
+  repository: Repository,
+  issueOrPRNumber: number,
+  token: string,
+) {
+  const message = dedent`
+    JACoB here...
+          
+    You mentioned me, but I don't understand what you want me to do.
+    At this time, I can only respond to specific commands.
+    
+    Please check the [docs](https://docs.jacb.ai/user-guides/github-integration) for more information.
+  `;
   return addCommentToIssue(repository, issueOrPRNumber, token, message);
 }
