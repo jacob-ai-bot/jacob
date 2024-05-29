@@ -1,3 +1,18 @@
 {
-  "formatCommand": "npm run lint:fix"
+  "formatCommand": "npm run lint:fix",
+  "env": {
+    "OPENAI_API_KEY": "open-ai-key",
+    "POSTHOG_API_KEY": "posthog-key",
+    "NEXTAUTH_SECRET": "nextauth-secret",
+    "NEXTAUTH_URL": "http://localhost:3000",
+    "GITHUB_CLIENT_ID": "github-client-id",
+    "GITHUB_CLIENT_SECRET": "github-client-secret",
+    "DATABASE_URL": "file:./db.sqlite",
+    "DATABASE_TEST_URL": "file:./db.sqlite",
+    "GITHUB_APP_ID": "123456",
+    "GITHUB_PRIVATE_KEY": "github-private-key",
+    "GITHUB_WEBHOOK_SECRET": "github-webhook-secret",
+    "PUBSUB_REDIS_URL": "redis://localhost:6379/0",
+    "PUBSUB_REDIS_TEST_URL": "redis://localhost:6379/1"
+  }
 }
