@@ -82,8 +82,12 @@ export const Chat: FC<Props> = ({
       const urls: string[] = await Promise.all(uploadPromises);
       // Handle the URLs as needed, e.g., send them with a chat message
       console.log("Uploaded URLs:", urls);
-    } catch (error) {
-      toast.error("Image upload failed.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Image upload failed: ${error.message}`);
+      } else {
+        toast.error("Image upload failed.");
+      }
     } finally {
       setUploading(false);
     }

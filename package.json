@@ -133,5 +133,8 @@
   "ct3aMetadata": {
     "initVersion": "7.30.2"
   },
-  "packageManager": "npm@10.2.4"
+  "packageManager": "npm@10.2.4",
+  "resolutions": {
+    "ts-morph": "20.0.0"
+  }
 }
