@@ -79,7 +79,7 @@ export const Chat: FC<Props> = ({
         return data.url;
       });
 
-      const urls = await Promise.all(uploadPromises);
+      const urls: string[] = await Promise.all(uploadPromises);
       urls.forEach((url) => {
         onSend({ role: "user", content: url });
       });
