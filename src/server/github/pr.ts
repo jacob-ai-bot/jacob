@@ -204,6 +204,26 @@ export async function markPRReadyForReview(
   });
 }
 
+export async function getPRReviewComments(
+  repository: Repository,
+  token: string,
+  prNumber: number,
+  reviewId: number,
+) {
+  const octokit = new Octokit({
+    auth: token,
+    log: console,
+    userAgent: "jacob",
+  });
+
+  return octokit.pulls.listCommentsForReview({
+    owner: repository.owner.login,
+    repo: repository.name,
+    pull_number: prNumber,
+    review_id: reviewId,
+  });
+}
+
 export async function concatenatePRFiles(
   rootPath: string,
   repository: Repository,

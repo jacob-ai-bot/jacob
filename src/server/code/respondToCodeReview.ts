@@ -1,3 +1,4 @@
+import { dedent } from "ts-dedent";
 import { type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 
@@ -5,7 +6,7 @@ import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate, type RepoSettings, type BaseEventData } from "../utils";
 import { reconstructFiles } from "../utils/files";
 import { sendGptRequest } from "../openai/request";
-import { concatenatePRFiles } from "../github/pr";
+import { getPRReviewComments, concatenatePRFiles } from "../github/pr";
 import { checkAndCommit } from "./checkAndCommit";
 import { emitCodeEvent } from "~/server/utils/events";
 
@@ -20,6 +21,7 @@ export interface RespondToCodeReviewParams extends BaseEventData {
   branch: string;
   existingPr: PullRequest;
   state: "changes_requested" | "commented";
+  reviewId: number;
   reviewBody: string | null;
 }
 
@@ -32,12 +34,35 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
     branch,
     existingPr,
     state,
+    reviewId,
     reviewBody,
     ...baseEventData
   } = params;
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const types = getTypes(rootPath, repoSettings);
   const images = await getImages(rootPath, repoSettings);
+
+  const prComments = await getPRReviewComments(
+    repository,
+    token,
+    existingPr.number,
+    reviewId,
+  );
+
+  const commentsOnSpecificLines = prComments.data
+    .map(
+      ({ diff_hunk, path, body, position }) =>
+        dedent`
+          File: ${path}
+          Position: ${position}
+          Diff Hunk:
+          ${diff_hunk}
+
+          Comment: ${body}
+        
+        `,
+    )
+    .join("\n");
 
   const { code } = await concatenatePRFiles(
     rootPath,
@@ -54,6 +79,7 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
     reviewBody: reviewBody ?? "",
     reviewAction:
       state === "changes_requested" ? "requested changes" : "commented",
+    commentsOnSpecificLines,
   };
 
   const responseToCodeReviewSystemPrompt = parseTemplate(

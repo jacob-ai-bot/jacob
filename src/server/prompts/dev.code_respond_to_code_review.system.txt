@@ -17,7 +17,9 @@ ${code}
 
 Act as a L7 expert Software Engineer at Facebook and address the code review feedback by editing existing code.
 The reviewer ${reviewAction} on this code.
-Use only the 'Code review feedback:' provided by the reviewer to update the file.
+Code review comments may be provided under 'Comments on new or modified lines:' which pertain to specific changes in a pull request.
+There may also be general comments under 'General code review comments:'
+Only use the comments under these two sections to update the "code.txt" file.
 The source map and types provided above are the only TypeScript types or filesystem files that you can import.
 DO NOT make up any imports! DO NOT add any new files to the "code.txt" file.
 The output MUST be the exact "code.txt" file with the updated code changes. 

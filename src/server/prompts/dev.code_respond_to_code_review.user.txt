@@ -1,6 +1,9 @@
 Act as a L7 expert Software Engineer at Facebook and write flawless production-level code to address the code review feedback.
 
--- Code review feedback:
+-- Comments on new or modified lines:
+${commentsOnSpecificLines}
+
+-- General code review comments:
 ${reviewBody}
 
 -- Instructions:

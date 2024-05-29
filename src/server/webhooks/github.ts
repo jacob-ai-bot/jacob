@@ -103,7 +103,7 @@ ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const appUsername = process.env.GITHUB_APP_USERNAME;
 
   const shouldRespond =
-    payload.review.body?.includes(AT_MENTION) ??
+    !!payload.review.body?.includes(AT_MENTION) ||
     (appUsername && `${payload.pull_request.user.id}` === appUsername);
 
   if (

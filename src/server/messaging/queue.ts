@@ -530,6 +530,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
           branch: prBranch,
           existingPr,
           state: event.payload.review.state,
+          reviewId: event.payload.review.id,
           reviewBody: body,
         });
         posthogClient.capture({
