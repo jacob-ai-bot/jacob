@@ -466,7 +466,7 @@ describe("onGitHubEvent", () => {
     );
   });
 
-  test.only("installation created - one repo", async () => {
+  test("installation created - one repo", async () => {
     await onGitHubEvent({
       id: "15",
       name: "installation",
