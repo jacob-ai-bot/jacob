@@ -163,8 +163,16 @@ async function authInstallation(installationId?: number) {
   }
 }
 
-async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
-  const { repositories_added: repos, installation, sender } = event.payload;
+async function onReposAdded(
+  event:
+    | WebhookInstallationRepositoriesAddedEvent
+    | WebhookInstallationCreatedEvent,
+) {
+  const repos =
+    event.name === "installation_repositories"
+      ? event.payload.repositories_added
+      : event.payload.repositories ?? [];
+  const { installation, sender } = event.payload;
 
   const installationAuthentication = await authInstallation(installation?.id);
   if (!installationAuthentication) {
@@ -266,7 +274,10 @@ async function onReposAdded(event: WebhookInstallationRepositoriesAddedEvent) {
 }
 
 export async function onGitHubEvent(event: WebhookQueuedEvent) {
-  if (event.name === "installation_repositories") {
+  if (
+    event.name === "installation_repositories" ||
+    event.name === "installation"
+  ) {
     console.log(`onGitHubEvent: ${event.id} ${event.name}`);
     return onReposAdded(event);
   }
@@ -707,6 +718,13 @@ export type WebhookInstallationRepositoriesAddedEvent =
     };
   };
 
+export type WebhookInstallationCreatedEvent =
+  EmitterWebhookEvent<"installation"> & {
+    payload: {
+      action: "created";
+    };
+  };
+
 export type WebhookQueuedEvent =
   | WebhookIssueOpenedEvent
   | WebhookIssueEditedEvent
@@ -714,7 +732,8 @@ export type WebhookQueuedEvent =
   | WebhookPRCommentCreatedEvent
   | WebhookPullRequestOpenedEvent
   | WebhookPullRequestReviewWithCommentsSubmittedEvent
-  | WebhookInstallationRepositoriesAddedEvent;
+  | WebhookInstallationRepositoriesAddedEvent
+  | WebhookInstallationCreatedEvent;
 
 type WithOctokit<T> = T & {
   octokit: Octokit;
@@ -749,7 +768,10 @@ export const publishGitHubEventToQueue = async (
   const repoName =
     "repository" in event.payload
       ? event.payload.repository.full_name
-      : event.payload.repositories_added
+      : ("repositories_added" in event.payload
+          ? event.payload.repositories_added
+          : event.payload.repositories ?? []
+        )
           .map(({ full_name }) => full_name)
           .join(",");
   console.log(

@@ -25,6 +25,7 @@ import issueCommentCreatedIssueCommandOnPRUnknownPayload from "../../data/test/w
 import issueCommentCreatedIssueCommandBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.build.json";
 import issueCommentCreatedIssueCommandOnPRBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommandOnPR.build.json";
 import installationRepositoriesAddedPayload from "../../data/test/webhooks/installation_repositories.added.json";
+import installationCreatedPayload from "../../data/test/webhooks/installation.created.json";
 import {
   onGitHubEvent,
   type WebhookIssueOpenedEvent,
@@ -33,6 +34,7 @@ import {
   type WebhookInstallationRepositoriesAddedEvent,
   type WebhookPullRequestOpenedEvent,
   type WebhookIssueCommentCreatedEvent,
+  type WebhookInstallationCreatedEvent,
 } from "./queue";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
@@ -461,6 +463,35 @@ describe("onGitHubEvent", () => {
     );
     expect(String(mockedComments.addFailedWorkComment.mock.calls[0][5])).toBe(
       "Error: build error",
+    );
+  });
+
+  test.only("installation created - one repo", async () => {
+    await onGitHubEvent({
+      id: "15",
+      name: "installation",
+      payload: installationCreatedPayload,
+    } as unknown as WebhookInstallationCreatedEvent);
+
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "cpirich/jacob-template",
+      userId: "cpirich",
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+    });
+    expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
+    const expectedRepo = {
+      ...installationCreatedPayload.repositories[0],
+      owner: installationCreatedPayload.installation.account,
+    };
+    expect(mockedIssue.createRepoInstalledIssue).toHaveBeenLastCalledWith(
+      expectedRepo,
+      "fake-token",
+      "cpirich",
+      true,
     );
   });
 });

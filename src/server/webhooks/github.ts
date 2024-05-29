@@ -175,6 +175,18 @@ ghApp.webhooks.on("installation_repositories.added", async (event) => {
   void publishGitHubEventToQueue(event);
 });
 
+ghApp.webhooks.on("installation.created", async (event) => {
+  const { payload } = event;
+  const { repositories } = payload;
+  const repos = (repositories ?? [])
+    .map(({ full_name }) => full_name)
+    .join(",");
+
+  console.log(`[${repos}] Received installation event`);
+
+  void publishGitHubEventToQueue(event);
+});
+
 ghApp.webhooks.onAny(async ({ id, name }) => {
   console.log(`GitHub Webhook Handled: Event Name: ${name} (id: ${id})`);
 });

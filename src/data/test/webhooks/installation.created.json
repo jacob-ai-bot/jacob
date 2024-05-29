@@ -1,0 +1,87 @@
+{
+  "action": "created",
+  "installation": {
+    "id": 51332873,
+    "account": {
+      "login": "cpirich",
+      "id": 5429146,
+      "node_id": "MDQ6VXNlcjU0MjkxNDY=",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5429146?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/cpirich",
+      "html_url": "https://github.com/cpirich",
+      "followers_url": "https://api.github.com/users/cpirich/followers",
+      "following_url": "https://api.github.com/users/cpirich/following{/other_user}",
+      "gists_url": "https://api.github.com/users/cpirich/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/cpirich/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/cpirich/subscriptions",
+      "organizations_url": "https://api.github.com/users/cpirich/orgs",
+      "repos_url": "https://api.github.com/users/cpirich/repos",
+      "events_url": "https://api.github.com/users/cpirich/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/cpirich/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "repository_selection": "selected",
+    "access_tokens_url": "https://api.github.com/app/installations/51332873/access_tokens",
+    "repositories_url": "https://api.github.com/installation/repositories",
+    "html_url": "https://github.com/settings/installations/51332873",
+    "app_id": 794418,
+    "app_slug": "jacob-ai-bot",
+    "target_id": 5429146,
+    "target_type": "User",
+    "permissions": {
+      "contents": "write",
+      "issues": "write",
+      "metadata": "read",
+      "pull_requests": "write"
+    },
+    "events": [
+      "issues",
+      "issue_comment",
+      "pull_request",
+      "pull_request_review",
+      "pull_request_review_comment",
+      "pull_request_review_thread"
+    ],
+    "created_at": "2024-05-29T11:55:47.000-07:00",
+    "updated_at": "2024-05-29T11:55:47.000-07:00",
+    "single_file_name": null,
+    "has_multiple_single_files": false,
+    "single_file_paths": [
+
+    ],
+    "suspended_by": null,
+    "suspended_at": null
+  },
+  "repositories": [
+    {
+      "id": 807779385,
+      "node_id": "R_kgDOMCW8OQ",
+      "name": "jacob-template",
+      "full_name": "cpirich/jacob-template",
+      "private": true
+    }
+  ],
+  "requester": null,
+  "sender": {
+    "login": "cpirich",
+    "id": 5429146,
+    "node_id": "MDQ6VXNlcjU0MjkxNDY=",
+    "avatar_url": "https://avatars.githubusercontent.com/u/5429146?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/cpirich",
+    "html_url": "https://github.com/cpirich",
+    "followers_url": "https://api.github.com/users/cpirich/followers",
+    "following_url": "https://api.github.com/users/cpirich/following{/other_user}",
+    "gists_url": "https://api.github.com/users/cpirich/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/cpirich/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/cpirich/subscriptions",
+    "organizations_url": "https://api.github.com/users/cpirich/orgs",
+    "repos_url": "https://api.github.com/users/cpirich/repos",
+    "events_url": "https://api.github.com/users/cpirich/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/cpirich/received_events",
+    "type": "User",
+    "site_admin": false
+  }
+}
