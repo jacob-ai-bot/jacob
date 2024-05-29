@@ -413,6 +413,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       task: "issueOpened",
       issueNumber: eventIssueOrPRNumber,
     });
+  } else if (prOpened && !prCommand) {
+    // We frequently create PRs with copied issue text, so we see @jacob-ai-bot
+    // without a command. For now, we will ignore the mention without a command
+    // in all PR opened events.
+    console.log("Quietly ignoring PR opened event without command");
+    logEventDuration();
+    return;
   } else {
     throw new Error("Unexpected event type");
   }
