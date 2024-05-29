@@ -5,7 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { capitalize, statusStyles } from "~/app/utils";
 import Markdown from "react-markdown";
 import { type Issue } from "~/server/api/routers/events";
-import { renderers } from "../chat/ChatMessage";
 
 type IssueComponentProps = {
   issue: Issue | undefined;
@@ -57,7 +56,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => (
           <Markdown
             remarkPlugins={[gfm]}
             className={`text-sm text-blueGray-300`}
-            components={renderers}
           >
             {issue.description}
           </Markdown>
