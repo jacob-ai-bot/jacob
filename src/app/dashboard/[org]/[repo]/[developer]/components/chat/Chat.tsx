@@ -41,7 +41,7 @@ export const Chat: FC<Props> = ({
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  ): Promise<void> => {
     const files = event.target.files;
     if (!files) return;
 
@@ -75,7 +75,7 @@ export const Chat: FC<Props> = ({
           throw new Error("Failed to upload image");
         }
 
-        const data = await response.json();
+        const data: { url: string } = await response.json();
         return data.url;
       });
 
