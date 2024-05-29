@@ -36,11 +36,11 @@ export const Chat: FC<Props> = ({
   scrollToBottom,
   isAtBottom,
 }) => {
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<boolean>(false);
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  ): Promise<void> => {
     const files = event.target.files;
     if (!files) return;
 
@@ -75,11 +75,11 @@ export const Chat: FC<Props> = ({
           throw new Error("Failed to upload image");
         }
 
-        const data = await response.json();
+        const data: { url: string } = await response.json();
         return data.url;
       });
 
-      const urls = await Promise.all(uploadPromises);
+      const urls: string[] = await Promise.all(uploadPromises);
       // Handle the URLs as needed, e.g., send them with a chat message
       console.log("Uploaded URLs:", urls);
     } catch (error) {
