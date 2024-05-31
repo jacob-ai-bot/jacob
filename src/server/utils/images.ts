@@ -1,5 +1,7 @@
 import Jimp from "jimp";
-import AWS from "aws-sdk";
+import { getSignedUrl as s3getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Upload } from "@aws-sdk/lib-storage";
+import { GetObjectCommand, S3 } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import { promises as fsPromises } from "fs";
 import path from "path";
@@ -10,13 +12,14 @@ export enum IMAGE_TYPE {
   PNG = "image/png",
 }
 
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+const s3 = new S3({
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+  },
+
   region: process.env.AWS_REGION,
 });
-
-const s3 = new AWS.S3();
 
 export const uploadToS3 = async (
   imageBuffer: Buffer,
@@ -31,7 +34,10 @@ export const uploadToS3 = async (
     Body: imageBuffer,
     ContentType: imageType as string,
   };
-  await s3.upload(params).promise();
+  await new Upload({
+    client: s3,
+    params,
+  }).done();
   return key;
 };
 
@@ -45,7 +51,9 @@ export const getSignedUrl = (
     Key: imagePath,
     Expires: expiresInSeconds,
   };
-  return s3.getSignedUrl("getObject", params);
+  return s3getSignedUrl(s3, new GetObjectCommand(params), {
+    expiresIn: expiresInSeconds,
+  });
 };
 
 // Resize the image to optimize them for cost and performance as per OpenAI's vision API requirements (https://platform.openai.com/docs/guides/vision)

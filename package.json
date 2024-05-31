@@ -22,6 +22,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
+    "@aws-sdk/client-s3": "^3.588.0",
+    "@aws-sdk/lib-storage": "^3.588.0",
+    "@aws-sdk/s3-request-presigner": "^3.588.0",
     "@fortawesome/free-brands-svg-icons": "^6.5.2",
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@fortawesome/react-fontawesome": "^0.2.0",
@@ -44,7 +47,6 @@
     "@trpc/server": "next",
     "amqplib": "^0.10.3",
     "ansi-to-html": "^0.7.2",
-    "aws-sdk": "^2.1549.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "cron": "^3.1.7",
