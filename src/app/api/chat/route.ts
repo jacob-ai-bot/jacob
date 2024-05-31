@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     if (todo?.description?.includes("figma.com")) {
       systemPrompt = chatShowFigmaSystem;
     }
-    const temperature = 0.3;
+    const temperature = 0.2;
     const model = "gpt-4o";
 
     if (todo) {
@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
         developer.personalityProfile,
       );
     }
-    console.log("systemPrompt", systemPrompt);
 
     // Initialize the stream
     const completionStream = await OpenAIStream(
