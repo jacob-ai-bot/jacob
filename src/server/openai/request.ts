@@ -28,6 +28,7 @@ const openai = new OpenAI({
 const CONTEXT_WINDOW = {
   "gpt-4": 8192,
   "gpt-4-turbo": 128000,
+  "gpt-4-turbo-preview": 128000,
   "gpt-4o": 128000,
 };
 
@@ -35,6 +36,7 @@ const CONTEXT_WINDOW = {
 const MAX_OUTPUT = {
   "gpt-4": 8192,
   "gpt-4-turbo": 4096,
+  "gpt-4-turbo-preview": 4096,
   "gpt-4o": 4096,
 };
 
@@ -42,11 +44,13 @@ const ONE_MILLION = 1000000;
 const INPUT_TOKEN_COSTS = {
   "gpt-4": 30 / ONE_MILLION,
   "gpt-4-turbo": 10 / ONE_MILLION,
+  "gpt-4-turbo-preview": 10 / ONE_MILLION,
   "gpt-4o": 10 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4": 60 / ONE_MILLION,
   "gpt-4-turbo": 30 / ONE_MILLION,
+  "gpt-4-turbo-preview": 30 / ONE_MILLION,
   "gpt-4o": 30 / ONE_MILLION,
 };
 
@@ -87,7 +91,7 @@ export const sendGptRequest = async (
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  model: Model = "gpt-4o",
+  model: Model = "gpt-4-turbo-preview",
 ): Promise<string | null> => {
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
@@ -284,7 +288,7 @@ export const sendGptVisionRequest = async (
   retries = 10,
   delay = 60000,
 ): Promise<string | null> => {
-  const model: Model = "gpt-4o";
+  const model: Model = "gpt-4-turbo";
   let imagePrompt = null;
   if (snapshotUrl?.length > 0) {
     const prompt = parseTemplate("dev", "vision", "user", {});
@@ -343,7 +347,7 @@ export const OpenAIStream = async (
       console.log(
         "NOTE: Input text is too large to fit within the context window.",
       );
-      model = "gpt-4o";
+      model = "gpt-4-turbo";
     }
     try {
       if (!max_tokens) {
