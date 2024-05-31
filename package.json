@@ -79,6 +79,7 @@
     "remark-gfm": "^4.0.0",
     "semver": "^7.6.0",
     "server-only": "^0.0.1",
+    "source-map-support": "^0.5.21",
     "strip-ansi": "^7.1.0",
     "superjson": "^2.2.1",
     "tmp-promise": "^3.0.3",

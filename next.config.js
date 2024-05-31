@@ -6,6 +6,15 @@ await import("./src/env.js");
 
 /** @type {import("next").NextConfig} */
 const config = {
+  // This webpack configuration is used to avoid an error when building related to how
+  // the `ts-morph` package tries to dynamically import TypeScript. This is a workaround.
+  webpack: (config) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    config.module.noParse =
+      /node_modules\/@ts-morph\/common\/dist\/typescript.js/;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return config;
+  },
   async headers() {
     return [
       {
