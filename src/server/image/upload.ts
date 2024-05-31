@@ -52,7 +52,7 @@ export async function uploadImage(req: Request, res: Response) {
       bucketName,
       imageName,
     );
-    const url = getSignedUrl(imagePath, bucketName);
+    const url = await getSignedUrl(imagePath, bucketName);
     return res.status(200).json({ success: true, url });
   } catch (error) {
     console.log("Error uploading image", error);

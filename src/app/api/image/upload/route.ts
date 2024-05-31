@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       bucketName,
       imageName,
     );
-    const url = getSignedUrl(imagePath, bucketName);
+    const url = await getSignedUrl(imagePath, bucketName);
     return NextResponse.json({ success: true, url });
   } catch (error) {
     console.log("Error uploading image", error);
