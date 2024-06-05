@@ -360,7 +360,13 @@ export function rethrowErrorWithTokenRedacted(error: unknown, token: string) {
   (newError as ExecAsyncException).killed = originalError.killed;
   (newError as ExecAsyncException).code = originalError.code;
   (newError as ExecAsyncException).signal = originalError.signal;
-  (newError as ExecAsyncException).stdout = originalError.stdout;
-  (newError as ExecAsyncException).stderr = originalError.stderr;
+  (newError as ExecAsyncException).stdout = originalError.stdout.replace(
+    token,
+    "<redacted>",
+  );
+  (newError as ExecAsyncException).stderr = originalError.stderr.replace(
+    token,
+    "<redacted>",
+  );
   throw newError;
 }
