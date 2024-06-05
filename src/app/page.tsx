@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getServerAuthSession } from "~/server/auth";
 import { Logo } from "~/images/Logo";
+import { SignInButton } from "~/app/_components/SignInButton";
+import { SignOutButton } from "~/app/_components/SignOutButton";
 
 export default async function Home() {
   const session = await getServerAuthSession();
@@ -37,12 +39,8 @@ export default async function Home() {
             <p className="text-center text-2xl">
               {session && <span>Logged in as {session.user?.name}</span>}
             </p>
-            <Link
-              href={session ? "/api/auth/signout" : "/api/auth/signin"}
-              className="rounded-full bg-white/40 px-10 py-3 font-semibold no-underline transition hover:bg-white/70"
-            >
-              {session ? "Sign out" : "Sign in"}
-            </Link>
+            {session && <SignOutButton />}
+            {!session && <SignInButton callbackUrl="/" />}
           </div>
         </div>
       </div>
