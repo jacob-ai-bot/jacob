@@ -77,6 +77,7 @@ export async function checkAndCommit({
     rootPath,
     branchName: branch,
     commitMessage,
+    token,
   });
 
   let issue: Issue | RetrievedIssue | undefined;

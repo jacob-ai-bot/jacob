@@ -2,25 +2,14 @@ import { dedent } from "ts-dedent";
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 
 import { cloneRepo } from "./clone";
-
-class TestExecAsyncException extends Error {
-  stdout: string;
-  stderr: string;
-
-  constructor(message: string, stdout: string, stderr: string) {
-    super(message);
-    this.stdout = stdout;
-    this.stderr = stderr;
-  }
-}
+import { TestExecAsyncException } from "~/server/utils/testHelpers";
 
 const mockedUtils = vi.hoisted(() => ({
   executeWithLogRequiringSuccess: vi
     .fn()
-    .mockImplementation(
-      () => new Promise((resolve) => resolve({ stdout: "", stderr: "" })),
-    ),
+    .mockResolvedValue({ stdout: "", stderr: "" }),
   getSanitizedEnv: vi.fn().mockImplementation(() => ({})),
+  rethrowErrorWithTokenRedacted: vi.fn(),
 }));
 vi.mock("../utils", () => mockedUtils);
 
@@ -127,7 +116,7 @@ describe("cloneRepo", () => {
     );
   });
 
-  test("cloneRepo doesn't propagate token string when it fails", async () => {
+  test("cloneRepo calls rethrowErrorWithTokenRedacted() when it fails", async () => {
     mockedUtils.executeWithLogRequiringSuccess.mockImplementationOnce(
       () =>
         new Promise((_, reject) =>
@@ -145,19 +134,11 @@ describe("cloneRepo", () => {
           ),
         ),
     );
-    let errorString = "";
-    try {
-      await cloneRepo({
-        baseEventData: mockEventData,
-        repoName: "organization/repo-name",
-        token: "my-token",
-      });
-    } catch (error) {
-      errorString = (error as Error).toString();
-    }
-    expect(errorString).not.toContain("my-token");
-    expect(errorString).toBe(
-      "Error: Command failed: git clone  https://x-access-token:<redacted>@github.com/organization/repo-name.git .",
-    );
+    await cloneRepo({
+      baseEventData: mockEventData,
+      repoName: "organization/repo-name",
+      token: "my-token",
+    });
+    expect(mockedUtils.rethrowErrorWithTokenRedacted).toHaveBeenCalled();
   });
 });

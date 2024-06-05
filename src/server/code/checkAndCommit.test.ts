@@ -18,9 +18,7 @@ const mockedCheck = vi.hoisted(() => ({
 vi.mock("../build/node/check", () => mockedCheck);
 
 const mockedCommit = vi.hoisted(() => ({
-  addCommitAndPush: vi
-    .fn()
-    .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  addCommitAndPush: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../git/commit", () => mockedCommit);
 
@@ -117,6 +115,7 @@ describe("checkAndCommit", () => {
       ...mockEventData,
       rootPath: "/rootpath",
       branchName: "jacob-issue-48-test",
+      token: "token",
       commitMessage: "test-commit-message",
     });
 
@@ -196,6 +195,7 @@ describe("checkAndCommit", () => {
       ...mockEventData,
       rootPath: "/rootpath",
       branchName: "jacob-issue-48-test",
+      token: "token",
       commitMessage: "test-commit-message",
     });
 
@@ -277,6 +277,7 @@ describe("checkAndCommit", () => {
       ...mockEventData,
       rootPath: "/rootpath",
       branchName: "jacob-issue-48-test",
+      token: "token",
       commitMessage: "test-commit-message",
     });
 
@@ -357,6 +358,7 @@ describe("checkAndCommit", () => {
       ...mockEventData,
       rootPath: "/rootpath",
       branchName: "jacob-issue-48-test",
+      token: "token",
       commitMessage: "test-commit-message",
     });
 
@@ -437,6 +439,7 @@ describe("checkAndCommit", () => {
       ...mockEventData,
       rootPath: "/rootpath",
       branchName: "jacob-issue-48-test",
+      token: "token",
       commitMessage: "test-commit-message",
     });
 
@@ -480,6 +483,7 @@ describe("checkAndCommit", () => {
       ...mockEventData,
       rootPath: "/rootpath",
       branchName: "random-branch-name",
+      token: "token",
       commitMessage: "test-commit-message",
     });
 

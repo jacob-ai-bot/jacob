@@ -5,6 +5,17 @@ import { beforeEach, afterEach, beforeAll, afterAll } from "vitest";
 import { createMocks } from "node-mocks-http";
 import type { NextRequest } from "next/server";
 
+export class TestExecAsyncException extends Error {
+  stdout: string;
+  stderr: string;
+
+  constructor(message: string, stdout: string, stderr: string) {
+    super(message);
+    this.stdout = stdout;
+    this.stderr = stderr;
+  }
+}
+
 export function createMockNextRequest(
   reqOptions: Parameters<typeof createMocks>[0],
 ): NextRequest {

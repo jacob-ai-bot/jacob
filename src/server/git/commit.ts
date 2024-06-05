@@ -2,6 +2,7 @@ import {
   executeWithLogRequiringSuccess,
   type ExecAsyncException,
   type BaseEventData,
+  rethrowErrorWithTokenRedacted,
 } from "../utils";
 
 const appName = process.env.GITHUB_APP_NAME ?? "";
@@ -11,12 +12,14 @@ export interface AddCommitAndPushParams extends BaseEventData {
   rootPath: string;
   branchName: string;
   commitMessage: string;
+  token: string;
 }
 
 export async function addCommitAndPush({
   rootPath,
   branchName,
   commitMessage,
+  token,
   ...baseEventData
 }: AddCommitAndPushParams) {
   // Stage all files
@@ -58,9 +61,13 @@ export async function addCommitAndPush({
   }
 
   // Push branch to origin
-  return executeWithLogRequiringSuccess({
-    ...baseEventData,
-    directory: rootPath,
-    command: `git push --set-upstream origin ${branchName}`,
-  });
+  try {
+    return await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: rootPath,
+      command: `git push --set-upstream origin ${branchName}`,
+    });
+  } catch (error) {
+    rethrowErrorWithTokenRedacted(error, token);
+  }
 }

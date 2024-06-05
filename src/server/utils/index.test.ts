@@ -3,6 +3,7 @@ import { dedent } from "ts-dedent";
 import {
   vi,
   describe,
+  test,
   beforeEach,
   afterEach,
   afterAll,
@@ -15,8 +16,10 @@ import {
   constructNewOrEditSystemPrompt,
   type TemplateParams,
   getStyles,
+  rethrowErrorWithTokenRedacted,
 } from "../utils";
 import { Language, Style } from "../utils/settings";
+import { TestExecAsyncException } from "~/server/utils/testHelpers";
 
 dotenv.config();
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
@@ -404,4 +407,28 @@ describe("getStyles", () => {
     });
     expect(resultJavaScript).toBe("tailwind config javascript");
   });
+});
+
+test("rethrowErrorWithTokenRedacted", () => {
+  const error = new TestExecAsyncException(
+    "Command failed: git clone  https://x-access-token:my-token@github.com/organization/repo-name.git .",
+    dedent`
+              Cloning into '.'...
+              fatal: the remote end hung up unexpectedly
+              fatal: early EOF
+              fatal: index-pack failed
+            `,
+    "",
+  );
+
+  let errorString = "";
+  try {
+    rethrowErrorWithTokenRedacted(error, "my-token");
+  } catch (error) {
+    errorString = (error as Error).toString();
+  }
+  expect(errorString).not.toContain("my-token");
+  expect(errorString).toBe(
+    "Error: Command failed: git clone  https://x-access-token:<redacted>@github.com/organization/repo-name.git .",
+  );
 });
