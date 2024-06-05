@@ -2,7 +2,7 @@ import { dir, type DirectoryResult } from "tmp-promise";
 import {
   type BaseEventData,
   executeWithLogRequiringSuccess,
-  type ExecAsyncException,
+  rethrowErrorWithTokenRedacted,
   executeWithLogRequiringSuccessWithoutEvent,
 } from "../utils";
 
@@ -48,21 +48,7 @@ export async function cloneRepo({
     }
   } catch (error) {
     if (token) {
-      // Throw this error, but with the token redacted from the message (as newError)
-      // This prevents the actual token from being included in any github issue comments
-      const originalError = error as ExecAsyncException;
-      const message = originalError.message;
-      const newMessage = message.replace(token, "<redacted>");
-      const newError = new Error(newMessage);
-      newError.name = originalError.name;
-      newError.stack = originalError.stack;
-      (newError as ExecAsyncException).cmd = originalError.cmd;
-      (newError as ExecAsyncException).killed = originalError.killed;
-      (newError as ExecAsyncException).code = originalError.code;
-      (newError as ExecAsyncException).signal = originalError.signal;
-      (newError as ExecAsyncException).stdout = originalError.stdout;
-      (newError as ExecAsyncException).stderr = originalError.stderr;
-      throw newError;
+      rethrowErrorWithTokenRedacted(error, token);
     } else {
       throw error;
     }

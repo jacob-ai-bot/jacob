@@ -10,17 +10,7 @@ import {
   getEnv,
 } from "./check";
 import { Language } from "../../utils/settings";
-
-class TestExecAsyncException extends Error {
-  stdout: string;
-  stderr: string;
-
-  constructor(message: string, stdout: string, stderr: string) {
-    super(message);
-    this.stdout = stdout;
-    this.stderr = stderr;
-  }
-}
+import { TestExecAsyncException } from "~/server/utils/testHelpers";
 
 const mockedDynamicImport = vi.hoisted(() => ({
   dynamicImport: vi
