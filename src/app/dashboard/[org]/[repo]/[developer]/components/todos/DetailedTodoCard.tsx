@@ -6,10 +6,9 @@ import gfm from "remark-gfm";
 
 interface Props {
   todo: Todo;
-  onStart: (todoId: string) => void;
-  onEdit?: (todoId: string, newName: string) => void;
+  onEdit?: (todoId: number, newName: string) => void;
 }
-export const DetailedTodoCard: React.FC<Props> = ({ todo, onStart }) => {
+export const DetailedTodoCard: React.FC<Props> = ({ todo }) => {
   const description = todo.description
     ? todo.description.replace("```", "~~~")
     : "";
@@ -24,15 +23,6 @@ export const DetailedTodoCard: React.FC<Props> = ({ todo, onStart }) => {
             ? `${description.slice(0, 500)}...`
             : description}
         </Markdown>
-      </div>
-      <div className="mt-2">
-        <button
-          onClick={() => onStart(todo.id)}
-          className="w-full justify-center rounded bg-slate-600 px-3 py-1 align-middle text-xs font-medium text-coolGray-50 shadow transition duration-300 ease-in-out hover:bg-green-600"
-        >
-          <FontAwesomeIcon icon={faPlay} className="mb-0.5 h-2 w-2" />
-          <span className="ml-1">Start</span>
-        </button>
       </div>
     </div>
   );

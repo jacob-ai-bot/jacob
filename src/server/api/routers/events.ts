@@ -127,11 +127,15 @@ type EventPayload =
   | Command;
 
 export interface Todo extends ExtractedIssueInfo {
-  id: string;
+  id: number;
+  projectId: number;
   description: string;
   name: string;
   status: TodoStatus;
-  issueId?: number;
+  position: number;
+  issueId?: number | null;
+  branch?: string | null;
+  isArchived: boolean;
 }
 
 export const eventsRouter = createTRPCRouter({
@@ -204,6 +208,22 @@ export const eventsRouter = createTRPCRouter({
         return tasks;
       },
     ),
+
+  getProject: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+      }),
+    )
+    .query(async ({ input: { org, repo } }) => {
+      // Fetch the project from the database
+      const project = await db.projects.findBy({
+        repoFullName: `${org}/${repo}`,
+      });
+
+      return project;
+    }),
 
   onAdd: protectedProcedure
     .input(

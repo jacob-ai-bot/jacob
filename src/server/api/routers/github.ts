@@ -12,10 +12,10 @@ import {
   validateRepo,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
-import { type Todo } from "./events";
 import { TodoStatus } from "~/server/db/enums";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { Mode } from "~/types";
+import { db } from "~/server/db/db";
 
 export const githubRouter = createTRPCRouter({
   getRepos: protectedProcedure.input(z.object({}).optional()).query(
@@ -78,17 +78,18 @@ export const githubRouter = createTRPCRouter({
         return { title: newTitle, body };
       },
     ),
-  getTodos: protectedProcedure
+  createTodos: protectedProcedure
     .input(
       z.object({
         repo: z.string(),
+        projectId: z.number(),
         mode: z.nativeEnum(Mode).optional(),
         max: z.number().optional(),
       }),
     )
     .query(
       async ({
-        input: { repo, mode = Mode.EXISTING_ISSUES, max = 10 },
+        input: { repo, projectId, mode = Mode.EXISTING_ISSUES, max = 10 },
         ctx: {
           session: { accessToken, user },
         },
@@ -157,15 +158,26 @@ export const githubRouter = createTRPCRouter({
               issueText,
             );
 
-            const todo: Todo = {
-              id: `issue-${issue.number}`,
-              description: `${issue.title}\n\n${issueBody}`,
-              name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
-              status: TodoStatus.TODO,
+            // add the todo to the database
+            // Try to find a todo with the same projectId and issueId
+            const existingTodo = await db.todos.findByOptional({
+              projectId: projectId,
               issueId: issue.number,
-              ...extractedIssue,
-            };
-            return todo;
+            });
+
+            // Only insert the new todo if no such todo exists
+            if (!existingTodo) {
+              const todo = await db.todos.create({
+                projectId: projectId,
+                description: `${issue.title}\n\n${issueBody}`,
+                name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
+                status: TodoStatus.TODO,
+                issueId: issue.number,
+              });
+              return { ...todo, ...extractedIssue };
+            } else {
+              return { ...existingTodo, ...extractedIssue };
+            }
           }),
         );
 
