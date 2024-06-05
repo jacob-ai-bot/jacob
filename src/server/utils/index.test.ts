@@ -17,6 +17,7 @@ import {
   type TemplateParams,
   getStyles,
   rethrowErrorWithTokenRedacted,
+  type ExecAsyncException,
 } from "../utils";
 import { Language, Style } from "../utils/settings";
 import { TestExecAsyncException } from "~/server/utils/testHelpers";
@@ -409,26 +410,63 @@ describe("getStyles", () => {
   });
 });
 
-test("rethrowErrorWithTokenRedacted", () => {
-  const error = new TestExecAsyncException(
-    "Command failed: git clone  https://x-access-token:my-token@github.com/organization/repo-name.git .",
-    dedent`
+describe("rethrowErrorWithTokenRedacted", () => {
+  test("git clone style error", () => {
+    const error = new TestExecAsyncException(
+      "Command failed: git clone  https://x-access-token:my-token@github.com/organization/repo-name.git .",
+      dedent`
               Cloning into '.'...
               fatal: the remote end hung up unexpectedly
               fatal: early EOF
               fatal: index-pack failed
             `,
-    "",
-  );
+      "",
+    );
 
-  let errorString = "";
-  try {
-    rethrowErrorWithTokenRedacted(error, "my-token");
-  } catch (error) {
-    errorString = (error as Error).toString();
-  }
-  expect(errorString).not.toContain("my-token");
-  expect(errorString).toBe(
-    "Error: Command failed: git clone  https://x-access-token:<redacted>@github.com/organization/repo-name.git .",
-  );
+    let errorString = "";
+    try {
+      rethrowErrorWithTokenRedacted(error, "my-token");
+    } catch (error) {
+      errorString = (error as Error).toString();
+    }
+    expect(errorString).not.toContain("my-token");
+    expect(errorString).toBe(
+      "Error: Command failed: git clone  https://x-access-token:<redacted>@github.com/organization/repo-name.git .",
+    );
+  });
+
+  test("git commit style error", () => {
+    const stderrText = dedent`
+      To https://github.com/kleneway/jacob.git
+      ! [rejected]        jacob-issue-1-1717533860017 -> jacob-issue-1-1717533860017 (fetch first)
+      error: failed to push some refs to 'https://x-access-token:my-token@github.com/kleneway/jacob.git'
+      hint: Updates were rejected because the remote contains work that you do
+      hint: not have locally. This is usually caused by another repository pushing
+      hint: to the same ref. You may want to first integrate the remote changes
+      hint: (e.g., 'git pull ...') before pushing again.
+      hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+    `;
+    const error = new TestExecAsyncException(
+      "Command failed: git push --set-upstream origin jacob-issue-1-1717533860017",
+      "",
+      stderrText,
+    );
+
+    let errorString = "";
+    let savedError;
+    try {
+      rethrowErrorWithTokenRedacted(error, "my-token");
+    } catch (error) {
+      errorString = (error as Error).toString();
+      savedError = error;
+    }
+    expect(errorString).not.toContain("my-token");
+    expect(errorString).toBe(
+      "Error: Command failed: git push --set-upstream origin jacob-issue-1-1717533860017",
+    );
+    expect((savedError as ExecAsyncException).stdout).toBe("");
+    expect((savedError as ExecAsyncException).stderr).toBe(
+      stderrText.replace("my-token", "<redacted>"),
+    );
+  });
 });
