@@ -14,11 +14,12 @@ const TASK_TYPE_VALUES = Object.values(TaskType) as [TaskType, ...TaskType[]];
 export type Task = {
   type: TaskType.task;
   id: string;
-  name: string;
+  name?: string;
   subType: TaskSubType;
   description?: string;
   storyPoints: number;
   status: TaskStatus;
+  statusMessage?: string;
 };
 
 const defineComment = (t: JSONTypes) =>
@@ -56,11 +57,12 @@ export class EventsTable extends BaseTable {
         t.object({
           type: t.literal(TaskType.task),
           id: t.string(),
-          name: t.string(),
+          name: t.string().optional(),
           subType: t.nativeEnum(TaskSubType),
           description: t.string().optional(),
           storyPoints: t.number(),
           status: t.nativeEnum(TaskStatus),
+          statusMessage: t.string().optional(),
         }),
         t.object({
           type: t.literal(TaskType.code),

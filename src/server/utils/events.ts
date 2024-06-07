@@ -72,24 +72,30 @@ export async function emitPREvent(params: EmitPREventParams) {
 }
 
 interface EmitTaskEventParams extends BaseEventData {
-  issue: Issue | RetrievedIssue;
+  issue?: Issue | RetrievedIssue;
   subType: TaskSubType;
   status: TaskStatus;
+  statusMessage?: string;
 }
 
 export async function emitTaskEvent(params: EmitTaskEventParams) {
-  const { issue, subType, status, ...baseEventData } = params;
+  const { issue, subType, status, statusMessage, ...baseEventData } = params;
+  const issueNumber = baseEventData.issueId ?? issue?.number;
+  if (!issueNumber) {
+    console.warn("No issue number provided for task event", baseEventData);
+  }
   const event = await db.events.selectAll().insert({
     ...baseEventData,
     type: TaskType.task,
     payload: {
       type: TaskType.task,
-      id: `task-${baseEventData.repoFullName}-${issue.number}`,
-      name: issue.title,
-      description: issue.body ?? undefined,
+      id: `task-${baseEventData.repoFullName}-${issueNumber}`,
+      name: issue?.title,
+      description: issue?.body ?? undefined,
       storyPoints: 1,
       status,
       subType,
+      statusMessage,
     },
   });
   await redisConnection.publish("events", JSON.stringify(event));
