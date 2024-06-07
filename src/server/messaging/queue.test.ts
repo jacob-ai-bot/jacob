@@ -36,6 +36,7 @@ import {
   type WebhookIssueCommentCreatedEvent,
   type WebhookInstallationCreatedEvent,
 } from "./queue";
+import { TaskStatus, TaskSubType } from "../db/enums";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
@@ -232,6 +233,16 @@ describe("onGitHubEvent", () => {
     expect(String(mockedComments.addFailedWorkComment.mock.calls[0][5])).toBe(
       "Error: test error",
     );
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(2);
+    expect(mockedEvents.emitTaskEvent).toHaveBeenLastCalledWith({
+      issueId: 47,
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      status: TaskStatus.ERROR,
+      statusMessage: "Error: test error",
+      subType: TaskSubType.CREATE_NEW_FILE,
+      userId: "jacob-ai-bot[bot]",
+    });
 
     expect(mockedCheck.runBuildCheck).not.toHaveBeenCalled();
     expect(mockedNewFile.createNewFile).not.toHaveBeenCalled();
@@ -464,6 +475,16 @@ describe("onGitHubEvent", () => {
     expect(String(mockedComments.addFailedWorkComment.mock.calls[0][5])).toBe(
       "Error: build error",
     );
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
+    expect(mockedEvents.emitTaskEvent).toHaveBeenLastCalledWith({
+      issueId: 125,
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      status: TaskStatus.ERROR,
+      statusMessage: "Error: build error",
+      subType: TaskSubType.EDIT_FILES,
+      userId: "cpirich",
+    });
   });
 
   test("installation created - one repo", async () => {

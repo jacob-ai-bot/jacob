@@ -286,6 +286,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     payload: { repository, installation },
   } = event;
   const start = Date.now();
+  let taskSubType: TaskSubType | undefined;
   console.log(
     `[${repository.full_name}] onGitHubEvent: ${event.id} ${eventName}`,
   );
@@ -444,13 +445,15 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     ? extractFilePathWithArrow(issueOpenedTitle)
     : undefined;
 
+  taskSubType = newFileName
+    ? TaskSubType.CREATE_NEW_FILE
+    : TaskSubType.EDIT_FILES;
+
   if (issueOpened) {
     await emitTaskEvent({
       ...baseEventData,
       issue: event.payload.issue,
-      subType: newFileName
-        ? TaskSubType.CREATE_NEW_FILE
-        : TaskSubType.EDIT_FILES,
+      subType: taskSubType,
       status: TaskStatus.IN_PROGRESS,
     });
   }
@@ -566,6 +569,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             });
             break;
           case PRCommand.CodeReview:
+            taskSubType = TaskSubType.CODE_REVIEW;
             await codeReview({
               ...baseEventData,
               repository,
@@ -657,6 +661,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       prReview,
       error as Error,
     );
+    await emitTaskEvent({
+      ...baseEventData,
+      subType: taskSubType,
+      status: TaskStatus.ERROR,
+      statusMessage: String(error),
+    });
     posthogClient.capture({
       distinctId,
       event: "Work Failed",
