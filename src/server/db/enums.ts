@@ -8,7 +8,6 @@ export enum TaskType {
   issue = "issue",
   pull_request = "pull request",
   command = "command",
-  todo = "todo",
 }
 
 export enum TaskStatus {
