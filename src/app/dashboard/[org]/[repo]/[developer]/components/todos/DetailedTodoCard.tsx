@@ -1,5 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay } from "@fortawesome/free-solid-svg-icons";
 import { type Todo } from "~/server/api/routers/events";
 import Markdown from "react-markdown";
 import gfm from "remark-gfm";

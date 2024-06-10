@@ -159,22 +159,6 @@ const Dashboard: React.FC<DashboardParams> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDeveloper]);
 
-  //** Task */
-  const onStartTask = (taskId: string) => {
-    // set the task status to in progress
-    setTasks((tasks) =>
-      tasks?.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            status: TaskStatus.IN_PROGRESS,
-          };
-        }
-        return t;
-      }),
-    );
-  };
-
   const onNewTodoSelected = (todo: Todo) => {
     setSelectedTodo(todo);
     resetMessages([

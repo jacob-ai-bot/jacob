@@ -3,7 +3,6 @@ import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { getIssue } from "~/server/github/issue";
 
 import {
   cloneAndGetSourceMap,
@@ -12,10 +11,7 @@ import {
   validateRepo,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
-import { TodoStatus } from "~/server/db/enums";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
-import { Mode } from "~/types";
-import { db } from "~/server/db/db";
 
 export const githubRouter = createTRPCRouter({
   getRepos: protectedProcedure.input(z.object({}).optional()).query(
