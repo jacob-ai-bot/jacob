@@ -3,7 +3,6 @@ import { db } from "~/server/db/db";
 import { TodoStatus } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
-import { arch } from "os";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure

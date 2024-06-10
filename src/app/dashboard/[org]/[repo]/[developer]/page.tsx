@@ -1,6 +1,5 @@
 import { api } from "~/trpc/server";
 import Dashboard from "./Dashboard";
-import { DEVELOPERS } from "~/data/developers";
 
 const DashboardPage = async ({
   params,
@@ -18,14 +17,6 @@ const DashboardPage = async ({
       repo,
     }),
   ]);
-
-  // Create todos from assigned GitHub issues (only for certain developers)
-  const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
-  await api.github.createTodos({
-    repo: `${org}/${repo}`,
-    mode: selectedDeveloper?.mode,
-    projectId: project.id,
-  });
 
   return (
     <Dashboard
