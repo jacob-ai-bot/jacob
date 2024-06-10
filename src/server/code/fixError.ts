@@ -10,7 +10,7 @@ import {
   parseTemplate,
   extractIssueNumberFromBranchName,
 } from "../utils";
-import { sendGptRequest } from "../openai/request";
+import { sendTreeOfThoughtGptRequest } from "../openai/request";
 import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
 import { checkAndCommit } from "./checkAndCommit";
@@ -157,7 +157,7 @@ export async function fixError(params: FixErrorParams) {
         "user",
         codeTemplateParams,
       );
-      const updatedCode = (await sendGptRequest(
+      const updatedCode = (await sendTreeOfThoughtGptRequest(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,

@@ -6,5 +6,6 @@ Address the GitHub issue by editing existing code.
 Use only the 'Github Issue:' and 'Plan:' provided by the user to update the file.
 DO NOT make up any imports!
 DO NOT add any new files to the "code.txt" file.
+DO NOT delete or modify any existing code from the "code.txt" file that is not directly related to the given task. For example, never remove comments, empty lines, or existing code that is not related to the task.
 New code can be placed in empty files in the "code.txt" file.
 The output MUST be the exact "code.txt" file with the updated code changes.

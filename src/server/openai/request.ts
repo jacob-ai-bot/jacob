@@ -124,6 +124,7 @@ export const sendGptRequest = async (
     console.log(`\n +++ ${model} Response time ${duration} ms`);
 
     const gptResponse = response.choices[0]?.message;
+    console.log("\n\n --- GPT Response --- \n\n", gptResponse);
 
     const inputTokens = response.usage?.prompt_tokens ?? 0;
     const outputTokens = response.usage?.completion_tokens ?? 0;
@@ -289,6 +290,18 @@ export const sendGptVisionRequest = async (
   delay = 60000,
 ): Promise<string | null> => {
   const model: Model = "gpt-4-turbo";
+
+  if (!snapshotUrl?.length) {
+    return sendTreeOfThoughtGptRequest(
+      userPrompt,
+      systemPrompt,
+      temperature,
+      baseEventData,
+      retries,
+      delay,
+      null,
+    );
+  }
   let imagePrompt = null;
   if (snapshotUrl?.length > 0) {
     const prompt = parseTemplate("dev", "vision", "user", {});
@@ -382,5 +395,99 @@ export const OpenAIStream = async (
   } catch (error) {
     console.error("Error creating chat completion:", error);
     throw error;
+  }
+};
+
+export const sendTreeOfThoughtGptRequest = async (
+  userPrompt: string,
+  systemPrompt = "You are a helpful assistant.",
+  temperature = 0.2,
+  baseEventData: BaseEventData | undefined = undefined,
+  retries = 10,
+  delay = 60000,
+  imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
+  model: Model = "gpt-4-turbo-preview",
+): Promise<string | null> => {
+  try {
+    const promises = Array.from({ length: 8 }, (_, i) => {
+      return sendGptRequest(
+        userPrompt,
+        systemPrompt,
+        temperature,
+        baseEventData,
+        retries,
+        delay,
+        imagePrompt,
+        i % 2 === 0 ? model : "gpt-4o",
+      );
+    });
+    const results = (await Promise.all(promises)).filter(
+      (result): result is string => result !== null,
+    );
+
+    const longestResponses = results
+      .sort((a, b) => {
+        return b.length - a.length;
+      })
+      .slice(0, 3);
+
+    const bestSystemPrompt = `Act as a L8 expert Software Engineer at Facebook  You must evaluate three GPT-generated code outputs and determine which one is the highest-quality response to the given prompt. 
+  The user will provide the original prompt and three responses. Please select the highest-quality, most detailed response that adheres to the original prompt. The response should not contain any syntax errors, adheres to the type and linting expectations of the project, be as clean and concise as possible, and be the most accurate response. Also it should not remove any existing code if it does not DIRECTLY address the user's prompt.
+  INSTRUCTIONS: Please select the index of teh highest-quality response. Return ONLY the NUMBER of the best response. The choices are 0, 1, or 2. This response will cause the system to crash if the output is not ONLY one of those numbers, nothing else.
+  `;
+    const bestUserPrompt = `
+  Here are the original prompts:
+  ===== USER PROMPT =====
+  ${userPrompt}
+  ===== END USER PROMPT =====
+  ===== SYSTEM PROMPT =====
+  ${systemPrompt}
+  ===== END SYSTEM PROMPT =====
+
+  Here are the three responses:
+  ===== RESPONSE 0 =====
+  ${longestResponses[0]}
+  ===== END RESPONSE 0 =====
+  ===== RESPONSE 1 =====
+  ${longestResponses[1]}
+  ===== END RESPONSE 1 =====
+  ===== RESPONSE 2 =====
+  ${longestResponses[2]}
+  ===== END RESPONSE 2 =====
+  INSTRUCTIONS: Please select the highest-quality, most detailed response. Return ONLY the NUMBER of the best response. The choices are 0, 1, or 2. This response will cause the system to crash if the output is not ONLY one of those numbers, nothing else.
+  `;
+    const bestResponse = await sendGptRequest(
+      bestUserPrompt,
+      bestSystemPrompt,
+      temperature,
+      baseEventData,
+      retries,
+      delay,
+      imagePrompt,
+      model,
+    );
+
+    // convert the best response to a number
+    const bestResponseIndex = parseInt(bestResponse ?? "0", 10);
+    if (![0, 1, 2].includes(bestResponseIndex)) {
+      throw new Error(`Invalid response index: ${bestResponseIndex}`);
+    }
+
+    return longestResponses[bestResponseIndex]!;
+  } catch (error) {
+    if (retries > 0) {
+      return sendTreeOfThoughtGptRequest(
+        userPrompt,
+        systemPrompt,
+        temperature,
+        baseEventData,
+        retries - 1,
+        delay * 2,
+        imagePrompt,
+        model,
+      );
+    } else {
+      throw error;
+    }
   }
 };
