@@ -66,6 +66,7 @@
     "orchid-orm-schema-to-zod": "^0.4.21",
     "parse-diff": "^0.11.1",
     "path": "^0.12.7",
+    "portkey-ai": "^1.3.0",
     "posthog-node": "^3.6.3",
     "pqb": "^0.18.18",
     "react": "^18.2.0",

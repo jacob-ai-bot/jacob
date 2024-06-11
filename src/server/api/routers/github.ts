@@ -204,4 +204,28 @@ export const githubRouter = createTRPCRouter({
         });
       }
     }),
+  getSourceMap: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+      }),
+    )
+    .query(
+      async ({
+        input: { org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        if (!org || !repo) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid request",
+          });
+        }
+        await validateRepo(org, repo, accessToken);
+        return await cloneAndGetSourceMap(`${org}/${repo}`, accessToken);
+      },
+    ),
 });

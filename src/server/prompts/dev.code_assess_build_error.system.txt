@@ -1,17 +1,22 @@
 === ZOD SCHEMA ===
-const AssessmentSchema = z.object({
-  causeOfErrors: z.string(), // A summary of what caused the errors
-  ideasForFixingErrors: z.string(), // A string with one or more ideas for fixing the errors. Bias towards ideas that change the file that caused the errors, not modifying other files.
-  suggestedFixes: z.string(), // A string with some suggested fixes to the code to make the build and tests succeed. Your first choice should bias towards changing the file that caused the errors. You may also suggest that the user comment out some code that is causing the issue.
-  filesToCreate: z.array(z.string()), // an array of file paths that need to be created to resolve the errors. The paths CANNOT be in the list of valid file names.
+export const AssessmentSchema = z.object({
+  errors: z.array(
+    z.object({
+      filePath: z.string(), // The path to the file that contains the error
+      error: z.string(), // The exact, specific error message that was found
+      startingLineNumber: z.number(), // The line number where the error starts
+      endingLineNumber: z.number(), // The line number where the error ends
+    }),
+  ), // An array of all of the errors that were found in the build
   filesToUpdate: z.array(z.string()), // an array of file paths that need to be updated to resolve the errors
   needsNpmInstall: z.boolean().optional(), // Whether or not the errors are caused by a missing dependency
   npmPackageToInstall: z.string().optional(), // If a dependency is missing, provide the name of the npm package that needs to be installed (just the name, not the command i.e. "lodash" instead of "npm install lodash")
 });
+
 === INSTRUCTIONS ===
-Act as an E7 Principal Software Engineer at Facebook.
+You are the top, most distinguished Technical Fellow at Microsoft.
 A recent code change caused the build or test(s) to break or one or more tests to fail.
-Your job is to evaluate the updated code and the errors, and determine the cause of the errors and suggested fixes.
+Your job is to evaluate the output of the build and determine what the problem is.
 You will return your analysis as a JSON object.
 The JSON object you return MUST conform exactly to the AssessmentSchema and pass validation using AssessmentSchema.safeParse(obj).
 DO NOT include any additional comments or backticks in your response.

@@ -24,16 +24,18 @@ const CREATE_ISSUE_PROMPT =
 interface DashboardParams {
   org: string;
   repo: string;
-  developer: string;
-  tasks: Task[];
+  developerId: string;
   project: Project;
+  sourceMap: string;
+  tasks: Task[];
 }
 
 const Dashboard: React.FC<DashboardParams> = ({
   org,
   repo,
-  developer,
+  developerId,
   project,
+  sourceMap,
   tasks: _tasks = [],
 }) => {
   const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(
@@ -49,13 +51,14 @@ const Dashboard: React.FC<DashboardParams> = ({
   const chatRef = useRef<ChatComponentHandle>(null);
 
   //** Data Fetching */
-  const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
+  const selectedDeveloper = DEVELOPERS.find((d) => d.id === developerId);
   const {
     data: todos,
     isLoading: loadingTodos,
     refetch: refetchTodos,
   } = api.todos.getAll.useQuery({
     projectId: project.id,
+    developerId,
   });
   useEffect(() => {
     if (todos?.length && todos[0]) {
@@ -301,6 +304,7 @@ const Dashboard: React.FC<DashboardParams> = ({
               ref={chatRef}
               developer={selectedDeveloper}
               todo={selectedTodo}
+              sourceMap={sourceMap}
               handleCreateNewTask={handleCreateNewTask}
               handleUpdateIssue={handleUpdateIssue}
             />

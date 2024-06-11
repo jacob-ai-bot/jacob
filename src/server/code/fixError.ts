@@ -10,7 +10,7 @@ import {
   parseTemplate,
   extractIssueNumberFromBranchName,
 } from "../utils";
-import { sendTreeOfThoughtGptRequest } from "../openai/request";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
 import { checkAndCommit } from "./checkAndCommit";
@@ -94,7 +94,7 @@ export async function fixError(params: FixErrorParams) {
 
   try {
     const commitMessageBase = "JACoB fix error: ";
-    const commitMessage = `${commitMessageBase}${assessment.suggestedFixes}`;
+    const commitMessage = `${commitMessageBase}${assessment.errors?.[0]?.error ?? ""}`;
 
     if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
       console.log(`[${repository.full_name}] Needs npm install`);
@@ -126,20 +126,24 @@ export async function fixError(params: FixErrorParams) {
         existingPr.number,
         undefined,
         assessment.filesToUpdate,
-        assessment.filesToCreate,
       );
 
-      const { causeOfErrors, ideasForFixingErrors, suggestedFixes } =
-        assessment;
+      const { errors } = assessment;
+
+      const errorMessages = errors
+        ?.map(
+          ({ filePath, startingLineNumber, endingLineNumber, error, code }) =>
+            `Error in ${filePath} (${startingLineNumber}-${endingLineNumber}): ${error}. Code: ${code}`,
+        )
+        .join("\n");
+
       const types = getTypes(rootPath, repoSettings);
       const images = await getImages(rootPath, repoSettings);
 
       const codeTemplateParams = {
         code,
         issueBody: issue?.body ?? "",
-        causeOfErrors,
-        ideasForFixingErrors,
-        suggestedFixes,
+        errorMessages,
         sourceMap,
         types,
         images,
@@ -157,7 +161,7 @@ export async function fixError(params: FixErrorParams) {
         "user",
         codeTemplateParams,
       );
-      const updatedCode = (await sendTreeOfThoughtGptRequest(
+      const updatedCode = (await sendSelfConsistencyChainOfThoughtGptRequest(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,
@@ -196,15 +200,12 @@ export async function fixError(params: FixErrorParams) {
 
         Here is some information about the error(s):
         
-        ${assessment.causeOfErrors}
-
-        Here are some ideas for fixing the error(s):
-        
-        ${assessment.ideasForFixingErrors}
-
-        Here are the suggested fix(es):
-        
-        ${assessment.suggestedFixes}
+        ${assessment.errors
+          .map(
+            ({ filePath, startingLineNumber, endingLineNumber, error, code }) =>
+              `Error in ${filePath} (${startingLineNumber}-${endingLineNumber}): ${error}. Code: ${code}`,
+          )
+          .join("\n")}
       `;
 
       await addCommentToIssue(repository, prIssue.number, token, message);

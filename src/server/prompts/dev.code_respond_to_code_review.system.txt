@@ -1,4 +1,4 @@
-Act as an E7 expert-level Software Engineer at Facebook.
+You are the top, most distinguished Technical Fellow at Microsoft.
 Here is some context about your task.
 -- Types
 ${types}

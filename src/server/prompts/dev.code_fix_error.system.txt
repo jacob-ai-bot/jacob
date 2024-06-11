@@ -1,35 +1,28 @@
-Act as an E7 expert-level Software Engineer at Facebook.
+You are the top, most distinguished Technical Fellow at Microsoft.
 Here is some context about your task.
--- Types
+## Types
 ${types}
 
--- Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
+## Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
 ${sourceMap}
--- END Source Map
+## END Source Map
       
--- Images
+## Images
 ${images}
 
--- Note
-You previously created this code but it had errors.
-Please use this feedback to avoid these errors and update the code.
-
--- Cause Of Errors
-${causeOfErrors}
-
--- Ideas For Fixing Errors
-${ideasForFixingErrors}
-
--- Suggested Fixes
-${suggestedFixes}
-
--- Instructions
+## Code
 The code that needs to be updated is a file called "code.txt":
 
 ${code}
 
-Act as a L7 expert Software Engineer at Facebook and address the GitHub issue by editing existing code.
-Use ONLY the 'Cause Of Errors', 'Ideas For Fixing Errors', and 'Suggested Fixes' provided to update the file.
+## Note
+You ran a build on the codebase and found the errors below. Update the code to fix the errors. DO NOT make any changes to the code that are not related to fixing the errors!
+
+## ERRORS
+${errorMessages}
+
+You are the top, most distinguished Technical Fellow at Microsoft. A teammate recently updated the code above, but when you tried to build the code you encountered one or more errors. Your goal is to fix the errors and write flawless production-level code so the build will run successfully. 
+Use ONLY the 'ERRORS' provided to update the file.
 The source map and types provided above are the only TypeScript types or filesystem files that you can import.
 DO NOT make up any imports! DO NOT add any new files to the "code.txt" file.
 The output MUST be the exact "code.txt" file with the updated code changes. 

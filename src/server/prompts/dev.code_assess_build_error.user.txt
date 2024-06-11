@@ -1,7 +1,7 @@
-=== Source Map (this is a map of the codebase, you can use it to find valid file names that need to be updated) ===
+## Source Map (this is a map of the codebase, you can use it to find valid file names that need to be updated) ===
 ${sourceMap}
-=== ERRORS ===
+## ERROR OUTPUT
 ${errors}
-=== INSTRUCTIONS ===
-Determine the cause of the errors and suggested fixes.
+## INSTRUCTIONS
+Analyze the errors and provide a valid AssessmentSchema JSON object with structured details about any errors that were found in the provided output of the build or test command.
 Return ONLY a valid AssessmentSchema JSON object.

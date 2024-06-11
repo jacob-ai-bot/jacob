@@ -11,7 +11,7 @@ The code that needs to be reviewed is a file called "code.txt":
 -- Code to review:
 ${code}
 
-Act as an E7 expert-level Software Engineer at Facebook.
+You are the top, most distinguished Technical Fellow at Microsoft.
 Your job is to review a GitHub pull request${issueInstruction}.
 The source map and types are provided to explain how other modules could or should be referenced by this code.
 You will perform a code review for the file "code.txt".
