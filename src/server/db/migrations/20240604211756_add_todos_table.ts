@@ -1,7 +1,9 @@
 import { change } from "../dbScript";
-import { TodoStatus } from "../enums";
 
-const todoStatusValues = Object.values(TodoStatus) as [string, ...string[]];
+const todoStatusValues = ["todo", "in_progress", "done", "error"] as [
+  string,
+  ...string[],
+];
 
 change(async (db, up) => {
   if (up) {
