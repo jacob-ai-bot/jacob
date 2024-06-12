@@ -2,12 +2,18 @@ import {
   getServerSession,
   type DefaultSession,
   type NextAuthOptions,
-  type TokenSet,
 } from "next-auth";
-import type { JWT } from "next-auth/jwt";
 import GitHubProvider, { type GithubProfile } from "next-auth/providers/github";
+import PostgresAdapter from "@auth/pg-adapter";
+import { Pool } from "pg";
 
 import { env } from "~/env";
+import { db } from "./db/db";
+
+export enum UserRole {
+  user = "user",
+  admin = "admin",
+}
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -15,13 +21,20 @@ import { env } from "~/env";
  *
  * @see https://next-auth.js.org/getting-started/typescript#module-augmentation
  */
+declare module "next-auth/adapters" {
+  interface AdapterUser {
+    login?: string;
+    role?: UserRole;
+  }
+}
+
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
       login: string;
+      role?: UserRole;
       // ...other properties
-      // role: UserRole;
     } & DefaultSession["user"];
     accessToken: string;
   }
@@ -30,63 +43,20 @@ declare module "next-auth" {
     login: string;
   }
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    accessToken?: string;
-    refreshToken?: string;
-    accessTokenExpires?: Date;
-    login?: string;
+  interface User {
+    // ...other properties
+    role: UserRole;
+    login: string;
   }
 }
 
-async function refreshGitHubAccessToken(token: JWT) {
-  try {
-    const requestBody = {
-      client_id: env.GITHUB_CLIENT_ID,
-      client_secret: env.GITHUB_CLIENT_SECRET,
-      grant_type: "refresh_token",
-      refresh_token: token.refreshToken,
-    };
-
-    const response = await fetch(
-      "https://github.com/login/oauth/access_token",
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify(requestBody),
-      },
-    );
-
-    const refreshedTokens = (await response.json()) as TokenSet;
-
-    if (!response.ok) {
-      throw refreshedTokens;
-    }
-
-    return {
-      ...token,
-      accessToken: refreshedTokens.access_token,
-      accessTokenExpires: new Date((refreshedTokens.expires_at ?? 0) * 1000),
-      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
-    };
-  } catch (error) {
-    console.log(error);
-
-    return {
-      ...token,
-      error: "RefreshAccessTokenError",
-    };
-  }
-}
+const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  ssl: env.NODE_ENV === "production" ? undefined : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
@@ -94,41 +64,38 @@ async function refreshGitHubAccessToken(token: JWT) {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
+  adapter: PostgresAdapter(pool) as NextAuthOptions["adapter"],
+  events: {
+    signIn: async (params) => {
+      const { user, profile } = params;
+      const userId = parseInt(user.id, 10);
+      await db.users.find(userId).update({ login: profile?.login });
+    },
+  },
   callbacks: {
-    session: ({ session, token }) => {
+    session: async (params) => {
+      const { session, user } = params;
+      const userId = parseInt(user.id, 10);
+      const account = await db.accounts.findBy({ userId });
       return {
         ...session,
-        accessToken: token.accessToken,
+        accessToken: account.access_token,
         user: {
           ...session.user,
-          id: token.sub,
-          login: token.login,
+          id: userId,
+          role: user.role,
+          login: user.login,
         },
       };
-    },
-    async jwt({ token, account, profile }) {
-      // Persist the OAuth access_token and or the user id to the token right after signin
-      if (account && profile) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.accessTokenExpires = new Date((account.expires_at ?? 0) * 1000);
-        token.login = profile.login;
-        return token;
-      }
-
-      // Return previous token if the access token has not expired yet
-      if (new Date() < new Date(token.accessTokenExpires ?? 0)) {
-        return token;
-      }
-
-      // Access token has expired, try to update it
-      return refreshGitHubAccessToken(token);
     },
   },
   pages: {
     signIn: "/auth/signin",
   },
-  jwt: { maxAge: 8 * 60 * 60 }, // 8 hours (to match GitHub's token expiration time)
+  session: {
+    maxAge: 8 * 60 * 60, // 8 hours (to match GitHub's token expiration time)
+    updateAge: 24 * 60 * 60, // 24 hours (don't update to extend the 8 hour session)
+  },
   providers: [
     GitHubProvider({
       clientId: env.GITHUB_CLIENT_ID,
@@ -145,6 +112,7 @@ export const authOptions: NextAuthOptions = {
           login: profile.login,
           email: profile.email,
           image: profile.avatar_url,
+          role: UserRole.user,
         };
       },
     }),
