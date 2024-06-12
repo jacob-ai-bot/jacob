@@ -19,7 +19,11 @@ const evaluate = async (
   systemPrompt: string,
   baseEventData: BaseEventData | undefined,
   retries: number,
-  models: Model[] = ["gemini-1.5-flash-latest", "gpt-4o-2024-05-13"],
+  models: Model[] = [
+    "gemini-1.5-flash-latest",
+    "gpt-4o-2024-05-13",
+    "claude-3-haiku-20240307",
+  ],
 ): Promise<number> => {
   const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated code output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
   Your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. 
@@ -86,14 +90,13 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   delay = 60000,
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
   models: Model[] = [
-    "claude-3-opus-20240229",
     "gpt-4-0125-preview",
     "gpt-4o-2024-05-13",
     "gemini-1.5-pro-latest",
   ],
   minTemperature = 0.1,
   maxTemperature = 0.3,
-  numRequests = 4,
+  numRequests = 3,
 ): Promise<string | null> => {
   try {
     const initialPromises = Array.from({ length: numRequests }, (_, i) => {
