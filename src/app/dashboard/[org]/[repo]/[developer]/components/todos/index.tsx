@@ -9,17 +9,13 @@ import { TodoStatusComponent } from "./TodoStatus";
 
 interface TodosProps {
   todos: Todo[];
-  setTodos: (todos: Todo[]) => void;
-  onStart: (todoId: string) => void;
-  onNewTodoSelected: (todo: Todo) => void;
+  updateTodoPositions: (ids: number[]) => Promise<void>;
   isLoading?: boolean;
 }
 
 const Todos: React.FC<TodosProps> = ({
   todos = [],
-  onStart,
-  onNewTodoSelected,
-  setTodos,
+  updateTodoPositions,
   isLoading = false,
 }) => {
   const handleDragEnd = (result: DropResult) => {
@@ -39,13 +35,7 @@ const Todos: React.FC<TodosProps> = ({
       return;
     }
     newTodos.splice(result.destination.index, 0, removed);
-
-    // If the first todo has changed, call onNewTodoSelected
-    if (todos[0] !== newTodos[0] && newTodos[0]) {
-      onNewTodoSelected(newTodos[0]);
-    }
-
-    setTodos(newTodos);
+    void updateTodoPositions(newTodos.map((t) => t.id));
   };
 
   if (isLoading) {
@@ -89,10 +79,7 @@ const Todos: React.FC<TodosProps> = ({
                             {index === 0 ? (
                               <>
                                 <div className="border-b-2 border-coolGray-400/20 p-2">
-                                  <DetailedTodoCard
-                                    todo={todo}
-                                    onStart={onStart}
-                                  />
+                                  <DetailedTodoCard todo={todo} />
                                 </div>
                                 <h2 className="my-2 ml-2 text-sm text-indigo-100/50">
                                   Suggested Todos

@@ -3,7 +3,6 @@ import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { getIssue } from "~/server/github/issue";
 
 import {
   cloneAndGetSourceMap,
@@ -12,10 +11,7 @@ import {
   validateRepo,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
-import { type Todo } from "./events";
-import { TodoStatus } from "~/server/db/enums";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
-import { Mode } from "~/types";
 
 export const githubRouter = createTRPCRouter({
   getRepos: protectedProcedure.input(z.object({}).optional()).query(
@@ -76,100 +72,6 @@ export const githubRouter = createTRPCRouter({
           newTitle += ` => ${extractedIssue.filesToCreate[0]}`;
         }
         return { title: newTitle, body };
-      },
-    ),
-  getTodos: protectedProcedure
-    .input(
-      z.object({
-        repo: z.string(),
-        mode: z.nativeEnum(Mode).optional(),
-        max: z.number().optional(),
-      }),
-    )
-    .query(
-      async ({
-        input: { repo, mode = Mode.EXISTING_ISSUES, max = 10 },
-        ctx: {
-          session: { accessToken, user },
-        },
-      }) => {
-        const [repoOwner, repoName] = repo?.split("/") ?? [];
-
-        if (!repoOwner || !repoName) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid request",
-          });
-        }
-        // only fetch issues when the use is in the 'existing issues' mode
-        if (mode !== Mode.EXISTING_ISSUES) {
-          return [];
-        }
-
-        await validateRepo(repoOwner, repoName, accessToken);
-
-        const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
-        const octokit = new Octokit({ auth: accessToken });
-
-        const { data: unassignedIssues } = await octokit.issues.listForRepo({
-          owner: repoOwner,
-          repo: repoName,
-          state: "open",
-          assignee: "none",
-        });
-
-        const { data: myIssues } = await octokit.issues.listForRepo({
-          owner: repoOwner,
-          repo: repoName,
-          state: "open",
-          assignee: (user as { login?: string })?.login ?? "none",
-        });
-
-        const issues = [...unassignedIssues, ...myIssues];
-
-        // remove the pull requests
-        const issuesWithoutPullRequests = issues.filter(
-          ({ pull_request }) => !pull_request,
-        );
-
-        const ids = issuesWithoutPullRequests
-          .map((issue) => issue.number)
-          .filter(Boolean)
-          .slice(0, max);
-
-        const issueData = await Promise.all(
-          ids.map((issueNumber) =>
-            getIssue(
-              { name: repoName, owner: { login: repoOwner } },
-              accessToken,
-              issueNumber,
-            ),
-          ),
-        );
-
-        const extractedIssues = await Promise.all(
-          issueData.map(async ({ data: issue }) => {
-            const issueBody = issue.body ? `\n${issue.body}` : "";
-            const issueText = `${issue.title}${issueBody}`;
-
-            const extractedIssue = await getExtractedIssue(
-              sourceMap,
-              issueText,
-            );
-
-            const todo: Todo = {
-              id: `issue-${issue.number}`,
-              description: `${issue.title}\n\n${issueBody}`,
-              name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
-              status: TodoStatus.TODO,
-              issueId: issue.number,
-              ...extractedIssue,
-            };
-            return todo;
-          }),
-        );
-
-        return extractedIssues;
       },
     ),
   createIssue: protectedProcedure
