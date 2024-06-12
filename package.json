@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "patch-package",
     "build:1-next": "NODE_ENV=production next build",
     "build:2-server": "tsc --project tsconfig.server.json",
     "build": "run-s build:*",
@@ -66,6 +67,7 @@
     "orchid-orm": "^1.17.18",
     "orchid-orm-schema-to-zod": "^0.4.21",
     "parse-diff": "^0.11.1",
+    "patch-package": "^8.0.0",
     "path": "^0.12.7",
     "pg": "^8.12.0",
     "posthog-node": "^3.6.3",
