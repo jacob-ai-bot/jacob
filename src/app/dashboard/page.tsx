@@ -1,8 +1,19 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+
+import { getServerAuthSession } from "~/server/auth";
 import { api } from "~/trpc/server";
 
+const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
+  .toLowerCase()
+  .split(",");
+
 const DashboardPage = async () => {
+  const { user } = (await getServerAuthSession()) ?? {};
+  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
+    redirect("/");
+  }
+
   const cookieStore = cookies();
   const lastUsedRepo = cookieStore.get("lastUsedRepo");
 

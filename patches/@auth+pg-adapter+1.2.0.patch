@@ -1,0 +1,14 @@
+diff --git a/node_modules/@auth/pg-adapter/package.json b/node_modules/@auth/pg-adapter/package.json
+index a556e03..a35fe1c 100644
+--- a/node_modules/@auth/pg-adapter/package.json
++++ b/node_modules/@auth/pg-adapter/package.json
+@@ -24,7 +24,8 @@
+   "exports": {
+     ".": {
+       "types": "./index.d.ts",
+-      "import": "./index.js"
++      "import": "./index.js",
++      "default": "./index.js"
+     }
+   },
+   "files": [
