@@ -1,10 +1,13 @@
 "use client";
+import { useState } from "react";
 import { type Developer } from "~/types";
 
 export const DeveloperCard: React.FC<{
   developer: Developer;
   onSelectDeveloper: (developer: Developer) => void;
 }> = ({ developer, onSelectDeveloper }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   return (
     <div className="m-8 mx-auto flex w-96 flex-col items-center justify-center rounded-2xl bg-white p-4 shadow-lg transition duration-300 hover:shadow-2xl">
       <div className="relative -mt-16 h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-md">
@@ -25,10 +28,14 @@ export const DeveloperCard: React.FC<{
       </div>
       <div className="mt-6 w-full">
         <button
-          onClick={() => onSelectDeveloper(developer)}
+          onClick={() => {
+            setIsLoading(true);
+            onSelectDeveloper(developer);
+          }}
+          disabled={isLoading}
           className="flex w-full items-center justify-center rounded-lg bg-dark-blue px-6 py-3 text-center text-sm font-medium text-white shadow-md transition duration-300 ease-in-out hover:bg-indigo-700"
         >
-          {developer.cta}
+          {isLoading ? "Loading..." : developer.cta}
         </button>
       </div>
     </div>

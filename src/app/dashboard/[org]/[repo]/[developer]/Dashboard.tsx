@@ -17,6 +17,7 @@ import { getSidebarIconForType } from "~/app/utils";
 import Todos from "./components/todos";
 import { toast } from "react-toastify";
 import { getPlanForTaskSubType } from "~/app/utils";
+import { type Project } from "~/server/db/tables/projects.table";
 const CREATE_ISSUE_PROMPT =
   "Looks like our task queue is empty. What do you need to get done next? Give me a quick overview and then I'll ask some clarifying questions. Then I can create a new GitHub issue and start working on it.";
 
@@ -25,12 +26,14 @@ interface DashboardParams {
   repo: string;
   developer: string;
   tasks: Task[];
+  project: Project;
 }
 
 const Dashboard: React.FC<DashboardParams> = ({
   org,
   repo,
   developer,
+  project,
   tasks: _tasks = [],
 }) => {
   const [selectedIcon, setSelectedIcon] = useState<SidebarIcon>(
@@ -40,7 +43,6 @@ const Dashboard: React.FC<DashboardParams> = ({
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(
     tasks?.[0],
   );
-  const [todos, setTodos] = useState<Todo[] | undefined>();
 
   const [selectedTodo, setSelectedTodo] = useState<Todo | undefined>(undefined);
 
@@ -48,18 +50,19 @@ const Dashboard: React.FC<DashboardParams> = ({
 
   //** Data Fetching */
   const selectedDeveloper = DEVELOPERS.find((d) => d.id === developer);
-  const { data: tempTodos, isLoading: loadingTodos } =
-    api.github.getTodos.useQuery({
-      repo: `${org}/${repo}`,
-      mode: selectedDeveloper?.mode,
-    });
+  const {
+    data: todos,
+    isLoading: loadingTodos,
+    refetch: refetchTodos,
+  } = api.todos.getAll.useQuery({
+    projectId: project.id,
+  });
   useEffect(() => {
-    setTodos(tempTodos);
-    if (tempTodos?.length && tempTodos[0]) {
-      onNewTodoSelected(tempTodos[0]);
+    if (todos?.length && todos[0]) {
+      onNewTodoSelected(todos[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tempTodos]);
+  }, [todos]);
 
   api.events.onAdd.useSubscription(
     { org, repo },
@@ -156,22 +159,6 @@ const Dashboard: React.FC<DashboardParams> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDeveloper]);
 
-  //** Task */
-  const onStartTask = (taskId: string) => {
-    // set the task status to in progress
-    setTasks((tasks) =>
-      tasks?.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            status: TaskStatus.IN_PROGRESS,
-          };
-        }
-        return t;
-      }),
-    );
-  };
-
   const onNewTodoSelected = (todo: Todo) => {
     setSelectedTodo(todo);
     resetMessages([
@@ -180,6 +167,11 @@ const Dashboard: React.FC<DashboardParams> = ({
         content: `I'm ready to help with the *${todo.name}* task. Want to start working on this?`,
       },
     ]);
+  };
+
+  const updateTodoPositions = async (ids: number[]) => {
+    await trpcClient.todos.updatePosition.mutate(ids);
+    await refetchTodos();
   };
 
   const onRemoveTask = (taskId: string) => {
@@ -269,12 +261,14 @@ const Dashboard: React.FC<DashboardParams> = ({
         throw new Error("Failed to update issue");
       }
 
-      // Remove this todo from the list of todos and
-      // A new one will be added when the issue is updated
+      // Remove this todo from the list of todos and optimistically update the UI
       const newTodos = todos?.filter((t) => t.id !== selectedTodo.id) ?? [];
-      setTodos(newTodos);
-      // reset the messages (send in the first task)
       newTodos.length ? onNewTodoSelected(newTodos[0]!) : resetMessages();
+
+      await trpcClient.todos.archive.mutate({
+        id: selectedTodo.id,
+      });
+      await refetchTodos();
       toast.success("Issue updated successfully");
     } catch (error) {
       console.error("Failed to update issue", error);
@@ -315,9 +309,7 @@ const Dashboard: React.FC<DashboardParams> = ({
         <div className="col-span-2 h-screen max-w-7xl bg-gray-900/70">
           <Todos
             todos={todos ?? []}
-            onStart={onStartTask}
-            setTodos={setTodos}
-            onNewTodoSelected={onNewTodoSelected}
+            updateTodoPositions={updateTodoPositions}
             isLoading={loadingTodos}
           />
         </div>

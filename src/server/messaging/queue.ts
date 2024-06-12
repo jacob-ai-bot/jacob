@@ -154,7 +154,7 @@ async function isNodeProject(
   }
 }
 
-async function authInstallation(installationId?: number) {
+export async function authInstallation(installationId?: number) {
   if (installationId) {
     return auth({
       type: "installation",

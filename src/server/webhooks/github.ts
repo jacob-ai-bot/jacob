@@ -2,12 +2,15 @@ import { App } from "@octokit/app";
 import * as dotenv from "dotenv";
 
 import {
+  authInstallation,
   publishGitHubEventToQueue,
   type WebhookPRCommentCreatedEventWithOctokit,
   type WebhookPullRequestReviewWithCommentsSubmittedEventWithOctokit,
 } from "../messaging/queue";
 import { AT_MENTION } from "../utils";
 import { codeReviewCommandSuggestion } from "../github/issue";
+import { db } from "../db/db";
+import { createTodos } from "../utils/todos";
 
 dotenv.config();
 
@@ -28,7 +31,7 @@ ghApp.webhooks.onError(errorHandler);
 
 ghApp.webhooks.on("issues.opened", async (event) => {
   const { payload } = event;
-  const { repository } = payload;
+  const { repository, installation } = payload;
   // Only add a new issue to the queue if the issue body contains the @jacob-ai-bot mention
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} opened event`,
@@ -47,12 +50,41 @@ ghApp.webhooks.on("issues.opened", async (event) => {
       `[${repository.full_name}] Issue #${payload.issue.number} has no ${AT_MENTION} mention`,
     );
   }
+  // Create a new todo item in the database
+  try {
+    const project = await db.projects.findBy({
+      repoFullName: repository.full_name,
+    });
+    const todos = await db.todos.selectAll().where({
+      projectId: project.id,
+    });
+    // if the todo for this issue is already in the database, do not create a new todo item
+    if (!todos.some((todo) => todo.issueId === payload.issue.number)) {
+      const installationAuthentication = await authInstallation(
+        installation?.id,
+      );
+      await createTodos(
+        repository.full_name,
+        project.id,
+        installationAuthentication?.token,
+        payload.issue.user?.login,
+      );
+
+      console.log(
+        `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `[${repository.full_name}] Error creating todo item for issue #${payload.issue.number}: ${String(error)}`,
+    );
+  }
 });
 
 // add a new webhook event handler for when an issue is edited
 ghApp.webhooks.on("issues.edited", async (event) => {
   const { payload } = event;
-  const { repository } = payload;
+  const { repository, installation } = payload;
   // Only add a new issue to the queue if the issue body contains the @jacob-ai-bot mention for the first time
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} edited event`,
@@ -71,28 +103,40 @@ ghApp.webhooks.on("issues.edited", async (event) => {
       `[${repository.full_name}] Issue #${payload.issue.number} has no ${AT_MENTION} mention`,
     );
   }
+
+  // Delete the existing todo and create a new one
+  try {
+    const project = await db.projects.findBy({
+      repoFullName: repository.full_name,
+    });
+    const todos = await db.todos.selectAll().where({
+      projectId: project.id,
+    });
+    const existingTodo = todos.find(
+      (todo) => todo.issueId === payload.issue.number,
+    );
+    if (existingTodo) {
+      await db.todos.where({ id: existingTodo.id }).delete();
+      console.log(
+        `[${repository.full_name}] Existing todo item deleted for issue #${payload.issue.number}`,
+      );
+    }
+    const installationAuthentication = await authInstallation(installation?.id);
+    await createTodos(
+      repository.full_name,
+      project.id,
+      installationAuthentication?.token,
+      payload.issue.user?.login,
+    );
+    console.log(
+      `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
+    );
+  } catch (error) {
+    console.error(
+      `[${repository.full_name}] Error updating todo item for issue #${payload.issue.number}: ${String(error)}`,
+    );
+  }
 });
-
-// add a new webhook event handler for when an issue is labeled
-// ghApp.webhooks.on("issues.labeled", async (event) => {
-//   const { payload } = event;
-//   // Only add the issue to the queue if it is labeled with the "jacob" label
-//   console.log(`Received issue #${payload.issue.number} labeled event`);
-//   if (payload?.label?.name === "jacob") {
-//     console.log(`Received issue #${payload.issue.number} with label "jacob"`);
-//     publishGitHubEventToQueue(event);
-//   } else {
-//     console.log(`Received issue #${payload.issue.number} without label "jacob"`);
-//   }
-// });
-
-// add a new webhook event handler for when an issue is assigned to a user
-// ghApp.webhooks.on("issues.assigned", async (event) => {
-//   const { payload } = event;
-//   console.log(
-//     `Received issue #${payload.issue.number} assigned event, ignoring...`,
-//   );
-// });
 
 ghApp.webhooks.on("pull_request_review.submitted", async (event) => {
   const { payload } = event;

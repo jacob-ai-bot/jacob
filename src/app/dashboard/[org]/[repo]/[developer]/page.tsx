@@ -7,13 +7,25 @@ const DashboardPage = async ({
   params: { org: string; repo: string; developer: string };
 }) => {
   const { org, repo, developer } = params;
-  const tasks = await api.events.getTasks({
-    org,
-    repo,
-  });
+  const [tasks, project] = await Promise.all([
+    api.events.getTasks({
+      org,
+      repo,
+    }),
+    api.events.getProject({
+      org,
+      repo,
+    }),
+  ]);
 
   return (
-    <Dashboard org={org} repo={repo} developer={developer} tasks={tasks} />
+    <Dashboard
+      org={org}
+      repo={repo}
+      developer={developer}
+      tasks={tasks}
+      project={project}
+    />
   );
 };
 
