@@ -29,3 +29,14 @@ export enum TaskSubType {
   EDIT_FILES = "Edit Files",
   CODE_REVIEW = "Code Review",
 }
+
+export enum UserRole {
+  USER = "user",
+  ADMIN = "admin",
+}
+
+export enum OnboardingStatus {
+  NONE = "none",
+  READY = "ready",
+  DONE = "done",
+}
