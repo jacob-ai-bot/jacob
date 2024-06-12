@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
+    "@auth/pg-adapter": "^1.2.0",
     "@aws-sdk/client-s3": "^3.588.0",
     "@aws-sdk/lib-storage": "^3.588.0",
     "@aws-sdk/s3-request-presigner": "^3.588.0",
@@ -66,6 +67,7 @@
     "orchid-orm-schema-to-zod": "^0.4.21",
     "parse-diff": "^0.11.1",
     "path": "^0.12.7",
+    "pg": "^8.12.0",
     "posthog-node": "^3.6.3",
     "pqb": "^0.18.18",
     "react": "^18.2.0",
