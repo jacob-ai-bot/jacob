@@ -15,6 +15,7 @@ export enum TaskStatus {
   IN_PROGRESS = "in_progress",
   DONE = "done",
   ERROR = "error",
+  CLOSED = "closed",
 }
 
 export enum TodoStatus {

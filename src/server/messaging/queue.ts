@@ -14,7 +14,7 @@ import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
 import { editFiles } from "../code/editFiles";
 import { getPR } from "../github/pr";
-import { addCommentToIssue } from "../github/issue";
+import { addCommentToIssue, getIssue } from "../github/issue";
 import { fixError } from "../code/fixError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
@@ -311,7 +311,10 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
   const issueOpened = eventName === "issues";
   const issueOpenedTitle = issueOpened ? event.payload.issue.title : undefined;
-  const prOpened = eventName === "pull_request";
+  const prOpened =
+    eventName === "pull_request" && event.payload.action === "opened";
+  const prClosed =
+    eventName === "pull_request" && event.payload.action === "closed";
   const prComment =
     eventName === "issue_comment" && event.payload.issue?.pull_request;
   const issueComment = eventName === "issue_comment";
@@ -418,16 +421,18 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     // We frequently create PRs with copied issue text, so we see @jacob-ai-bot
     // without a command. For now, we will ignore the mention without a command
     // in all PR opened events.
-    console.log("Quietly ignoring PR opened event without command");
+    console.log(
+      `[${repository.full_name}] Quietly ignoring PR opened event without command`,
+    );
     logEventDuration();
     return;
-  } else {
+  } else if (!prClosed) {
     throw new Error("Unexpected event type");
   }
 
   let existingPr: Awaited<ReturnType<typeof getPR>>["data"] | undefined;
   let prBranch: string | undefined;
-  if (!!prComment || prReview || prOpened) {
+  if (!!prComment || prReview || prOpened || prClosed) {
     const result = await getPR(
       repository,
       installationAuthentication.token,
@@ -436,7 +441,9 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     existingPr = result.data;
     prBranch = existingPr.head.ref;
     if (baseEventData.issueId) {
-      console.error("Unexpected issueId when handling PR event");
+      console.error(
+        `[${repository.full_name}] Unexpected issueId when handling PR event`,
+      );
     }
     baseEventData.issueId = extractIssueNumberFromBranchName(prBranch);
   }
@@ -448,6 +455,29 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
   taskSubType = newFileName
     ? TaskSubType.CREATE_NEW_FILE
     : TaskSubType.EDIT_FILES;
+
+  if (prClosed) {
+    if (!event.payload.pull_request.merged || !baseEventData.issueId) {
+      console.log(
+        `[${repository.full_name}] Quietly ignoring PR closed event (not merged or no issueId)`,
+      );
+    } else {
+      const result = await getIssue(
+        repository,
+        installationAuthentication.token,
+        baseEventData.issueId,
+      );
+
+      await emitTaskEvent({
+        ...baseEventData,
+        issue: result.data,
+        subType: taskSubType,
+        status: TaskStatus.CLOSED,
+      });
+    }
+    logEventDuration();
+    return;
+  }
 
   if (issueOpened) {
     await emitTaskEvent({
@@ -719,6 +749,13 @@ export type WebhookPullRequestOpenedEvent =
     };
   };
 
+export type WebhookPullRequestClosedEvent =
+  EmitterWebhookEvent<"pull_request"> & {
+    payload: {
+      action: "closed";
+    };
+  };
+
 export type WebhookPullRequestReviewWithCommentsSubmittedEvent =
   EmitterWebhookEvent<"pull_request_review"> & {
     payload: {
@@ -749,6 +786,7 @@ export type WebhookQueuedEvent =
   | WebhookIssueCommentCreatedEvent
   | WebhookPRCommentCreatedEvent
   | WebhookPullRequestOpenedEvent
+  | WebhookPullRequestClosedEvent
   | WebhookPullRequestReviewWithCommentsSubmittedEvent
   | WebhookInstallationRepositoriesAddedEvent
   | WebhookInstallationCreatedEvent;
