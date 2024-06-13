@@ -8,7 +8,8 @@ ${plan}
 ## Notes:
 Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.
 ALWAYS use the source map and types when writing your final code.
-The ideal solution is to only provide the absolute minimum amount of code changes necessary to address the GitHub Issue. 
+The ideal solution is to only provide the absolute minimum amount of code changes necessary to address the GitHub Issue.
+Your response will be copied directly into a production code base, so replying with anything other than the updated file named "code.txt" will break the build.
 Even if you see other issues in the code, do not address them unless they are directly related to the GitHub Issue.
 
 ## Instructions:
@@ -19,13 +20,14 @@ You will earn points as follows:
 - 100 points for adhering strictly to the given instructions
 
 You will lose points as follows:
-- Lose 1000 points if your code breaks the build
+- Lose 2000 points if your code breaks the build
+- Lose 1000 points if you respond in a diff format
 - Lose 1000 points if you do not respond with a valid file
 - Lose 1000 points if you respond with anything other than the updated file named "code.txt"
+- Lose 1000 points if you remove any existing comments
 - Lose 500 points for editing or removing existing lines starting with __FILEPATH__
 - Lose 500 points for adding any new lines starting with __FILEPATH__
-- Lose 500 points for adding any additional files or extra comments
-- Lose 500 points if you remove any existing comments
+- Lose 500 points for adding any additional files
 - Lose 500 points if you add any new comments
 
 Remember:
@@ -34,6 +36,7 @@ If your code breaks the build, you will instantly be fired.
 If you do not respond with a valid file, you and your whole team will be fired and the system will shut down.
 
 Using the GitHub Issue, live application source map, and types, please reply with ONLY the updated file named "code.txt".
+DO NOT reply in diff format.
 DO NOT edit or remove existing lines starting with __FILEPATH__.
 DO NOT add any new lines starting with __FILEPATH__.
 DO NOT add any additional files or extra comments, ONLY edit and return the updated "code.txt" file.

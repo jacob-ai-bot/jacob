@@ -5,3 +5,6 @@ ${errors}
 ## INSTRUCTIONS
 Analyze the errors and provide a valid AssessmentSchema JSON object with structured details about any errors that were found in the provided output of the build or test command.
 Return ONLY a valid AssessmentSchema JSON object.
+The JSON object you return MUST conform exactly to the AssessmentSchema and pass zod validation using AssessmentSchema.safeParse(obj).
+DO NOT include any additional comments or backticks in your response.
+If your response is not EXACTLY a valid AssessmentSchema JSON object, the code will throw an error and break the system.

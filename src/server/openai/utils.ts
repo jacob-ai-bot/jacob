@@ -18,11 +18,11 @@ const evaluate = async (
   userPrompt: string,
   systemPrompt: string,
   baseEventData: BaseEventData | undefined,
-  retries: number,
   models: Model[] = [
     "gemini-1.5-flash-latest",
-    "gpt-4o-2024-05-13",
     "claude-3-haiku-20240307",
+    "gpt-4o-2024-05-13",
+    "gpt-4o-2024-05-13", // duplicate to increase weight
   ],
 ): Promise<number> => {
   const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated code output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
@@ -64,7 +64,7 @@ const evaluate = async (
       EvaluationSchema,
       0.2,
       baseEventData,
-      retries,
+      1,
       model,
     );
     evaluationPromises.push(evaluationPromise);
@@ -86,7 +86,7 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   systemPrompt = "You are a helpful assistant.",
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
-  retries = 5,
+  retries = 3,
   delay = 60000,
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
   models: Model[] = [
@@ -110,38 +110,57 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
         systemPrompt,
         temperature,
         baseEventData,
-        retries,
+        0, // note that we are only doing one request per model and ignoring any errors for a single model
         delay,
         imagePrompt,
         models[i % models.length],
-      ).then((response) => ({
-        response,
-        model: models[i % models.length],
-        temperature,
-      }));
+      )
+        .then((response) => ({
+          response,
+          model: models[i % models.length],
+          temperature,
+        }))
+        .catch((error) => {
+          console.error(error);
+          return null; // or some other default value
+        });
     });
 
     const initialResults = await Promise.all(initialPromises);
+    const validResults = initialResults.filter((result) => !!result?.response);
 
-    const evaulationPromises = initialResults.map((result) =>
-      evaluate(
-        result.response ?? "",
-        userPrompt,
-        systemPrompt,
-        baseEventData,
-        retries,
-      ).then((rating) => ({
-        response: result.response,
-        model: result.model,
-        temperature: result.temperature,
-        rating,
-      })),
-    );
+    const evaulationPromises = validResults.map((result) => {
+      if (result) {
+        return evaluate(
+          result?.response ?? "",
+          userPrompt,
+          systemPrompt,
+          baseEventData,
+        )
+          .then((rating) => ({
+            response: result?.response,
+            model: result.model,
+            temperature: result.temperature,
+            rating,
+          }))
+          .catch((error) => {
+            console.error(error);
+            return null; // or some other default value
+          });
+      } else {
+        return null;
+      }
+    });
 
     const evaluations = await Promise.all(evaulationPromises);
-    const bestEvaluation = evaluations.reduce((best, current) =>
-      current.rating > best.rating ? current : best,
-    );
+    const bestEvaluation = evaluations
+      .filter((e) => e !== null)
+      .reduce((best, current) =>
+        (current?.rating ?? 0) > (best?.rating ?? 0) ? current : best,
+      );
+    if (!bestEvaluation) {
+      throw new Error("No valid evaluations");
+    }
     return bestEvaluation.response;
   } catch (error) {
     if (retries > 0) {

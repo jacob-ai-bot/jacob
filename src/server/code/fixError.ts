@@ -10,7 +10,6 @@ import {
   parseTemplate,
   extractIssueNumberFromBranchName,
 } from "../utils";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 import { assessBuildError } from "./assessBuildError";
 import { runNpmInstall } from "../build/node/check";
 import { checkAndCommit } from "./checkAndCommit";
@@ -18,6 +17,8 @@ import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
+import { sendGptRequest } from "../openai/request";
+// import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -161,7 +162,8 @@ export async function fixError(params: FixErrorParams) {
         "user",
         codeTemplateParams,
       );
-      const updatedCode = (await sendSelfConsistencyChainOfThoughtGptRequest(
+      // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest
+      const updatedCode = (await sendGptRequest(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,

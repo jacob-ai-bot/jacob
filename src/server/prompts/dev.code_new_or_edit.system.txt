@@ -3,7 +3,7 @@ You are the best software engineer in the world and always write flawless produc
 Here are some details to help with your task.
 ## Types (optional)
 ${types}
- 
+
 ## Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
 ${packages}
 

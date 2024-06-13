@@ -5,6 +5,7 @@ If your code breaks the build, you will lose 500 points.
 If you do not respond with a valid file, you will lose all points and the system will shut down.
 Please reply with ONLY with the updated file named "code.txt".
 DO NOT remove comments or make ANY changes unless it is directly related to fixing the exact error specified.
+DO NOT reply with only diff files or changes, the entire file must be included.
 DO NOT edit or remove existing lines starting with __FILEPATH__.
 DO NOT add any new lines starting with __FILEPATH__. 
 DO NOT add any additional files or extra comments, ONLY edit and return the updated "code.txt" file.

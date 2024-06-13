@@ -13,7 +13,7 @@ import {
   type ChatCompletionChunk,
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
+// import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 
 const CONTEXT_WINDOW = {
   "gpt-4-turbo-2024-04-09": 128000,
@@ -103,9 +103,10 @@ export const sendGptRequest = async (
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
   model: Model = "gpt-4-0125-preview",
+  isJSONMode = false,
 ): Promise<string | null> => {
-  console.log("\n\n --- User Prompt --- \n\n", userPrompt);
-  console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
+  // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
+  // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
     const openai = new OpenAI({
@@ -134,6 +135,14 @@ export const sendGptRequest = async (
       messages.unshift(imagePrompt);
     }
 
+    if (isJSONMode) {
+      messages.push({
+        role: "assistant",
+        content:
+          "Here is the requested JSON that adheres perfectly to the schema noted above:\n```json\n{",
+      });
+    }
+
     console.log(`\n +++ Calling ${model} with max_tokens: ${max_tokens} `);
     const startTime = Date.now();
     const response = await openai.chat.completions.create({
@@ -147,7 +156,11 @@ export const sendGptRequest = async (
     console.log(`\n +++ ${model} Response time ${duration} ms`);
 
     const gptResponse = response.choices[0]?.message;
-    console.log("\n\n --- GPT Response --- \n\n", gptResponse);
+    // console.log("\n\n --- GPT Response --- \n\n", gptResponse);
+    let content = gptResponse?.content ?? "";
+    if (isJSONMode && !content.startsWith("{")) {
+      content = `{${content}`; // add the starting bracket back to the JSON response
+    }
 
     const inputTokens = response.usage?.prompt_tokens ?? 0;
     const outputTokens = response.usage?.completion_tokens ?? 0;
@@ -174,11 +187,11 @@ export const sendGptRequest = async (
               ? message.content
               : JSON.stringify(message.content),
         })),
-        responsePrompt: gptResponse?.content ?? "",
+        responsePrompt: content,
       });
     }
 
-    return gptResponse?.content ?? null;
+    return content;
   } catch (error) {
     if (
       retries === 0 ||
@@ -241,6 +254,7 @@ export const sendGptRequestWithSchema = async (
         60000,
         null,
         model,
+        true,
       );
 
       if (!gptResponse) {
@@ -313,13 +327,14 @@ export const sendGptVisionRequest = async (
   snapshotUrl = "",
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
-  retries = 10,
+  retries = 3,
   delay = 60000,
 ): Promise<string | null> => {
   const model: Model = "gpt-4o-2024-05-13";
 
   if (!snapshotUrl?.length) {
-    return sendSelfConsistencyChainOfThoughtGptRequest(
+    // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest
+    return sendGptRequest(
       userPrompt,
       systemPrompt,
       temperature,

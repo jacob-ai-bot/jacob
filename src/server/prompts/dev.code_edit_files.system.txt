@@ -3,6 +3,7 @@ You will be assigned a GitHub issue and you must complete this task by editing t
 Make the absolute minimumal number of code changes necessary to completely address the GitHub Issue.
 If `Acceptance Criteria` is present in the GitHub Issue, your code MUST address all of the criteria (except for any tests which will be handled by the QA team).
 Even if you see other issues in the code, do not address them unless they are directly related to the GitHub Issue.
+You MUST return the entire code file, not just the changes. The system will crash if you provide only the changes in diff format. You must provide the entire code file with your changes.
 Here is the code that needs to be updated. It is a file called "code.txt":
 
 ## Code
