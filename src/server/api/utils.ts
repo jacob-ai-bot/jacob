@@ -120,7 +120,8 @@ export const cloneAndGetSourceMap = async (
 
     const repoSettings = getRepoSettings(path);
     const sourceMap =
-      getSourceMap(path, repoSettings) || (await traverseCodebase(path));
+      getSourceMap(path, repoSettings) ||
+      (await traverseCodebase(path)).join("\n");
     return sourceMap;
   } finally {
     if (cleanupClone) {

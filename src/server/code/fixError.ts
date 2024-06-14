@@ -85,7 +85,8 @@ export async function fixError(params: FixErrorParams) {
         ).split(endOfErrorSectionMarker)[0] ?? "";
 
   const sourceMap =
-    getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));
+    getSourceMap(rootPath, repoSettings) ||
+    (await traverseCodebase(rootPath)).join("\n");
   const assessment = await assessBuildError({
     ...baseEventData,
     sourceMap,

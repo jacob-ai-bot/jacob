@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import ignore from "ignore";
 
-export async function traverseCodebase(rootPath: string): Promise<string> {
+export async function traverseCodebase(rootPath: string) {
   const gitignoreContent = fs.readFileSync(
     path.join(rootPath, ".gitignore"),
     "utf-8",
@@ -45,9 +45,7 @@ export async function traverseCodebase(rootPath: string): Promise<string> {
     return files;
   }
 
-  const files = await processDirectory(rootPath);
-
-  return files.join("\n");
+  return processDirectory(rootPath);
 }
 
 function isRelevantFile(filePath: string): boolean {

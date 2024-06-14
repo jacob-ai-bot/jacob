@@ -47,7 +47,8 @@ export async function getExtractedIssues(req: Request, res: Response) {
 
     const repoSettings = getRepoSettings(path);
     const sourceMap =
-      getSourceMap(path, repoSettings) || (await traverseCodebase(path));
+      getSourceMap(path, repoSettings) ||
+      (await traverseCodebase(path)).join("\n");
 
     const issueData = await Promise.all(
       issueNumbers.map((issueNumber) =>
