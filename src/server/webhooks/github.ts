@@ -194,7 +194,7 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
   const { payload } = event;
   const { pull_request, repository } = payload;
   console.log(
-    `[${repository.full_name}] Received PR #${pull_request.number} comment created event`,
+    `[${repository.full_name}] Received PR #${pull_request.number} opened event`,
   );
 
   if (pull_request.body?.includes(AT_MENTION)) {
@@ -207,6 +207,17 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
       `[${repository.full_name}] Pull request body has no ${AT_MENTION} mention (Issue #${pull_request.number})`,
     );
   }
+});
+
+ghApp.webhooks.on("pull_request.closed", async (event) => {
+  const { payload } = event;
+  const { pull_request, repository } = payload;
+
+  console.log(
+    `[${repository.full_name}] Received PR #${pull_request.number} closed event`,
+  );
+
+  void publishGitHubEventToQueue(event);
 });
 
 ghApp.webhooks.on("installation_repositories.added", async (event) => {

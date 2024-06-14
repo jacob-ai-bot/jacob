@@ -17,6 +17,7 @@ import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.n
 import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
 import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_request_review.submitted.json";
 import pullRequestOpenedPayload from "../../data/test/webhooks/pull_request.opened.json";
+import pullRequestClosedPayload from "../../data/test/webhooks/pull_request.closed.json";
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
 import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
@@ -33,6 +34,7 @@ import {
   type WebhookPullRequestReviewWithCommentsSubmittedEvent,
   type WebhookInstallationRepositoriesAddedEvent,
   type WebhookPullRequestOpenedEvent,
+  type WebhookPullRequestClosedEvent,
   type WebhookIssueCommentCreatedEvent,
   type WebhookInstallationCreatedEvent,
 } from "./queue";
@@ -42,11 +44,7 @@ const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
     .fn()
     .mockImplementation(() =>
-      vi
-        .fn()
-        .mockImplementation(
-          () => new Promise((resolve) => resolve({ token: "fake-token" })),
-        ),
+      vi.fn().mockResolvedValue({ token: "fake-token" }),
     ),
 }));
 vi.mock("@octokit/auth-app", () => mockedOctokitAuthApp);
@@ -56,11 +54,7 @@ const mockedDb = vi.hoisted(() => ({
     projects: {
       create: vi.fn().mockImplementation(() => ({
         onConflict: vi.fn().mockImplementation(() => ({
-          merge: vi
-            .fn()
-            .mockImplementation(
-              () => new Promise((resolve) => resolve({ id: 777 })),
-            ),
+          merge: vi.fn().mockResolvedValue({ id: 777 }),
         })),
       })),
     },
@@ -71,12 +65,7 @@ vi.mock("../db/db", () => mockedDb);
 const mockedClone = vi.hoisted(() => ({
   cloneRepo: vi
     .fn()
-    .mockImplementation(
-      () =>
-        new Promise((resolve) =>
-          resolve({ path: "/tmp/jacob/1", cleanup: vi.fn() }),
-        ),
-    ),
+    .mockResolvedValue({ path: "/tmp/jacob/1", cleanup: vi.fn() }),
 }));
 vi.mock("../git/clone", () => mockedClone);
 
@@ -128,6 +117,7 @@ const mockedComments = vi.hoisted(() => ({
 vi.mock("../github/comments", () => mockedComments);
 
 const mockedIssue = vi.hoisted(() => ({
+  getIssue: vi.fn().mockResolvedValue({ data: { body: "body" } }),
   addCommentToIssue: vi.fn().mockResolvedValue(undefined),
   createRepoInstalledIssue: vi.fn().mockResolvedValue(undefined),
 }));
@@ -514,5 +504,27 @@ describe("onGitHubEvent", () => {
       "cpirich",
       true,
     );
+  });
+
+  test("PR closed", async () => {
+    await onGitHubEvent({
+      id: "16",
+      name: "pull_request",
+      payload: pullRequestClosedPayload,
+    } as WebhookPullRequestClosedEvent);
+
+    expect(mockedIssue.getIssue).toHaveBeenCalledTimes(1);
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
+    expect(mockedEvents.emitTaskEvent).toHaveBeenLastCalledWith({
+      issue: { body: "body" },
+      issueId: 567,
+      projectId: 777,
+      pullRequestId: 65,
+      repoFullName: "jacob-ai-bot/jacob",
+      status: TaskStatus.CLOSED,
+      subType: TaskSubType.EDIT_FILES,
+      userId: "cpirich",
+    });
+    expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
   });
 });
