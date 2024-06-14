@@ -19,12 +19,16 @@ const DashboardPage = async ({
   }
 
   const { org, repo, developer } = params;
-  const [tasks, project] = await Promise.all([
+  const [tasks, project, sourceMap] = await Promise.all([
     api.events.getTasks({
       org,
       repo,
     }),
     api.events.getProject({
+      org,
+      repo,
+    }),
+    api.github.getSourceMap({
       org,
       repo,
     }),
@@ -34,9 +38,10 @@ const DashboardPage = async ({
     <Dashboard
       org={org}
       repo={repo}
-      developer={developer}
+      developerId={developer}
       tasks={tasks}
       project={project}
+      sourceMap={sourceMap}
     />
   );
 };

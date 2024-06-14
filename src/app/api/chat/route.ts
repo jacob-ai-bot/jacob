@@ -13,10 +13,11 @@ import { type NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, todo, developer } = (await req.json()) as {
+    const { messages, todo, developer, sourceMap } = (await req.json()) as {
       messages: Message[];
       todo: Todo;
       developer: Developer;
+      sourceMap: string;
     };
 
     let systemPrompt = todo ? chatClarifyIssueSystem : chatCreateIssueSystem;
@@ -24,10 +25,13 @@ export async function POST(req: NextRequest) {
       systemPrompt = chatShowFigmaSystem;
     }
     const temperature = 0.2;
-    const model = "gpt-4o";
+    const model = "gpt-4o-2024-05-13";
 
     if (todo) {
       systemPrompt = systemPrompt.replace("{{todo}}", JSON.stringify(todo));
+    }
+    if (sourceMap) {
+      systemPrompt = systemPrompt.replace("{{sourceMap}}", sourceMap);
     }
     if (developer?.personalityProfile) {
       systemPrompt = systemPrompt.replace(

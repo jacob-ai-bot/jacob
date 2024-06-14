@@ -192,7 +192,7 @@ export const TASKS = [
         metadata: {
           cost: 0.03731,
           duration: 22195,
-          model: "gpt-4-turbo",
+          model: "gpt-4-turbo-2024-04-09",
           timestamp: "2024-04-25T16:10:18.035Z",
           tokens: 2777,
         },
@@ -231,7 +231,7 @@ export const TASKS = [
         metadata: {
           cost: 0.10446,
           duration: 43128,
-          model: "gpt-4-turbo",
+          model: "gpt-4-turbo-2024-04-09",
           timestamp: "2024-04-25T16:11:03.029Z",
           tokens: 8570,
         },
@@ -270,7 +270,7 @@ export const TASKS = [
         metadata: {
           cost: 0.03851,
           duration: 8122,
-          model: "gpt-4-turbo",
+          model: "gpt-4-turbo-2024-04-09",
           timestamp: "2024-04-25T16:13:02.259Z",
           tokens: 3689,
         },

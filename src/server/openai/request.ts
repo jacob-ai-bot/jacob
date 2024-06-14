@@ -12,49 +12,61 @@ import {
   type ChatCompletionChunk,
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
+// import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "https://api.portkey.ai/v1/proxy",
-  defaultHeaders: {
-    "x-portkey-api-key": process.env.PORTKEY_API_KEY,
-    "x-portkey-mode": "proxy openai",
-    "x-portkey-cache": "simple",
-    "x-portkey-retry-count": "3",
-    "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
-  },
-});
+const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1/proxy";
 
 const CONTEXT_WINDOW = {
-  "gpt-4": 8192,
-  "gpt-4-turbo": 128000,
-  "gpt-4-turbo-preview": 128000,
-  "gpt-4o": 128000,
+  "gpt-4-turbo-2024-04-09": 128000,
+  "gpt-4-0125-preview": 128000,
+  "gpt-4o-2024-05-13": 128000,
+  "gemini-1.5-pro-latest": 1048576,
+  "gemini-1.5-flash-latest": 1048576,
+  "claude-3-opus-20240229": 200000,
+  "claude-3-haiku-20240307": 200000,
 };
 
-// Note that gpt-4-turbo has a max_tokens limit of 4K, despite having a context window of 128K
+// Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
 const MAX_OUTPUT = {
-  "gpt-4": 8192,
-  "gpt-4-turbo": 4096,
-  "gpt-4-turbo-preview": 4096,
-  "gpt-4o": 4096,
+  "gpt-4-turbo-2024-04-09": 4096,
+  "gpt-4-0125-preview": 4096,
+  "gpt-4o-2024-05-13": 4096,
+  "gemini-1.5-pro-latest": 8192,
+  "gemini-1.5-flash-latest": 8192,
+  "claude-3-opus-20240229": 4096,
+  "claude-3-haiku-20240307": 4096,
 };
 
 const ONE_MILLION = 1000000;
 const INPUT_TOKEN_COSTS = {
-  "gpt-4": 30 / ONE_MILLION,
-  "gpt-4-turbo": 10 / ONE_MILLION,
-  "gpt-4-turbo-preview": 10 / ONE_MILLION,
-  "gpt-4o": 10 / ONE_MILLION,
+  "gpt-4-turbo-2024-04-09": 10 / ONE_MILLION,
+  "gpt-4-0125-preview": 10 / ONE_MILLION,
+  "gpt-4o-2024-05-13": 10 / ONE_MILLION,
+  "gemini-1.5-pro-latest": 3.5 / ONE_MILLION,
+  "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
+  "claude-3-opus-20240229": 15 / ONE_MILLION,
+  "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
-  "gpt-4": 60 / ONE_MILLION,
-  "gpt-4-turbo": 30 / ONE_MILLION,
-  "gpt-4-turbo-preview": 30 / ONE_MILLION,
-  "gpt-4o": 30 / ONE_MILLION,
+  "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
+  "gpt-4-0125-preview": 30 / ONE_MILLION,
+  "gpt-4o-2024-05-13": 30 / ONE_MILLION,
+  "gemini-1.5-pro-latest": 10.5 / ONE_MILLION,
+  "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
+  "claude-3-opus-20240229": 75 / ONE_MILLION,
+  "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
+};
+const PORTKEY_VIRTUAL_KEYS = {
+  "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gpt-4-0125-preview": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gpt-4o-2024-05-13": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gemini-1.5-pro-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
+  "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
+  "claude-3-opus-20240229": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
+  "claude-3-haiku-20240307": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
 };
 
-type Model = keyof typeof CONTEXT_WINDOW;
+export type Model = keyof typeof CONTEXT_WINDOW;
 
 export const getMaxTokensForResponse = async (
   inputText: string,
@@ -91,12 +103,25 @@ export const sendGptRequest = async (
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  model: Model = "gpt-4-turbo-preview",
+  model: Model = "gpt-4-0125-preview",
+  isJSONMode = false,
 ): Promise<string | null> => {
-  console.log("\n\n --- User Prompt --- \n\n", userPrompt);
-  console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
+  // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
+  // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
+    const openai = new OpenAI({
+      apiKey: "using-virtual-portkey-key",
+      baseURL: PORTKEY_GATEWAY_URL,
+      defaultHeaders: {
+        "x-portkey-api-key": process.env.PORTKEY_API_KEY,
+        "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
+        "x-portkey-cache": "simple",
+        "x-portkey-retry-count": "3",
+        "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
+      },
+    });
+
     const max_tokens = await getMaxTokensForResponse(
       userPrompt + systemPrompt,
       model,
@@ -109,6 +134,14 @@ export const sendGptRequest = async (
 
     if (imagePrompt) {
       messages.unshift(imagePrompt);
+    }
+
+    if (isJSONMode) {
+      messages.push({
+        role: "assistant",
+        content:
+          "Here is the requested JSON that adheres perfectly to the schema noted above:\n```json\n{",
+      });
     }
 
     console.log(`\n +++ Calling ${model} with max_tokens: ${max_tokens} `);
@@ -124,6 +157,11 @@ export const sendGptRequest = async (
     console.log(`\n +++ ${model} Response time ${duration} ms`);
 
     const gptResponse = response.choices[0]?.message;
+    // console.log("\n\n --- GPT Response --- \n\n", gptResponse);
+    let content = gptResponse?.content ?? "";
+    if (isJSONMode && !content.startsWith("{")) {
+      content = `{${content}`; // add the starting bracket back to the JSON response
+    }
 
     const inputTokens = response.usage?.prompt_tokens ?? 0;
     const outputTokens = response.usage?.completion_tokens ?? 0;
@@ -150,11 +188,11 @@ export const sendGptRequest = async (
               ? message.content
               : JSON.stringify(message.content),
         })),
-        responsePrompt: gptResponse?.content ?? "",
+        responsePrompt: content,
       });
     }
 
-    return gptResponse?.content ?? null;
+    return content;
   } catch (error) {
     if (
       retries === 0 ||
@@ -193,6 +231,7 @@ export const sendGptRequestWithSchema = async (
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
   retries = 3,
+  model: Model = "gpt-4-0125-preview",
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;
@@ -213,6 +252,10 @@ export const sendGptRequestWithSchema = async (
         temperature, // Use a lower temperature for retries
         baseEventData,
         0,
+        60000,
+        null,
+        model,
+        true,
       );
 
       if (!gptResponse) {
@@ -285,10 +328,23 @@ export const sendGptVisionRequest = async (
   snapshotUrl = "",
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
-  retries = 10,
+  retries = 3,
   delay = 60000,
 ): Promise<string | null> => {
-  const model: Model = "gpt-4-turbo";
+  const model: Model = "gpt-4o-2024-05-13";
+
+  if (!snapshotUrl?.length) {
+    // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest
+    return sendGptRequest(
+      userPrompt,
+      systemPrompt,
+      temperature,
+      baseEventData,
+      retries,
+      delay,
+      null,
+    );
+  }
   let imagePrompt = null;
   if (snapshotUrl?.length > 0) {
     const prompt = parseTemplate("dev", "vision", "user", {});
@@ -330,12 +386,24 @@ export const sendGptVisionRequest = async (
 };
 
 export const OpenAIStream = async (
-  model: Model = "gpt-4o",
+  model: Model = "gpt-4o-2024-05-13",
   messages: Message[],
   systemPrompt = "You are a helpful friendly assistant.",
   temperature = 1,
 ): Promise<Stream<ChatCompletionChunk>> => {
   try {
+    const openai = new OpenAI({
+      apiKey: "using-virtual-portkey-key",
+      baseURL: PORTKEY_GATEWAY_URL,
+      defaultHeaders: {
+        "x-portkey-api-key": process.env.PORTKEY_API_KEY,
+        "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
+        "x-portkey-cache": "simple",
+        "x-portkey-retry-count": "3",
+        "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
+      },
+    });
+
     let max_tokens = 0;
     const content =
       systemPrompt +
@@ -347,7 +415,7 @@ export const OpenAIStream = async (
       console.log(
         "NOTE: Input text is too large to fit within the context window.",
       );
-      model = "gpt-4-turbo";
+      model = "gemini-1.5-pro-latest";
     }
     try {
       if (!max_tokens) {

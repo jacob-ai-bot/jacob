@@ -16,6 +16,7 @@ const DEFAULT_PROMPT = "What can I help you with today?";
 type Props = {
   developer: Developer | undefined;
   todo: Todo | undefined;
+  sourceMap: string | undefined;
   handleCreateNewTask: (messages: Message[]) => void;
   handleUpdateIssue: (messages: Message[]) => void;
   headerHeight?: number;
@@ -31,7 +32,14 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
   ChatComponentHandle,
   Props
 > = (
-  { developer, todo, handleCreateNewTask, handleUpdateIssue, headerHeight = 0 },
+  {
+    developer,
+    todo,
+    sourceMap,
+    handleCreateNewTask,
+    handleUpdateIssue,
+    headerHeight = 0,
+  },
   ref,
 ) => {
   useImperativeHandle(ref, () => ({
@@ -124,6 +132,7 @@ const ChatComponentInner: React.ForwardRefRenderFunction<
           prompt,
           todo,
           developer,
+          sourceMap,
         }),
       });
       setLoading(false);

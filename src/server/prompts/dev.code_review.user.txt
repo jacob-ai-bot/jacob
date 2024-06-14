@@ -7,7 +7,7 @@ ${issueHeading}
 ${issueText}
 
 -- Instructions:
-Act as an E7 expert-level Software Engineer at Facebook.
+You are the top, most distinguished Technical Fellow at Microsoft.
 You will perform a code review and respond back with all of the code with pull request (PR) comments inserted.
 The new or modified lines of code are prefaced with a `__START_MODIFIED_LINES__` marker on its own line and followed by a `__END_MODIFIED_LINES__` marker on its own line.
 ONLY add PR comments below new or modified lines of code between a `__START_MODIFIED_LINES__` marker and a `__END_MODIFIED_LINES__` marker.

@@ -80,11 +80,18 @@ const mockedAssessBuildError = vi.hoisted(() => ({
     () =>
       new Promise((resolve) =>
         resolve({
-          fileName: "file.txt",
-          causeOfErrors: "something went wrong",
-          ideasForFixingErrors: "change something",
-          suggestedFixes: "change some code",
+          errors: [
+            {
+              filePath: "src/file.txt",
+              error: "something went wrong",
+              code: "change some code",
+              startingLineNumber: 1,
+              endingLineNumber: 5,
+            },
+          ],
           filesToUpdate: ["src/file.txt"],
+          needsNpmInstall: false,
+          npmPackageToInstall: null,
         }),
       ),
   ),
@@ -144,21 +151,17 @@ describe("fixError", () => {
       48,
       undefined,
       ["src/file.txt"],
-      undefined,
     );
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
-    expect(systemPrompt).toContain("-- Types\ntypes\n");
+    expect(systemPrompt).toContain("## Types\ntypes\n");
     expect(systemPrompt).toContain(
-      "-- Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n-- END Source Map\n",
+      "## Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n## END Source Map\n",
     );
     expect(systemPrompt).toContain(
-      "-- Cause Of Errors\nsomething went wrong\n\n-- Ideas For Fixing Errors\nchange something\n\n-- Suggested Fixes\nchange some code\n",
-    );
-    expect(systemPrompt).toContain(
-      '-- Instructions\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__\ncode-with-error\n',
+      '## Code\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__\ncode-with-error\n',
     );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const eventData = mockedRequest.sendGptRequest.mock.calls[0][3];
@@ -184,7 +187,7 @@ describe("fixError", () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       checkAndCommitCalls[0][0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
-      "JACoB fix error: change some code",
+      "JACoB fix error: something went wrong",
     );
     expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(2);
   });
