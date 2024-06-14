@@ -12,16 +12,22 @@ describe("traverseCodebase", () => {
     ]);
     vi.spyOn(fs, "readdirSync").mockReturnValueOnce([
       // @ts-expect-error Expected 0 arguments, but got 2
+      new fs.Dirent(".env", fs.constants.UV_DIRENT_FILE),
+      // @ts-expect-error Expected 0 arguments, but got 2
       new fs.Dirent("file1.js", fs.constants.UV_DIRENT_FILE),
       // @ts-expect-error Expected 0 arguments, but got 2
       new fs.Dirent("dir1", fs.constants.UV_DIRENT_DIR),
+      // @ts-expect-error Expected 0 arguments, but got 2
+      new fs.Dirent("build", fs.constants.UV_DIRENT_DIR),
+      // @ts-expect-error Expected 0 arguments, but got 2
+      new fs.Dirent("node_modules", fs.constants.UV_DIRENT_DIR),
     ]);
     vi.spyOn(fs, "readFileSync").mockReturnValue(
-      Buffer.from(dedent`
+      dedent`
         /node_modules
         /build
         .env
-      `),
+      `,
     );
 
     const result = await traverseCodebase("/rootpath");
