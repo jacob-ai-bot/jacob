@@ -3,7 +3,6 @@ import { type Endpoints } from "@octokit/types";
 import { dedent } from "ts-dedent";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { traverseCodebase } from "../analyze/traverse";
 import {
   type RepoSettings,
   type BaseEventData,
@@ -84,9 +83,7 @@ export async function fixError(params: FixErrorParams) {
           ) ?? ""
         ).split(endOfErrorSectionMarker)[0] ?? "";
 
-  const sourceMap =
-    getSourceMap(rootPath, repoSettings) ||
-    (await traverseCodebase(rootPath)).join("\n");
+  const sourceMap = getSourceMap(rootPath, repoSettings);
   const assessment = await assessBuildError({
     ...baseEventData,
     sourceMap,

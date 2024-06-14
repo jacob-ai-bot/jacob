@@ -9,7 +9,6 @@ import {
 } from "../code/extractedIssue";
 import { cloneRepo } from "../git/clone";
 import { getSourceMap } from "../analyze/sourceMap";
-import { traverseCodebase } from "../analyze/traverse";
 
 export const getAllRepos = async (accessToken: string) => {
   const octokit = new Octokit({ auth: accessToken });
@@ -119,9 +118,7 @@ export const cloneAndGetSourceMap = async (
     cleanupClone = cleanup;
 
     const repoSettings = getRepoSettings(path);
-    const sourceMap =
-      getSourceMap(path, repoSettings) ||
-      (await traverseCodebase(path)).join("\n");
+    const sourceMap = getSourceMap(path, repoSettings);
     return sourceMap;
   } finally {
     if (cleanupClone) {

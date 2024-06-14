@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import ignore from "ignore";
 
-export async function traverseCodebase(rootPath: string) {
+export function traverseCodebase(rootPath: string) {
   const gitignoreContent = fs.readFileSync(
     path.join(rootPath, ".gitignore"),
     "utf-8",
@@ -10,10 +10,7 @@ export async function traverseCodebase(rootPath: string) {
 
   const ignoreFilter = ignore().add(gitignoreContent);
 
-  async function processDirectory(
-    directory: string,
-    files: string[] = [],
-  ): Promise<string[]> {
+  function processDirectory(directory: string, files: string[] = []): string[] {
     const entries = fs.readdirSync(directory, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -21,7 +18,7 @@ export async function traverseCodebase(rootPath: string) {
       const relativePath = path.relative(rootPath, fullPath);
       if (entry.isDirectory()) {
         if (!ignoreFilter.ignores(relativePath)) {
-          const directoryFiles = await processDirectory(fullPath, files);
+          const directoryFiles = processDirectory(fullPath, files);
           for (const file of directoryFiles) {
             // if the file isn't already in the list of files, add it
             if (!files.includes(file)) {

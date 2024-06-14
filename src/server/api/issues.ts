@@ -2,7 +2,6 @@ import { type Request, type Response } from "express";
 
 import { cloneRepo } from "../git/clone";
 import { getSourceMap } from "../analyze/sourceMap";
-import { traverseCodebase } from "../analyze/traverse";
 import { parseTemplate, getRepoSettings } from "../utils";
 import { getIssue } from "../github/issue";
 
@@ -46,9 +45,7 @@ export async function getExtractedIssues(req: Request, res: Response) {
     cleanupClone = cleanup;
 
     const repoSettings = getRepoSettings(path);
-    const sourceMap =
-      getSourceMap(path, repoSettings) ||
-      (await traverseCodebase(path)).join("\n");
+    const sourceMap = getSourceMap(path, repoSettings);
 
     const issueData = await Promise.all(
       issueNumbers.map((issueNumber) =>
