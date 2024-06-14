@@ -1,5 +1,4 @@
 import { OpenAI } from "openai";
-import { PORTKEY_GATEWAY_URL } from "portkey-ai";
 import { encode } from "gpt-tokenizer";
 import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
@@ -14,6 +13,8 @@ import {
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
 // import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
+
+const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1/proxy";
 
 const CONTEXT_WINDOW = {
   "gpt-4-turbo-2024-04-09": 128000,
