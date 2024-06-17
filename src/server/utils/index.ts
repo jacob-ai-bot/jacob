@@ -247,13 +247,17 @@ export function executeWithLogRequiringSuccess({
     ...options,
   });
   return promise.finally(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     void emitCommandEvent({
       ...baseEventData,
       directory,
       command: command.replace(/x-access-token:[^@]+@/g, ""),
       response: promise.response.replace(/x-access-token:[^@]+@/g, ""),
       exitCode: promise.child.exitCode,
+    }).catch((e) => {
+      console.error(
+        `*:${command} (cwd: ${directory}) - Ignoring error emitting command event`,
+        e,
+      );
     });
   }) as ExecPromise;
 }
