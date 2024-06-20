@@ -18,7 +18,7 @@ import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
 import { sendGptRequest } from "../openai/request";
-// import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -162,8 +162,7 @@ export async function fixError(params: FixErrorParams) {
         "user",
         codeTemplateParams,
       );
-      // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest
-      const updatedCode = (await sendGptRequest(
+      const updatedCode = (await sendSelfConsistencyChainOfThoughtGptRequest(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,

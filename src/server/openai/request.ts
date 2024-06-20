@@ -1,5 +1,5 @@
 import { OpenAI } from "openai";
-import { encode } from "gpt-tokenizer";
+// import { encode } from "gpt-tokenizer";
 import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
 import { type Message } from "~/types";
@@ -12,9 +12,10 @@ import {
   type ChatCompletionChunk,
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 // import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 
-const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1/proxy";
+const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
 const CONTEXT_WINDOW = {
   "gpt-4-turbo-2024-04-09": 128000,
@@ -24,10 +25,12 @@ const CONTEXT_WINDOW = {
   "gemini-1.5-flash-latest": 1048576,
   "claude-3-opus-20240229": 200000,
   "claude-3-haiku-20240307": 200000,
+  "llama-3-sonar-large-32k-online": 32768,
+  "llama-3-sonar-small-32k-online": 32768,
 };
 
 // Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
-const MAX_OUTPUT = {
+export const MAX_OUTPUT = {
   "gpt-4-turbo-2024-04-09": 4096,
   "gpt-4-0125-preview": 4096,
   "gpt-4o-2024-05-13": 4096,
@@ -35,6 +38,8 @@ const MAX_OUTPUT = {
   "gemini-1.5-flash-latest": 8192,
   "claude-3-opus-20240229": 4096,
   "claude-3-haiku-20240307": 4096,
+  "llama-3-sonar-large-32k-online": 4096,
+  "llama-3-sonar-small-32k-online": 4096,
 };
 
 const ONE_MILLION = 1000000;
@@ -46,6 +51,8 @@ const INPUT_TOKEN_COSTS = {
   "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
   "claude-3-opus-20240229": 15 / ONE_MILLION,
   "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
+  "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
+  "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
@@ -55,6 +62,8 @@ const OUTPUT_TOKEN_COSTS = {
   "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
   "claude-3-opus-20240229": 75 / ONE_MILLION,
   "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
+  "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
+  "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
 };
 const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
@@ -64,6 +73,8 @@ const PORTKEY_VIRTUAL_KEYS = {
   "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "claude-3-opus-20240229": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-haiku-20240307": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
+  "llama-3-sonar-large-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
+  "llama-3-sonar-small-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
@@ -73,22 +84,23 @@ export const getMaxTokensForResponse = async (
   model: Model,
 ): Promise<number> => {
   try {
-    const tokens = encode(inputText);
-    const numberOfInputTokens = tokens.length;
+    return MAX_OUTPUT[model];
+    // const tokens = encode(inputText);
+    // const numberOfInputTokens = tokens.length;
 
-    const maxContextTokens = CONTEXT_WINDOW[model];
-    const padding = Math.ceil(maxContextTokens * 0.01);
+    // const maxContextTokens = CONTEXT_WINDOW[model];
+    // const padding = Math.ceil(maxContextTokens * 0.01);
 
-    const maxTokensForResponse =
-      maxContextTokens - numberOfInputTokens - padding;
+    // const maxTokensForResponse =
+    //   maxContextTokens - numberOfInputTokens - padding;
 
-    if (maxTokensForResponse <= 0) {
-      throw new Error(
-        "Input text is too large to fit within the context window.",
-      );
-    }
+    // if (maxTokensForResponse <= 0) {
+    //   throw new Error(
+    //     "Input text is too large to fit within the context window.",
+    //   );
+    // }
 
-    return Math.min(maxTokensForResponse, MAX_OUTPUT[model]);
+    // return Math.min(maxTokensForResponse, MAX_OUTPUT[model]);
   } catch (error) {
     console.log("Error in getMaxTokensForResponse: ", error);
     return Math.round(CONTEXT_WINDOW[model] / 2);
@@ -335,7 +347,7 @@ export const sendGptVisionRequest = async (
 
   if (!snapshotUrl?.length) {
     // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest
-    return sendGptRequest(
+    return sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
       temperature,

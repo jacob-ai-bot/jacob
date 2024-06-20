@@ -39,7 +39,8 @@
     "**/*.cts",
     "**/*.cjs",
     "**/*.js",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "src/concatTextFiles.mjs"
   ],
   "exclude": ["node_modules"]
 }

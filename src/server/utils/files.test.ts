@@ -6,8 +6,11 @@ import {
   concatenateFiles,
   extractPRCommentsFromFiles,
   getNewOrModifiedRangesMapFromDiff,
+  getCodebase,
 } from "./files";
+
 import jacbAiWebsite59Diff from "../../data/test/jacb-ai-website-59.diff?raw";
+import { researchInternet } from "./agent";
 
 describe("extractPRCommentsFromFiles", () => {
   it("handles response with no comments", () => {

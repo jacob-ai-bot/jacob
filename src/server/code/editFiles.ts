@@ -94,7 +94,7 @@ export async function editFiles(params: EditFilesParams) {
     filesToUpdate,
     extractedIssue.filesToCreate,
   );
-  console.log(`[${repository.full_name}] Concatenated code:\n\n`, code);
+  // console.log(`[${repository.full_name}] Concatenated code:\n\n`, code);
 
   const types = getTypes(rootPath, repoSettings);
   const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(

@@ -12,7 +12,8 @@ import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
-import { editFiles } from "../code/editFiles";
+// import { editFiles } from "../code/editFiles";
+import { agentEditFiles } from "../code/agentEditFiles";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
 import { fixError } from "../code/fixError";
@@ -506,12 +507,16 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         // Once npm install has been run, the source map becomes much more
         // detailed and is too large for our LLM context window.
         const sourceMap = getSourceMap(path, repoSettings);
-        await runBuildCheck({
-          ...baseEventData,
-          path,
-          afterModifications: false,
-          repoSettings,
-        });
+
+        // TODO: Remove this
+        if (process.env.NODE_ENV !== "development") {
+          await runBuildCheck({
+            ...baseEventData,
+            path,
+            afterModifications: false,
+            repoSettings,
+          });
+        }
 
         if (newFileName) {
           await createNewFile({
@@ -533,7 +538,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             },
           });
         } else {
-          await editFiles({
+          await agentEditFiles({
             ...baseEventData,
             repository,
             token: installationAuthentication.token,

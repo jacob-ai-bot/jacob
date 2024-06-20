@@ -3,6 +3,8 @@ import path from "path";
 import ignore, { type Ignore } from "ignore";
 import parseDiff from "parse-diff";
 import { removeMarkdownCodeblocks } from "~/app/utils";
+import { promisify } from "util";
+import { exec as execCallback } from "child_process";
 
 type LineLengthMap = Record<string, number>;
 
@@ -254,3 +256,89 @@ export function getNewOrModifiedRangesMapFromDiff(diff: string) {
   });
   return rangeMap;
 }
+
+const exec = promisify(execCallback);
+
+const isTextFile = async (filePath: string): Promise<boolean> => {
+  try {
+    const { stdout } = await exec(
+      `file --mime-type -b "${filePath.replace(/(["\s'$`\\])/g, "\\$1")}"`,
+    );
+    return stdout.startsWith("text/");
+  } catch (error) {
+    console.error("Error checking file type:", error);
+    return false;
+  }
+};
+
+const walkDir = async (
+  dir: string,
+  rootDir: string,
+  callback: (filePath: string) => Promise<void>,
+  gitignore: Ignore | null,
+) => {
+  try {
+    const files = await fs.promises.readdir(dir, { withFileTypes: true });
+    for (const file of files) {
+      const filepath = path.join(dir, file.name);
+      const relativePath = path.relative(rootDir, filepath);
+
+      if (gitignore?.ignores(relativePath)) continue;
+
+      if (file.isDirectory()) {
+        await walkDir(filepath, rootDir, callback, gitignore);
+      } else {
+        if (await isTextFile(filepath)) {
+          await callback(filepath);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error walking directory:", error);
+  }
+};
+
+export const getCodebase = async (rootDir: string): Promise<string> => {
+  let contentToWrite = "";
+  let gitignore: Ignore | null = null;
+  const gitignorePath = path.join(rootDir, ".gitignore");
+  try {
+    fs.accessSync(gitignorePath, fs.constants.F_OK);
+    let gitignoreContent = fs.readFileSync(gitignorePath).toString();
+    // ignore any irrelevant files and binary files
+    gitignoreContent +=
+      "\n.*\npackage-lock.json\nyarn.lock\n*.png\n*.jpg\n*.jpeg\n*.gif\n*.ico\n*.svg\n*.webp\n*.bmp\n*.tiff\n*.tif\n*.heic\n*.heif\n*.avif\n*.pdf\n*.doc\n*.docx\n*.ppt\n*.pptx\n*.xls\n*.xlsx\n*.csv\n*.mp3\n*.mp4\n*.mov\n*.avi\n*.mkv\n*.webm\n*.wav\n*.flac\n*.ogg\n*.mpg\n*.mpeg\n*.wmv\n*.flv\n*.m4v\n*.3gp\n*.3g2\n*.aac\n*.wma\n*.flv\n*.m4a\n*.opus\n*.weba\n*.oga\n*.ogv\n*.ogm\n*.ogx\n*.ogx\n*.ogv";
+    gitignore = ignore().add(gitignoreContent);
+  } catch (err) {
+    console.log("There is no gitignore or it is not accessible.");
+  }
+
+  await walkDir(
+    rootDir,
+    rootDir,
+    async (filePath) => {
+      const relativePath = path.relative(rootDir, filePath);
+      contentToWrite += `File: ${relativePath}\n`;
+      // const fileContent = addLineNumbers(
+      //   await fs.promises.readFile(filePath, "utf-8"),
+      // );
+      const fileContent = await fs.promises.readFile(filePath, "utf-8");
+      contentToWrite += fileContent + "\n";
+    },
+    gitignore,
+  );
+
+  return contentToWrite;
+};
+
+export const addLineNumbers = (fileContent: string): string => {
+  const lines = fileContent.split("\n");
+  const numberedLines = lines.map((line, index) => `${index + 1}| ${line}`);
+  return numberedLines.join("\n");
+};
+
+export const removeLineNumbers = (numberedContent: string): string => {
+  const lines = numberedContent.split("\n");
+  const originalLines = lines.map((line) => line.replace(/^\d+\|\s/, ""));
+  return originalLines.join("\n");
+};

@@ -3,6 +3,8 @@ import { cloneAndGetSourceMap, getExtractedIssue } from "../api/utils";
 import { getIssue } from "../github/issue";
 import { db } from "../db/db";
 import { TodoStatus } from "../db/enums";
+import { researchIssue } from "./agent";
+import { cloneRepo } from "../git/clone";
 
 export const createTodos = async (
   repo: string,
@@ -76,14 +78,32 @@ export const createTodos = async (
 
         const extractedIssue = await getExtractedIssue(sourceMap, issueText);
 
-        await db.todos.create({
-          projectId: projectId,
-          description: `${issue.title}\n\n${issueBody}`,
-          name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
-          status: TodoStatus.TODO,
-          issueId: issue.number,
-          position: issue.number, // set the position to the issue number to sort from oldest to newest
-        });
+        let cleanupClone: (() => Promise<void>) | undefined;
+        try {
+          const { path: rootPath, cleanup } = await cloneRepo({
+            repoName: repo,
+            token: accessToken,
+          });
+          cleanupClone = cleanup;
+          const research = await researchIssue(issueText, sourceMap, rootPath);
+
+          await db.todos.create({
+            projectId: projectId,
+            description: `${issue.title}\n\n${issueBody}\n### Research\n${research}`,
+            name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
+            status: TodoStatus.TODO,
+            issueId: issue.number,
+            position: issue.number, // set the position to the issue number to sort from oldest to newest
+          });
+        } catch (error) {
+          console.error(
+            `Error while researching issue #${issue.number}: ${String(error)}`,
+          );
+        } finally {
+          if (cleanupClone) {
+            await cleanupClone();
+          }
+        }
       }
     }),
   );
