@@ -73,6 +73,35 @@ export const authOptions: NextAuthOptions = {
     },
   },
   callbacks: {
+    signIn: async ({ user, account }) => {
+      // Update the account row with the latest access token
+      if (account) {
+        const { id } = await db.accounts
+          .findBy({
+            userId: parseInt(user.id, 10),
+          })
+          .select("id");
+        const {
+          access_token,
+          expires_at,
+          refresh_token,
+          token_type,
+          id_token,
+          scope,
+          session_state,
+        } = account;
+        await db.accounts.find(id).update({
+          access_token,
+          expires_at: `${expires_at}`,
+          refresh_token,
+          token_type,
+          id_token,
+          scope,
+          session_state,
+        });
+      }
+      return true;
+    },
     session: async (params) => {
       const { session, user } = params;
       const userId = parseInt(user.id, 10);
