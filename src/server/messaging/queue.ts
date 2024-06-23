@@ -509,7 +509,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         const sourceMap = getSourceMap(path, repoSettings);
 
         // TODO: Remove this
-        if (process.env.NODE_ENV !== "development") {
+        if (process.env.NODE_ENV === "production") {
           await runBuildCheck({
             ...baseEventData,
             path,

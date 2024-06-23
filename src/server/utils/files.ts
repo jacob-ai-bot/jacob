@@ -15,6 +15,20 @@ interface NewOrModifiedRange {
 
 export type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
 
+export const getFiles = (rootDir: string, fileNamesToInclude: string[]) => {
+  // simple function to get the files from the list.
+  // Add the name of the file at the beginning, and add line numbers to each line in the file.
+  // return a string that has all of the files concatenated together.
+  let output = "";
+  for (const fileName of fileNamesToInclude) {
+    const filePath = path.join(rootDir, fileName);
+    const fileContent = fs.readFileSync(filePath).toString("utf-8");
+    output += `File: ${fileName}\n`;
+    output += addLineNumbers(fileContent);
+  }
+  return output;
+};
+
 export const concatenateFiles = (
   rootDir: string,
   newOrModifiedRangeMap?: FilesRangesMap,

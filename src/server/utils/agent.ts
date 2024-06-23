@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import dedent from "ts-dedent";
+import fs from "fs";
 import { MAX_OUTPUT, type Model, sendGptRequest } from "../openai/request";
 import { getCodebase } from "./files";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
@@ -20,16 +21,23 @@ export enum PlanningAgentActionType {
   CreateNewCode = "CreateNewCode",
 }
 
-interface PlanSteps {
+export interface PlanStep {
   type: PlanningAgentActionType;
   instructions: string;
-  filePath: string;
+  filePaths: string[];
+  exitCriteria: string;
+  dependencies?: string;
+}
+export interface PlanStepString {
+  type: PlanningAgentActionType;
+  instructions: string;
+  filePaths: string;
   exitCriteria: string;
   dependencies?: string;
 }
 
 export interface Plan {
-  steps: PlanSteps[];
+  steps: PlanStep[];
 }
 
 const researchTools: OpenAI.ChatCompletionTool[] = [
@@ -114,12 +122,12 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
           instructions: {
             type: "string",
             description:
-              "Provide clear, detailed, and actionable instructions on the precise changes to be made to the file. Include specific code snippets, refactoring suggestions, or architectural modifications as needed.",
+              "Provide clear, detailed, and actionable instructions on the precise changes to be made to the file. Do NOT provide code snippets, only instructions.",
           },
-          filePath: {
+          filePaths: {
             type: "string",
             description:
-              "Specify the absolute file path of the existing file to be edited.",
+              "Specify the absolute file path of the existing file to be edited. This is cricitally important for the developer to locate the file accurately. Output multiple files as a comma-separated list, if needed.",
           },
           exitCriteria: {
             type: "string",
@@ -127,7 +135,7 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
               "Define measurable and verifiable criteria that must be satisfied to consider this step complete. If possible, these should exactly match a subset of exit criteria found in the original issue.",
           },
         },
-        required: ["instructions", "filePath", "exitCriteria"],
+        required: ["instructions", "filePaths", "exitCriteria"],
       },
     },
   },
@@ -145,10 +153,10 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
             description:
               "Provide comprehensive and precise instructions on the desired functionality. These instructions should be detailed enough for another developer to implement the feature without further clarification.",
           },
-          filePath: {
+          filePaths: {
             type: "string",
             description:
-              "Specify the absolute file path where the new file should be created, considering the project's directory structure and naming conventions.",
+              "Specify the absolute file path where the new file should be created, considering the project's directory structure and naming conventions. Output multiple files as a comma-separated list, if needed.",
           },
           exitCriteria: {
             type: "string",
@@ -161,7 +169,7 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
               "If needed, identify any external libraries, frameworks, or modules that the new code will depend on.",
           },
         },
-        required: ["instructions", "filePath", "exitCriteria"],
+        required: ["instructions", "filePaths", "exitCriteria"],
       },
     },
   },
@@ -473,13 +481,23 @@ export const findFiles = async function (
   githubIssue: string,
   sourceMap: string,
   research: string,
+  previousPlanPrompt: string | undefined,
 ): Promise<string> {
+  let updatedFindFilesPrompt: string | undefined;
+  if (previousPlanPrompt) {
+    updatedFindFilesPrompt = `As part of the ongoing development process, you need to update the files based on the changes made in the code patch.
+    ${previousPlanPrompt}
+    Take the previous plan into account and ensure that the modifications are accurately reflected in the list of files to be modified or created.`;
+  }
+
   const systemPrompt = `You are an AI coding assistant tasked with identifying the specific files in a codebase that need to be modified or created to address a GitHub issue. Your role is to analyze the provided GitHub issue, codebase source map, and research to determine the files that require changes.
 
     Here is the issue that you are responsible for:
     <issue>
     ${githubIssue}
     </issue>
+
+    ${updatedFindFilesPrompt ? updatedFindFilesPrompt : "This is a new plan. You must ensure that any potential file that may need to be changed is accounted for."}
 
     Key Responsibilities:
         1. Understand the GitHub issue and its requirements.
@@ -492,9 +510,8 @@ export const findFiles = async function (
     Guidelines:
         - Ensure that the identified files are directly related to the GitHub issue.
         - List the full file paths for each file, including the directory structure.
-        - Provide a brief description of why each file needs to be modified or created.
-        - Consider the impact of the changes on other parts of the codebase.
-        - If a file is missing or unclear, suggest potential files that may need modification.
+        - Provide a very concise one-sentence description of why each file needs to be modified or created.
+        - Consider the impact of the changes on other parts of the codebase. Use the source map to try to identify potential dependencies.
         - Double-check that all necessary files are accounted for in the list.
         
     Remember, your goal is to accurately identify the files that need to be modified or created to address the GitHub issue. Your list should be detailed enough for a developer to locate and work on the files effectively.`;
@@ -512,15 +529,14 @@ export const findFiles = async function (
         1. Understand the GitHub issue and its requirements.
         2. Analyze the codebase source map to identify the relevant files.
         3. Review the gathered research to determine any specific files mentioned.
-        4. Identify the files that need to be modified or created to address the issue.
+        4. Identify the remaining files that need to be modified or created to address the issue.
         5. Provide a detailed list of the file paths and descriptions for each file.
     
     ### Important:
-        - Ensure that the identified files are directly related to the GitHub issue.
+        - Ensure that the identified files are directly related to the remaining work to be done to address the GitHub issue.
         - List the full file paths for each file, including the directory structure.
-        - Provide a brief description of why each file needs to be modified or created.
-        - If possible, list the specific exit criteria that will be met by modifying this file.
-        - It is critically important that any files that potentially need modification are included in the list.
+        - Provide a concise, one-sentence description of why each file needs to be modified or created.
+        - It is critically important that any files that potentially need modification are included in the list. It is better to include a file that may not need modification than to miss one that does.
         - Double-check that all necessary files are accounted for in the list.`;
 
   const response = await sendSelfConsistencyChainOfThoughtGptRequest(
@@ -539,10 +555,41 @@ export const createPlan = async function (
   githubIssue: string,
   sourceMap: string,
   research: string,
-  model: Model = "gpt-4-0125-preview",
-): Promise<Plan> {
+  originalPlan: Plan | undefined,
+  stepsRemaining: PlanStep[] | undefined,
+  previousStep: PlanStep | undefined,
+  codePatch: string,
+): Promise<Plan | undefined> {
+  let previousPlanPrompt: string | undefined;
+  // If there was a previous plan, we need the new plan to reflect the changes made in the code patch
+  if (originalPlan?.steps?.length && previousStep) {
+    // Remove the previous step from the previous plan
+
+    // Apply the code patch to the previous plan
+    previousPlanPrompt = `Here is the original plan that was created for the GitHub issue. Your task is to update this plan based on the changes made in the code patch.
+    <original_plan>${JSON.stringify(originalPlan)}</original_plan>
+    Here are the previous steps remaining from the original plan that was created for the GitHub issue. It is likely that the plan you create will be similar to this, but you can make updates to ensure the final code changes accurately address the GitHub issue. Note that if there are no remaining steps, it likely means that all the plan been completed. Be sure to double-check that all exit criteria have been addressed by the code changes in <code_patch>:
+    <steps_remaining>${JSON.stringify(stepsRemaining)}</steps_remaining>
+    Here is the previous step that was completed:
+    <previous_step>${JSON.stringify(previousStep)}</previous_step> 
+    The code patch contains the modifications that have been made to the codebase to address the GitHub issue. Here are the changes that have been made so far to address the GitHub issue:
+    <code_patch>${codePatch}</code_patch>`;
+  }
   // First, find all of the files that need to be modified or created
-  const files = await findFiles(githubIssue, sourceMap, research);
+  const files = await findFiles(
+    githubIssue,
+    sourceMap,
+    research,
+    previousPlanPrompt,
+  );
+
+  let updatedPlanPrompt: string | undefined;
+  if (previousPlanPrompt) {
+    updatedPlanPrompt = `As part of the ongoing development process, you need to update the plan based on the changes made in the code patch.
+    ${previousPlanPrompt}
+    Your task is to incorporate these changes into the new plan, ensuring that the modifications are accurately reflected in the plan steps.
+    Also, it is critically important that if all the necessary changes have been made, you do not provide any additional steps. This is the signal that the plan is complete and ready for implementation.`;
+  }
 
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
@@ -554,24 +601,23 @@ export const createPlan = async function (
   <files>${files}</files>
 
   Key Responsibilities:
-      1. Review the provided list of files to modify or create based on the GitHub issue. It is critically important that you create one plan step for each of the files listed. Each step should include detailed instructions on how to modify or create the file.
+      1. Review the provided list of files to modify or create based on the GitHub issue. Each step should include detailed instructions on how to modify or create one or more of the specific files from the code respository.
       2. Comprehend the GitHub issue and its requirements, identifying the goal and what needs to be achieved.
       3. Assess the available information, including the codebase, external resources, and previous research.
       4. Break down the issue into smaller, manageable tasks that align with how a developer would approach the problem.
-      5. Review each of the <files> listed above and determine which changes need to be made to each file. You MUST provide at least one step per file.
-      6. Create a detailed, step-by-step plan (one step per file) for making the necessary changes to the codebase:
+      5. Review each of the <files> listed above and determine which changes need to be made to each file. You MUST provide at least one file per step!
+      6. Create a detailed, step-by-step plan for making the necessary changes to the codebase:
           - Clearly specify the full path of the files to be edited or created.
           - Provide precise instructions on the changes to be made within each file.
-          - Ensure that only one file is modified per step.
+          - Ensure there is at least one file is modified per step.
           - Include any necessary imports, function calls, or dependencies.
           - Specify the order in which the changes should be made.
-      7. Output the plan as an array of tools with detailed properties highlighting the instructions, file paths, and exit criteria for each step. The length of the array should correspond to the number of files identified in the previous step.
+      7. Output the plan as an array of tools with detailed properties highlighting the instructions, file paths, and exit criteria for each step.
   
   Guidelines:
       - Approach the task from the perspective of an experienced developer working on the codebase.
       - Utilize the provided research and codebase information to make informed decisions.
       - Ensure that the plan is clear, concise, and easy to follow.
-      - Create one step per file modification or creation to maintain clarity and focus. Do not have multiple steps with the same file.
       - Use proper formatting and syntax when specifying file paths, code snippets, or commands.
       - Be sure to take into account any changes that may impact other parts of the codebase, such as functions that call or depend on the modified code.
       - Provide detailed string typing (if needed) and ensure consistency with the existing codebase.
@@ -593,6 +639,7 @@ export const createPlan = async function (
   ### GitHub Issue Details:
     - Issue: <github_issue>${githubIssue}</github_issue>
 
+    ${updatedPlanPrompt ? updatedPlanPrompt : "This is a new plan. You must ensure that all necessary changes are accounted for in the plan steps."}
   ### Task:
       1. Understand the Problem:
           - Thoroughly review the GitHub issue and identify the core problem to be solved.
@@ -601,6 +648,7 @@ export const createPlan = async function (
       2. Assess Available Information:
           - Analyze the provided codebase source map to understand the structure and relevant files.
           - Review the gathered research to identify any relevant code snippets, functions, or dependencies.
+          - Take note of any previous plans or steps that have been completed. If there are any, ensure that the new plan reflects the changes made in the code patch.
   
       3. Review Exit Criteria:
           - Analyze the exit criteria specified in the GitHub issue to understand the expected outcomes. If no exit criteria are provided, create measurable criteria for each file modification or creation.
@@ -609,28 +657,31 @@ export const createPlan = async function (
       
       4. Plan Code Changes:
           - Use the list of specific files that need to be modified or created to address the issue.
-          - For each file:
-              - Specify the exact file path.
+          - For each plan step, follow these guidelines:
+              - Specify the exact file path or paths in the filePaths tool output.
               - Provide clear, detailed instructions on the changes to be made.
               - Include any necessary code snippets, imports, or function calls.
-              - Ensure that only one file is modified per step.
+              - Minimize the number of files that are modified per step.
           - Outline the order in which the changes should be made.
+          - Note any existing code changes that have already been made and ensure that the plan reflects these changes.
   
       5. Finalize the Plan:
           - Review the plan to ensure all necessary changes are accounted for.
           - Ensure that no files are missed or incorrectly included.
-          - Provide a final step for creating a commit message and submitting a pull request.
+          - If some code changes have already been made, your plan should include all of the remaining steps needed to complete the GitHub issue.
   
   ### Important:
-      - Create one plan step for each file in the <file> tags above. You MUST provide at least one step per file.
       - Use the following tools to create your plan:
           - EditExistingCode: Modify an existing file in the codebase.
           - CreateNewCode: Create a new file in the codebase.
       - Each tool should be used with specific instructions and file paths.
       - Ensure that the plan is clear, detailed, and follows the guidelines provided.
+      - Create the shortest plan possible that addresses all necessary changes. Avoid unnecessary steps or complexity.
+      - If this is not a new plan and the code patch contains changes that have already been made, ensure that the plan reflects these changes.
+      - If this is not a new plan and the code patch contains all the necessary changes, do not provide any additional steps in the plan.
   
-  Develop a comprehensive plan that outlines the necessary code changes to resolve the GitHub issue effectively. Your plan should be specific, actionable, and easy for another developer to follow and implement.  
-  Remember to leverage the provided file list, codebase information and research to make informed decisions and create a plan that effectively addresses the GitHub issue. Double-check your plan for completeness and clarity before submitting it.`;
+  Develop a comprehensive plan that outlines the necessary code changes to resolve the GitHub issue effectively. Your plan should be concise, specific, actionable, and easy for another developer to follow and implement.  
+  Remember to leverage the provided file list, codebase information, research and (if applicable) previous plans and code patches to make informed decisions and create a plan that effectively addresses the GitHub issue. Double-check your plan for completeness and clarity before submitting it.`;
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
@@ -654,7 +705,13 @@ export const createPlan = async function (
       ),
     ),
   );
-  console.log("<all responses>\n\n\n", responses);
+  console.log(
+    "<all responses>\n\n\n",
+    responses.map(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (r) => JSON.stringify(r.choices[0]?.message) ?? "No message found",
+    ),
+  );
   console.log("\n\n\n</all responses>");
   const bestResponse = getBestResponse(responses);
   console.log("<best response>\n\n\n", bestResponse);
@@ -675,13 +732,17 @@ export const createPlan = async function (
       console.error(`Invalid function name: ${functionName}`);
       continue;
     }
-    const args = JSON.parse(toolCall.function.arguments) as PlanSteps;
+    const args = JSON.parse(toolCall.function.arguments) as PlanStepString;
+
+    // convert the file paths to an array
+    const filePaths = args?.filePaths.split(",");
+    const { instructions, exitCriteria, dependencies } = args;
     const step = {
       type: functionName,
-      instructions: args.instructions,
-      filePath: args.filePath,
-      exitCriteria: args.exitCriteria,
-      dependencies: args.dependencies,
+      instructions,
+      filePaths,
+      exitCriteria,
+      dependencies,
     };
     plan.steps.push(step);
   }
@@ -698,8 +759,9 @@ const getBestResponse = (
   }
 
   return responses.reduce((best, current) => {
-    const bestToolCalls = best.choices[0]?.message.tool_calls ?? [];
+    // Ensure that all of the current tool calls have valid filePaths. Use fs to check if the file exists. if it doesn't, immediately discard the response.
     const currentToolCalls = current.choices[0]?.message.tool_calls ?? [];
+    const bestToolCalls = best.choices[0]?.message.tool_calls ?? [];
 
     if (currentToolCalls.length > bestToolCalls.length) {
       return current;

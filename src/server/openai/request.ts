@@ -25,6 +25,7 @@ const CONTEXT_WINDOW = {
   "gemini-1.5-flash-latest": 1048576,
   "claude-3-opus-20240229": 200000,
   "claude-3-haiku-20240307": 200000,
+  "claude-3-5-sonnet-20240620": 200000,
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
 };
@@ -38,6 +39,7 @@ export const MAX_OUTPUT = {
   "gemini-1.5-flash-latest": 8192,
   "claude-3-opus-20240229": 4096,
   "claude-3-haiku-20240307": 4096,
+  "claude-3-5-sonnet-20240620": 4096,
   "llama-3-sonar-large-32k-online": 4096,
   "llama-3-sonar-small-32k-online": 4096,
 };
@@ -51,6 +53,7 @@ const INPUT_TOKEN_COSTS = {
   "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
   "claude-3-opus-20240229": 15 / ONE_MILLION,
   "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
+  "claude-3-5-sonnet-20240620": 3 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
 };
@@ -62,6 +65,7 @@ const OUTPUT_TOKEN_COSTS = {
   "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
   "claude-3-opus-20240229": 75 / ONE_MILLION,
   "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
+  "claude-3-5-sonnet-20240620": 15 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
 };
@@ -73,6 +77,7 @@ const PORTKEY_VIRTUAL_KEYS = {
   "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "claude-3-opus-20240229": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-haiku-20240307": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
+  "claude-3-5-sonnet-20240620": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "llama-3-sonar-large-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3-sonar-small-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
 };
@@ -115,7 +120,7 @@ export const sendGptRequest = async (
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  model: Model = "gpt-4-0125-preview",
+  model: Model = "claude-3-5-sonnet-20240620",
   isJSONMode = false,
 ): Promise<string | null> => {
   // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
@@ -243,7 +248,7 @@ export const sendGptRequestWithSchema = async (
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
   retries = 3,
-  model: Model = "gpt-4-0125-preview",
+  model: Model = "claude-3-5-sonnet-20240620",
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;
@@ -324,14 +329,16 @@ export const sendGptRequestWithSchema = async (
     } catch (error) {
       console.log(
         `Error occurred during GPT request: ${
-          (error as { message?: string })?.message
+          (error as { message?: string })?.message?.substring(0, 200) ?? ""
         }`,
       );
       retryCount++;
     }
   }
 
-  throw new Error(`Max retries exceeded for GPT request: ${userPrompt}`);
+  throw new Error(
+    `Max retries exceeded for GPT request: ${userPrompt.substring(0, 200)}`,
+  );
 };
 
 export const sendGptVisionRequest = async (

@@ -19,10 +19,9 @@ const evaluate = async (
   systemPrompt: string,
   baseEventData: BaseEventData | undefined,
   models: Model[] = [
-    "gemini-1.5-flash-latest",
-    "claude-3-haiku-20240307",
+    "claude-3-5-sonnet-20240620",
     "gpt-4o-2024-05-13",
-    "gpt-4o-2024-05-13", // duplicate to increase weight
+    "gemini-1.5-pro-latest",
   ],
 ): Promise<number> => {
   const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated code output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
@@ -90,13 +89,14 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   delay = 60000,
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
   models: Model[] = [
-    "gpt-4-0125-preview",
+    "claude-3-5-sonnet-20240620",
     "gpt-4o-2024-05-13",
     "gemini-1.5-pro-latest",
+    "gpt-4-0125-preview",
   ],
-  minTemperature = 0.1,
-  maxTemperature = 0.3,
-  numRequests = 3,
+  minTemperature = 0.2,
+  maxTemperature = 0.5,
+  numRequests = 4,
 ): Promise<string | null> => {
   try {
     const initialPromises = Array.from({ length: numRequests }, (_, i) => {
@@ -161,6 +161,12 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
     if (!bestEvaluation) {
       throw new Error("No valid evaluations");
     }
+    console.log(`
+      *** Best Evaluation ***
+      Model: ${bestEvaluation.model}
+      Temperature: ${bestEvaluation.temperature}
+      Rating: ${bestEvaluation.rating}
+      `);
     return bestEvaluation.response;
   } catch (error) {
     if (retries > 0) {

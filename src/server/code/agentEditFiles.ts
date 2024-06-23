@@ -10,7 +10,12 @@ import {
   getStyles,
   generateJacobBranchName,
 } from "../utils";
-import { concatenateFiles, reconstructFiles } from "../utils/files";
+import {
+  addLineNumbers,
+  concatenateFiles,
+  getFiles,
+  reconstructFiles,
+} from "../utils/files";
 import {
   sendGptRequestWithSchema,
   sendGptVisionRequest,
@@ -30,7 +35,9 @@ import {
   PlanningAgentActionType,
   createPlan,
   researchIssue,
-} from "../utils/agent";
+  type PlanStep,
+  type Plan,
+} from "~/server/utils/agent";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -64,23 +71,53 @@ export async function agentEditFiles(params: EditFilesParams) {
   //     rootPath,
   //   );
   const research = issue.body ?? "";
-  const plan = await createPlan(issueText, sourceMapOrFileList, research);
-  for (const step of plan.steps) {
-    console.log(step);
-    const filesToUpdate =
-      step.type === PlanningAgentActionType.EditExistingCode
-        ? [step.filePath]
-        : [];
-    const filesToCreate =
-      step.type === PlanningAgentActionType.CreateNewCode
-        ? [step.filePath]
-        : [];
-    const { code } = concatenateFiles(
-      rootPath,
-      undefined,
-      filesToUpdate,
-      filesToCreate,
+  let codePatch = "";
+  const maxPlanIterations = 20;
+  let planIterations = 0;
+  let originalPlan: Plan | undefined;
+  let previousStep: PlanStep | undefined;
+  let stepsRemaining: PlanStep[] | undefined;
+  while (planIterations < maxPlanIterations) {
+    planIterations++;
+    const plan = await createPlan(
+      issueText,
+      sourceMapOrFileList,
+      research,
+      originalPlan,
+      stepsRemaining,
+      previousStep,
+      codePatch,
     );
+    if (!plan) {
+      throw new Error("No plan generated");
+    }
+    if (!plan.steps?.length) {
+      // No steps in the plan, so we're done
+      break;
+    }
+    const step = plan.steps[0];
+    if (!step) {
+      throw new Error("No step generated");
+    }
+
+    if (originalPlan === undefined) {
+      originalPlan = plan;
+      console.log("Original Plan", JSON.stringify(originalPlan));
+    }
+    console.log(JSON.stringify(step));
+    // const filesToUpdate =
+    //   step.type === PlanningAgentActionType.EditExistingCode
+    //     ? step.filePaths
+    //     : [];
+    // const filesToCreate =
+    //   step.type === PlanningAgentActionType.CreateNewCode ? step.filePaths : [];
+    // const { code } = concatenateFiles(
+    //   rootPath,
+    //   undefined,
+    //   filesToUpdate,
+    //   filesToCreate,
+    // );
+    const code = getFiles(rootPath, step.filePaths);
     const types = getTypes(rootPath, repoSettings);
     const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
       "\n",
@@ -90,7 +127,7 @@ export async function agentEditFiles(params: EditFilesParams) {
     images = await saveImages(images, issue?.body, rootPath, repoSettings);
 
     // TODO: populate tailwind colors and leverage in system prompt
-    const filePlan = `Instructions for ${step.filePath}: ${step.instructions ?? ""}\n\nExit Criteria for ${step.filePath}: ${step.exitCriteria ?? ""}`;
+    const filePlan = `Instructions for ${step.filePaths?.join(", ")}:\n\n${step.instructions}\n\nExit Criteria:\n\n${step.exitCriteria}`;
 
     const codeTemplateParams = {
       sourceMap: sourceMapOrFileList,
@@ -106,62 +143,73 @@ export async function agentEditFiles(params: EditFilesParams) {
     };
 
     const codeSystemPrompt = constructNewOrEditSystemPrompt(
-      "code_edit_files",
+      "code_edit_files_diff",
       codeTemplateParams,
       repoSettings,
     );
     const codeUserPrompt = parseTemplate(
       "dev",
-      "code_edit_files",
+      "code_edit_files_diff",
       "user",
       codeTemplateParams,
     );
 
     // Call sendGptRequest with the issue and concatenated code file
-    const updatedCode = (await sendGptVisionRequest(
+    const patch = (await sendGptVisionRequest(
       codeUserPrompt,
       codeSystemPrompt,
       snapshotUrl,
       0.2,
       baseEventData,
     ))!;
+    codePatch += patch;
+    stepsRemaining = plan.steps.filter((s) => s !== step);
+    previousStep = step;
 
-    if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
-      console.log(`[${repository.full_name}] code`, code);
-      console.log(`[${repository.full_name}] No code generated. Exiting...`);
-      throw new Error("No code generated");
-    }
-
-    await setNewBranch({
-      ...baseEventData,
-      rootPath,
-      branchName: newBranch,
-    });
-
-    const files = reconstructFiles(updatedCode, rootPath);
-    await Promise.all(
-      files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
+    console.log(`\n\n\n\n***** <code_patch>`, codePatch);
+    console.log(`</code_patch> *****\n\n\n\n`);
+    console.log(`[${repository.full_name}] planIterations`, planIterations);
+    console.log(
+      `[${repository.full_name}] plan.steps`,
+      JSON.stringify(stepsRemaining),
     );
   }
 
-  await checkAndCommit({
-    ...baseEventData,
-    repository,
-    token,
-    rootPath,
-    branch: newBranch,
-    repoSettings,
-    commitMessage: `JACoB PR for Issue ${issue.title}`,
-    issue,
-    newPrTitle: `JACoB PR for Issue ${issue.title}`,
-    newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
-      plan.steps
-        ?.map(
-          (step) =>
-            `### ${step.filePath}\n\n${step.instructions}\n\n${step.exitCriteria}`,
-        )
-        .join("\n\n") ?? `No plan found.`
-    }`,
-    newPrReviewers: issue.assignees.map((assignee) => assignee.login),
-  });
+  //     if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
+  //       console.log(`[${repository.full_name}] code`, code);
+  //       console.log(`[${repository.full_name}] No code generated. Exiting...`);
+  //       throw new Error("No code generated");
+  //     }
+
+  //     await setNewBranch({
+  //       ...baseEventData,
+  //       rootPath,
+  //       branchName: newBranch,
+  //     });
+
+  //     const files = reconstructFiles(updatedCode, rootPath);
+  //     await Promise.all(
+  //       files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
+  //     );
+
+  //   await checkAndCommit({
+  //     ...baseEventData,
+  //     repository,
+  //     token,
+  //     rootPath,
+  //     branch: newBranch,
+  //     repoSettings,
+  //     commitMessage: `JACoB PR for Issue ${issue.title}`,
+  //     issue,
+  //     newPrTitle: `JACoB PR for Issue ${issue.title}`,
+  //     newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
+  //       plan.steps
+  //         ?.map(
+  //           (step) =>
+  //             `### ${step.filePath}\n\n${step.instructions}\n\n${step.exitCriteria}`,
+  //         )
+  //         .join("\n\n") ?? `No plan found.`
+  //     }`,
+  //     newPrReviewers: issue.assignees.map((assignee) => assignee.login),
+  //   });
 }
