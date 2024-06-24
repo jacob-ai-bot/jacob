@@ -10,10 +10,11 @@ import { emitPromptEvent } from "../utils/events";
 import {
   type ChatCompletionCreateParamsStreaming,
   type ChatCompletionChunk,
+  type ChatCompletionTool,
+  type ChatCompletionToolChoiceOption,
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
-// import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -353,7 +354,6 @@ export const sendGptVisionRequest = async (
   const model: Model = "gpt-4o-2024-05-13";
 
   if (!snapshotUrl?.length) {
-    // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest
     return sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
@@ -469,5 +469,121 @@ export const OpenAIStream = async (
   } catch (error) {
     console.error("Error creating chat completion:", error);
     throw error;
+  }
+};
+
+export const sendGptToolRequest = async (
+  userPrompt: string,
+  systemPrompt = "You are a helpful assistant.",
+  tools: ChatCompletionTool[],
+  temperature = 0.3,
+  baseEventData: BaseEventData | undefined = undefined,
+  retries = 3,
+  delay = 60000,
+  model: Model = "gpt-4-turbo-2024-04-09",
+  toolChoice: ChatCompletionToolChoiceOption = "auto",
+  parallelToolCalls = false,
+): Promise<OpenAI.Chat.ChatCompletion> => {
+  const openai = new OpenAI({
+    apiKey: "using-virtual-portkey-key",
+    baseURL: PORTKEY_GATEWAY_URL,
+    defaultHeaders: {
+      "x-portkey-api-key": process.env.PORTKEY_API_KEY,
+      "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
+      "x-portkey-cache": "simple",
+      "x-portkey-retry-count": "3",
+      "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
+    },
+  });
+
+  try {
+    const max_tokens = await getMaxTokensForResponse(
+      userPrompt + systemPrompt,
+      model,
+    );
+
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ];
+
+    console.log(
+      `\n +++ Calling ${model} with max_tokens: ${max_tokens} for tool request`,
+    );
+    const startTime = Date.now();
+
+    const response = await openai.chat.completions.create({
+      model,
+      messages,
+      max_tokens,
+      temperature,
+      tools,
+      tool_choice: toolChoice,
+      ...(parallelToolCalls ? { parallel_tool_calls: true } : {}),
+    });
+
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    console.log(
+      `\n +++ ${model} Response time ${duration} ms for tool request`,
+    );
+
+    const inputTokens = response.usage?.prompt_tokens ?? 0;
+    const outputTokens = response.usage?.completion_tokens ?? 0;
+    const tokens = inputTokens + outputTokens;
+    const cost =
+      inputTokens * INPUT_TOKEN_COSTS[model] +
+      outputTokens * OUTPUT_TOKEN_COSTS[model];
+
+    if (baseEventData) {
+      await emitPromptEvent({
+        ...baseEventData,
+        cost,
+        tokens,
+        duration,
+        model,
+        requestPrompts: messages.map((message) => ({
+          promptType: (message.role?.toUpperCase() ?? "User") as
+            | "User"
+            | "System"
+            | "Assistant",
+          prompt:
+            typeof message.content === "string"
+              ? message.content
+              : JSON.stringify(message.content),
+        })),
+        responsePrompt: JSON.stringify(response.choices[0]?.message),
+      });
+    }
+
+    return response;
+  } catch (error) {
+    if (
+      retries === 0 ||
+      !(error instanceof Error) ||
+      (error as { response?: Response })?.response?.status !== 429
+    ) {
+      console.error(
+        `Error in GPT tool request: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw error;
+    } else {
+      console.log(
+        `Received 429, retries remaining: ${retries}. Retrying in ${delay} ms...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return sendGptToolRequest(
+        userPrompt,
+        systemPrompt,
+        tools,
+        temperature,
+        baseEventData,
+        retries - 1,
+        delay * 2,
+        model,
+        toolChoice,
+        parallelToolCalls,
+      );
+    }
   }
 };

@@ -140,6 +140,7 @@ export async function agentEditFiles(params: EditFilesParams) {
       research,
       plan: filePlan,
       snapshotUrl: snapshotUrl ?? "",
+      codePatch,
     };
 
     const codeSystemPrompt = constructNewOrEditSystemPrompt(
@@ -155,14 +156,24 @@ export async function agentEditFiles(params: EditFilesParams) {
     );
 
     // Call sendGptRequest with the issue and concatenated code file
-    const patch = (await sendGptVisionRequest(
+    const response = await sendGptVisionRequest(
       codeUserPrompt,
       codeSystemPrompt,
       snapshotUrl,
       0.2,
       baseEventData,
-    ))!;
-    codePatch += patch;
+    );
+
+    // Extract the patch from the response
+    const patchMatch = response?.match(/<code_patch>([\s\S]*?)<\/code_patch>/);
+    const patch = patchMatch?.[1] ? patchMatch[1].trim() : "";
+
+    if (patch) {
+      codePatch += patch;
+    } else {
+      console.log("No changes were made in this step.");
+    }
+
     stepsRemaining = plan.steps.filter((s) => s !== step);
     previousStep = step;
 
@@ -174,6 +185,7 @@ export async function agentEditFiles(params: EditFilesParams) {
       JSON.stringify(stepsRemaining),
     );
   }
+  // Need to do a final pass through the code patch to ensure consistency. Things like ensuring the props are correct, the stylings are correctly added, etc.
 
   //     if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
   //       console.log(`[${repository.full_name}] code`, code);

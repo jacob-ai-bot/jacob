@@ -1,7 +1,12 @@
 import OpenAI from "openai";
 import dedent from "ts-dedent";
 import fs from "fs";
-import { MAX_OUTPUT, type Model, sendGptRequest } from "../openai/request";
+import {
+  MAX_OUTPUT,
+  type Model,
+  sendGptRequest,
+  sendGptToolRequest,
+} from "../openai/request";
 import { getCodebase } from "./files";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 
@@ -180,7 +185,7 @@ export const researchIssue = async function (
   sourceMap: string,
   rootDir: string,
   maxLoops = 3,
-  model: Model = "gpt-4-0125-preview",
+  model: Model = "claude-3-5-sonnet-20240620",
 ): Promise<string> {
   //  - ResearchInternet: Search the internet for specific details if there are unique aspects that need further understanding.
   const systemPrompt = dedent`You are an advanced AI coding assistant designed to efficiently gather information and address GitHub issues. Your role is to analyze the provided GitHub issue, codebase source map, and previously gathered information to determine the necessary steps for resolving the issue.
@@ -252,15 +257,18 @@ export const researchIssue = async function (
 
   while (!allInfoGathered && loops < maxLoops) {
     loops++;
-    const response = await openai.chat.completions.create({
+    const response = await sendGptToolRequest(
+      userPrompt,
+      systemPrompt,
+      researchTools,
+      0.3,
+      undefined,
+      2,
+      60000,
       model,
-      messages,
-      temperature: 0.3,
-      tools: researchTools,
-      tool_choice: "required",
-      parallel_tool_calls: true,
-      max_tokens: MAX_OUTPUT[model],
-    });
+      "required",
+      true,
+    );
 
     const toolCalls = response.choices[0]?.message.tool_calls;
 
@@ -594,12 +602,6 @@ export const createPlan = async function (
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
 
-  Here is the issue you need to address:
-  <github_issue>${githubIssue}</github_issue>
-
-  Here are the files you need to modify or create based on the GitHub issue:
-  <files>${files}</files>
-
   Key Responsibilities:
       1. Review the provided list of files to modify or create based on the GitHub issue. Each step should include detailed instructions on how to modify or create one or more of the specific files from the code respository.
       2. Comprehend the GitHub issue and its requirements, identifying the goal and what needs to be achieved.
@@ -683,25 +685,27 @@ export const createPlan = async function (
   Develop a comprehensive plan that outlines the necessary code changes to resolve the GitHub issue effectively. Your plan should be concise, specific, actionable, and easy for another developer to follow and implement.  
   Remember to leverage the provided file list, codebase information, research and (if applicable) previous plans and code patches to make informed decisions and create a plan that effectively addresses the GitHub issue. Double-check your plan for completeness and clarity before submitting it.`;
 
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ];
-
   // To get the best possible plan, we run the request multiple times with various models at varying temps, and choose the most comprehensive response (as measured naively by the number of tool calls and length of arguments)
   const models: Model[] = ["gpt-4-0125-preview", "gpt-4o-2024-05-13"];
+  // const models: Model[] = [
+  //   "claude-3-5-sonnet-20240620",
+  //   "claude-3-5-sonnet-20240620",
+  // ];
   const responses = await Promise.all(
     models.flatMap((model) =>
       [1, 2].map((_, index) =>
-        openai.chat.completions.create({
+        sendGptToolRequest(
+          userPrompt,
+          systemPrompt,
+          planningTools,
+          index === 1 ? 0.4 : 0.3,
+          undefined,
+          3,
+          60000,
           model,
-          messages,
-          temperature: index === 1 ? 0.4 : 0.3,
-          tools: planningTools,
-          tool_choice: "required",
-          parallel_tool_calls: true,
-          max_tokens: MAX_OUTPUT[model],
-        }),
+          "required",
+          true,
+        ),
       ),
     ),
   );

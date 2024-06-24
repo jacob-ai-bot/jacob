@@ -23,7 +23,7 @@ const evaluate = async (
     "gpt-4o-2024-05-13",
     "gemini-1.5-pro-latest",
   ],
-): Promise<number> => {
+): Promise<EvaluationInfo[]> => {
   const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated code output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
   Your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. 
   Even if the changes improve the code (such as removing comments), provide a very low rating if you see ANY unrelated code changes. 
@@ -53,31 +53,22 @@ const evaluate = async (
     Review the original user prompt, system prompt, and response. Evaluate how well the response addresses the original user prompt and system prompt. Provide a very low rating if you see unrelated code changes. Provide a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. Note any unrelated code changes, provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
     Your response MUST adhere exactly to the EXACT format provided in the EvaluationSchema schema or the system will crash.`;
 
-  const evaluationPromises = [];
-
   // Evaluate using each model, then return the average the scores
-  for (const model of models) {
-    const evaluationPromise = sendGptRequestWithSchema(
-      bestUserPrompt,
-      bestSystemPrompt,
-      EvaluationSchema,
-      0.2,
-      baseEventData,
-      1,
-      model,
-    );
-    evaluationPromises.push(evaluationPromise);
-  }
 
-  const evaluations = (await Promise.all(
-    evaluationPromises,
-  )) as EvaluationInfo[];
-  return (
-    evaluations
-      .filter((e) => e.rating && e.rating > 0)
-      .reduce((acc, evaluation) => acc + (evaluation.rating ?? 0), 0) /
-    evaluations.length
+  const evaluationPromises = models.map(
+    (model) =>
+      sendGptRequestWithSchema(
+        bestUserPrompt,
+        bestSystemPrompt,
+        EvaluationSchema,
+        0.2,
+        baseEventData,
+        1,
+        model,
+      ) as Promise<EvaluationInfo>,
   );
+
+  return Promise.all(evaluationPromises);
 };
 
 export const sendSelfConsistencyChainOfThoughtGptRequest = async (
@@ -88,17 +79,21 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   retries = 3,
   delay = 60000,
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
+  // models: Model[] = [
+  //   "claude-3-5-sonnet-20240620",
+  //   "gpt-4o-2024-05-13",
+  //   "gemini-1.5-pro-latest",
+  //   "gpt-4-0125-preview",
+  // ],
   models: Model[] = [
     "claude-3-5-sonnet-20240620",
-    "gpt-4o-2024-05-13",
-    "gemini-1.5-pro-latest",
-    "gpt-4-0125-preview",
+    "claude-3-5-sonnet-20240620",
   ],
   minTemperature = 0.2,
   maxTemperature = 0.5,
-  numRequests = 4,
 ): Promise<string | null> => {
   try {
+    const numRequests = models.length;
     const initialPromises = Array.from({ length: numRequests }, (_, i) => {
       const temperature =
         Math.round(
@@ -129,7 +124,7 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
     const initialResults = await Promise.all(initialPromises);
     const validResults = initialResults.filter((result) => !!result?.response);
 
-    const evaulationPromises = validResults.map((result) => {
+    const evaluationPromises = validResults.map((result) => {
       if (result) {
         return evaluate(
           result?.response ?? "",
@@ -137,37 +132,81 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
           systemPrompt,
           baseEventData,
         )
-          .then((rating) => ({
+          .then((evaluations) => ({
             response: result?.response,
             model: result.model,
             temperature: result.temperature,
-            rating,
+            evaluations,
           }))
           .catch((error) => {
             console.error(error);
-            return null; // or some other default value
+            return null;
           });
       } else {
         return null;
       }
     });
 
-    const evaluations = await Promise.all(evaulationPromises);
-    const bestEvaluation = evaluations
-      .filter((e) => e !== null)
-      .reduce((best, current) =>
-        (current?.rating ?? 0) > (best?.rating ?? 0) ? current : best,
-      );
+    const evaluationResults = await Promise.all(evaluationPromises);
+    const validEvaluationResults = evaluationResults.filter(
+      (e): e is NonNullable<typeof e> => e !== null,
+    );
+
+    const bestEvaluation = validEvaluationResults.reduce((best, current) => {
+      const currentAvgRating =
+        current.evaluations.reduce((sum, e) => sum + (e.rating ?? 0), 0) /
+        current.evaluations.length;
+      const bestAvgRating =
+        best.evaluations.reduce((sum, e) => sum + (e.rating ?? 0), 0) /
+        best.evaluations.length;
+      return currentAvgRating > bestAvgRating ? current : best;
+    });
+
     if (!bestEvaluation) {
       throw new Error("No valid evaluations");
     }
+
     console.log(`
       *** Best Evaluation ***
       Model: ${bestEvaluation.model}
       Temperature: ${bestEvaluation.temperature}
-      Rating: ${bestEvaluation.rating}
-      `);
-    return bestEvaluation.response;
+      Average Rating: ${bestEvaluation.evaluations.reduce((sum, e) => sum + (e.rating ?? 0), 0) / bestEvaluation.evaluations.length}
+    `);
+
+    // Now use the information from the evaluations to improve the output.
+    const updatePrompt = `
+    Original response:
+    ${bestEvaluation.response}
+    
+    Evaluations:
+    ${bestEvaluation.evaluations
+      .map(
+        (e, index) => `
+    Evaluation ${index + 1}:
+    ${e.evaluation}
+    Unrelated Code Changes: ${e.unrelatedCodeChanges}
+    Summary: ${e.summary}
+    Rating: ${e.rating}
+    `,
+      )
+      .join("\n")}
+    
+    Please update the original response to address the specific issues mentioned in these evaluations. Maintain the overall structure and intent of the original response, but improve it based on the feedback provided. Ensure to address any unrelated code changes mentioned.
+    `;
+
+    // Send the update request to the LLM
+    const updatedResponse = await sendGptRequest(
+      updatePrompt,
+      systemPrompt,
+      bestEvaluation.temperature,
+      baseEventData,
+      3,
+      60000,
+      undefined,
+      bestEvaluation.model,
+    );
+
+    return updatedResponse;
   } catch (error) {
     if (retries > 0) {
       return sendSelfConsistencyChainOfThoughtGptRequest(
@@ -181,7 +220,6 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
         models,
         minTemperature,
         maxTemperature,
-        numRequests,
       );
     } else {
       throw error;
