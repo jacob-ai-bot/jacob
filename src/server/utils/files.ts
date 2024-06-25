@@ -346,13 +346,21 @@ export const getCodebase = async (rootDir: string): Promise<string> => {
 };
 
 export const addLineNumbers = (fileContent: string): string => {
+  if (!fileContent) {
+    return "";
+  }
   const lines = fileContent.split("\n");
   const numberedLines = lines.map((line, index) => `${index + 1}| ${line}`);
   return numberedLines.join("\n");
 };
 
 export const removeLineNumbers = (numberedContent: string): string => {
+  if (!numberedContent) {
+    return "";
+  }
   const lines = numberedContent.split("\n");
-  const originalLines = lines.map((line) => line.replace(/^\d+\|\s/, ""));
+  const originalLines = lines.map((line) =>
+    line.replace(/^\d+\|\s?$/, "").replace(/^\d+\|\s/, ""),
+  );
   return originalLines.join("\n");
 };

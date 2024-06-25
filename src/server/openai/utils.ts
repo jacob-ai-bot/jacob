@@ -13,7 +13,7 @@ export const EvaluationSchema = z.object({
 
 export type EvaluationInfo = z.infer<typeof EvaluationSchema>;
 
-const evaluate = async (
+export const evaluate = async (
   response: string,
   userPrompt: string,
   systemPrompt: string,
@@ -21,19 +21,19 @@ const evaluate = async (
   models: Model[] = [
     "claude-3-5-sonnet-20240620",
     "gpt-4o-2024-05-13",
-    "gemini-1.5-pro-latest",
+    "claude-3-5-sonnet-20240620", // Replacing gemini with claude for now since gemini is having problems returning valid JSON
   ],
 ): Promise<EvaluationInfo[]> => {
   const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated code output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
-  Your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. 
-  Even if the changes improve the code (such as removing comments), provide a very low rating if you see ANY unrelated code changes. 
+  If this is a code change, your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. 
+  If this is a text response, your evaluation should specifically note if the response is accurate, relevant, and complete based on the original prompts.
   Provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
 
   export const EvaluationSchema = z.object({
-    evaluation: z.string(), // a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue.
-    unrelatedCodeChanges: z.string(), // a brief list of the unrelated code changes such as removed comments or other unrelated code additions or removals. If there are no unrelated code changes, say "None".
+    evaluation: z.string(), // a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and (if applicable) how well the output addresses the original GitHub issue.
+    unrelatedCodeChanges: z.string(), // a brief list of the unrelated code changes such as removed comments or other unrelated code additions or removals. If this is a text response or there are no unrelated code changes, say "None".
     summary: z.string(), // a brief summary of the evaluation
-    rating: z.number().min(1).max(5), // a final rating of the response from 1 to 5 (1 is bad or unrelated code changes, 2 is OK, 3 is good, 4 is great, 5 is perfect)
+    rating: z.number().min(1).max(5), // a final rating of the response from 1 to 5 (1 is bad, 2 is OK, 3 is good, 4 is great, 5 is perfect)
   });
   ## INSTRUCTIONS
   Review the original user prompt, system prompt, and response. Evaluate how well the response adheres to the original user prompt and system prompt. Provide a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. Provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
@@ -50,7 +50,7 @@ const evaluate = async (
     ${response}
 
     ## INSTRUCTIONS 
-    Review the original user prompt, system prompt, and response. Evaluate how well the response addresses the original user prompt and system prompt. Provide a very low rating if you see unrelated code changes. Provide a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. Note any unrelated code changes, provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
+    Review the original user prompt, system prompt, and response. Evaluate how well the response addresses the original user prompt and system prompt. Provide a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. Note any unrelated code changes if needed, provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
     Your response MUST adhere exactly to the EXACT format provided in the EvaluationSchema schema or the system will crash.`;
 
   // Evaluate using each model, then return the average the scores
@@ -191,7 +191,7 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
       )
       .join("\n")}
     
-    Please update the original response to address the specific issues mentioned in these evaluations. Maintain the overall structure and intent of the original response, but improve it based on the feedback provided. Ensure to address any unrelated code changes mentioned.
+    Please update the original response to address the specific issues mentioned in these evaluations. Maintain the overall structure and intent of the original response, but improve it based on the feedback provided. Ensure to address any unrelated code changes mentioned. ONLY output the new response, do not comment on the changes or include any other information.
     `;
 
     // Send the update request to the LLM
