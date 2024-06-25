@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import ignore, { type Ignore } from "ignore";
 import parseDiff from "parse-diff";
+import { applyPatches } from "diff";
 import { removeMarkdownCodeblocks } from "~/app/utils";
 
 type LineLengthMap = Record<string, number>;
@@ -253,4 +254,34 @@ export function getNewOrModifiedRangesMapFromDiff(diff: string) {
     }
   });
   return rangeMap;
+}
+
+export function applyCodePatch(rootPath: string, patch: string) {
+  return new Promise<void>((resolve, reject) => {
+    applyPatches(patch, {
+      loadFile: (index, callback) => {
+        if (!index.oldFileName) {
+          return callback(new Error("oldFileName is required"), "");
+        }
+        const data = fs
+          .readFileSync(path.join(rootPath, index.oldFileName))
+          .toString();
+        callback(null, data);
+      },
+      patched: (index, content, callback) => {
+        if (!index.newFileName) {
+          return callback(new Error("newFileName is required"));
+        }
+        fs.writeFileSync(path.join(rootPath, index.newFileName), content);
+        callback(null);
+      },
+      complete: (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      },
+    });
+  });
 }
