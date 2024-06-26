@@ -27,7 +27,7 @@ export enum IconSet {
 // TODO: add more enums, all options are in the jacob-setup repo
 
 export interface RepoSettings {
-  language?: Language;
+  language: Language;
   style?: Style;
   installCommand?: string;
   formatCommand?: string;
@@ -74,6 +74,7 @@ export function getRepoSettings(rootPath: string) {
   } catch (e) {
     // Ignore failures on repos where we can't load/parse package.json
   }
+  const hasTSConfig = fs.existsSync(path.join(rootPath, "tsconfig.json"));
   let settingsFromFile: RepoSettings | undefined;
   try {
     const settingsContent = fs.readFileSync(
@@ -84,13 +85,15 @@ export function getRepoSettings(rootPath: string) {
   } catch (e) {
     // Ignore failures on repos where we can't load/parse jacob.json
   }
+  const settings: RepoSettings = {
+    language: hasTSConfig ? Language.TypeScript : Language.JavaScript,
+    ...settingsFromFile,
+  };
   if (typeof packageJson?.dependencies === "object") {
-    const settings: RepoSettings = settingsFromFile ?? {};
     settings.packageDependencies = packageJson.dependencies as Record<
       string,
       string
     >;
-    return settings;
   }
-  return settingsFromFile;
+  return settings;
 }

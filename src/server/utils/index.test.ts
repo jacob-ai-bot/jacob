@@ -384,6 +384,7 @@ describe("getStyles", () => {
     expect(resultNoSettings).toBe("tailwind config typescript");
 
     const resultTailwind = await getStyles("/rootpath", {
+      language: Language.TypeScript,
       style: Style.Tailwind,
     });
     expect(resultTailwind).toBe("tailwind config typescript");
@@ -394,11 +395,13 @@ describe("getStyles", () => {
     expect(resultTypeScript).toBe("tailwind config typescript");
 
     const resultCustomPath = await getStyles("/rootpath", {
+      language: Language.TypeScript,
       directories: { tailwindConfig: "custom/tailwind.config.ts" },
     });
     expect(resultCustomPath).toBe("custom path config contents");
 
     const resultCSS = await getStyles("/rootpath", {
+      language: Language.TypeScript,
       style: Style.CSS,
     });
     expect(resultCSS).toBe("");
