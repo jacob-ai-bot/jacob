@@ -16,7 +16,6 @@ import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
-import { sendGptRequest } from "../openai/request";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 
 export type PullRequest =

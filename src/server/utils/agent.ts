@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import dedent from "ts-dedent";
-import fs from "fs";
 import {
   MAX_OUTPUT,
   type Model,
@@ -12,6 +11,7 @@ import {
   evaluate,
   sendSelfConsistencyChainOfThoughtGptRequest,
 } from "../openai/utils";
+import { PlanningAgentActionType } from "../db/enums";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -22,11 +22,6 @@ export enum ResearchAgentActionType {
   ResearchInternet = "ResearchInternet",
   AskProjectOwner = "AskProjectOwner",
   ResearchComplete = "ResearchComplete",
-}
-
-export enum PlanningAgentActionType {
-  EditExistingCode = "EditExistingCode",
-  CreateNewCode = "CreateNewCode",
 }
 
 export interface PlanStep {

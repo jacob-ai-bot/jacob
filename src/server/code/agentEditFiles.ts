@@ -14,7 +14,7 @@ import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
-import { emitCodeEvent } from "../utils/events";
+import { emitCodeEvent, emitPlanStepEvent } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { createPlan, type Plan } from "~/server/utils/agent";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
@@ -79,6 +79,7 @@ export async function agentEditFiles(params: EditFilesParams) {
     let stepNumber = 0;
     for (const step of plan.steps) {
       stepNumber++;
+      await emitPlanStepEvent({ ...baseEventData, planStep: step });
       // const step = plan.steps[0];
       // if (!step) {
       //   throw new Error("No step generated");

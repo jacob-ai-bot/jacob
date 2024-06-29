@@ -7,6 +7,7 @@ import { type BaseEventData, getLanguageFromFileName } from "~/server/utils";
 import type { PullRequest } from "~/server/code/checkAndCommit";
 import { newRedisConnection } from "./redis";
 import { type RetrievedIssue } from "~/server/code/checkAndCommit";
+import { type PlanStep } from "~/server/utils/agent";
 
 export const EVENT_RETENTION_TIME_IN_SECONDS = 14 * 24 * 60 * 60;
 
@@ -66,6 +67,25 @@ export async function emitPREvent(params: EmitPREventParams) {
       status: pullRequest.state,
       createdAt: pullRequest.created_at,
       author: pullRequest.user.login,
+    },
+  });
+  await redisConnection.publish("events", JSON.stringify(event));
+}
+
+interface EmitPlanStepEventParams extends BaseEventData {
+  planStep: PlanStep;
+}
+
+export async function emitPlanStepEvent(params: EmitPlanStepEventParams) {
+  const { planStep, ...baseEventData } = params;
+  const { type: actionType, ...restOfPlanStep } = planStep;
+  const event = await db.events.selectAll().insert({
+    ...baseEventData,
+    type: TaskType.plan_step,
+    payload: {
+      type: TaskType.plan_step,
+      actionType,
+      ...restOfPlanStep,
     },
   });
   await redisConnection.publish("events", JSON.stringify(event));

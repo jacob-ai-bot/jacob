@@ -1,7 +1,12 @@
 import { type JSONTypes } from "orchid-core";
 import type { Selectable, Insertable, Updateable, Queryable } from "orchid-orm";
 import { BaseTable } from "../baseTable";
-import { TaskType, TaskStatus, TaskSubType } from "../enums";
+import {
+  TaskType,
+  TaskStatus,
+  TaskSubType,
+  PlanningAgentActionType,
+} from "../enums";
 import { Language } from "~/server/utils/settings";
 
 export type Event = Selectable<EventsTable>;
@@ -84,6 +89,15 @@ export class EventsTable extends BaseTable {
           description: t.string(),
           position: t.number(),
           isComplete: t.boolean(),
+        }),
+        t.object({
+          type: t.literal(TaskType.plan_step),
+          actionType: t.nativeEnum(PlanningAgentActionType),
+          title: t.string(),
+          instructions: t.string(),
+          filePaths: t.array(t.string()),
+          exitCriteria: t.string(),
+          dependencies: t.string().optional(),
         }),
         t.object({
           type: t.literal(TaskType.prompt),
