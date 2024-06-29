@@ -1,7 +1,6 @@
 import { type Issue, type Repository } from "@octokit/webhooks-types";
 import fs from "fs";
 import { getTypes, getImages } from "../analyze/sourceMap";
-import { traverseCodebase } from "../analyze/traverse";
 import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
@@ -10,36 +9,14 @@ import {
   getStyles,
   generateJacobBranchName,
 } from "../utils";
-import {
-  addLineNumbers,
-  concatenateFiles,
-  getFiles,
-  reconstructFiles,
-  removeLineNumbers,
-} from "../utils/files";
-import {
-  type Model,
-  sendGptRequestWithSchema,
-  sendGptVisionRequest,
-} from "../openai/request";
+import { addLineNumbers, getFiles, removeLineNumbers } from "../utils/files";
+import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
-import {
-  ExtractedIssueInfoSchema,
-  type ExtractedIssueInfo,
-} from "./extractedIssue";
 import { emitCodeEvent } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
-import OpenAI from "openai";
-import dedent from "ts-dedent";
-import {
-  PlanningAgentActionType,
-  createPlan,
-  researchIssue,
-  type PlanStep,
-  type Plan,
-} from "~/server/utils/agent";
+import { createPlan, type Plan } from "~/server/utils/agent";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 import { addCommitAndPush } from "../git/commit";
 import path from "path";
@@ -81,11 +58,10 @@ export async function agentEditFiles(params: EditFilesParams) {
   let originalPlan: Plan | undefined;
   let newPrBody = "";
   while (planIterations < maxPlanIterations) {
-    const sourceMapOrFileList = sourceMap || (await traverseCodebase(rootPath));
     planIterations++;
     const plan = await createPlan(
       issueText,
-      sourceMapOrFileList,
+      sourceMap,
       research,
       originalPlan,
       codePatch,
@@ -135,7 +111,7 @@ export async function agentEditFiles(params: EditFilesParams) {
       const filePlan = `Instructions for ${step.filePaths?.join(", ")}:\n\n${step.instructions}\n\nExit Criteria:\n\n${step.exitCriteria}`;
 
       const codeTemplateParams = {
-        sourceMap: sourceMapOrFileList,
+        sourceMap,
         types,
         packages,
         styles,
