@@ -6,11 +6,13 @@ import {
   concatenateFiles,
   extractPRCommentsFromFiles,
   getNewOrModifiedRangesMapFromDiff,
-  getCodebase,
+  applyCodePatch,
 } from "./files";
 
 import jacbAiWebsite59Diff from "../../data/test/jacb-ai-website-59.diff?raw";
-import { researchInternet } from "./agent";
+import test001 from "../../data/test/diff/test001.txt?raw";
+import test002 from "../../data/test/diff/test002.txt?raw";
+import test001Diff from "../../data/test/diff/test001.diff?raw";
 
 describe("extractPRCommentsFromFiles", () => {
   it("handles response with no comments", () => {
@@ -108,6 +110,17 @@ describe("getNewOrModifiedRangesMapFromDiff", () => {
         { start: 58, end: 58 },
       ],
     });
+  });
+});
+
+describe("applyCodePatch", () => {
+  it("applies a code patch", async () => {
+    const readFileSpy = vi.spyOn(fs, "readFileSync").mockReturnValue(test001);
+    const writeFileSpy = vi.spyOn(fs, "writeFileSync").mockReturnValue();
+
+    await applyCodePatch("/rootpath", test001Diff);
+    expect(readFileSpy).toHaveBeenCalledWith("/rootpath/test001.txt");
+    expect(writeFileSpy).toHaveBeenCalledWith("/rootpath/test001.txt", test002);
   });
 });
 

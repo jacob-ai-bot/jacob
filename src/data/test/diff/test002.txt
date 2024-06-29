@@ -1,0 +1,8 @@
+This is a file.
+It has a lot of lines.
+For example, this is line 3.
+And this is line 4.
+And don't forget about line 6.
+Previously, it had a smaller number of lines.
+This is the end.
+P.S. Thanks for reading.

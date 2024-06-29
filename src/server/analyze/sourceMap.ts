@@ -1,8 +1,10 @@
 import { Project, type SourceFile } from "ts-morph";
 import fs, { promises as fsPromises, type Dirent } from "fs";
+import path from "path";
+
 import { type RepoSettings } from "../utils";
 import { Language } from "../utils/settings";
-import path from "path";
+import { traverseCodebase } from "./traverse";
 
 const FILES_TO_IGNORE = [
   "types.ts",
@@ -97,7 +99,8 @@ type SourceMap = {
 };
 
 export const getSourceMap = (rootPath: string, repoSettings?: RepoSettings) => {
-  const files = getFiles(rootPath, repoSettings);
+  const allFileNames = traverseCodebase(rootPath);
+  const files = getFiles(rootPath, allFileNames, repoSettings);
   const sourceMap = generateMapFromFiles(rootPath, files);
   return sourceMap;
 };
@@ -211,15 +214,19 @@ export const getImages = async (
   return imagesString;
 };
 
+type RelativePathOnly = Pick<SourceMap, "relativePath">;
+type SourceMapOrRelativePathOnly = SourceMap | RelativePathOnly;
+
 const getFiles = (
   rootPath: string,
+  allFileNames: string[],
   repoSettings?: RepoSettings,
-): SourceMap[] => {
+): SourceMapOrRelativePathOnly[] => {
   if (
     (repoSettings?.language ?? Language.TypeScript)?.toLowerCase() !==
     "typescript"
   ) {
-    return [];
+    return allFileNames.map((fileName) => ({ relativePath: fileName }));
   }
 
   const configPath = rootPath + "/tsconfig.json"; // Path to tsconfig.json
@@ -344,7 +351,15 @@ const getFiles = (
       };
     })
     .filter((file) => file !== null) as SourceMap[];
-  return files;
+
+  const remainingFiles = allFileNames.filter(
+    (fileName) => !files.some(({ relativePath }) => relativePath === fileName),
+  );
+
+  return [
+    ...files,
+    ...remainingFiles.map((fileName) => ({ relativePath: fileName })),
+  ];
 };
 
 function cleanType(rootPath: string, type: string) {
@@ -354,12 +369,20 @@ function cleanType(rootPath: string, type: string) {
   );
 }
 
-export const generateMapFromFiles = (rootPath: string, files: SourceMap[]) => {
+export const generateMapFromFiles = (
+  rootPath: string,
+  files: SourceMapOrRelativePathOnly[],
+) => {
   let sourceMap = "";
   // loop through the result and create a map of the source code
   for (const file of files) {
     // start with the file path
     sourceMap += `${file.relativePath}:\n`;
+
+    if (!("filePath" in file)) {
+      // if we don't have a full SourceMap object, stop here and continue
+      continue;
+    }
 
     // now add the interface names
     const interfaces = file.interfaces.map((int) => {

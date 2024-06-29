@@ -131,4 +131,16 @@ describe("generateMapFromFiles", () => {
     const sourceMap = generateMapFromFiles("/rootpath", []);
     expect(sourceMap).toEqual("");
   });
+
+  test("returns a simple list when only relative paths are provided", () => {
+    const sourceMap = generateMapFromFiles("/rootpath", [
+      { relativePath: "package.json" },
+      { relativePath: "data/prompt.txt" },
+    ]);
+    expect(sourceMap).toEqual(dedent`
+      package.json:
+      data/prompt.txt:
+
+    `);
+  });
 });
