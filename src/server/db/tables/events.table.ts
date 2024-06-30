@@ -47,6 +47,17 @@ const definePrompt = (t: JSONTypes) =>
     timestamp: t.string(),
   });
 
+const definePlanStep = (t: JSONTypes) =>
+  t.object({
+    type: t.literal(TaskType.plan_step),
+    actionType: t.nativeEnum(PlanningAgentActionType),
+    title: t.string(),
+    instructions: t.string(),
+    filePaths: t.array(t.string()),
+    exitCriteria: t.string(),
+    dependencies: t.string().optional(),
+  });
+
 export class EventsTable extends BaseTable {
   readonly table = "events";
   columns = this.setColumns((t) => ({
@@ -84,21 +95,9 @@ export class EventsTable extends BaseTable {
         }),
         t.object({
           type: t.literal(TaskType.plan),
-          id: t.string().optional(),
-          title: t.string(),
-          description: t.string(),
-          position: t.number(),
-          isComplete: t.boolean(),
+          steps: t.array(definePlanStep(t)),
         }),
-        t.object({
-          type: t.literal(TaskType.plan_step),
-          actionType: t.nativeEnum(PlanningAgentActionType),
-          title: t.string(),
-          instructions: t.string(),
-          filePaths: t.array(t.string()),
-          exitCriteria: t.string(),
-          dependencies: t.string().optional(),
-        }),
+        definePlanStep(t),
         t.object({
           type: t.literal(TaskType.prompt),
           metadata: t.object({

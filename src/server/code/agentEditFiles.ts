@@ -14,7 +14,11 @@ import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
-import { emitCodeEvent, emitPlanStepEvent } from "../utils/events";
+import {
+  emitCodeEvent,
+  emitPlanEvent,
+  emitPlanStepEvent,
+} from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { createPlan, type Plan } from "~/server/utils/agent";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
@@ -69,6 +73,7 @@ export async function agentEditFiles(params: EditFilesParams) {
     if (!plan) {
       throw new Error("No plan generated");
     }
+    await emitPlanEvent({ ...baseEventData, plan });
     if (originalPlan === undefined) {
       originalPlan = plan;
     }
