@@ -43,7 +43,10 @@ describe("getEnv", () => {
   });
 
   test("empty string env key in repo settings still returns empty object with CI added", () => {
-    const env = getEnv({ env: "" as unknown as Record<string, string> });
+    const env = getEnv({
+      env: "" as unknown as Record<string, string>,
+      language: Language.TypeScript,
+    });
     expect(env).toStrictEqual({ CI: "true" });
   });
 
@@ -51,12 +54,16 @@ describe("getEnv", () => {
     const env = getEnv({
       packageDependencies: { next: "1.0.0" },
       env: { custom: "1" },
+      language: Language.TypeScript,
     });
     expect(env).toStrictEqual({ CI: "true", custom: "1" });
   });
 
   test("Next.js projects: default is a NEXT_JS_ENV with CI added", () => {
-    const env = getEnv({ packageDependencies: { next: "1.0.0" } });
+    const env = getEnv({
+      packageDependencies: { next: "1.0.0" },
+      language: Language.TypeScript,
+    });
     expect(env).toStrictEqual({ CI: "true", ...NEXT_JS_ENV });
   });
 
@@ -64,12 +71,17 @@ describe("getEnv", () => {
     const env = getEnv({
       packageDependencies: { next: "1.0.0" },
       env: "" as unknown as Record<string, string>,
+      language: Language.TypeScript,
     });
     expect(env).toStrictEqual({ CI: "true", ...NEXT_JS_ENV });
   });
 
   test("Next.js projects: empty env in repo settings returned with CI added", () => {
-    const env = getEnv({ packageDependencies: { next: "1.0.0" }, env: {} });
+    const env = getEnv({
+      packageDependencies: { next: "1.0.0" },
+      env: {},
+      language: Language.TypeScript,
+    });
     expect(env).toStrictEqual({ CI: "true" });
   });
 });
@@ -125,6 +137,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       afterModifications: false,
       repoSettings: {
         packageDependencies: { next: "1.0.0" },
+        language: Language.TypeScript,
       },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
@@ -186,7 +199,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       ...mockEventData,
       path: ".",
       afterModifications: false,
-      repoSettings: { env: { custom: "1" } },
+      repoSettings: { env: { custom: "1" }, language: Language.TypeScript },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 
@@ -221,6 +234,7 @@ describe("runBuildCheck and runNpmInstall", () => {
         formatCommand: "my-format",
         buildCommand: "my-build",
         testCommand: "my-test",
+        language: Language.TypeScript,
       },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
@@ -264,6 +278,7 @@ describe("runBuildCheck and runNpmInstall", () => {
         formatCommand: "my-format",
         buildCommand: "my-build",
         testCommand: "my-test",
+        language: Language.TypeScript,
       },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
@@ -325,6 +340,7 @@ describe("runBuildCheck and runNpmInstall", () => {
         formatCommand: "my-format",
         buildCommand: "my-build",
         testCommand: "my-test",
+        language: Language.TypeScript,
       },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
@@ -388,7 +404,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       ...mockEventData,
       path: ".",
       packageName: "package-name",
-      repoSettings: { env: { custom: "1" } },
+      repoSettings: { env: { custom: "1" }, language: Language.TypeScript },
     });
 
     expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledOnce();
@@ -412,6 +428,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       packageName: "package-name",
       repoSettings: {
         installCommand: "yarn install",
+        language: Language.TypeScript,
       },
     });
 
@@ -431,7 +448,7 @@ describe("runBuildCheck and runNpmInstall", () => {
       ...mockEventData,
       path: ".",
       packageName: "package-name-1 package-name-2",
-      repoSettings: {},
+      repoSettings: { language: Language.TypeScript },
     });
     expect(result).toStrictEqual({ stdout: "", stderr: "" });
 

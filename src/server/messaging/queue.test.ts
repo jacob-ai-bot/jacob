@@ -39,6 +39,7 @@ import {
   type WebhookInstallationCreatedEvent,
 } from "./queue";
 import { TaskStatus, TaskSubType } from "../db/enums";
+import { Language } from "../utils/settings";
 
 const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
@@ -197,6 +198,9 @@ describe("onGitHubEvent", () => {
       issueId: 47,
       path: "/tmp/jacob/1",
       afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedNewFile.createNewFile).toHaveBeenCalledTimes(1);
@@ -255,6 +259,9 @@ describe("onGitHubEvent", () => {
       issueId: 49,
       path: "/tmp/jacob/1",
       afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
@@ -335,6 +342,9 @@ describe("onGitHubEvent", () => {
       userId: "cpirich",
       path: "/tmp/jacob/1",
       afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
     });
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
     const expectedRepo = {
@@ -411,6 +421,9 @@ describe("onGitHubEvent", () => {
       issueId: 125,
       path: "/tmp/jacob/1",
       afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
     });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
@@ -431,6 +444,9 @@ describe("onGitHubEvent", () => {
       issueId: 567,
       path: "/tmp/jacob/1",
       afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
     });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
@@ -455,6 +471,9 @@ describe("onGitHubEvent", () => {
       issueId: 125,
       path: "/tmp/jacob/1",
       afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
     });
     expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
     expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
@@ -492,6 +511,9 @@ describe("onGitHubEvent", () => {
       userId: "cpirich",
       path: "/tmp/jacob/1",
       afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
     });
     expect(mockedIssue.createRepoInstalledIssue).toHaveBeenCalledTimes(1);
     const expectedRepo = {

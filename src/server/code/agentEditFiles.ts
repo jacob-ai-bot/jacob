@@ -1,10 +1,8 @@
 import { type Issue, type Repository } from "@octokit/webhooks-types";
 import fs from "fs";
 import { getTypes, getImages } from "../analyze/sourceMap";
-import { traverseCodebase } from "../analyze/traverse";
 import {
   parseTemplate,
-  constructNewOrEditSystemPrompt,
   type RepoSettings,
   type BaseEventData,
   getStyles,
@@ -16,9 +14,15 @@ import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
 
-import { emitCodeEvent } from "../utils/events";
+import {
+  emitCodeEvent,
+  emitPlanEvent,
+  emitPlanStepEvent,
+} from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
-import { PlanningAgentActionType, createPlan } from "~/server/utils/agent";
+import { createPlan } from "~/server/utils/agent";
+import { PlanningAgentActionType } from "~/server/db/enums";
+
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 import { addCommitAndPush } from "../git/commit";
 import path from "path";
@@ -62,11 +66,10 @@ export async function agentEditFiles(params: EditFilesParams) {
   let buildErrors = "";
   let newPrBody = "";
   while (planIterations < maxPlanIterations) {
-    const sourceMapOrFileList = sourceMap || (await traverseCodebase(rootPath));
     planIterations++;
     const plan = await createPlan(
       issueText,
-      sourceMapOrFileList,
+      sourceMap,
       research,
       codePatch,
       buildErrors,
@@ -76,6 +79,7 @@ export async function agentEditFiles(params: EditFilesParams) {
     if (!plan) {
       throw new Error("No plan generated");
     }
+    await emitPlanEvent({ ...baseEventData, plan });
     if (!plan.steps?.length) {
       // No steps in the plan, so we're done
       break;
@@ -84,6 +88,11 @@ export async function agentEditFiles(params: EditFilesParams) {
     for (const step of plan.steps.slice(0, maxSteps)) {
       stepNumber++;
       const isNewFile = step.type === PlanningAgentActionType.CreateNewCode;
+      await emitPlanStepEvent({ ...baseEventData, planStep: step });
+      // const step = plan.steps[0];
+      // if (!step) {
+      //   throw new Error("No step generated");
+      // }
       console.log(
         `Step ${stepNumber}: ${step.title}\n\nFile: ${step.filePath}\n\nDetails: ${step.instructions}\n\nExit Criteria${step.exitCriteria}`,
       );
@@ -101,7 +110,7 @@ export async function agentEditFiles(params: EditFilesParams) {
       const filePlan = `Instructions for ${step.filePath}:\n\n${step.instructions}\n\nExit Criteria:\n\n${step.exitCriteria}`;
 
       const codeTemplateParams = {
-        sourceMap: sourceMapOrFileList,
+        sourceMap,
         types,
         packages,
         styles,

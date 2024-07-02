@@ -4,6 +4,7 @@ export enum TaskType {
   design = "design",
   terminal = "terminal",
   plan = "plan",
+  plan_step = "plan step",
   prompt = "prompt",
   issue = "issue",
   pull_request = "pull request",
@@ -23,6 +24,11 @@ export enum TodoStatus {
   IN_PROGRESS = "in_progress",
   DONE = "done",
   ERROR = "error",
+}
+
+export enum PlanningAgentActionType {
+  EditExistingCode = "EditExistingCode",
+  CreateNewCode = "CreateNewCode",
 }
 
 export enum TaskSubType {

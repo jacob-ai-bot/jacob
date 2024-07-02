@@ -2,6 +2,8 @@ import { saveImages } from "../utils/images";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import fs from "fs";
 
+import { Language } from "../utils/settings";
+
 vi.mock("fs", async () => {
   const actual = await vi.importActual("fs");
   return {
@@ -59,7 +61,10 @@ describe("saveImages function", () => {
   it("saves images to the correct directory", async () => {
     const image1 = `${s3BaseUrl}image1.jpg${signature}`;
     const issueBody = `This is a test issue with images. ![image](${image1})`;
-    const repoSettings = { directories: { staticAssets: "static" } };
+    const repoSettings = {
+      language: Language.TypeScript,
+      directories: { staticAssets: "static" },
+    };
     const result = await saveImages(
       existingImages,
       issueBody,

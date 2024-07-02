@@ -1,7 +1,12 @@
 import { type JSONTypes } from "orchid-core";
 import type { Selectable, Insertable, Updateable, Queryable } from "orchid-orm";
 import { BaseTable } from "../baseTable";
-import { TaskType, TaskStatus, TaskSubType } from "../enums";
+import {
+  TaskType,
+  TaskStatus,
+  TaskSubType,
+  PlanningAgentActionType,
+} from "../enums";
 import { Language } from "~/server/utils/settings";
 
 export type Event = Selectable<EventsTable>;
@@ -42,6 +47,17 @@ const definePrompt = (t: JSONTypes) =>
     timestamp: t.string(),
   });
 
+const definePlanStep = (t: JSONTypes) =>
+  t.object({
+    type: t.literal(TaskType.plan_step),
+    actionType: t.nativeEnum(PlanningAgentActionType),
+    title: t.string(),
+    instructions: t.string(),
+    filePaths: t.array(t.string()),
+    exitCriteria: t.string(),
+    dependencies: t.string().optional(),
+  });
+
 export class EventsTable extends BaseTable {
   readonly table = "events";
   columns = this.setColumns((t) => ({
@@ -79,12 +95,9 @@ export class EventsTable extends BaseTable {
         }),
         t.object({
           type: t.literal(TaskType.plan),
-          id: t.string().optional(),
-          title: t.string(),
-          description: t.string(),
-          position: t.number(),
-          isComplete: t.boolean(),
+          steps: t.array(definePlanStep(t)),
         }),
+        definePlanStep(t),
         t.object({
           type: t.literal(TaskType.prompt),
           metadata: t.object({
