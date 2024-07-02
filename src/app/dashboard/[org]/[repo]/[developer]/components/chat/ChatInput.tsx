@@ -41,13 +41,13 @@ export const ChatInput: FC<Props> = ({
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => {
+    const files = Array.from(e.target.files ?? []);
+    const validFiles = files.filter((file) => {
       if (file.size > 20 * 1024 * 1024) {
         toast.error(`${file.name} is larger than 20MB`);
         return false;
       }
-      if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      if (!["image/jpeg", "image/png"].includes(file.type)) {
         toast.error(`${file.name} is not a PNG or JPEG file`);
         return false;
       }
@@ -60,17 +60,17 @@ export const ChatInput: FC<Props> = ({
     setIsUploading(true);
     const uploadPromises = selectedImages.map(async (image) => {
       const formData = new FormData();
-      formData.append('image', image);
-      formData.append('imageType', image.type);
-      formData.append('imageName', image.name);
+      formData.append("image", image);
+      formData.append("imageType", image.type);
+      formData.append("imageName", image.name);
 
       try {
-        const response = await fetch('/api/image/upload', {
-          method: 'POST',
+        const response = await fetch("/api/image/upload", {
+          method: "POST",
           body: formData,
         });
-        if (!response.ok) throw new Error('Upload failed');
-        const data = await response.json();
+        if (!response.ok) throw new Error("Upload failed");
+        const data = (await response.json()) as { url: string };
         return data.url;
       } catch (error) {
         toast.error(`Failed to upload ${image.name}`);
@@ -88,12 +88,13 @@ export const ChatInput: FC<Props> = ({
       alert("Please enter a message");
       return;
     }
-    uploadImages().then((imageUrls) => {
-      const messageContent = imageUrls.length > 0
-        ? `${content}\n\nUploaded images:\n${imageUrls.join('\n')}`
-        : content;
+    void uploadImages().then((imageUrls) => {
+      const messageContent =
+        imageUrls.length > 0
+          ? `${content}\n\nUploaded images:\n${imageUrls.join("\n")}`
+          : content;
       onSend({ role: Role.USER, content: messageContent });
-      setContent('');
+      setContent("");
     });
     setSelectedImages([]);
   };
@@ -110,7 +111,10 @@ export const ChatInput: FC<Props> = ({
       data-tooltip-id="tooltip_upload"
       data-tooltip-content="Upload images"
     >
-      <FontAwesomeIcon icon={faUpload} className={isUploading ? "animate-spin" : ""} />
+      <FontAwesomeIcon
+        icon={faUpload}
+        className={isUploading ? "animate-spin" : ""}
+      />
     </button>
   );
 

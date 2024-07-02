@@ -17,7 +17,6 @@ import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
-import { sendGptRequest } from "../openai/request";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 
 export type PullRequest =
@@ -83,6 +82,19 @@ export async function fixError(params: FixErrorParams) {
             afterHeadingIndex + headingEndMarker.length,
           ) ?? ""
         ).split(endOfErrorSectionMarker)[0] ?? "";
+  console.log(`[${repository.full_name}] Errors:`, errors);
+  console.log(`here is what will be outputted:  afterHeadingIndex,
+    headingEndMarker,
+    restOfHeading,
+    attemptNumber,
+    endOfErrorSectionMarker`);
+  console.log(
+    afterHeadingIndex,
+    headingEndMarker,
+    restOfHeading,
+    attemptNumber,
+    endOfErrorSectionMarker,
+  );
 
   const sourceMap =
     getSourceMap(rootPath, repoSettings) || (await traverseCodebase(rootPath));

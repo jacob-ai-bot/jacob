@@ -165,16 +165,18 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
     if (!bestEvaluation) {
       throw new Error("No valid evaluations");
     }
-
+    const bestAvgRating =
+      bestEvaluation.evaluations.reduce((sum, e) => sum + (e.rating ?? 0), 0) /
+      bestEvaluation.evaluations.length;
     console.log(`
       *** Best Evaluation ***
       Model: ${bestEvaluation.model}
       Temperature: ${bestEvaluation.temperature}
-      Average Rating: ${bestEvaluation.evaluations.reduce((sum, e) => sum + (e.rating ?? 0), 0) / bestEvaluation.evaluations.length}
+      Average Rating: ${bestAvgRating}
     `);
-
-    // Now use the information from the evaluations to improve the output.
-    const updatePrompt = `
+    if (bestAvgRating <= 3) {
+      // Now use the information from the evaluations to improve the output.
+      const updatePrompt = `
     Original response:
     ${bestEvaluation.response}
     
@@ -194,19 +196,22 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
     Please update the original response to address the specific issues mentioned in these evaluations. Maintain the overall structure and intent of the original response, but improve it based on the feedback provided. Ensure to address any unrelated code changes mentioned. ONLY output the new response, do not comment on the changes or include any other information.
     `;
 
-    // Send the update request to the LLM
-    const updatedResponse = await sendGptRequest(
-      updatePrompt,
-      systemPrompt,
-      bestEvaluation.temperature,
-      baseEventData,
-      3,
-      60000,
-      undefined,
-      bestEvaluation.model,
-    );
+      // Send the update request to the LLM
+      const updatedResponse = await sendGptRequest(
+        updatePrompt,
+        systemPrompt,
+        bestEvaluation.temperature,
+        baseEventData,
+        3,
+        60000,
+        undefined,
+        bestEvaluation.model,
+      );
 
-    return updatedResponse;
+      return updatedResponse;
+    } else {
+      return bestEvaluation.response;
+    }
   } catch (error) {
     if (retries > 0) {
       return sendSelfConsistencyChainOfThoughtGptRequest(

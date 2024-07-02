@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import dedent from "ts-dedent";
-import fs from "fs";
 import {
   MAX_OUTPUT,
   type Model,
@@ -33,15 +32,7 @@ export interface PlanStep {
   type: PlanningAgentActionType;
   title: string;
   instructions: string;
-  filePaths: string[];
-  exitCriteria: string;
-  dependencies?: string;
-}
-export interface PlanStepString {
-  type: PlanningAgentActionType;
-  title: string;
-  instructions: string;
-  filePaths: string;
+  filePath: string;
   exitCriteria: string;
   dependencies?: string;
 }
@@ -139,10 +130,10 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
             description:
               "Provide clear, detailed, and actionable instructions on the precise changes to be made to the file. Do NOT provide code snippets, only instructions.",
           },
-          filePaths: {
+          filePath: {
             type: "string",
             description:
-              "Specify the absolute file path of the existing file to be edited. This is cricitally important for the developer to locate the file accurately. Output multiple files as a comma-separated list, if needed.",
+              "Specify the absolute file path of the existing file to be edited. This is cricitally important for the developer to locate the file accurately.",
           },
           exitCriteria: {
             type: "string",
@@ -178,10 +169,10 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
             description:
               "Provide comprehensive and precise instructions on the desired functionality. These instructions should be detailed enough for another developer to implement the feature without further clarification.",
           },
-          filePaths: {
+          filePath: {
             type: "string",
             description:
-              "Specify the absolute file path where the new file should be created, considering the project's directory structure and naming conventions. Output multiple files as a comma-separated list, if needed.",
+              "Specify the absolute file path where the new file should be created, considering the project's directory structure and naming conventions.",
           },
           exitCriteria: {
             type: "string",
@@ -509,23 +500,13 @@ export const findFiles = async function (
   githubIssue: string,
   sourceMap: string,
   research: string,
-  previousPlanPrompt: string | undefined,
 ): Promise<string> {
-  let updatedFindFilesPrompt: string | undefined;
-  if (previousPlanPrompt) {
-    updatedFindFilesPrompt = `As part of the ongoing development process, you need to update the files based on the changes made in the code patch.
-    ${previousPlanPrompt}
-    Take the previous plan into account and ensure that the modifications are accurately reflected in the list of files to be modified or created.`;
-  }
-
   const systemPrompt = `You are an AI coding assistant tasked with identifying the specific files in a codebase that need to be modified or created to address a GitHub issue. Your role is to analyze the provided GitHub issue, codebase source map, and research to determine the files that require changes.
 
     Here is the issue that you are responsible for:
     <issue>
     ${githubIssue}
     </issue>
-
-    ${updatedFindFilesPrompt ? updatedFindFilesPrompt : "This is a new plan. You must ensure that any potential file that may need to be changed is accounted for."}
 
     Key Responsibilities:
         1. Understand the GitHub issue and its requirements.
@@ -541,8 +522,9 @@ export const findFiles = async function (
         - Provide a very concise one-sentence description of why each file needs to be modified or created.
         - Consider the impact of the changes on other parts of the codebase. Use the source map to try to identify potential dependencies.
         - Double-check that all necessary files are accounted for in the list.
+        - Do not make assumptions about the GitHub issue or exit criteria, only use the provided information to identify the files.
         
-    Remember, your goal is to accurately identify the files that need to be modified or created to address the GitHub issue. Your list should be detailed enough for a developer to locate and work on the files effectively.`;
+    Remember, your goal is to accurately identify a concise list of the most critical files that need to be modified or created to address the GitHub issue. Your list should be detailed enough for a developer to locate and work on the files effectively.`;
 
   const userPrompt = `You are an AI coding assistant tasked with identifying the specific files in a codebase that need to be modified or created to address a GitHub issue. Your goal is to analyze the GitHub issue, codebase source map, and research to determine the necessary files for resolving the issue.
 
@@ -558,13 +540,13 @@ export const findFiles = async function (
         2. Analyze the codebase source map to identify the relevant files.
         3. Review the gathered research to determine any specific files mentioned.
         4. Identify the remaining files that need to be modified or created to address the issue.
-        5. Provide a detailed list of the file paths and descriptions for each file.
+        5. Provide a concise, detailed list of the file paths and descriptions for each file.
     
     ### Important:
         - Ensure that the identified files are directly related to the remaining work to be done to address the GitHub issue.
         - List the full file paths for each file, including the directory structure.
         - Provide a concise, one-sentence description of why each file needs to be modified or created.
-        - It is critically important that any files that potentially need modification are included in the list. It is better to include a file that may not need modification than to miss one that does.
+        - It is critically important that any files that need modification are included in the list.
         - Double-check that all necessary files are accounted for in the list.`;
 
   const response = await sendSelfConsistencyChainOfThoughtGptRequest(
@@ -583,28 +565,15 @@ export const createPlan = async function (
   githubIssue: string,
   sourceMap: string,
   research: string,
-  originalPlan: Plan | undefined,
   codePatch: string,
+  buildErrors: string,
 ): Promise<Plan | undefined> {
-  let previousPlanPrompt: string | undefined;
+  const hasExistingPlan = codePatch?.length || buildErrors?.length;
   // If there was a previous plan, we need the new plan to reflect the changes made in the code patch
-  if (originalPlan?.steps?.length) {
-    // Remove the previous step from the previous plan
-
-    // Apply the code patch to the previous plan
-    previousPlanPrompt = `Here is the original plan that was created for the GitHub issue. Your task is to update this plan based on the changes made in the code patch.
-    <original_plan>${JSON.stringify(originalPlan)}</original_plan>
-    The code patch contains the modifications that have been made to the codebase to address the GitHub issue. Here are the changes that have been made so far to address the GitHub issue:
-    <code_patch>${codePatch}</code_patch>`;
-  }
   // First, find all of the files that need to be modified or created
-  const files = await findFiles(
-    githubIssue,
-    sourceMap,
-    research,
-    previousPlanPrompt,
-  );
-
+  const files = !hasExistingPlan
+    ? await findFiles(githubIssue, sourceMap, research)
+    : "";
   // To get the best possible plan, we run the request multiple times with various models at varying temps, and choose the most comprehensive response (as measured naively by the number of tool calls and length of arguments)
   const models: Model[] = ["gpt-4-0125-preview", "gpt-4o-2024-05-13"];
   // const models: Model[] = [
@@ -612,15 +581,8 @@ export const createPlan = async function (
   //   "claude-3-5-sonnet-20240620",
   // ];
   const { userPrompt, systemPrompt } =
-    codePatch?.length && originalPlan?.steps?.length
-      ? getPromptsForUpdatedPlan(
-          githubIssue,
-          sourceMap,
-          research,
-          files,
-          codePatch,
-          originalPlan,
-        )
+    codePatch?.length || buildErrors
+      ? getPromptsForUpdatedPlan(codePatch, buildErrors)
       : getPromptsForNewPlan(githubIssue, sourceMap, research, files);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -680,19 +642,15 @@ export const createPlan = async function (
         console.error(`Invalid function name: ${functionName}`);
         continue;
       }
-      const args = JSON.parse(toolCall.function.arguments) as PlanStepString;
+      const args = JSON.parse(toolCall.function.arguments) as PlanStep;
 
-      const filePaths = args?.filePaths?.split(",") ?? [];
-      if (filePaths.length === 0) {
-        console.log("No file paths found in response.");
-        continue;
-      }
-      const { title, instructions, exitCriteria, dependencies } = args;
+      const { title, filePath, instructions, exitCriteria, dependencies } =
+        args;
       const step = {
         type: functionName,
         title,
         instructions,
-        filePaths,
+        filePath,
         exitCriteria,
         dependencies,
       };
@@ -723,25 +681,24 @@ const getPromptsForNewPlan = (
         4. Break down the issue into smaller, manageable tasks that align with how a developer would approach the problem.
         5. Review each of the files listed within the <files> tags and determine which changes need to be made to each file. You MUST provide at least one change per file, and at least one file per step!
         6. Create a detailed, step-by-step plan for making the necessary changes to the codebase:
-            - Clearly specify the full path of the files to be edited or created.
+            - Clearly specify the full path of the file to be edited or created.
             - Provide precise instructions on the changes to be made within each file.
-            - Ensure there is at least one file is modified per step.
-            - Include any necessary imports, function calls, or dependencies.
-            - Specify the order in which the changes should be made.
+            - Ensure there is at least one file modified per step.
+            - Include any necessary imports or function calls.
+            - Identify dependencies and specify the order in which the changes should be made.
         7. Identify the dependencies between the files and ensure that the plan reflects the correct order of changes.
-        8. Output the plan as an ordered array of tools with detailed properties highlighting the instructions, file paths, and exit criteria for each step.
+        8. Output the plan as an ordered array of tools with detailed properties highlighting the instructions, file path, and exit criteria for each step.
     
     Guidelines:
         - Approach the task from the perspective of an experienced developer working on the codebase.
         - Utilize the provided research and codebase information to make informed decisions.
         - Ensure that the plan is clear, concise, and easy to follow.
-        - Use proper formatting and syntax when specifying file paths, code snippets, or commands.
+        - Use proper formatting and syntax when specifying the file path, code snippets, or commands.
+        - Follow existing coding conventions and styles when making changes to the codebase. For example, if the system is using TypeScript, ensure that all new code is strictly typed correctly. Or if the codebase uses Tailwind CSS, do not introduce new CSS classes or frameworks.
         - Be sure to take into account any changes that may impact other parts of the codebase, such as functions that call or depend on the modified code.
-        - Provide detailed string typing (if needed) and ensure consistency with the existing codebase.
+        - Provide strict, detailed string typing (if needed) and ensure consistency with the existing codebase.
         - Consider edge cases, error handling, and potential impact on existing functionality.
         - Break down complex changes into multiple, focused steps.
-        - Prioritize the most critical changes first and ensure a logical flow between steps.
-        - Start with changes to child components before parent components to maintain a consistent structure.
         - Double-check that all necessary files and changes are accounted for in the plan.
     
     Remember, your goal is to create a comprehensive, actionable plan that enables the efficient resolution of the GitHub issue. Your plan should be detailed enough for another developer to follow and implement successfully.`;
@@ -773,7 +730,7 @@ const getPromptsForNewPlan = (
         4. Plan Code Changes:
             - Use the list of specific files that need to be modified or created to address the issue.
             - For each plan step, follow these guidelines:
-                - Specify the exact file path or paths in the filePaths tool output.
+                - Specify the exact file path in the filePath tool output.
                 - Provide clear, detailed instructions on the changes to be made.
                 - Include any necessary code snippets, imports, or function calls.
                 - Minimize the number of files that are modified per step.
@@ -782,10 +739,11 @@ const getPromptsForNewPlan = (
         5. Finalize the Plan:
             - Review the plan to ensure all necessary changes are accounted for.
             - Ensure that no files are missed or incorrectly included.
+            - Determine dependencies between files and use this information to specify the order of changes.
     
     ### Important:
         - Use the following tools to create your plan:
-            - EditExistingCode: Modify an existing file in the codebase.
+            - EditExistingCode: Modify one existing file in the codebase.
             - CreateNewCode: Create a new file in the codebase.
         - Each tool should be used with specific instructions and file paths.
         - Ensure that the plan is clear, detailed, and follows the guidelines provided.
@@ -797,106 +755,66 @@ const getPromptsForNewPlan = (
   return { systemPrompt, userPrompt };
 };
 
-const getPromptsForUpdatedPlan = (
-  githubIssue: string,
-  sourceMap: string,
-  research: string,
-  files: string,
-  codePatch: string,
-  originalPlan: Plan,
-) => {
+const getPromptsForUpdatedPlan = (codePatch: string, buildErrors: string) => {
   // Now create a plan to address the issue based on the identified files
-  const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. An AI coding agent has already completed a plan and your role is to double-check this plan to ensure all changes were made correctly. Your task is to review the existing plan, the code patch, and the identified files to ensure that the plan accurately reflects the changes made in the code patch.
+  const systemPrompt = `You are an AI code review assistant specializing in identifying and resolving issues that arise from sequential code changes. Your task is to analyze a given code patch and create a concise plan to address any inconsistencies or errors that may have been introduced due to the order of changes. Focus only on critical issues that affect the functionality or integrity of the code.
 
-    Key Responsibilities:
-        1. Review the plan and the code patch that was created based on that plan.
-        2. Comprehend the GitHub issue and its requirements, identifying the goal and what needs to be achieved.
-        3. Assess the available information, including the codebase, external resources, and previous research.
-        4. Determine if the changes made in the code patch are accurately reflected in the plan.
-        5. The changes in the code patch were done in a specific order. Review the code patch and determine a change to a later file may have affected an earlier file. For example, if a new variable was added in a later file, it may need to be imported in an earlier file.
-        6. If there are any major obvious issues identified, create a detailed, step-by-step plan for making the necessary changes to the codebase:
-            - Clearly specify the full path of the files to be edited or created.
-            - Provide precise instructions on the changes to be made within each file.
-            - Ensure there is at least one file is modified per step.
-            - Include any necessary imports, function calls, or dependencies.
-            - Specify the order in which the changes should be made.
-        7. Identify the dependencies between the files and ensure that the plan reflects the correct order of changes.
-        8. Output the plan as an ordered array of tools with detailed properties highlighting the instructions, file paths, and exit criteria for each step.
-    
-    Guidelines:
-        - Approach the task from the perspective of an experienced developer working on the codebase.
-        - Only include major, obvious issues in the plan. If the code patches are mostly correct, it is not necessary to create a new plan.
-        - Ensure that the plan is clear, concise, and easy to follow.
-        - Use proper formatting and syntax when specifying file paths, code snippets, or commands.
-        - Be sure to take into account any changes that may impact other parts of the codebase, such as functions that call or depend on the modified code.
-        - Provide detailed string typing (if needed) and ensure consistency with the existing codebase.
-        - Consider edge cases, error handling, and potential impact on existing functionality.
-        - Break down complex changes into multiple, focused steps.
-        - Prioritize the most critical changes first and ensure a logical flow between steps.
-        - Start with changes to child components before parent components to maintain a consistent structure.
-        - Double-check that all necessary files and changes are accounted for in the plan.
-    
-    Remember, your goal is to create a comprehensive, actionable plan that addresses any problems in the original plan. Note that it is perfectly fine if there are no further changes needed. Your new plan should be detailed enough for another developer to follow and implement successfully.`;
+Key Responsibilities:
+1. Analyze the provided code patch carefully.
+2. Review the output of the build process to identify any errors or inconsistencies.
+3. Identify any inconsistencies, missing dependencies, or errors that may have been introduced due to the order of changes.
+4. Identify each file that has issues and create one step per file to address the critical issues as efficiently as possible.
+4. Create a brief, focused plan to resolve only the critical issues found.
+5. Ensure that your plan addresses dependencies between files and maintains code integrity.
 
-  const userPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. An AI coding agent has already completed a plan and your role is to double-check this plan to ensure all changes were made correctly. Your task is to review the existing plan, the code patch, and the identified files to ensure that the plan accurately reflects the changes made in the code patch.
-  
-    ### Original GitHub Issue:
-      - Issue: <github_issue>${githubIssue}</github_issue>
-  
-    ### Code Repository Information:
-        ${research?.length ? `- Research: <research>${research}</research>` : ""}
-        - Repo Source Map: <source_map>${sourceMap}</source_map>
-        - Files to Modify or Create: <files>${files}</files>
-    
-    ### Original Plan:
-        <plan>${originalPlan?.steps?.map((step, idx) => `- Step ${idx + 1}: ${step.title}\n\n## File Paths: ${step.filePaths.join("\n")}\n\n## Instructions: ${step.instructions}\n\n## Exit Criteria: ${step.exitCriteria}\n\n`).join("\n")}</plan>
-    
-    ### Code Patch:
-    <code_patch>
-        ${codePatch}
-    </code_patch>
+Guidelines:
+- Only include steps to fix critical issues. Minor stylistic or non-functional changes should be ignored.
+- It is critically important to include ALL fixes for a one file in a single step in your plan.
+- Provide context for each change, explaining why it's necessary.
+- If no critical issues are found, it's acceptable to state that no further changes are needed.
+- Prioritize changes that affect functionality, imports, or component props.
+- Keep your plan concise and actionable.`;
 
-    ### Task:
-        1. Review the Plan:
-            - Carefully analyze the original plan created by the AI coding agent.
-            - Identify any potential issues or discrepancies between the plan and the code patch.
-        
-        2. Assess the Code Patch:
-            - Review the changes made in the code patch to address the GitHub issue.
-            - Determine if the changes are accurately reflected in the plan.
-            - Note any changes to earlier files that may have been impacted by later changes.
-            - Note any major bugs or issues that may have been introduced in the code patch.
+  const userPrompt = `Review the following code patch and build errors, and create a focused plan to address any critical issues that may have been introduced due to the sequential nature of the changes. Pay special attention to:
 
-        3. Review Exit Criteria:
-            - Analyze the exit criteria specified in each step of the plan to understand the expected outcomes.
-            - Ensure that the changes made to the codebase align with the exit criteria.
-            - Ensure that no exit criteria were missed or overlooked during the coding process.
-        
-        4. Plan Code Changes:
-            - If there are any major issues identified, create a detailed, step-by-step plan for making the necessary changes to the codebase.
-            - For each plan step, follow these guidelines:
-                - Specify the exact file path or paths in the filePaths tool output.
-                - Provide clear, detailed instructions on the changes to be made.
-                - Include any necessary code snippets, imports, or function calls.
-                - Minimize the number of files that are modified per step.
-                - Only include a step if it addresses a major issue. Do not include every minor problem, only the most impactful ones. If the code changes do not need any impactful changes, it is perfectly fine to return no plan.
-            - Outline the order in which the changes should be made.
-    
-        5. Finalize the Plan:
-            - Review the plan to ensure all necessary changes are accounted for.
-            - Ensure that no files are missed or incorrectly included.
-            - Ensure that there are no extraneous changes requested, only major changes
+1. Missing or incorrect imports
+2. Changes in component props that aren't reflected in all relevant files
+3. New variables or functions that may need to be added to earlier files
+4. Any other dependencies between files that may have been overlooked
+5. Major type errors or syntax issues
+
+Code Patch:
+<code_patch>
+${codePatch}
+</code_patch>
+
+Build Errors:
+<build_errors>
+${buildErrors}
+</build_errors>
+
+Your task:
+1. Analyze the code patch thoroughly.
+2. Identify any critical issues that need to be addressed.
+3. Create a concise plan to fix these issues, using the following format for each file that needs changes:
+
+   - Title: [Brief description of the change]
+   - File Path: [Full path to the file - only change one file at a time]
+   - Instructions: [Detailed description of all of the changes needed for fix the errors for this file.]
+   - Exit Criteria: [Brief explanation of the expected outcome after the change is made]
+
+If no critical issues are found, simply state "No critical issues identified. No further changes are needed."
+
+Remember, focus only on changes that are necessary to maintain the functionality and integrity of the code. Do not suggest minor improvements or stylistic changes.
     
     ### Important:
         - Use the following tools to create your plan:
-            - EditExistingCode: Modify an existing file in the codebase.
-            - CreateNewCode: Create a new file in the codebase.
+            - EditExistingCode: Modify an existing file in the codebase. This is the primary tool for most changes.
+            - CreateNewCode: Create a new file in the codebase. It is very rare to need this tool.
         - Each tool should be used with specific instructions and file paths.
         - Ensure that the plan is clear, detailed, and follows the guidelines provided.
-        - Create the shortest plan possible that addresses all necessary changes. Avoid unnecessary steps or complexity.
-    
-    Develop a comprehensive plan that outlines the necessary code changes. Your plan should be concise, specific, actionable, and easy for another developer to follow and implement.  
-    Remember to leverage the provided file list, codebase information and research to make informed decisions and create a plan that effectively addresses the GitHub issue. Double-check your plan for completeness and clarity before submitting it.`;
+        - The number of steps in the plan should match the number of files that need changes.
+        - Create the shortest plan possible that addresses all necessary changes. Avoid unnecessary steps or complexity.`;
 
   return { systemPrompt, userPrompt };
 };

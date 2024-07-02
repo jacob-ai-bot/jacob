@@ -16,7 +16,7 @@ import { createNewFile } from "../code/newFile";
 import { agentEditFiles } from "../code/agentEditFiles";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import { fixError } from "../code/fixError";
+import { agentFixError } from "../code/agentFixError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
 import { respondToCodeReview } from "../code/respondToCodeReview";
@@ -638,7 +638,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             );
             break;
           case PRCommand.FixError:
-            await fixError({
+            await agentFixError({
               ...baseEventData,
               repository,
               token: installationAuthentication.token,
