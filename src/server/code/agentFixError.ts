@@ -2,16 +2,17 @@ import { type Issue, type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 import { dedent } from "ts-dedent";
 
+import { getImages, getTypes } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
 import {
   type RepoSettings,
   type BaseEventData,
   extractIssueNumberFromBranchName,
+  getStyles,
 } from "../utils";
 import { checkAndCommit } from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
 import { fixError, type ProjectContext } from "~/server/utils/agent/bugfix";
-import { runBuildCheck } from "../build/node/check";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -55,26 +56,22 @@ export async function agentFixError(params: AgentFixErrorParams) {
     );
   }
   const attemptNumber = parseInt(
-    body?.match(/Attempt\s+Number\s+(\d+)/)?.[1] ?? "",
+    body?.match(/Attempt\s+Number\s+(\d+)/)?.[1] ?? "1",
     10,
   );
-  let errors = "";
-  try {
-    await runBuildCheck({
-      ...baseEventData,
-      path: rootPath,
-      afterModifications: true,
-      repoSettings,
-    });
-    console.log("Build successful after fix");
-  } catch (error) {
-    errors = (error as Error).message;
-    console.log("Build failed:", errors);
-  }
 
-  const sourceMap = await traverseCodebase(rootPath);
+  const sourceMap = traverseCodebase(rootPath)?.join("\n") ?? "";
 
   //   const research = await researchIssue(issueText, sourceMap, rootPath);
+
+  const types = getTypes(rootPath, repoSettings);
+  const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
+    "\n",
+  );
+  const styles = await getStyles(rootPath, repoSettings);
+  const images = await getImages(rootPath, repoSettings);
+
+  // TODO: this is a temporary fix, need to figure out the right way to do research for a bugfix
   const research = ""; // TODO: currently this is part of the GitHub issue, need to separate it out
 
   const projectContext: ProjectContext = {
@@ -88,11 +85,15 @@ export async function agentFixError(params: AgentFixErrorParams) {
     repoSettings,
     baseEventData,
     sourceMapOrFileList: sourceMap,
+    types,
+    packages,
+    styles,
+    images,
     research,
   };
 
   try {
-    const fixes = await fixError(errors, projectContext);
+    const fixes = await fixError(projectContext);
 
     const commitMessage = `JACoB fix error: ${fixes?.join(",") ?? "Build error fix"}`;
 
@@ -106,7 +107,7 @@ export async function agentFixError(params: AgentFixErrorParams) {
       commitMessage,
       existingPr,
       issue,
-      buildErrorAttemptNumber: attemptNumber + 1,
+      buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
     });
 
     return fixes;

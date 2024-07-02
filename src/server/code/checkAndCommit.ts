@@ -18,6 +18,7 @@ import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
 import { emitPREvent, emitTaskEvent } from "~/server/utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
+import { checkForChanges } from "../git/operations";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -72,13 +73,20 @@ export async function checkAndCommit({
     buildErrorMessage = message;
   }
 
-  await addCommitAndPush({
+  const hasChanges = await checkForChanges({
     ...baseEventData,
-    rootPath,
-    branchName: branch,
-    commitMessage,
+    directory: rootPath,
     token,
   });
+  if (hasChanges) {
+    await addCommitAndPush({
+      ...baseEventData,
+      rootPath,
+      branchName: branch,
+      commitMessage,
+      token,
+    });
+  }
 
   let issue: Issue | RetrievedIssue | undefined;
 

@@ -153,8 +153,10 @@ export const sendGptRequest = async (
     if (imagePrompt) {
       messages.unshift(imagePrompt);
     }
+    // Temp fix, portkey doesn't currently support json mode for claude
+    const needsJsonHelper = isJSONMode && model.includes("claude");
 
-    if (isJSONMode) {
+    if (needsJsonHelper) {
       messages.push({
         role: "assistant",
         content:
@@ -177,7 +179,7 @@ export const sendGptRequest = async (
     const gptResponse = response.choices[0]?.message;
     // console.log("\n\n --- GPT Response --- \n\n", gptResponse);
     let content = gptResponse?.content ?? "";
-    if (isJSONMode && !content.startsWith("{")) {
+    if (needsJsonHelper) {
       content = `{${content}`; // add the starting bracket back to the JSON response
     }
 
@@ -279,18 +281,18 @@ export const sendGptRequestWithSchema = async (
       if (!gptResponse) {
         throw new Error("/n/n/n/n **** Empty response from GPT **** /n/n/n/n");
       }
-
+      console.log("GPT Response: ", gptResponse);
       // Remove any code blocks from the response prior to attempting to parse it
       gptResponse = removeMarkdownCodeblocks(gptResponse);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       extractedInfo = parse(gptResponse);
-
+      console.log("Extracted Info: ", extractedInfo);
       // if the response is an array of objects, validate each object individually and return the full array if successful
       if (Array.isArray(extractedInfo)) {
         const validatedInfo = extractedInfo.map(
           (info) => zodSchema.safeParse(info), // as SafeParseReturnType<any, any>,
         );
-
+        console.log("validatedInfo: ", validatedInfo);
         const failedValidations = validatedInfo.filter(
           (result) => result.success === false,
         );

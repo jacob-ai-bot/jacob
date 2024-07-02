@@ -10,14 +10,28 @@ import {
   evaluate,
   type EvaluationInfo,
 } from "~/server/openai/utils";
-import { gitCommit, gitCheckout, gitReset } from "~/server/git/operations";
+import {
+  gitCommit,
+  gitCheckout,
+  checkForChanges,
+  gitStageChanges,
+  commitChangesToBaseBranch,
+  mergeFixToBranch,
+  gitDeleteBranch,
+  gitStash,
+  gitStashPop,
+} from "~/server/git/operations";
 import path from "path";
 import { type RepoSettings, type BaseEventData } from "~/server/utils";
 import { runNpmInstall } from "~/server/build/node/check";
-import { sendGptRequestWithSchema } from "~/server/openai/request";
+import {
+  sendGptRequest,
+  sendGptRequestWithSchema,
+} from "~/server/openai/request";
 import { z } from "zod";
 import { type PullRequest } from "~/server/code/agentFixError";
 import { getFiles } from "../files";
+import { addCommitAndPush } from "~/server/git/commit";
 
 /**
  * This module implements a bug fixing system using a hybrid approach
@@ -78,6 +92,10 @@ type ProjectContext = {
   repoSettings?: RepoSettings;
   baseEventData: BaseEventData;
   sourceMapOrFileList: string;
+  types: string;
+  packages: string;
+  styles: string;
+  images: string;
   research: string;
 };
 
@@ -93,42 +111,38 @@ const EVALUATION_CACHE = new Map<string, EvaluationInfo>();
  * @param agent - The BugAgent object representing the current bug being addressed.
  * @param fix - The potential fix to be applied.
  * @param projectContext - The context of the project, including paths and settings.
- * @returns An object containing the success status, build output, evaluation, and commit hash.
+ * @returns An object containing the success status, build output, and resolved errors.
  */
 async function applyAndEvaluateFix(
   agent: BugAgent,
   fix: string,
   projectContext: ProjectContext,
+  allErrors: ErrorInfo[],
 ): Promise<{
   success: boolean;
   buildOutput: string;
-  evaluation: EvaluationInfo | null;
-  commitHash: string | null;
+  resolvedErrors: ErrorInfo[];
 }> {
-  const { token, repoSettings, baseEventData, rootPath } = projectContext;
-  const { branchName, errors } = agent;
-  const gitParams = {
-    directory: rootPath,
-    token,
-    baseEventData,
-  };
+  console.log("Applying and evaluating fix");
+  const { token, repoSettings, baseEventData, rootPath, branch } =
+    projectContext;
+  const { errors } = agent;
   const filePath = errors[0]?.filePath ?? "";
 
   try {
-    // Ensure we're on the correct branch
-    await gitCheckout(branchName, gitParams);
-    console.log("Checked out branch:", branchName);
-
-    // Create a temporary commit to store the current state
-    await gitCommit("Temporary commit before fix attempt", gitParams);
-    const tempCommitHash = await gitCommit("Temporary state", gitParams);
-
-    console.log("Applying fix:", fix);
-    console.log("filePath:", filePath);
     // Apply the fix
     await applyCodePatch(rootPath, filePath, fix);
 
-    console.log("Running build check after fix...");
+    // Commit and push changes
+    const commitMessage = `Apply fix for ${filePath}`;
+    await addCommitAndPush({
+      rootPath,
+      branchName: branch,
+      commitMessage,
+      token,
+      ...baseEventData,
+    });
+
     // Run build check
     const buildCheckParams: RunBuildCheckParams = {
       ...baseEventData,
@@ -143,74 +157,39 @@ async function applyAndEvaluateFix(
       await runBuildCheck(buildCheckParams);
       buildOutput = "Build successful";
       buildSuccess = true;
-      console.log("Build successful after fix");
     } catch (error) {
       buildOutput = (error as Error).message;
-      console.log("Build failed after fix:", buildOutput);
     }
+    console.log("Build output:", buildOutput);
 
-    // Evaluate the fix
-    const cacheKey = `${filePath}:${fix}`;
-    let evaluation: EvaluationInfo | null | undefined =
-      EVALUATION_CACHE.get(cacheKey);
-
-    if (!evaluation) {
-      const evaluationPrompt = `
-        Original errors: ${JSON.stringify(errors)}
-        Applied fix: ${fix}
-        Build output: ${buildOutput}
-        
-        Evaluate the effectiveness of this fix. Consider:
-        1. Does it resolve the original errors?
-        2. Does it introduce any new issues?
-        3. Is the fix appropriate and maintainable?
-        4. Does it adhere to ${repoSettings?.language} best practices?
-      `;
-
-      console.log("Evaluating fix...");
-      const evaluationResult = await evaluate(
-        buildOutput,
-        evaluationPrompt,
-        `You are an expert ${repoSettings?.language} code reviewer.`,
-        baseEventData,
-        ["claude-3-5-sonnet-20240620"], // Just do one evaluation for now
-      );
-      evaluation = evaluationResult[0] ?? null;
-      console.log("Evaluation result:", evaluation);
-      if (evaluation) {
-        EVALUATION_CACHE.set(cacheKey, evaluation);
-      }
-    }
-
-    let commitHash: string | null = null;
-    if (buildSuccess) {
-      console.log("Build was successful! Committing fix...");
-      commitHash = await gitCommit(`Apply fix for ${filePath}`, gitParams);
-    } else {
-      // Revert to the state before the fix attempt
-      console.log("Build was unsuccessful, reverting changes...");
-      await gitReset("hard", tempCommitHash ?? undefined, gitParams);
-    }
+    // Analyze remaining errors
+    const remainingErrors = await parseBuildErrors(buildOutput);
+    const resolvedErrors = allErrors.filter(
+      (error) =>
+        !remainingErrors.some(
+          (remaining) =>
+            remaining.filePath === error.filePath &&
+            remaining.lineNumber === error.lineNumber &&
+            remaining.errorType === error.errorType,
+        ),
+    );
+    console.log("Resolved errors:", resolvedErrors);
+    console.log("Remaining errors:", remainingErrors);
 
     return {
       success: buildSuccess,
       buildOutput,
-      evaluation,
-      commitHash,
+      resolvedErrors,
     };
   } catch (error) {
     console.error("Error applying and evaluating fix:", error);
-    // Ensure we revert any changes on error
-    await gitReset("hard", "HEAD", gitParams);
     return {
       success: false,
       buildOutput: (error as Error).message,
-      evaluation: null,
-      commitHash: null,
+      resolvedErrors: [],
     };
   }
 }
-
 const NpmAssessmentSchema = z.object({
   needsNpmInstall: z.boolean(),
   packagesToInstall: z.array(z.string()),
@@ -287,73 +266,95 @@ async function assessAndInstallNpmPackages(
  * @returns An array of successful fixes applied to resolve the errors.
  * @throws Error if not all errors could be resolved.
  */
+
 export async function fixError(
-  buildErrors: string,
   projectContext: ProjectContext,
 ): Promise<string[]> {
-  console.log("Starting error resolution with Enhanced Bug Agents approach");
+  console.log("Starting error resolution");
 
-  // First check to see if any of the errors are caused by missing npm packages
-  const installedPackages = await assessAndInstallNpmPackages(
-    buildErrors,
-    projectContext,
-  );
-
-  if (installedPackages) {
-    // Re-run build check after npm install
-    const buildCheckParams: RunBuildCheckParams = {
-      ...projectContext.baseEventData,
-      path: projectContext.rootPath,
-      afterModifications: true,
-      repoSettings: projectContext.repoSettings,
-    };
-
-    try {
-      await runBuildCheck(buildCheckParams);
-      console.log("Build successful after npm install");
-      return ["Installed required npm package(s)"];
-    } catch (error) {
-      console.log(
-        "Build still failing after npm install. Proceeding with bug fixing.",
-      );
-      buildErrors = (error as Error).message;
-    }
-  }
-
-  console.log("creating bug agents...");
-  const agents = await createBugAgents(buildErrors);
+  const { rootPath, baseEventData, repoSettings } = projectContext;
   const successfulFixes: string[] = [];
+  const MAX_ITERATIONS = 5;
 
-  for (const agent of agents) {
-    console.log("\n\n\n*******************************");
-    console.log("starting agent: ", agent.id);
-    console.log("errors: ", agent.errors);
-    console.log("potential fixes: ", agent.potentialFixes);
-    console.log("applied fix: ", agent.appliedFix);
-    console.log("build output: ", agent.buildOutput);
-    console.log("commit hash: ", agent.commitHash);
-    console.log("branch name: ", agent.branchName);
-    console.log("*******************************\n\n\n");
-    const result = await resolveBug(agent, projectContext);
-    console.log("result: ", result);
-    if (result) {
-      console.log("Successfully resolved bug group");
-      successfulFixes.push(result.appliedFix ?? "");
+  for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
+    console.log(`Starting iteration ${iteration}`);
+
+    // Check for build errors
+    let buildErrors: string;
+    try {
+      await runBuildCheck({
+        ...baseEventData,
+        path: rootPath,
+        afterModifications: true,
+        repoSettings,
+      });
+      console.log("Build successful, no errors to fix");
+      return successfulFixes;
+    } catch (error) {
+      buildErrors = (error as Error).message;
+      console.log("Build failed:", buildErrors);
+    }
+
+    // Check and install npm packages if needed
+    const installedPackages = await assessAndInstallNpmPackages(
+      buildErrors,
+      projectContext,
+    );
+    if (installedPackages) {
+      successfulFixes.push("Installed required npm package(s)");
+      continue; // Move to next iteration to check for any remaining errors
+    }
+
+    // Create bug agents and generate fixes
+    const agents = await createBugAgents(buildErrors);
+    const allErrors = agents.flatMap((agent) => agent.errors);
+
+    for (const agent of agents) {
+      const fixes = await generatePotentialFixes(agent, projectContext);
+
+      for (const fix of fixes) {
+        const result = await applyAndEvaluateFix(
+          agent,
+          fix,
+          projectContext,
+          allErrors,
+        );
+
+        if (result.success) {
+          successfulFixes.push(fix);
+          console.log("Successfully resolved errors:", result.resolvedErrors);
+          break; // Move to the next agent after a successful fix
+        }
+      }
+    }
+
+    // Check if all errors are resolved
+    try {
+      await runBuildCheck({
+        ...baseEventData,
+        path: rootPath,
+        afterModifications: true,
+        repoSettings,
+      });
+      console.log("All errors resolved");
+      return successfulFixes;
+    } catch (error) {
+      console.log("Some errors still remain");
     }
   }
 
-  if (successfulFixes.length === agents.length) {
-    console.log(`Successfully resolved all ${agents.length} bug groups`);
-    return successfulFixes;
-  } else {
-    console.log(
-      `Resolved ${successfulFixes.length} out of ${agents.length} bug groups`,
-    );
-    throw new Error(
-      `Unable to resolve all errors: ${agents.length - successfulFixes.length} remaining`,
-    );
-  }
+  console.log(
+    `Unable to resolve all errors after ${MAX_ITERATIONS} iterations`,
+  );
+  return successfulFixes;
 }
+const ErrorInfoSchema = z.object({
+  filePath: z.string().nullable(),
+  lineNumber: z.number().nullable(),
+  errorType: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+});
+
 /**
  * Parses the build output to extract structured error information.
  * This function is crucial for understanding the nature and location of each error,
@@ -362,32 +363,66 @@ export async function fixError(
  * @param buildOutput - The raw build output containing error messages.
  * @returns An array of ErrorInfo objects, each representing a parsed error.
  */
-function parseBuildErrors(buildOutput: string): ErrorInfo[] {
-  const errors: ErrorInfo[] = [];
-  const lines = buildOutput.split("\n");
-  let currentFile = "";
-  console.log("parsing build errors for buildOutput: ", buildOutput);
-  console.log("\n\n\n\n");
-  for (const line of lines) {
-    const fileMatch = line.match(/\.\/(.+\.tsx?)/);
-    if (fileMatch) {
-      currentFile = fileMatch[1] ?? "";
-      continue;
-    }
 
-    const errorMatch = line.match(/(\d+):(\d+)\s+Error:\s+(.+)\s+(@.+)/);
-    if (errorMatch && currentFile) {
-      errors.push({
-        filePath: currentFile,
-        lineNumber: parseInt(errorMatch[1] ?? "0", 10),
-        errorType: errorMatch[4] ?? "",
-        errorMessage: errorMatch[3] ?? "",
-      });
+async function parseBuildErrors(buildOutput: string): Promise<ErrorInfo[]> {
+  console.log("Parsing build errors for buildOutput:", buildOutput);
+
+  const prompt = `
+    Analyze the following build output and extract error information.
+    For each error, provide the following details:
+    - filePath: The path of the file where the error occurred
+    - lineNumber: The line number where the error occurred (as a number)
+    - errorType: The type or category of the error
+    - errorMessage: The detailed error message
+
+    Build Output:
+    ${buildOutput}
+
+    Respond with a JSON array of objects, each containing the above fields.
+    Your response MUST be an array of objects that adhere to the following zod schema:
+    {
+      filePath: z.ZodString;
+      lineNumber: z.ZodNumber;
+      errorType: z.ZodString;
+      errorMessage: z.ZodString;
     }
+    
+    Here is an example response:
+    [
+      {
+        "filePath": "src/index.ts",
+        "lineNumber": 10,
+        "errorType": "SyntaxError",
+        "errorMessage": "Unexpected token 'const'"
+      },
+      {
+        "filePath": "src/utils.ts",
+        "lineNumber": 20,
+        "errorType": "TypeError",
+        "errorMessage": "Cannot read property 'map' of undefined"
+      }
+    ]
+
+    If you can't determine a value, use an empty string for string fields or 0 for lineNumber.
+  `;
+
+  try {
+    const parsedErrors = (await sendGptRequestWithSchema(
+      prompt,
+      "You are an expert in analyzing build outputs and extracting error information. Your response MUST be an array of objects that adhere to a given zod schema. Do not include any additional information in your response.",
+      ErrorInfoSchema,
+      0.2,
+      undefined,
+      5,
+      "gpt-4-turbo-2024-04-09",
+    )) as ErrorInfo[];
+
+    console.log("Parsed errors:", parsedErrors);
+    return parsedErrors;
+  } catch (error) {
+    console.error("Error parsing build errors:", error);
+    return [];
   }
-  console.log("errors: ", errors);
-
-  return errors;
 }
 
 /**
@@ -400,7 +435,7 @@ function parseBuildErrors(buildOutput: string): ErrorInfo[] {
  * @returns An array of BugAgent objects, each responsible for a group of related errors.
  */
 async function createBugAgents(buildErrors: string): Promise<BugAgent[]> {
-  const errors = parseBuildErrors(buildErrors);
+  const errors = await parseBuildErrors(buildErrors);
   const groupedErrors = errors.reduce(
     (acc, error) => {
       const key = error.filePath;
@@ -449,12 +484,12 @@ async function generatePotentialFixes(
 
   const filePath = agent.errors[0]?.filePath ?? "";
 
-  /*
-      Source Map or File List:
-    ${projectContext.sourceMapOrFileList}
-    */
   const fileContent = getFiles(projectContext.rootPath, [filePath]);
   // We should pass in type information here, and potentially the file list
+
+  const { types, packages, styles, images, research, sourceMapOrFileList } =
+    projectContext;
+
   const userPrompt = `Given the following TypeScript build errors and file content, suggest up to ${MAX_FIXES_PER_BUG} potential fixes:
     Errors:
     ${errorSummary}
@@ -462,18 +497,24 @@ async function generatePotentialFixes(
     File Content:
     ${fileContent}
 
-    Research:
-    ${projectContext.research}
-
     Provide your suggestions as code patches in the LLM Diff Format. Each patch should be wrapped in <code_patch> tags.`;
 
   const systemPrompt = `You are a senior Technical Fellow at Microsoft, tasked with addressing TypeScript build errors by making precise, minimal changes to the code.
+
+    Here is some information about the code respository to help you resolve the errors:
+    - File List: ${sourceMapOrFileList}
+    - Types: ${types}
+    - Packages: ${packages}
+    - Styles: ${styles}
+    - Images: ${images}
+    - Research: ${research}
 
     Instructions:
     1. Address all errors mentioned in the error summary.
     2. Provide your solution as a code patch in the specified LLM Diff Format.
     3. Wrap your entire code patch output within <code_patch> tags.
     4. If there are no changes to be made, return <code_patch></code_patch>.
+    5. Use your knowledge of the existing code repository to make the most appropriate changes.
 
     LLM Diff Format Rules:
     - Use file headers: "--- <file path>" and "+++ <file path>"
@@ -484,12 +525,15 @@ async function generatePotentialFixes(
 
     Remember: Only output the code patch within the <code_patch> tags. Any explanations or comments should be outside these tags.`;
 
-  console.log("userPrompt: ", userPrompt);
-  console.log("systemPrompt: ", systemPrompt);
-  const response = await sendSelfConsistencyChainOfThoughtGptRequest(
-    userPrompt,
-    systemPrompt,
+  console.log(
+    "userPrompt: ",
+    `${userPrompt.slice(0, 200)}...${userPrompt.slice(-200)}`,
   );
+  console.log(
+    "systemPrompt: ",
+    `${systemPrompt.slice(0, 200)}...${systemPrompt.slice(-200)}`,
+  );
+  const response = await sendGptRequest(userPrompt, systemPrompt);
   console.log("response: ", response);
 
   if (!response) return [];
@@ -497,81 +541,6 @@ async function generatePotentialFixes(
   const patches = response.match(/<code_patch>[\s\S]*?<\/code_patch>/g) ?? [];
   console.log("patches: ", patches);
   return patches.map((patch) => patch.replace(/<\/?code_patch>/g, "").trim());
-}
-
-/**
- * Attempts to resolve a bug by applying and evaluating potential fixes.
- * This recursive function is the core of the Tree of Thought approach,
- * exploring multiple solution paths and backtracking when necessary.
- *
- * @param agent - The BugAgent object representing the current bug being addressed.
- * @param projectContext - The context of the project, including paths and settings.
- * @param depth - The current depth of the resolution attempt (for limiting recursion).
- * @returns The updated BugAgent if successful, or null if unable to resolve.
- */
-async function resolveBug(
-  agent: BugAgent,
-  projectContext: ProjectContext,
-  depth = 0,
-): Promise<BugAgent | null> {
-  if (depth >= MAX_DEPTH) {
-    console.log(
-      `Max depth reached for bug in file: ${agent.errors[0]?.filePath ?? "unknown"}`,
-    );
-    return null;
-  }
-
-  console.log(
-    `Attempting to resolve bug in file: ${agent.errors[0]?.filePath ?? "unknown"}`,
-  );
-
-  if (agent.potentialFixes.length === 0) {
-    agent.potentialFixes = await generatePotentialFixes(agent, projectContext);
-  }
-
-  const originalErrorCount = agent.errors.length;
-
-  for (const fix of agent.potentialFixes) {
-    const { success, buildOutput, evaluation, commitHash } =
-      await applyAndEvaluateFix(agent, fix, projectContext);
-
-    if (success) {
-      agent.appliedFix = fix;
-      agent.buildOutput = buildOutput;
-      agent.commitHash = commitHash;
-      console.log(
-        `Successfully fixed bug in file: ${agent.errors[0]?.filePath ?? "unknown"}`,
-      );
-      return agent;
-    }
-
-    if (evaluation?.rating && evaluation.rating > 3) {
-      const remainingErrors = parseBuildErrors(buildOutput);
-      if (remainingErrors.length < originalErrorCount) {
-        const subAgent: BugAgent = {
-          ...agent,
-          errors: remainingErrors,
-          potentialFixes: [],
-        };
-        const result = await resolveBug(subAgent, projectContext, depth + 1);
-        if (result) {
-          return result;
-        }
-      }
-    }
-
-    // Reset the branch to its original state after each unsuccessful fix attempt
-    await gitReset("hard", "HEAD", {
-      directory: projectContext.rootPath,
-      token: projectContext.token,
-      baseEventData: projectContext.baseEventData,
-    });
-  }
-
-  console.log(
-    `Failed to resolve bug in file: ${agent.errors[0]?.filePath ?? "unknown"}`,
-  );
-  return null;
 }
 
 export { type ProjectContext, parseBuildErrors };
