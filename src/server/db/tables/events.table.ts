@@ -53,7 +53,7 @@ const definePlanStep = (t: JSONTypes) =>
     actionType: t.nativeEnum(PlanningAgentActionType),
     title: t.string(),
     instructions: t.string(),
-    filePaths: t.array(t.string()),
+    filePath: t.string(),
     exitCriteria: t.string(),
     dependencies: t.string().optional(),
   });

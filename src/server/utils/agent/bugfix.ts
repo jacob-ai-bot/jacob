@@ -5,22 +5,7 @@ import {
   type RunBuildCheckParams,
 } from "~/server/build/node/check";
 import { applyCodePatch } from "~/server/code/agentEditFiles";
-import {
-  sendSelfConsistencyChainOfThoughtGptRequest,
-  evaluate,
-  type EvaluationInfo,
-} from "~/server/openai/utils";
-import {
-  gitCommit,
-  gitCheckout,
-  checkForChanges,
-  gitStageChanges,
-  commitChangesToBaseBranch,
-  mergeFixToBranch,
-  gitDeleteBranch,
-  gitStash,
-  gitStashPop,
-} from "~/server/git/operations";
+
 import path from "path";
 import { type RepoSettings, type BaseEventData } from "~/server/utils";
 import { runNpmInstall } from "~/server/build/node/check";
@@ -99,9 +84,7 @@ type ProjectContext = {
   research: string;
 };
 
-const MAX_DEPTH = 3;
 const MAX_FIXES_PER_BUG = 3;
-const EVALUATION_CACHE = new Map<string, EvaluationInfo>();
 
 /**
  * Applies a potential fix to the codebase and evaluates its effectiveness.
