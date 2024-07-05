@@ -1,0 +1,11 @@
+Coding Research Query:
+${query}
+
+Please search the internet and gather the most relevant and credible coding-related information regarding the query. Your summary should include:
+1. Detailed explanations of the topic.
+2. Relevant code snippets.
+3. References and sources for the information provided.
+4. Best practices and common pitfalls.
+5. Relevant documentation or tutorials.
+
+Ensure that the information is comprehensive and detailed enough to enable the developer to successfully use it without the need for further clarification. If there are multiple perspectives or solutions, present them clearly, highlighting the most credible and widely accepted points.

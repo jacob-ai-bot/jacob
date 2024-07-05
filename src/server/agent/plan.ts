@@ -130,6 +130,10 @@ export const createPlan = async function (
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
   ];
+  console.log("\n\n\n\n\n\n\n\nCreating plans with prompts:");
+  console.log("User prompt:", userPrompt);
+  console.log("System prompt:", systemPrompt);
+  console.log("\n\n\n\n\n\n\n\nCreated plans with prompts:");
   const responses = await Promise.all(
     models.flatMap((model) =>
       [1, 2].map((_, index) => {
@@ -149,11 +153,11 @@ export const createPlan = async function (
         return openai.chat.completions.create({
           model,
           messages,
+          max_tokens: MAX_OUTPUT[model],
           temperature: index === 1 ? 0.4 : 0.3,
           tools: planningTools,
           tool_choice: "required",
           parallel_tool_calls: true,
-          max_tokens: MAX_OUTPUT[model],
         });
       }),
     ),
@@ -215,6 +219,8 @@ const getPromptsForNewPlan = (
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
   
+      Here is the source map for the repository you are working with: <source_map>${sourceMap}</source_map>
+
       Key Responsibilities:
           1. Review the provided list of files to modify or create based on the GitHub issue. Each step should include detailed instructions on how to modify or create one or more of the specific files from the code respository.
           2. Comprehend the GitHub issue and its requirements, identifying the goal and what needs to be achieved.
@@ -245,18 +251,17 @@ const getPromptsForNewPlan = (
       Remember, your goal is to create a comprehensive, actionable plan that enables the efficient resolution of the GitHub issue. Your plan should be detailed enough for another developer to follow and implement successfully.`;
 
   const userPrompt = `You are an AI coding assistant tasked with creating a detailed plan for addressing a specific GitHub issue within a codebase. Your goal is to analyze the provided information and develop a step-by-step guide for making the necessary changes to resolve the issue.
-    
-      ### GitHub Issue Details:
-        - Issue: <github_issue>${githubIssue}</github_issue>
-    
+        
       ### Code Repository Information:
           ${research?.length ? `- Research: <research>${research}</research>` : ""}
-          - Repo Source Map: <source_map>${sourceMap}</source_map>
           - Files to Modify or Create: <files>${files}</files>
+
+      ### GitHub Issue Details:
+        - Issue: <github_issue>${githubIssue}</github_issue>
       
       ### Task:
           1. Understand the Problem:
-              - Thoroughly review the GitHub issue and identify the core problem to be solved.
+              - Thoroughly review the GitHub issue inside the <github_issue> tags and identify the core problem to be solved.
               - Break down the issue into smaller, manageable tasks.
       
           2. Assess Available Information:
@@ -269,7 +274,7 @@ const getPromptsForNewPlan = (
               - Ensure that no exit criteria are missed or overlooked during the planning process.
           
           4. Plan Code Changes:
-              - Use the list of specific files that need to be modified or created to address the issue.
+              - Use the list of specific files within the  <files> tags that need to be modified or created to address the issue.
               - For each plan step, follow these guidelines:
                   - Specify the exact file path in the filePath tool output.
                   - Provide clear, detailed instructions on the changes to be made.
@@ -279,7 +284,7 @@ const getPromptsForNewPlan = (
       
           5. Finalize the Plan:
               - Review the plan to ensure all necessary changes are accounted for.
-              - Ensure that no files are missed or incorrectly included.
+              - Ensure that no files in the <files> tags are missed or incorrectly included.
               - Determine dependencies between files and use this information to specify the order of changes.
       
       ### Important:
@@ -287,6 +292,7 @@ const getPromptsForNewPlan = (
               - EditExistingCode: Modify one existing file in the codebase.
               - CreateNewCode: Create a new file in the codebase.
           - Each tool should be used with specific instructions and file paths.
+          - You should have at least one function call per file in the <files> tag. You can have more if needed.
           - Ensure that the plan is clear, detailed, and follows the guidelines provided.
           - Create the shortest plan possible that addresses all necessary changes. Avoid unnecessary steps or complexity.
       
