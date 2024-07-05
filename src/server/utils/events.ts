@@ -7,7 +7,7 @@ import { type BaseEventData, getLanguageFromFileName } from "~/server/utils";
 import type { PullRequest } from "~/server/code/checkAndCommit";
 import { newRedisConnection } from "./redis";
 import { type RetrievedIssue } from "~/server/code/checkAndCommit";
-import { type Plan, type PlanStep } from "~/server/utils/agent";
+import { type Plan, type PlanStep } from "~/server/agent/plan";
 
 export const EVENT_RETENTION_TIME_IN_SECONDS = 14 * 24 * 60 * 60;
 

@@ -475,8 +475,7 @@ export const OpenAIStream = async (
 };
 
 export const sendGptToolRequest = async (
-  userPrompt: string,
-  systemPrompt = "You are a helpful assistant.",
+  messages: OpenAI.Chat.ChatCompletionMessageParam[],
   tools: ChatCompletionTool[],
   temperature = 0.3,
   baseEventData: BaseEventData | undefined = undefined,
@@ -499,15 +498,7 @@ export const sendGptToolRequest = async (
   });
 
   try {
-    const max_tokens = await getMaxTokensForResponse(
-      userPrompt + systemPrompt,
-      model,
-    );
-
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ];
+    const max_tokens = await getMaxTokensForResponse("tool request", model);
 
     console.log(
       `\n +++ Calling ${model} with max_tokens: ${max_tokens} for tool request`,
@@ -575,8 +566,7 @@ export const sendGptToolRequest = async (
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
       return sendGptToolRequest(
-        userPrompt,
-        systemPrompt,
+        messages,
         tools,
         temperature,
         baseEventData,

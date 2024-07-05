@@ -10,7 +10,7 @@ import {
 import { AT_MENTION } from "../utils";
 import { codeReviewCommandSuggestion } from "../github/issue";
 import { db } from "../db/db";
-import { createTodos } from "../utils/todos";
+import { createTodo } from "../utils/todos";
 
 dotenv.config();
 
@@ -63,11 +63,11 @@ ghApp.webhooks.on("issues.opened", async (event) => {
       const installationAuthentication = await authInstallation(
         installation?.id,
       );
-      await createTodos(
+      await createTodo(
         repository.full_name,
         project.id,
+        payload?.issue.number,
         installationAuthentication?.token,
-        payload.issue.user?.login,
       );
 
       console.log(
@@ -122,11 +122,11 @@ ghApp.webhooks.on("issues.edited", async (event) => {
       );
     }
     const installationAuthentication = await authInstallation(installation?.id);
-    await createTodos(
+    await createTodo(
       repository.full_name,
       project.id,
+      payload.issue.number,
       installationAuthentication?.token,
-      payload.issue.user?.login,
     );
     console.log(
       `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,

@@ -15,7 +15,7 @@ import {
 } from "~/server/openai/request";
 import { z } from "zod";
 import { type PullRequest } from "~/server/code/agentFixError";
-import { getFiles } from "../files";
+import { getFiles } from "../utils/files";
 import { addCommitAndPush } from "~/server/git/commit";
 
 /**

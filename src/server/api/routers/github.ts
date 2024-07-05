@@ -20,7 +20,6 @@ export const githubRouter = createTRPCRouter({
         session: { accessToken },
       },
     }) => {
-      console.log("******accessToken", accessToken);
       return await getAllRepos(accessToken);
     },
   ),

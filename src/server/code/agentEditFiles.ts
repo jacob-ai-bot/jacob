@@ -20,7 +20,7 @@ import {
   emitPlanStepEvent,
 } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
-import { createPlan } from "~/server/utils/agent";
+import { createPlan } from "~/server/agent/plan";
 import { PlanningAgentActionType } from "~/server/db/enums";
 
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";

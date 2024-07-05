@@ -6,7 +6,7 @@ import {
   rethrowErrorWithTokenRedacted,
   executeWithLogRequiringSuccessWithoutEvent,
 } from "../utils";
-import { type ProjectContext } from "../utils/agent/bugfix";
+import { type ProjectContext } from "../agent/bugfix";
 
 interface GitOperationParams {
   directory: string;

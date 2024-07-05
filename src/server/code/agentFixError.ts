@@ -12,7 +12,7 @@ import {
 } from "../utils";
 import { checkAndCommit } from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import { fixError, type ProjectContext } from "~/server/utils/agent/bugfix";
+import { fixError, type ProjectContext } from "~/server/agent/bugfix";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
