@@ -14,7 +14,6 @@ export interface AddCommitAndPushParams extends BaseEventData {
   commitMessage: string;
   token: string;
 }
-
 export async function addCommitAndPush({
   rootPath,
   branchName,
@@ -41,20 +40,33 @@ export async function addCommitAndPush({
     command: `git config --local user.email "${appUsername}+${appName}[bot]@users.noreply.github.com"`,
   });
 
-  // Commit files
+  // Check for changes and commit if necessary
   try {
-    await executeWithLogRequiringSuccess({
+    const { stdout: statusOutput } = await executeWithLogRequiringSuccess({
       ...baseEventData,
       directory: rootPath,
-      command: `git commit -m "${commitMessage.replace(/`/g, "\\`")}"`,
+      command: "git status --porcelain",
     });
+
+    const hasChanges = statusOutput.toString().trim() !== "";
+
+    if (hasChanges) {
+      await executeWithLogRequiringSuccess({
+        ...baseEventData,
+        directory: rootPath,
+        command: `git commit -m "${commitMessage.replace(/`/g, "\\`")}"`,
+      });
+      console.log("Changes committed successfully");
+    } else {
+      console.log("No changes to commit");
+    }
   } catch (error) {
-    // Log error and rethrow (so we can get better detail around 'nothing to commit' errors)
+    // Log error and rethrow
     const asyncException = (
       typeof error === "object" ? error : { error }
     ) as Partial<ExecAsyncException>;
     console.error(
-      `Commit failed: stderr: ${asyncException.stderr}, stdout: ${asyncException.stdout}`,
+      `Git operation failed: stderr: ${asyncException.stderr}, stdout: ${asyncException.stdout}`,
       error,
     );
     throw error;

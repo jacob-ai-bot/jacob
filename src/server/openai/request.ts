@@ -15,6 +15,10 @@ import {
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
+import {
+  sendAnthropicRequest,
+  sendAnthropicToolRequest,
+} from "../anthropic/request";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -128,6 +132,18 @@ export const sendGptRequest = async (
   // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
+    // For now, if we get a request to use Sonnet 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
+    if (model === "claude-3-5-sonnet-20240620" && !isJSONMode) {
+      return sendAnthropicRequest(
+        userPrompt,
+        systemPrompt,
+        temperature,
+        baseEventData,
+        retries,
+        delay,
+      );
+    }
+
     const openai = new OpenAI({
       apiKey: "using-virtual-portkey-key",
       baseURL: PORTKEY_GATEWAY_URL,
@@ -498,6 +514,17 @@ export const sendGptToolRequest = async (
   });
 
   try {
+    // For now, if we get a request to use Sonnet 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
+    if (model === "claude-3-5-sonnet-20240620") {
+      return sendAnthropicToolRequest(
+        messages,
+        tools,
+        temperature,
+        baseEventData,
+        retries,
+        delay,
+      );
+    }
     const max_tokens = await getMaxTokensForResponse("tool request", model);
 
     console.log(
