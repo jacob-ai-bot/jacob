@@ -16,7 +16,8 @@ import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
+// import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
+import { sendGptRequest } from "../openai/request";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -172,7 +173,8 @@ export async function fixError(params: FixErrorParams) {
         "user",
         codeTemplateParams,
       );
-      const updatedCode = (await sendSelfConsistencyChainOfThoughtGptRequest(
+      // TODO: Use the self-consistency chain of thought model
+      const updatedCode = (await sendGptRequest(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,

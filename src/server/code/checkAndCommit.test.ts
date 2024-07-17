@@ -10,6 +10,11 @@ import {
   type PullRequest,
 } from "./checkAndCommit";
 
+const mockedCheckForChanges = vi.hoisted(() => ({
+  checkForChanges: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("../git/operations", () => mockedCheckForChanges);
+
 const mockedCheck = vi.hoisted(() => ({
   runBuildCheck: vi
     .fn()

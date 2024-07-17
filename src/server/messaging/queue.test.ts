@@ -41,6 +41,11 @@ import {
 import { TaskStatus, TaskSubType } from "../db/enums";
 import { Language } from "../utils/settings";
 
+const mockedCheckForChanges = vi.hoisted(() => ({
+  checkForChanges: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("../git/operations", () => mockedCheckForChanges);
+
 const mockedOctokitAuthApp = vi.hoisted(() => ({
   createAppAuth: vi
     .fn()

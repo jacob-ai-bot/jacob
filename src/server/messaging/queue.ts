@@ -12,11 +12,11 @@ import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
-// import { editFiles } from "../code/editFiles";
-import { agentEditFiles } from "../code/agentEditFiles";
+import { editFiles } from "../code/editFiles";
+// import { agentEditFiles } from "../code/agentEditFiles";
+// import { agentFixError } from "../code/agentFixError";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import { agentFixError } from "../code/agentFixError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
 import { respondToCodeReview } from "../code/respondToCodeReview";
@@ -40,6 +40,7 @@ import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
+import { fixError } from "../code/fixError";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -508,15 +509,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         // detailed and is too large for our LLM context window.
         const sourceMap = getSourceMap(path, repoSettings);
 
-        // TODO: Remove this
-        if (process.env.NODE_ENV === "production") {
-          await runBuildCheck({
-            ...baseEventData,
-            path,
-            afterModifications: false,
-            repoSettings,
-          });
-        }
+        await runBuildCheck({
+          ...baseEventData,
+          path,
+          afterModifications: false,
+          repoSettings,
+        });
 
         if (newFileName) {
           await createNewFile({
@@ -538,7 +536,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             },
           });
         } else {
-          await agentEditFiles({
+          await editFiles({
             ...baseEventData,
             repository,
             token: installationAuthentication.token,
@@ -638,7 +636,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             );
             break;
           case PRCommand.FixError:
-            await agentFixError({
+            await fixError({
               ...baseEventData,
               repository,
               token: installationAuthentication.token,

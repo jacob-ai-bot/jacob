@@ -63,18 +63,20 @@ describe.only("Git Operations", () => {
 
   test("gitStash succeeds", async () => {
     await gitStash(mockParams);
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledWith({
-      ...mockEventData,
-      directory: "/test/directory",
+    expect(
+      mockedUtils.executeWithLogRequiringSuccessWithoutEvent,
+    ).toHaveBeenCalledWith({
+      ...mockParams,
       command: "git stash",
     });
   });
 
   test("gitStashPop succeeds", async () => {
     await gitStashPop(mockParams);
-    expect(mockedUtils.executeWithLogRequiringSuccess).toHaveBeenCalledWith({
-      ...mockEventData,
-      directory: "/test/directory",
+    expect(
+      mockedUtils.executeWithLogRequiringSuccessWithoutEvent,
+    ).toHaveBeenCalledWith({
+      ...mockParams,
       command: "git stash pop",
     });
   });
