@@ -1,0 +1,15 @@
+### START CODEBASE
+<Codebase>
+${codebase}
+</Codebase>
+### END CODEBASE
+
+Source Map:
+${sourceMap}
+
+Original Issue:
+${githubIssue}
+
+Research Question:
+${query}
+Please analyze the provided codebase and attempt to answer the research question. Provide a clear and concise response summarizing your findings, including relevant file paths, function names, and code snippets to support your answer. If the codebase does not contain enough information to fully answer the question, please indicate that additional information may be needed.

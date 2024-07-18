@@ -4,6 +4,8 @@ import ignore, { type Ignore } from "ignore";
 import parseDiff from "parse-diff";
 import { applyPatches } from "diff";
 import { removeMarkdownCodeblocks } from "~/app/utils";
+import { promisify } from "util";
+import { exec as execCallback } from "child_process";
 
 type LineLengthMap = Record<string, number>;
 
@@ -13,6 +15,24 @@ interface NewOrModifiedRange {
 }
 
 export type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
+
+export const getFiles = (
+  rootDir: string,
+  fileNamesToInclude: string[],
+  shouldAddLineNumbers = true,
+) => {
+  // simple function to get the files from the list.
+  // Add the name of the file at the beginning, and add line numbers to each line in the file.
+  // return a string that has all of the files concatenated together.
+  let output = "";
+  for (const fileName of fileNamesToInclude) {
+    const filePath = path.join(rootDir, fileName);
+    const fileContent = fs.readFileSync(filePath).toString("utf-8");
+    output += `File: ${fileName}\n`;
+    output += shouldAddLineNumbers ? addLineNumbers(fileContent) : fileContent;
+  }
+  return output;
+};
 
 export const concatenateFiles = (
   rootDir: string,
@@ -285,3 +305,97 @@ export function applyCodePatch(rootPath: string, patch: string) {
     });
   });
 }
+
+const exec = promisify(execCallback);
+
+const isTextFile = async (filePath: string): Promise<boolean> => {
+  try {
+    const { stdout } = await exec(
+      `file --mime-type -b "${filePath.replace(/(["\s'$`\\])/g, "\\$1")}"`,
+    );
+    return stdout.startsWith("text/");
+  } catch (error) {
+    console.error("Error checking file type:", error);
+    return false;
+  }
+};
+
+const walkDir = async (
+  dir: string,
+  rootDir: string,
+  callback: (filePath: string) => Promise<void>,
+  gitignore: Ignore | null,
+) => {
+  try {
+    const files = await fs.promises.readdir(dir, { withFileTypes: true });
+    for (const file of files) {
+      const filepath = path.join(dir, file.name);
+      const relativePath = path.relative(rootDir, filepath);
+
+      if (gitignore?.ignores(relativePath)) continue;
+
+      if (file.isDirectory()) {
+        await walkDir(filepath, rootDir, callback, gitignore);
+      } else {
+        if (await isTextFile(filepath)) {
+          await callback(filepath);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error walking directory:", error);
+  }
+};
+
+export const getCodebase = async (rootDir: string): Promise<string> => {
+  let contentToWrite = "";
+  let gitignore: Ignore | null = null;
+  const gitignorePath = path.join(rootDir, ".gitignore");
+  try {
+    fs.accessSync(gitignorePath, fs.constants.F_OK);
+    let gitignoreContent = fs.readFileSync(gitignorePath).toString();
+    // ignore any irrelevant files and binary files
+    gitignoreContent +=
+      "\n.*\npackage-lock.json\nyarn.lock\n*.png\n*.jpg\n*.jpeg\n*.gif\n*.ico\n*.svg\n*.webp\n*.bmp\n*.tiff\n*.tif\n*.heic\n*.heif\n*.avif\n*.pdf\n*.doc\n*.docx\n*.ppt\n*.pptx\n*.xls\n*.xlsx\n*.csv\n*.mp3\n*.mp4\n*.mov\n*.avi\n*.mkv\n*.webm\n*.wav\n*.flac\n*.ogg\n*.mpg\n*.mpeg\n*.wmv\n*.flv\n*.m4v\n*.3gp\n*.3g2\n*.aac\n*.wma\n*.flv\n*.m4a\n*.opus\n*.weba\n*.oga\n*.ogv\n*.ogm\n*.ogx\n*.ogx\n*.ogv";
+    gitignore = ignore().add(gitignoreContent);
+  } catch (err) {
+    console.log("There is no gitignore or it is not accessible.");
+  }
+
+  await walkDir(
+    rootDir,
+    rootDir,
+    async (filePath) => {
+      const relativePath = path.relative(rootDir, filePath);
+      contentToWrite += `File: ${relativePath}\n`;
+      // const fileContent = addLineNumbers(
+      //   await fs.promises.readFile(filePath, "utf-8"),
+      // );
+      const fileContent = await fs.promises.readFile(filePath, "utf-8");
+      contentToWrite += fileContent + "\n";
+    },
+    gitignore,
+  );
+
+  return contentToWrite;
+};
+
+export const addLineNumbers = (fileContent: string): string => {
+  if (!fileContent) {
+    return "";
+  }
+  const lines = fileContent.split("\n");
+  const numberedLines = lines.map((line, index) => `${index + 1}| ${line}`);
+  return numberedLines.join("\n");
+};
+
+export const removeLineNumbers = (numberedContent: string): string => {
+  if (!numberedContent) {
+    return "";
+  }
+  const lines = numberedContent.split("\n");
+  const originalLines = lines.map((line) =>
+    line.replace(/^\d+\|\s?$/, "").replace(/^\d+\|\s/, ""),
+  );
+  return originalLines.join("\n");
+};

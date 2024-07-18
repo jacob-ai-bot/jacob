@@ -1,15 +1,15 @@
-import { Octokit } from "@octokit/rest";
 import { cloneAndGetSourceMap, getExtractedIssue } from "../api/utils";
 import { getIssue } from "../github/issue";
 import { db } from "../db/db";
 import { TodoStatus } from "../db/enums";
+import { researchIssue } from "~/server/agent/research";
+import { cloneRepo } from "../git/clone";
 
-export const createTodos = async (
+export const createTodo = async (
   repo: string,
   projectId: number,
-  accessToken?: string,
-  login?: string | undefined,
-  max?: number,
+  issueNumber: number,
+  accessToken: string | undefined,
 ) => {
   const [repoOwner, repoName] = repo?.split("/") ?? [];
 
@@ -21,70 +21,57 @@ export const createTodos = async (
     throw new Error("Access token is required");
   }
 
-  const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
-  const octokit = new Octokit({ auth: accessToken });
-
-  const { data: unassignedIssues } = await octokit.issues.listForRepo({
-    owner: repoOwner,
-    repo: repoName,
-    state: "open",
-    assignee: "none",
+  // Check if a todo for this issue already exists
+  const existingTodo = await db.todos.findByOptional({
+    projectId: projectId,
+    issueId: issueNumber,
   });
 
-  const { data: myIssues } = await octokit.issues.listForRepo({
-    owner: repoOwner,
-    repo: repoName,
-    state: "open",
-    assignee: login ?? "none",
-  });
+  if (existingTodo) {
+    console.log(`Todo for issue #${issueNumber} already exists`);
+    return;
+  }
 
-  const issues = [...unassignedIssues, ...myIssues];
-
-  // remove the pull requests
-  const issuesWithoutPullRequests = issues.filter(
-    ({ pull_request }) => !pull_request,
+  // Fetch the specific issue
+  const { data: issue } = await getIssue(
+    { name: repoName, owner: { login: repoOwner } },
+    accessToken,
+    issueNumber,
   );
 
-  const ids = issuesWithoutPullRequests
-    .map((issue) => issue.number)
-    .filter(Boolean)
-    .slice(0, max);
+  const issueBody = issue.body ? `\n${issue.body}` : "";
+  const issueText = `${issue.title}${issueBody}`;
 
-  const issueData = await Promise.all(
-    ids.map((issueNumber) =>
-      getIssue(
-        { name: repoName, owner: { login: repoOwner } },
-        accessToken,
-        issueNumber,
-      ),
-    ),
-  );
+  let cleanupClone: (() => Promise<void>) | undefined;
+  try {
+    const { path: rootPath, cleanup } = await cloneRepo({
+      repoName: repo,
+      token: accessToken,
+    });
+    cleanupClone = cleanup;
 
-  await Promise.all(
-    issueData.map(async ({ data: issue }) => {
-      // add the todo to the database
-      // Try to find a todo with the same projectId and issueId
-      const existingTodo = await db.todos.findByOptional({
-        projectId: projectId,
-        issueId: issue.number,
-      });
+    const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
+    const research = await researchIssue(issueText, sourceMap, rootPath);
+    const extractedIssue = await getExtractedIssue(sourceMap, issueText);
 
-      // Only insert the new todo if no such todo exists
-      if (!existingTodo) {
-        const issueBody = issue.body ? `\n${issue.body}` : "";
-        const issueText = `${issue.title}${issueBody}`;
+    await db.todos.create({
+      projectId: projectId,
+      description: `${issue.title}\n\n${issueBody}\n### Research\n${research}`,
+      name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
+      status: TodoStatus.TODO,
+      issueId: issue.number,
+      position: issue.number,
+    });
 
-        const extractedIssue = await getExtractedIssue(sourceMap, issueText);
-
-        await db.todos.create({
-          projectId: projectId,
-          description: `${issue.title}\n\n${issueBody}`,
-          name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
-          status: TodoStatus.TODO,
-          issueId: issue.number,
-          position: issue.number, // set the position to the issue number to sort from oldest to newest
-        });
-      }
-    }),
-  );
+    console.log(`Created new todo for issue #${issue.number}`);
+  } catch (error) {
+    console.error(
+      `Error while creating todo for issue #${issue.number}: ${String(error)}`,
+    );
+    // Consider more specific error handling here
+  } finally {
+    if (cleanupClone) {
+      await cleanupClone();
+    }
+  }
 };

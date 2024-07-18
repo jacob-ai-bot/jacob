@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.6.1",
+    "@anthropic-ai/sdk": "^0.24.3",
     "@auth/pg-adapter": "^1.2.0",
     "@aws-sdk/client-s3": "^3.588.0",
     "@aws-sdk/lib-storage": "^3.588.0",
@@ -93,6 +93,7 @@
     "ts-dedent": "^2.2.0",
     "ts-morph": "^20.0.0",
     "tsx": "^4.7.2",
+    "uuid": "^10.0.0",
     "ws": "^8.17.0",
     "zod": "^3.22.4"
   },
@@ -112,6 +113,7 @@
     "@types/react-fontawesome": "^1.6.8",
     "@types/react-modal": "^3.16.3",
     "@types/react-syntax-highlighter": "^15.5.11",
+    "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",

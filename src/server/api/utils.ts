@@ -108,7 +108,7 @@ export const getExtractedIssue = async (
 export const cloneAndGetSourceMap = async (
   repo: string,
   accessToken: string,
-) => {
+): Promise<string> => {
   let cleanupClone: (() => Promise<void>) | undefined;
   try {
     const { path, cleanup } = await cloneRepo({

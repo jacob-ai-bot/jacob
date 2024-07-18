@@ -13,9 +13,10 @@ import { runBuildCheck } from "../build/node/check";
 import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
 import { editFiles } from "../code/editFiles";
+// import { agentEditFiles } from "../code/agentEditFiles";
+// import { agentFixError } from "../code/agentFixError";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import { fixError } from "../code/fixError";
 import { createStory } from "../code/createStory";
 import { codeReview } from "../code/codeReview";
 import { respondToCodeReview } from "../code/respondToCodeReview";
@@ -39,6 +40,7 @@ import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
+import { fixError } from "../code/fixError";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -506,6 +508,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         // Once npm install has been run, the source map becomes much more
         // detailed and is too large for our LLM context window.
         const sourceMap = getSourceMap(path, repoSettings);
+
         await runBuildCheck({
           ...baseEventData,
           path,

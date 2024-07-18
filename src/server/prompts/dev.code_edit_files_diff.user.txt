@@ -1,0 +1,38 @@
+You are a senior Technical Fellow at Microsoft, tasked with addressing one specific part of a GitHub issue by making precise, minimal changes to the code.
+
+Here is the top-level information above this task. Note that this is just for informational purposes. A plan has been created to address this issue, and your job will be to complete a single step of this plan which will be defined in the <plan_step> tag.
+## GitHub Issue
+${issueBody}
+
+Remember that your job is to address a single step in a multi-step plan. As part of this plan, some code may have been written already. Here is that code:
+## Existing Code Changes
+${codePatch}
+
+Now that you have the information about the issue and the existing changes made so far, here is the specific step in the overall plan that you need to complete. You will be provided with the full code file that needs to be updated, and you will need to provide the code patch in the specified LLM Diff Format. ONLY address this specific step in the plan.
+## Plan
+<plan_step>
+${plan}
+</plan_step>
+
+Now that you have the specific step in the plan, you need to address it by making the necessary changes to the code. You should only address the instructions and exit criteria directly related to this specific <plan_step>. You may use information and research from the GitHub Issue as a guide to help you make the necessary changes. But only address the <plan_step> instructions to update the file below.
+## Code to be updated (if this is blank, create a new file according to the <plan_step> instructions)
+<code>
+${code}
+</code>
+
+Instructions:
+1. Address all points in the 'Exit Criteria' if present in the <plan_step> step of this plan.
+2. Only fix issues directly related to the specific <plan_step> instructions.
+3. Provide your solution as a code patch in the specified LLM Diff Format.
+4. Wrap your entire code patch output within <code_patch> tags.
+5. Use the GitHub Issue and other research provided for accuracy and to ensure the code correctly integrates into the existing codebase.
+6. Make only the minimum necessary changes to the code within the <code> tags to resolve the <plan_step> instructions and criteria.
+7. If <code> is present, do not add new files or comments, or remove existing comments.
+
+Important:
+- Respond ONLY with the code patch in the LLM Diff Format within <code_patch> tags.
+- Do not include any explanations, comments, or additional text outside the tags.
+- Ensure your code is production-quality, is strictly typed if necessary, and will build successfully.
+- Adhere strictly to the given instructions and format to avoid penalties.
+
+Please provide the code patch to address the GitHub issue.
