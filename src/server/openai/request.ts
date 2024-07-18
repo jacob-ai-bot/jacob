@@ -14,7 +14,6 @@ import {
   type ChatCompletionToolChoiceOption,
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 import {
   sendAnthropicRequest,
   sendAnthropicToolRequest,
@@ -297,18 +296,18 @@ export const sendGptRequestWithSchema = async (
       if (!gptResponse) {
         throw new Error("/n/n/n/n **** Empty response from GPT **** /n/n/n/n");
       }
-      console.log("GPT Response: ", gptResponse);
+      // console.log("GPT Response: ", gptResponse);
       // Remove any code blocks from the response prior to attempting to parse it
       gptResponse = removeMarkdownCodeblocks(gptResponse);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       extractedInfo = parse(gptResponse);
-      console.log("Extracted Info: ", extractedInfo);
+      // console.log("Extracted Info: ", extractedInfo);
       // if the response is an array of objects, validate each object individually and return the full array if successful
       if (Array.isArray(extractedInfo)) {
         const validatedInfo = extractedInfo.map(
           (info) => zodSchema.safeParse(info), // as SafeParseReturnType<any, any>,
         );
-        console.log("validatedInfo: ", validatedInfo);
+        // console.log("validatedInfo: ", validatedInfo);
         const failedValidations = validatedInfo.filter(
           (result) => result.success === false,
         );
@@ -372,7 +371,8 @@ export const sendGptVisionRequest = async (
   const model: Model = "gpt-4o-2024-05-13";
 
   if (!snapshotUrl?.length) {
-    return sendSelfConsistencyChainOfThoughtGptRequest(
+    // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest(
+    return sendGptRequest(
       userPrompt,
       systemPrompt,
       temperature,
