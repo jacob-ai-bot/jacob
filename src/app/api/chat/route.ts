@@ -34,13 +34,14 @@ export async function POST(req: NextRequest) {
       const researchData = await db.research
         .where({ issueId: todo.issueId })
         .all();
+      if (researchData?.length > 0) {
+        // Convert the fetched research data into a string of question/answers
+        const research = researchData
+          .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
+          .join("\n\n");
 
-      // Convert the fetched research data into a string of question/answers
-      const research = researchData
-        .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
-        .join("\n\n");
-
-      systemPrompt = systemPrompt.replace("{{research}}", research);
+        systemPrompt = systemPrompt.replace("{{research}}", research);
+      }
     }
     if (sourceMap) {
       systemPrompt = systemPrompt.replace("{{sourceMap}}", sourceMap);
