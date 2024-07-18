@@ -5,6 +5,7 @@ import {
   sendGptRequest,
   sendGptToolRequest,
 } from "~/server/openai/request";
+import { db } from "~/server/db/db";
 import { getCodebase } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
 
@@ -13,6 +14,14 @@ export enum ResearchAgentActionType {
   ResearchInternet = "ResearchInternet",
   AskProjectOwner = "AskProjectOwner",
   ResearchComplete = "ResearchComplete",
+}
+
+export interface Research {
+  todoId: number;
+  issueId: number;
+  type: ResearchAgentActionType;
+  question: string;
+  answer: string;
 }
 
 const researchTools: OpenAI.ChatCompletionTool[] = [
@@ -87,10 +96,12 @@ const researchTools: OpenAI.ChatCompletionTool[] = [
 export const researchIssue = async function (
   githubIssue: string,
   sourceMap: string,
+  todoId: number,
+  issueId: number,
   rootDir: string,
   maxLoops = 3,
   model: Model = "claude-3-5-sonnet-20240620",
-): Promise<string> {
+): Promise<Research[]> {
   console.log("Researching issue...");
   const researchTemplateParams = {
     githubIssue,
@@ -114,7 +125,7 @@ export const researchIssue = async function (
   ];
 
   let allInfoGathered = false;
-  const gatheredInformation: string[] = [];
+  const gatheredInformation: Research[] = [];
   const questionsForProjectOwner: string[] = [];
   let loops = 0;
 
@@ -161,9 +172,15 @@ export const researchIssue = async function (
         if (functionName === ResearchAgentActionType.AskProjectOwner) {
           questionsForProjectOwner.push(args.query);
         } else {
-          gatheredInformation.push(
-            `### ${functionName} \n\n#### Question: ${args.query} \n\n${functionResponse}`,
-          );
+          const research: Research = {
+            todoId,
+            issueId,
+            type: functionName,
+            question: args.query,
+            answer: functionResponse,
+          };
+          gatheredInformation.push(research);
+          await db.research.create(research);
         }
         allInfoGathered = false;
       }
@@ -171,7 +188,7 @@ export const researchIssue = async function (
       if (!allInfoGathered) {
         const updatedPrompt = dedent`
             ### Gathered Information:
-            ${gatheredInformation.join("\n")}
+            ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
             ### Questions for Project Owner:
             ${questionsForProjectOwner.join("\n")}
             ### Missing Information:
@@ -192,7 +209,7 @@ export const researchIssue = async function (
   if (loops >= maxLoops) {
     console.log("Max loops reached, exiting loop.");
   }
-  return `## Research: ${gatheredInformation.join("\n")} \n\n## Questions for Project Owner: \n\n [ ] ${questionsForProjectOwner.join("\n [ ] ")}`;
+  return gatheredInformation;
 };
 
 async function callFunction(
