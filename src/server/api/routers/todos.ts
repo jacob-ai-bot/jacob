@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { db } from "~/server/db/db";
 import { TodoStatus } from "~/server/db/enums";
+import { type Research } from "~/server/db/tables/research.table";
 import { researchIssue } from "~/server/agent/research";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
@@ -54,10 +55,10 @@ export const todoRouter = createTRPCRouter({
       const { projectId, description, name, status, issueId, branch } = input;
 
       if (issueId) {
-        const existingResearch = await db.research.where({ issueId }).first();
+        const existingResearch = await (db.research as any).where({ issueId }).first() as Research | undefined;
         if (!existingResearch) {
           const createdTodo = await db.todos.selectAll().insert(input);
-          await researchIssue(description, "", createdTodo.id, issueId, "");
+          await researchIssue(description, "", createdTodo.id, issueId, "", 3);
           return createdTodo;
         }
       }
