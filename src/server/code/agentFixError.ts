@@ -2,6 +2,7 @@ import { type Issue, type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 import { dedent } from "ts-dedent";
 
+import { db } from "~/server/db/db";
 import { getImages, getTypes } from "../analyze/sourceMap";
 import { traverseCodebase } from "../analyze/traverse";
 import {
@@ -71,8 +72,15 @@ export async function fixError(params: AgentFixErrorParams) {
   const styles = await getStyles(rootPath, repoSettings);
   const images = await getImages(rootPath, repoSettings);
 
-  // TODO: this is a temporary fix, need to figure out the right way to do research for a bugfix
-  const research = ""; // TODO: currently this is part of the GitHub issue, need to separate it out
+  // Fetch research data from the database based on the issue ID
+  const researchData = await db.research
+    .where({ issueId: issue?.number })
+    .all();
+
+  // Convert the fetched research data into a string of question/answers
+  const research = researchData
+    .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
+    .join("\n\n");
 
   const projectContext: ProjectContext = {
     repository,

@@ -51,17 +51,24 @@ export const createTodo = async (
     cleanupClone = cleanup;
 
     const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
-    const research = await researchIssue(issueText, sourceMap, rootPath);
+
     const extractedIssue = await getExtractedIssue(sourceMap, issueText);
 
-    await db.todos.create({
+    const newTodo = await db.todos.create({
       projectId: projectId,
-      description: `${issue.title}\n\n${issueBody}\n### Research\n${research}`,
+      description: `${issue.title}\n\n${issueBody}`,
       name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
       status: TodoStatus.TODO,
       issueId: issue.number,
       position: issue.number,
     });
+    await researchIssue(
+      issueText,
+      sourceMap,
+      newTodo?.id,
+      issueNumber,
+      rootPath,
+    );
 
     console.log(`Created new todo for issue #${issue.number}`);
   } catch (error) {

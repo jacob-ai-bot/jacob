@@ -133,3 +133,17 @@ export type Developer = {
   personalityProfile: string;
   startingMessage: string;
 };
+
+export enum ResearchAgentActionType {
+  ResearchCodebase = "ResearchCodebase",
+  ResearchInternet = "ResearchInternet",
+  AskProjectOwner = "AskProjectOwner",
+  ResearchComplete = "ResearchComplete",
+}
+
+export interface Research {
+  type: ResearchAgentActionType;
+  question: string;
+  answer: string;
+  issueId: number;
+}

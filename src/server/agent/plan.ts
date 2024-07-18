@@ -1,12 +1,8 @@
-import OpenAI from "openai";
-import { MAX_OUTPUT, type Model } from "~/server/openai/request";
+import type OpenAI from "openai";
+import { sendGptToolRequest, type Model } from "~/server/openai/request";
 import { evaluate } from "~/server/openai/utils";
 import { PlanningAgentActionType } from "~/server/db/enums";
 import { findFiles } from "~/server/agent/files";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export interface PlanStep {
   type: PlanningAgentActionType;
@@ -115,15 +111,14 @@ export const createPlan = async function (
   const files = !hasExistingPlan
     ? await findFiles(githubIssue, sourceMap, research)
     : "";
-  // To get the best possible plan, we run the request multiple times with various models at varying temps, and choose the most comprehensive response (as measured naively by the number of tool calls and length of arguments)
-  const models: Model[] = ["gpt-4-0125-preview", "gpt-4o-2024-05-13"];
-  // const models: Model[] = [
-  //   "claude-3-5-sonnet-20240620",
-  //   "claude-3-5-sonnet-20240620",
-  // ];
+
+  const models: Model[] = [
+    "claude-3-5-sonnet-20240620",
+    "claude-3-5-sonnet-20240620",
+  ];
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
-      ? getPromptsForUpdatedPlan(codePatch, buildErrors)
+      ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue)
       : getPromptsForNewPlan(githubIssue, sourceMap, research, files);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -136,30 +131,19 @@ export const createPlan = async function (
   console.log("\n\n\n\n\n\n\n\nCreated plans with prompts:");
   const responses = await Promise.all(
     models.flatMap((model) =>
-      [1, 2].map((_, index) => {
-        // sendGptToolRequest(
-        //   userPrompt,
-        //   systemPrompt,
-        //   planningTools,
-        //   index === 1 ? 0.4 : 0.3,
-        //   undefined,
-        //   3,
-        //   60000,
-        //   model,
-        //   "required",
-        //   true,
-        // ),
-        console.log(`\n +++ Calling ${model} for plan...`);
-        return openai.chat.completions.create({
-          model,
+      [1, 2].map((_, index) =>
+        sendGptToolRequest(
           messages,
-          max_tokens: MAX_OUTPUT[model],
-          temperature: index === 1 ? 0.4 : 0.3,
-          tools: planningTools,
-          tool_choice: "required",
-          parallel_tool_calls: true,
-        });
-      }),
+          planningTools,
+          index === 1 ? 0.4 : 0.3,
+          undefined,
+          3,
+          60000,
+          model,
+          "required",
+          true,
+        ),
+      ),
     ),
   );
   console.log(
@@ -302,7 +286,11 @@ const getPromptsForNewPlan = (
   return { systemPrompt, userPrompt };
 };
 
-const getPromptsForUpdatedPlan = (codePatch: string, buildErrors: string) => {
+const getPromptsForUpdatedPlan = (
+  codePatch: string,
+  buildErrors: string,
+  githubIssue: string,
+) => {
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an AI code review assistant specializing in identifying and resolving issues that arise from sequential code changes. Your task is to analyze a given code patch and create a concise plan to address any inconsistencies or errors that may have been introduced due to the order of changes. Focus only on critical issues that affect the functionality or integrity of the code.
   
@@ -319,16 +307,22 @@ const getPromptsForUpdatedPlan = (codePatch: string, buildErrors: string) => {
   - It is critically important to include ALL fixes for a one file in a single step in your plan.
   - Provide context for each change, explaining why it's necessary.
   - If no critical issues are found, it's acceptable to state that no further changes are needed.
+  - Only provide a plan if there are critical issues to address. Otherwise just say "No critical issues identified. No further changes are needed."
   - Prioritize changes that affect functionality, imports, or component props.
   - Keep your plan concise and actionable.`;
 
-  const userPrompt = `Review the following code patch and build errors, and create a focused plan to address any critical issues that may have been introduced due to the sequential nature of the changes. Pay special attention to:
+  const userPrompt = `Review the following GitHub Issue, the resulting code patch, and build errors (if any), and create a focused plan to address any critical issues that may have been introduced due to the sequential nature of the changes. Pay special attention to:
   
   1. Missing or incorrect imports
   2. Changes in component props that aren't reflected in all relevant files
   3. New variables or functions that may need to be added to earlier files
   4. Any other dependencies between files that may have been overlooked
   5. Major type errors or syntax issues
+
+  GitHub Issue Details:
+  <github_issue>
+  ${githubIssue}
+  </github_issue>
   
   Code Patch:
   <code_patch>
