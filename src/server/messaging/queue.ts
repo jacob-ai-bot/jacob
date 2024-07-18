@@ -12,9 +12,8 @@ import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
-import { editFiles } from "../code/editFiles";
-// import { agentEditFiles } from "../code/agentEditFiles";
-// import { agentFixError } from "../code/agentFixError";
+import { editFiles } from "../code/agentEditFiles";
+import { fixError } from "../code/agentFixError";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
 import { createStory } from "../code/createStory";
@@ -40,7 +39,7 @@ import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
-import { fixError } from "../code/fixError";
+// import { fixError } from "../code/fixError";
 
 const QUEUE_NAME = "github_event_queue";
 

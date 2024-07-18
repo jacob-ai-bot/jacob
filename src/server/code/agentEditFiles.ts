@@ -37,7 +37,7 @@ export interface EditFilesParams extends BaseEventData {
   repoSettings?: RepoSettings;
 }
 
-export async function agentEditFiles(params: EditFilesParams) {
+export async function editFiles(params: EditFilesParams) {
   const {
     repository,
     token,

@@ -527,3 +527,4 @@ async function generatePotentialFixes(
 }
 
 export { type ProjectContext, parseBuildErrors };
+export default fixError;

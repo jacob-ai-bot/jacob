@@ -12,7 +12,7 @@ import {
 } from "../utils";
 import { checkAndCommit } from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import { fixError, type ProjectContext } from "~/server/agent/bugfix";
+import fixBugs, { type ProjectContext } from "~/server/agent/bugfix";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -30,7 +30,7 @@ export interface AgentFixErrorParams extends BaseEventData {
   repoSettings?: RepoSettings;
 }
 
-export async function agentFixError(params: AgentFixErrorParams) {
+export async function fixError(params: AgentFixErrorParams) {
   const {
     repository,
     token,
@@ -93,7 +93,7 @@ export async function agentFixError(params: AgentFixErrorParams) {
   };
 
   try {
-    const fixes = await fixError(projectContext);
+    const fixes = await fixBugs(projectContext);
 
     const commitMessage = `JACoB fix error: ${fixes?.join(",") ?? "Build error fix"}`;
 

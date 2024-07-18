@@ -15,6 +15,7 @@ import {
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
 import { sendAnthropicRequest } from "../anthropic/request";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -341,8 +342,7 @@ export const sendGptVisionRequest = async (
   const model: Model = "gpt-4o-2024-05-13";
 
   if (!snapshotUrl?.length) {
-    // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest(
-    return sendGptRequest(
+    return sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
       temperature,
