@@ -52,7 +52,7 @@ export const todoRouter = createTRPCRouter({
     )
     .mutation(async ({ input }): Promise<Todo> => {
       const { projectId, description, name, status, issueId, branch } = input;
-      
+
       if (issueId) {
         const existingResearch = await db.research.where({ issueId }).first();
         if (!existingResearch) {
@@ -61,7 +61,7 @@ export const todoRouter = createTRPCRouter({
           return createdTodo;
         }
       }
-      
+
       const newTodo = {
         projectId,
         description,

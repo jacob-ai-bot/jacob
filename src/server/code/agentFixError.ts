@@ -73,7 +73,9 @@ export async function fixError(params: AgentFixErrorParams) {
   const images = await getImages(rootPath, repoSettings);
 
   // Fetch research data from the database based on the issue ID
-  const researchData = await db.research.where({ issueId: issue?.number }).all();
+  const researchData = await db.research
+    .where({ issueId: issue?.number })
+    .all();
 
   // Convert the fetched research data into a string of question/answers
   const research = researchData

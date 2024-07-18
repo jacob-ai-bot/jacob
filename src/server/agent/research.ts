@@ -1,11 +1,11 @@
 import type OpenAI from "openai";
 import dedent from "ts-dedent";
 import {
-  db,
   type Model,
   sendGptRequest,
   sendGptToolRequest,
 } from "~/server/openai/request";
+import { db } from "~/server/db/db";
 import { getCodebase } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
 
@@ -190,7 +190,7 @@ export const researchIssue = async function (
       if (!allInfoGathered) {
         const updatedPrompt = dedent`
             ### Gathered Information:
-            ${gatheredInformation.map(r => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
+            ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
             ### Questions for Project Owner:
             ${questionsForProjectOwner.join("\n")}
             ### Missing Information:

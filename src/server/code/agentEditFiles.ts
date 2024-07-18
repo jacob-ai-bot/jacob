@@ -54,15 +54,13 @@ export async function editFiles(params: EditFilesParams) {
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = `${issue.title}${issueBody}`;
-  
+
   // Fetch research data from the database based on the issue ID
   const researchData = await db.research.where({ issueId: issue.number }).all();
-  
+
   // Convert the fetched research data into a string of question/answers
   const research = researchData
-    .map(
-      (item) => `Question: ${item.question}\nAnswer: ${item.answer}`
-    )
+    .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
     .join("\n\n");
 
   let codePatch = "";
