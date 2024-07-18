@@ -36,7 +36,7 @@ const mockParams = {
   baseEventData: mockEventData,
 };
 
-describe.only("Git Operations", () => {
+describe("Git Operations", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
