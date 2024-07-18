@@ -5,7 +5,7 @@ export class ResearchTable extends BaseTable {
   readonly table = "research";
   columns = this.setColumns((t) => ({
     id: t.identity().primaryKey(),
-    todoId: t.integer().foreignKey("todos", "id").onDelete("CASCADE"),
+    todoId: t.integer().foreignKey("todos", "id").onDelete("CASCADE") as any,
     issueId: t.integer(),
     type: t.enum(
       "research_agent_action_type",
