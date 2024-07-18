@@ -8,7 +8,6 @@ import {
 import { db } from "~/server/db/db";
 import { getCodebase } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
-import { ResearchTable } from "~/server/db/tables/research.table";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -169,8 +168,6 @@ export const researchIssue = async function (
           githubIssue,
           sourceMap,
           rootDir,
-          todoId,
-          issueId,
         );
         if (functionName === ResearchAgentActionType.AskProjectOwner) {
           questionsForProjectOwner.push(args.query);
@@ -221,8 +218,6 @@ async function callFunction(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
-  todoId: number,
-  issueId: number,
 ): Promise<string> {
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:

@@ -54,10 +54,9 @@ export const todoRouter = createTRPCRouter({
       const { projectId, description, name, status, issueId, branch } = input;
 
       if (issueId) {
-        const existingResearch = await db.research
+        const [existingResearch] = await db.research
           .selectAll()
-          .where({ issueId })
-          .first();
+          .where({ issueId });
         if (!existingResearch) {
           const createdTodo = await db.todos.selectAll().insert(input);
           await researchIssue(description, "", createdTodo.id, issueId, "", 3);
