@@ -1,7 +1,7 @@
 import { change, type DbType } from "../dbScript";
 import { ResearchAgentActionType } from "../../agent/research";
 
-change(async (db: DbType) => {
+change(async (db) => {
   await db.createTable("research", (t) => ({
     id: t.identity().primaryKey(),
     todoId: t.integer().foreignKey("todos", "id").onDelete("CASCADE"),
@@ -9,7 +9,7 @@ change(async (db: DbType) => {
     type: t
       .enum(
         "research_agent_action_type",
-        Object.values(ResearchAgentActionType) as [string, ...string[]],
+        Object.values(ResearchAgentActionType) as [ResearchAgentActionType, ...ResearchAgentActionType[]],
       )
       .notNull(),
     question: t.text(),
