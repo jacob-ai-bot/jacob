@@ -199,6 +199,7 @@ export const researchIssue = async function (
             ### Important:
                 If you have all the necessary information to proceed with the task, return a single tool call to confirm that the research is complete. If you need more information, ask up to 5 additional questions to gather it.
         `;
+        messages.push({ role: "assistant", content: "Research Step Complete" });
         messages.push({ role: "user", content: updatedPrompt });
       }
     } else {
