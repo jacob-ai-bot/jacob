@@ -56,7 +56,7 @@ export const createTodo = async (
 
     await db.todos.create({
       projectId: projectId,
-      description: `${issue.title}\n\n${issueBody}\n### Research\n${JSON.stringify(research, null, 2)}`,
+      description: `${issue.title}\n\n${issueBody}\n### Research\n${research.map(r => `${r.type}: ${r.question}\n${r.answer}`).join('\n\n')}`,
       name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
       status: TodoStatus.TODO,
       issueId: issue.number,
