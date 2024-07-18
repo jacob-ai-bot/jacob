@@ -8,6 +8,7 @@ import {
 import { db } from "~/server/db/db";
 import { getCodebase } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
+import { ResearchTable } from "~/server/db/tables/research.table";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -96,8 +97,8 @@ const researchTools: OpenAI.ChatCompletionTool[] = [
 export const researchIssue = async function (
   githubIssue: string,
   sourceMap: string,
-  _todoId: number,
-  _issueId: number,
+  todoId: number,
+  issueId: number,
   rootDir: string,
   maxLoops = 3,
   model: Model = "claude-3-5-sonnet-20240620",
@@ -168,8 +169,8 @@ export const researchIssue = async function (
           githubIssue,
           sourceMap,
           rootDir,
-          _todoId,
-          _issueId,
+          todoId,
+          issueId,
         );
         if (functionName === ResearchAgentActionType.AskProjectOwner) {
           questionsForProjectOwner.push(args.query);
@@ -182,7 +183,7 @@ export const researchIssue = async function (
             answer: functionResponse,
           };
           gatheredInformation.push(research);
-          await (db.research as any).create(research);
+          await db.research.create(research);
         }
         allInfoGathered = false;
       }
@@ -220,8 +221,8 @@ async function callFunction(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
-  _todoId: number,
-  _issueId: number,
+  todoId: number,
+  issueId: number,
 ): Promise<string> {
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:

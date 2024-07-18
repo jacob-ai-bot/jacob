@@ -6,10 +6,12 @@ change(async (db: DbType) => {
     id: t.identity().primaryKey(),
     todoId: t.integer().foreignKey("todos", "id").onDelete("CASCADE"),
     issueId: t.integer(),
-    type: t.enum(
-      "research_agent_action_type",
-      Object.values(ResearchAgentActionType) as [string, ...string[]]
-    ).notNull(),
+    type: t
+      .enum(
+        "research_agent_action_type",
+        Object.values(ResearchAgentActionType) as [string, ...string[]],
+      )
+      .notNull(),
     question: t.text(),
     answer: t.text(),
     createdAt: t.timestamp().notNull().defaultNow(),
