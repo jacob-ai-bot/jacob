@@ -22,6 +22,7 @@ const CONTEXT_WINDOW = {
   "gpt-4-turbo-2024-04-09": 128000,
   "gpt-4-0125-preview": 128000,
   "gpt-4o-2024-05-13": 128000,
+  "gpt-4o-mini-2024-07-18": 128000,
   "gemini-1.5-pro-latest": 1048576,
   "gemini-1.5-flash-latest": 1048576,
   "claude-3-opus-20240229": 200000,
@@ -36,6 +37,7 @@ export const MAX_OUTPUT = {
   "gpt-4-turbo-2024-04-09": 4096,
   "gpt-4-0125-preview": 4096,
   "gpt-4o-2024-05-13": 4096,
+  "gpt-4o-mini-2024-07-18": 16384,
   "gemini-1.5-pro-latest": 8192,
   "gemini-1.5-flash-latest": 8192,
   "claude-3-opus-20240229": 4096,
@@ -50,6 +52,7 @@ const INPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 10 / ONE_MILLION,
   "gpt-4-0125-preview": 10 / ONE_MILLION,
   "gpt-4o-2024-05-13": 10 / ONE_MILLION,
+  "gpt-4o-mini-2024-07-18": 0.15 / ONE_MILLION,
   "gemini-1.5-pro-latest": 3.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
   "claude-3-opus-20240229": 15 / ONE_MILLION,
@@ -62,6 +65,7 @@ const OUTPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
   "gpt-4-0125-preview": 30 / ONE_MILLION,
   "gpt-4o-2024-05-13": 30 / ONE_MILLION,
+  "gpt-4o-mini-2024-07-18": 0.6 / ONE_MILLION,
   "gemini-1.5-pro-latest": 10.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
   "claude-3-opus-20240229": 75 / ONE_MILLION,
@@ -74,6 +78,7 @@ const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4-0125-preview": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4o-2024-05-13": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gpt-4o-mini-2024-07-18": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gemini-1.5-pro-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "claude-3-opus-20240229": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
@@ -84,34 +89,6 @@ const PORTKEY_VIRTUAL_KEYS = {
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
-
-export const getMaxTokensForResponse = async (
-  inputText: string,
-  model: Model,
-): Promise<number> => {
-  try {
-    return MAX_OUTPUT[model];
-    // const tokens = encode(inputText);
-    // const numberOfInputTokens = tokens.length;
-
-    // const maxContextTokens = CONTEXT_WINDOW[model];
-    // const padding = Math.ceil(maxContextTokens * 0.01);
-
-    // const maxTokensForResponse =
-    //   maxContextTokens - numberOfInputTokens - padding;
-
-    // if (maxTokensForResponse <= 0) {
-    //   throw new Error(
-    //     "Input text is too large to fit within the context window.",
-    //   );
-    // }
-
-    // return Math.min(maxTokensForResponse, MAX_OUTPUT[model]);
-  } catch (error) {
-    console.log("Error in getMaxTokensForResponse: ", error);
-    return Math.round(CONTEXT_WINDOW[model] / 2);
-  }
-};
 
 export const sendGptRequest = async (
   userPrompt: string,
@@ -151,11 +128,7 @@ export const sendGptRequest = async (
         "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
       },
     });
-
-    const max_tokens = await getMaxTokensForResponse(
-      userPrompt + systemPrompt,
-      model,
-    );
+    const max_tokens = MAX_OUTPUT[model];
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -438,30 +411,7 @@ export const OpenAIStream = async (
       },
     });
 
-    let max_tokens = 0;
-    const content =
-      systemPrompt +
-      messages.map((msg) => msg.role + " " + msg.content).join(" ");
-    try {
-      max_tokens = await getMaxTokensForResponse(content, model);
-    } catch (error) {
-      // update the model to 16K if the input text is too large
-      console.log(
-        "NOTE: Input text is too large to fit within the context window.",
-      );
-      model = "gemini-1.5-pro-latest";
-    }
-    try {
-      if (!max_tokens) {
-        max_tokens = await getMaxTokensForResponse(content, model);
-      }
-    } catch (error) {
-      console.log("Error in getMaxTokensForResponse: ", error);
-      max_tokens = Math.round(CONTEXT_WINDOW[model] / 2);
-    }
-    if (!max_tokens) {
-      max_tokens = Math.round(CONTEXT_WINDOW[model] / 2);
-    }
+    const max_tokens = MAX_OUTPUT[model];
 
     console.log(`\n +++ Calling ${model} with max_tokens: ${max_tokens} `);
 
@@ -511,7 +461,7 @@ export const sendGptToolRequest = async (
   });
 
   try {
-    const max_tokens = await getMaxTokensForResponse("tool request", model);
+    const max_tokens = MAX_OUTPUT[model];
 
     console.log(
       `\n +++ Calling ${model} with max_tokens: ${max_tokens} for tool request`,
