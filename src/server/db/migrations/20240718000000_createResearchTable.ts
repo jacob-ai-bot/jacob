@@ -9,12 +9,14 @@ const researchTypeValues = [
 
 change(async (db, up) => {
   if (up) {
-    await db.createEnum("research_type", researchTypeValues);
+    await db.createEnum("research_type_values", researchTypeValues);
   }
 
   await db.createTable("research", (t) => ({
     id: t.identity().primaryKey(),
-    todoId: t.integer().foreignKey("todos", "id"),
+    todoId: t.integer().foreignKey("todos", "id", {
+      onDelete: "CASCADE",
+    }),
     issueId: t.integer(),
     type: t.enum("research_type_values"),
     question: t.text(),
@@ -23,6 +25,6 @@ change(async (db, up) => {
   }));
 
   if (!up) {
-    await db.dropEnum("research_type", researchTypeValues);
+    await db.dropEnum("research_type_values", researchTypeValues);
   }
 });

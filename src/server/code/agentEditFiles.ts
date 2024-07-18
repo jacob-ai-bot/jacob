@@ -66,10 +66,11 @@ export async function editFiles(params: EditFilesParams) {
   let codePatch = "";
   const maxPlanIterations = 3;
   const maxSteps = 10;
+  let isPlanComplete = false;
   let planIterations = 0;
   let buildErrors = "";
   let newPrBody = "";
-  while (planIterations < maxPlanIterations) {
+  while (planIterations < maxPlanIterations && !isPlanComplete) {
     planIterations++;
     const plan = await createPlan(
       issueText,
@@ -207,6 +208,7 @@ export async function editFiles(params: EditFilesParams) {
         afterModifications: true,
         repoSettings,
       });
+      isPlanComplete = true;
     } catch (error) {
       const { message } = error as Error;
       buildErrors = message;
