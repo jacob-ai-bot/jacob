@@ -9,7 +9,10 @@ change(async (db) => {
     type: t
       .enum(
         "research_agent_action_type",
-        Object.values(ResearchAgentActionType) as [ResearchAgentActionType, ...ResearchAgentActionType[]],
+        Object.values(ResearchAgentActionType) as [
+          ResearchAgentActionType,
+          ...ResearchAgentActionType[],
+        ],
       )
       .notNull(),
     question: t.text(),
