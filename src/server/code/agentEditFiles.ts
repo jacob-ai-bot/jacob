@@ -1,6 +1,7 @@
 import { type Issue, type Repository } from "@octokit/webhooks-types";
 import fs from "fs";
 import { getTypes, getImages } from "../analyze/sourceMap";
+import { db } from "~/server/db/db";
 import {
   parseTemplate,
   type RepoSettings,
@@ -53,12 +54,17 @@ export async function editFiles(params: EditFilesParams) {
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = `${issue.title}${issueBody}`;
-  //   const research = await researchIssue(
-  //     issueText,
-  //     sourceMapOrFileList,
-  //     rootPath,
-  //   );
-  const research = ""; // TODO: currently this is part of the GitHub issue, need to separate it out
+  
+  // Fetch research data from the database based on the issue ID
+  const researchData = await db.research.where({ issueId: issue.number }).all();
+  
+  // Convert the fetched research data into a string of question/answers
+  const research = researchData
+    .map(
+      (item) => `Question: ${item.question}\nAnswer: ${item.answer}`
+    )
+    .join("\n\n");
+
   let codePatch = "";
   const maxPlanIterations = 3;
   const maxSteps = 10;
