@@ -96,8 +96,8 @@ const researchTools: OpenAI.ChatCompletionTool[] = [
 export const researchIssue = async function (
   githubIssue: string,
   sourceMap: string,
-  todoId: number,
-  issueId: number,
+  _todoId: number,
+  _issueId: number,
   rootDir: string,
   maxLoops = 3,
   model: Model = "claude-3-5-sonnet-20240620",
@@ -168,8 +168,8 @@ export const researchIssue = async function (
           githubIssue,
           sourceMap,
           rootDir,
-          todoId,
-          issueId,
+          _todoId,
+          _issueId,
         );
         if (functionName === ResearchAgentActionType.AskProjectOwner) {
           questionsForProjectOwner.push(args.query);
@@ -182,7 +182,7 @@ export const researchIssue = async function (
             answer: functionResponse,
           };
           gatheredInformation.push(research);
-          await db.research.create(research);
+          await (db.research as any).create(research);
         }
         allInfoGathered = false;
       }
@@ -220,8 +220,8 @@ async function callFunction(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
-  todoId: number,
-  issueId: number,
+  _todoId: number,
+  _issueId: number,
 ): Promise<string> {
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:
