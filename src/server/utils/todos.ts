@@ -42,21 +42,21 @@ export const createTodo = async (
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = `${issue.title}${issueBody}`;
 
-  let cleanupClone: (() => Promise<void>) | undefined;
+  // let cleanupClone: (() => Promise<void>) | undefined;
   try {
-    const { path: rootPath, cleanup } = await cloneRepo({
-      repoName: repo,
-      token: accessToken,
-    });
-    cleanupClone = cleanup;
+    // const { path: rootPath, cleanup } = await cloneRepo({
+    //   repoName: repo,
+    //   token: accessToken,
+    // });
+    // cleanupClone = cleanup;
 
     const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
-    const research = await researchIssue(issueText, sourceMap, rootPath);
+    // const research = await researchIssue(issueText, sourceMap, rootPath);
     const extractedIssue = await getExtractedIssue(sourceMap, issueText);
 
     await db.todos.create({
       projectId: projectId,
-      description: `${issue.title}\n\n${issueBody}\n### Research\n${research}`,
+      description: `${issue.title}\n\n${issueBody}`,
       name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
       status: TodoStatus.TODO,
       issueId: issue.number,
@@ -69,9 +69,10 @@ export const createTodo = async (
       `Error while creating todo for issue #${issue.number}: ${String(error)}`,
     );
     // Consider more specific error handling here
-  } finally {
-    if (cleanupClone) {
-      await cleanupClone();
-    }
-  }
+  } 
+  // finally {
+  //   if (cleanupClone) {
+  //     await cleanupClone();
+  //   }
+  // }
 };
