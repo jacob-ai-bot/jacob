@@ -466,6 +466,15 @@ export const sendGptToolRequest = async (
     console.log(
       `\n +++ Calling ${model} with max_tokens: ${max_tokens} for tool request`,
     );
+    console.log(
+      `calling with messages: ${messages
+        .map(
+          (m) => m.role + ": " + ((m.content as string)?.slice(0, 100) ?? ""),
+        )
+        .join("\n")}`,
+    );
+    console.log("tool choice: ", toolChoice);
+    console.log("parallel tool calls: ", parallelToolCalls);
     const startTime = Date.now();
 
     const response = await openai.chat.completions.create({

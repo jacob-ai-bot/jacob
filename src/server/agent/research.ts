@@ -99,8 +99,8 @@ export const researchIssue = async function (
   todoId: number,
   issueId: number,
   rootDir: string,
-  maxLoops = 3,
-  model: Model = "claude-3-5-sonnet-20240620",
+  maxLoops = 10,
+  model: Model = "gpt-4-0125-preview",
 ): Promise<Research[]> {
   console.log("Researching issue...");
   const researchTemplateParams = {

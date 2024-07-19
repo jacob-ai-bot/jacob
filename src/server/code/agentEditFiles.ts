@@ -64,7 +64,7 @@ export async function editFiles(params: EditFilesParams) {
     .join("\n\n");
 
   let codePatch = "";
-  const maxPlanIterations = 3;
+  const maxPlanIterations = 1; // TODO: experiment with other values
   const maxSteps = 10;
   let isPlanComplete = false;
   let planIterations = 0;

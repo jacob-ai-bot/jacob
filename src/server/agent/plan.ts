@@ -112,10 +112,11 @@ export const createPlan = async function (
     ? await findFiles(githubIssue, sourceMap, research)
     : "";
 
-  const models: Model[] = [
-    "claude-3-5-sonnet-20240620",
-    "claude-3-5-sonnet-20240620",
-  ];
+  // const models: Model[] = [
+  //   "claude-3-5-sonnet-20240620",
+  //   "claude-3-5-sonnet-20240620",
+  // ];
+  const models: Model[] = ["gpt-4-0125-preview", "gpt-4o-2024-05-13"];
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
       ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue)
