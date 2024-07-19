@@ -2,8 +2,6 @@ import { cloneAndGetSourceMap, getExtractedIssue } from "../api/utils";
 import { getIssue } from "../github/issue";
 import { db } from "../db/db";
 import { TodoStatus } from "../db/enums";
-import { researchIssue } from "~/server/agent/research";
-import { cloneRepo } from "../git/clone";
 
 export const createTodo = async (
   repo: string,
@@ -69,7 +67,7 @@ export const createTodo = async (
       `Error while creating todo for issue #${issue.number}: ${String(error)}`,
     );
     // Consider more specific error handling here
-  } 
+  }
   // finally {
   //   if (cleanupClone) {
   //     await cleanupClone();
