@@ -3,8 +3,7 @@ import { type Endpoints } from "@octokit/types";
 import { dedent } from "ts-dedent";
 
 import { db } from "~/server/db/db";
-import { getImages, getTypes } from "../analyze/sourceMap";
-import { traverseCodebase } from "../analyze/traverse";
+import { getSourceMap, getImages, getTypes } from "../analyze/sourceMap";
 import {
   type RepoSettings,
   type BaseEventData,
@@ -13,7 +12,7 @@ import {
 } from "../utils";
 import { checkAndCommit } from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import fixBugs, { type ProjectContext } from "~/server/agent/bugfix";
+import { fixBuildErrors, type ProjectContext } from "~/server/agent/bugfix";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -61,7 +60,7 @@ export async function fixError(params: AgentFixErrorParams) {
     10,
   );
 
-  const sourceMap = traverseCodebase(rootPath)?.join("\n") ?? "";
+  const sourceMap = getSourceMap(rootPath, repoSettings);
 
   //   const research = await researchIssue(issueText, sourceMap, rootPath);
 
@@ -101,9 +100,10 @@ export async function fixError(params: AgentFixErrorParams) {
   };
 
   try {
-    const fixes = await fixBugs(projectContext);
+    const fixes = await fixBuildErrors(projectContext);
 
-    const commitMessage = `JACoB fix error: ${fixes?.join(",") ?? "Build error fix"}`;
+    // TODO: Include the build errors fixed in the commit message
+    const commitMessage = "JACoB fix error: Build error fix";
 
     await checkAndCommit({
       ...baseEventData,
@@ -121,15 +121,16 @@ export async function fixError(params: AgentFixErrorParams) {
     return fixes;
   } catch (error) {
     if (prIssue) {
-      const message = dedent`JACoB here once again...
+      const message = dedent`
+        JACoB here once again...
 
         Unfortunately, I wasn't able to resolve all the error(s).
 
         Here is some information about the error(s):
         
-       ${error}
+        ${error}
 
-       This was my last attempt to fix the error(s). Please review the error(s) and try to fix them manually, or you may do a code review to provide additional information and I will try to fix the error(s) again.
+        This was my last attempt to fix the error(s). Please review the error(s) and try to fix them manually, or you may do a code review to provide additional information and I will try to fix the error(s) again.
       `;
 
       await addCommentToIssue(repository, prIssue.number, token, message);

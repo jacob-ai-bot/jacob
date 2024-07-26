@@ -66,7 +66,7 @@ type BugAgent = {
   branchName: string;
 };
 
-type ProjectContext = {
+export type ProjectContext = {
   repository: Repository;
   token: string;
   prIssue: Issue | null;
@@ -244,13 +244,12 @@ async function assessAndInstallNpmPackages(
  * It implements the core logic of the Tree of Thought approach by managing multiple bug agents
  * and their resolution attempts.
  *
- * @param buildErrors - The string containing build error messages.
  * @param projectContext - The context of the project, including paths and settings.
  * @returns An array of successful fixes applied to resolve the errors.
  * @throws Error if not all errors could be resolved.
  */
 
-export async function fixError(
+export async function fixBuildErrors(
   projectContext: ProjectContext,
 ): Promise<string[]> {
   console.log("Starting error resolution");
@@ -525,6 +524,3 @@ async function generatePotentialFixes(
   console.log("patches: ", patches);
   return patches.map((patch) => patch.replace(/<\/?code_patch>/g, "").trim());
 }
-
-export { type ProjectContext, parseBuildErrors };
-export default fixError;
