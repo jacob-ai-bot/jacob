@@ -15,7 +15,6 @@ import {
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
 import { sendAnthropicRequest } from "../anthropic/request";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -31,6 +30,7 @@ const CONTEXT_WINDOW = {
   "claude-3-5-sonnet-20240620": 200000,
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
+  "llama-3.1-70b-versatile": 8192, // Limited to 8K during preview, will be 128K in the future
 };
 
 // Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
@@ -46,6 +46,7 @@ export const MAX_OUTPUT = {
   "claude-3-5-sonnet-20240620": 4096,
   "llama-3-sonar-large-32k-online": 4096,
   "llama-3-sonar-small-32k-online": 4096,
+  "llama-3.1-70b-versatile": 4096,
 };
 
 const ONE_MILLION = 1000000;
@@ -61,6 +62,7 @@ const INPUT_TOKEN_COSTS = {
   "claude-3-5-sonnet-20240620": 3 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
+  "llama-3.1-70b-versatile": 0.59 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
@@ -74,6 +76,7 @@ const OUTPUT_TOKEN_COSTS = {
   "claude-3-5-sonnet-20240620": 15 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
+  "llama-3.1-70b-versatile": 0.79 / ONE_MILLION,
 };
 const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
@@ -87,6 +90,7 @@ const PORTKEY_VIRTUAL_KEYS = {
   "claude-3-5-sonnet-20240620": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "llama-3-sonar-large-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3-sonar-small-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
+  "llama-3.1-70b-versatile": process.env.PORTKEY_VIRTUAL_KEY_GROK,
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
@@ -342,7 +346,8 @@ export const sendGptVisionRequest = async (
   const model: Model = "gpt-4o-2024-05-13";
 
   if (!snapshotUrl?.length) {
-    return sendSelfConsistencyChainOfThoughtGptRequest(
+    // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest(
+    return sendGptRequest(
       userPrompt,
       systemPrompt,
       temperature,
@@ -466,15 +471,6 @@ export const sendGptToolRequest = async (
     console.log(
       `\n +++ Calling ${model} with max_tokens: ${max_tokens} for tool request`,
     );
-    console.log(
-      `calling with messages: ${messages
-        .map(
-          (m) => m.role + ": " + ((m.content as string)?.slice(0, 100) ?? ""),
-        )
-        .join("\n")}`,
-    );
-    console.log("tool choice: ", toolChoice);
-    console.log("parallel tool calls: ", parallelToolCalls);
     const startTime = Date.now();
 
     const response = await openai.chat.completions.create({
