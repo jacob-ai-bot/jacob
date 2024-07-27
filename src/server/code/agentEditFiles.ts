@@ -13,6 +13,8 @@ import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
+import { applyCodePatch, type FileContent } from "~/server/utils/files";
+import { gitStash } from "~/server/git/operations";
 
 import {
   emitCodeEvent,
@@ -162,12 +164,25 @@ export async function editFiles(params: EditFilesParams) {
           branchName: newBranch,
         });
 
-        const files = await applyCodePatchViaLLM(
-          rootPath,
-          step.filePath,
-          patch,
-          isNewFile,
-        );
+        let patchResult: FileContent[] | undefined;
+        try {
+          patchResult = await applyCodePatch(rootPath, patch);
+        } catch (e) {
+          // Stash in case we have a partially applied local patch that failed
+          await gitStash({ directory: rootPath, baseEventData });
+          console.log(
+            `Will attempt applyCodePatchViaLLM() since local applyCodePatch failed with ${String(e)}`,
+          );
+        }
+
+        const files =
+          patchResult ??
+          (await applyCodePatchViaLLM(
+            rootPath,
+            step.filePath,
+            patch,
+            isNewFile,
+          ));
         await Promise.all(
           files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
         );

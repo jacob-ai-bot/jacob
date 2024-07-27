@@ -276,8 +276,15 @@ export function getNewOrModifiedRangesMapFromDiff(diff: string) {
   return rangeMap;
 }
 
+export interface FileContent {
+  fileName: string;
+  filePath: string;
+  codeBlock: string;
+}
+
 export function applyCodePatch(rootPath: string, patch: string) {
-  return new Promise<void>((resolve, reject) => {
+  const files: FileContent[] = [];
+  return new Promise<FileContent[]>((resolve, reject) => {
     applyPatches(patch, {
       loadFile: (index, callback) => {
         if (!index.oldFileName) {
@@ -293,13 +300,18 @@ export function applyCodePatch(rootPath: string, patch: string) {
           return callback(new Error("newFileName is required"));
         }
         fs.writeFileSync(path.join(rootPath, index.newFileName), content);
+        files.push({
+          fileName: path.basename(index.newFileName),
+          filePath: index.newFileName,
+          codeBlock: content,
+        });
         callback(null);
       },
       complete: (err) => {
         if (err) {
           reject(err);
         } else {
-          resolve();
+          resolve(files);
         }
       },
     });

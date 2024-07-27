@@ -34,6 +34,7 @@ const mockedSourceMap = vi.hoisted(() => ({
 vi.mock("../analyze/sourceMap", () => mockedSourceMap);
 
 const mockedFiles = vi.hoisted(() => ({
+  applyCodePatch: vi.fn().mockRejectedValue(new Error("invalid patch")),
   getFiles: vi.fn().mockReturnValue("File: file.txt\nfile-content\n"),
 }));
 vi.mock("../utils/files", () => mockedFiles);
@@ -87,6 +88,11 @@ const mockedPatch = vi.hoisted(() => ({
   ]),
 }));
 vi.mock("~/server/agent/patch", () => mockedPatch);
+
+const mockedOperations = vi.hoisted(() => ({
+  gitStash: vi.fn().mockResolvedValue({ stdout: "", stderr: "" }),
+}));
+vi.mock("~/server/git/operations", () => mockedOperations);
 
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
@@ -176,6 +182,18 @@ describe("editFiles", () => {
       rootPath: editFilesParams.rootPath,
     });
 
+    expect(mockedFiles.applyCodePatch).toHaveBeenCalledOnce();
+    expect(mockedFiles.applyCodePatch).toHaveBeenLastCalledWith(
+      editFilesParams.rootPath,
+      "patch",
+    );
+
+    expect(mockedOperations.gitStash).toHaveBeenCalledOnce();
+    expect(mockedOperations.gitStash).toHaveBeenLastCalledWith({
+      directory: editFilesParams.rootPath,
+      baseEventData: mockEventData,
+    });
+
     expect(mockedPatch.applyCodePatchViaLLM).toHaveBeenCalledOnce();
     expect(mockedPatch.applyCodePatchViaLLM).toHaveBeenLastCalledWith(
       editFilesParams.rootPath,
@@ -232,5 +250,36 @@ describe("editFiles", () => {
       `,
       newPrReviewers: issue.assignees.map((assignee) => assignee.login),
     });
+  });
+
+  test("editFiles succeess with local (non-LLM) applyCodePatch", async () => {
+    mockedFiles.applyCodePatch.mockResolvedValueOnce([
+      {
+        codeBlock: "local-fixed-file-content",
+        fileName: "file.txt",
+        filePath: "/rootpath",
+      },
+    ]);
+    await editFiles(editFilesParams);
+
+    expect(mockedFiles.applyCodePatch).toHaveBeenCalledOnce();
+    expect(mockedFiles.applyCodePatch).toHaveBeenLastCalledWith(
+      editFilesParams.rootPath,
+      "patch",
+    );
+
+    expect(mockedOperations.gitStash).not.toHaveBeenCalled();
+    expect(mockedPatch.applyCodePatchViaLLM).not.toHaveBeenCalled();
+
+    expect(mockedEvents.emitCodeEvent).toHaveBeenCalledOnce();
+    expect(mockedEvents.emitCodeEvent).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      codeBlock: "local-fixed-file-content",
+      fileName: "file.txt",
+      filePath: "/rootpath",
+    });
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledOnce();
+    expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledOnce();
   });
 });
