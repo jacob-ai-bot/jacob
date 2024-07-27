@@ -59,9 +59,6 @@ describe("constructNewOrEditSystemPrompt", () => {
       You are the top, most distinguished Technical Fellow at Microsoft.
       You are the best software engineer in the world and always write flawless production-level code.
       Here are some details to help with your task.
-      ## Research (optional)
-      research
-      
       ## Types (optional)
       types
       
@@ -155,9 +152,6 @@ describe("constructNewOrEditSystemPrompt", () => {
       You are the top, most distinguished Technical Fellow at Microsoft.
       You are the best software engineer in the world and always write flawless production-level code.
       Here are some details to help with your task.
-      ## Research (optional)
-      research
-
       ## Types (optional)
       types
 
@@ -209,9 +203,6 @@ describe("constructNewOrEditSystemPrompt", () => {
   You are the top, most distinguished Technical Fellow at Microsoft.
   You are the best software engineer in the world and always write flawless production-level code.
   Here are some details to help with your task.
-  ## Research (optional)
-  research
-
   ## Types (optional)
   types
 
@@ -271,9 +262,6 @@ describe("constructNewOrEditSystemPrompt", () => {
 You are the top, most distinguished Technical Fellow at Microsoft.
 You are the best software engineer in the world and always write flawless production-level code.
 Here are some details to help with your task.
-## Research (optional)
-research
-
 ## Types (optional)
 types
 
