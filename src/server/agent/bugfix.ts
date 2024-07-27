@@ -4,7 +4,7 @@ import {
   runBuildCheck,
   type RunBuildCheckParams,
 } from "~/server/build/node/check";
-import { applyCodePatch } from "./patch";
+import { applyCodePatchViaLLM } from "./patch";
 
 import path from "path";
 import { type RepoSettings, type BaseEventData } from "~/server/utils";
@@ -114,7 +114,7 @@ async function applyAndEvaluateFix(
 
   try {
     // Apply the fix
-    await applyCodePatch(rootPath, filePath, fix);
+    await applyCodePatchViaLLM(rootPath, filePath, fix);
 
     // Commit and push changes
     const commitMessage = `Apply fix for ${filePath}`;

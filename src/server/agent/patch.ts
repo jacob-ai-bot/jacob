@@ -10,7 +10,7 @@ interface FileContent {
   codeBlock: string;
 }
 
-export async function applyCodePatch(
+export async function applyCodePatchViaLLM(
   rootPath: string,
   filePath: string,
   patch: string,

@@ -3,7 +3,7 @@ import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { dedent } from "ts-dedent";
 import fs from "fs";
 
-import { applyCodePatch } from "./patch";
+import { applyCodePatchViaLLM } from "./patch";
 
 const mockedUtils = vi.hoisted(() => ({
   sendSelfConsistencyChainOfThoughtGptRequest: vi
@@ -27,7 +27,7 @@ describe("createNewFile", () => {
       .spyOn(fs, "writeFileSync")
       .mockReturnValue(undefined);
 
-    const result = await applyCodePatch(
+    const result = await applyCodePatchViaLLM(
       "/rootpath",
       "src/file.txt",
       "patch",
@@ -79,7 +79,7 @@ describe("createNewFile", () => {
         </file_content>
       `);
 
-    const result = await applyCodePatch(
+    const result = await applyCodePatchViaLLM(
       "/rootpath",
       "src/file.txt",
       "patch",

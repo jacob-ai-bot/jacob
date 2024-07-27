@@ -78,7 +78,7 @@ const mockedCommit = vi.hoisted(() => ({
 vi.mock("../git/commit", () => mockedCommit);
 
 const mockedPatch = vi.hoisted(() => ({
-  applyCodePatch: vi.fn().mockResolvedValue([
+  applyCodePatchViaLLM: vi.fn().mockResolvedValue([
     {
       fileName: "file.txt",
       filePath: "/rootpath",
@@ -176,8 +176,8 @@ describe("editFiles", () => {
       rootPath: editFilesParams.rootPath,
     });
 
-    expect(mockedPatch.applyCodePatch).toHaveBeenCalledOnce();
-    expect(mockedPatch.applyCodePatch).toHaveBeenLastCalledWith(
+    expect(mockedPatch.applyCodePatchViaLLM).toHaveBeenCalledOnce();
+    expect(mockedPatch.applyCodePatchViaLLM).toHaveBeenLastCalledWith(
       editFilesParams.rootPath,
       dummyPlan.steps[0]?.filePath,
       "patch",

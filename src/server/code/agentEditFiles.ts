@@ -21,7 +21,7 @@ import {
 } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { createPlan } from "~/server/agent/plan";
-import { applyCodePatch } from "~/server/agent/patch";
+import { applyCodePatchViaLLM } from "~/server/agent/patch";
 import { PlanningAgentActionType } from "~/server/db/enums";
 
 import { addCommitAndPush } from "../git/commit";
@@ -162,7 +162,7 @@ export async function editFiles(params: EditFilesParams) {
           branchName: newBranch,
         });
 
-        const files = await applyCodePatch(
+        const files = await applyCodePatchViaLLM(
           rootPath,
           step.filePath,
           patch,
