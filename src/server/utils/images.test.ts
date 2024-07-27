@@ -16,7 +16,7 @@ vi.mock("fs", async () => {
   };
 });
 
-vi.mock("fetch", () => {
+vi.mock("node-fetch", () => {
   return {
     default: () => ({
       arrayBuffer: async () => new ArrayBuffer(0),
