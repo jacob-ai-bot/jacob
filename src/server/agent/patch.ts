@@ -22,6 +22,7 @@ export async function applyCodePatch(
     return updateExistingFile(rootPath, filePath, patch);
   }
 }
+
 async function createNewFile(
   rootPath: string,
   filePath: string,
@@ -104,6 +105,7 @@ export default App;
 
   return files;
 }
+
 async function updateExistingFile(
   rootPath: string,
   filePath: string,
