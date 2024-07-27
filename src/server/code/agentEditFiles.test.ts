@@ -79,6 +79,17 @@ const mockedCommit = vi.hoisted(() => ({
 }));
 vi.mock("../git/commit", () => mockedCommit);
 
+const mockedPatch = vi.hoisted(() => ({
+  applyCodePatch: vi.fn().mockResolvedValue([
+    {
+      fileName: "file.txt",
+      filePath: "/rootpath",
+      codeBlock: "fixed-file-content",
+    },
+  ]),
+}));
+vi.mock("~/server/agent/patch", () => mockedPatch);
+
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
 describe("editFiles", () => {
@@ -167,8 +178,21 @@ describe("editFiles", () => {
       rootPath: editFilesParams.rootPath,
     });
 
-    // TODO: enhance test to mock applyCodePatch such that we emit code events
-    expect(mockedEvents.emitCodeEvent).not.toHaveBeenCalledOnce();
+    expect(mockedPatch.applyCodePatch).toHaveBeenCalledOnce();
+    expect(mockedPatch.applyCodePatch).toHaveBeenLastCalledWith(
+      editFilesParams.rootPath,
+      dummyPlan.steps[0]?.filePath,
+      "patch",
+      false,
+    );
+
+    expect(mockedEvents.emitCodeEvent).toHaveBeenCalledOnce();
+    expect(mockedEvents.emitCodeEvent).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      codeBlock: "fixed-file-content",
+      fileName: "file.txt",
+      filePath: "/rootpath",
+    });
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledOnce();
     expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({

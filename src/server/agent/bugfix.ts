@@ -4,7 +4,7 @@ import {
   runBuildCheck,
   type RunBuildCheckParams,
 } from "~/server/build/node/check";
-import { applyCodePatch } from "~/server/code/agentEditFiles";
+import { applyCodePatch } from "./patch";
 
 import path from "path";
 import { type RepoSettings, type BaseEventData } from "~/server/utils";
