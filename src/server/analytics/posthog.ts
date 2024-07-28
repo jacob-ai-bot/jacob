@@ -3,9 +3,13 @@ import { PostHog } from "posthog-node";
 const posthogApiKey = process.env.POSTHOG_API_KEY;
 
 if (!posthogApiKey) {
-  throw new Error("Missing PostHog API key");
+  console.warn("PostHog API key not found, analytics will be disabled");
 }
 
-export const posthogClient = new PostHog(posthogApiKey, {
-  host: "https://app.posthog.com",
-});
+class DummyPostHogClient {
+  capture() {}
+}
+
+export const posthogClient = posthogApiKey
+  ? new PostHog(posthogApiKey, { host: "https://app.posthog.com" })
+  : new DummyPostHogClient();

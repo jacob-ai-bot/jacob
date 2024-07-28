@@ -127,6 +127,8 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 - GitHub and Figma accounts
 - Node.js installed locally
 - Docker and Docker Compose installed locally
+- An OpenAI account
+- A [PortKey](https://app.portkey.ai/) account
 
 ### Installation Steps for Self-Hosted Version
 
@@ -135,7 +137,7 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
    - Visit [GitHub's New App page](https://github.com/settings/apps/new) to create a new GitHub app. Fill in the basic details, including the app name and description.
    - Generate a Webhook Secret (run `openssl rand -base64 32` to generate a secret key)
    - Generate a `GITHUB_PRIVATE_KEY` and save it. This will be used in your `.env` configuration.
-   - Set the Callback URL to `http://localhost:3000/auth/github`.
+   - Set the Callback URL to `http://localhost:3000/api/auth/callback/github`.
    - Set the Webhook URL to your smee.io channel URL. Create a smee channel at [smee.io](https://smee.io) if you haven't already. This will proxy GitHub webhooks to your local development environment.
    - Set the repository permissions to `Read & Write` for the following:
      - `Issues`
@@ -153,7 +155,7 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 
 2. **Running Smee**
 
-   - Start your smee client with the command `smee -u [Your smee.io URL] --target  http://localhost:3000`, ensuring it's forwarding to your local server's port.
+   - Start your smee client with the command `smee -u [Your smee.io URL] --target  http://localhost:3000/api/github/webhooks`, ensuring it's forwarding to your local server's port.
 
 3. **JACoB Configuration**
 
@@ -172,7 +174,9 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
 
    - Create the `.env` file based on `.env.example`
      - Configure a smee.io URL
-     - Set the proper `OPENAI_API_KEY` (not needed if using Ollama for local language model integration)
+     - Set the proper `OPENAI_API_KEY`
+     - Set the proper `PORTKEY_API_KEY` and `PORTKEY_VIRTUAL_KEY_*` keys
+       - Note: Depending on the models currently being used, JACoB may require that you have a [virtual key](https://docs.portkey.ai/docs/product/ai-gateway-streamline-llm-integrations/virtual-keys) for each LLM provider
      - Set the `GITHUB_PRIVATE_KEY` generated in the GitHub app setup
      - From the a GitHub app, populate the `GITHUB_APP_ID`, the `GITHUB_APP_NAME`, the `GITHUB_CLIENT_ID`, and the `GITHUB_CLIENT_SECRET` (note that this needs to be populated as both `GITHUB_CLIENT_SECRET` and `VITE_GITHUB_CLIENT_SECRET` in the `.env` file)
      - Determine the `GITHUB_APP_USERNAME` by calling a URL like this https://api.github.com/users/[GITHUB_APP_NAME][bot] and look at the `id` in the response (it will be a number)
@@ -205,10 +209,13 @@ After setting up your environment and JACoB's core components, perform the follo
 
 2. **Authenticate with JACoB**
 
-   - Ensure you can navigate to the `/auth/github` route in your local JACoB instance and successfully sign in using GitHub. This step verifies the OAuth flow is correctly set up between your GitHub app and JACoB.
+   - Visit http://localhost:3000 and ensure you can successfully sign in using GitHub. This step verifies the OAuth flow is correctly set up between your GitHub app and JACoB.
 
 3. **Verify Webhook Functionality**
    - Create or comment on an issue in the repository where JACoB is installed. Check your local server logs to confirm that these events trigger the expected activities in JACoB. This step is essential to confirm that webhooks are properly set up and that JACoB is responding to GitHub events as expected.
+
+4. **Verify Dashboard Functionality**
+   - After logging in, visit http://localhost:3000/dashboard and choose one of the personas to start interacting with JACoB
 
 ### Using GitHub's Webhook Replay Feature for Testing
 
@@ -223,67 +230,6 @@ After you've set up your local JACoB environment and configured the GitHub app, 
 4. **Monitor the Response**: After replaying the webhook, monitor your JACoB logs or the development server output to see how it processes the event. This immediate feedback is invaluable for debugging and ensures that JACoB reacts as expected to the simulated events.
 
 5. **Iterate as Needed**: If the behavior isn’t what you anticipated, make the necessary adjustments to your JACoB configuration or code, and use the replay feature again to test the changes. This cycle can be repeated as many times as needed to achieve the desired outcome.
-
-## Running Local Models with Ollama
-
-JACoB supports using Ollama for local LLM integration, providing a drop-in alternative for using open-source language models directly within your development environment. Please note that JACoB's architecture is optimized to work with GPT-4 and may not perform well with smaller models.
-
-Follow these steps to set up and run Ollama with JACoB:
-
-### Installation
-
-- **macOS and Windows (Preview)**: Download the installer from the official [Ollama website](https://ollama.com).
-- **Linux**:
-
-  ```bash
-  curl -fsSL https://ollama.com/install.sh | sh
-  ```
-
-- **Docker**:
-  Use the official Ollama Docker image:
-
-  ```bash
-  docker pull ollama/ollama
-  ```
-
-### Libraries
-
-Install the Ollama library for your programming language:
-
-- Python: `ollama-python`
-- JavaScript: `ollama-js`
-
-### Ollama Quickstart
-
-To start using Ollama with Llama 2, execute:
-
-```bash
-ollama run llama2
-```
-
-### Model Library
-
-Explore various models supported by Ollama at [ollama.com/library](https://ollama.com/library). Download and run models as needed, e.g.:
-
-- For Llama 2 (7B parameters, 3.8GB): `ollama run llama2`
-- For Code Llama (specialized for coding tasks): `ollama run codellama`
-
-### JACoB Integration
-
-After setting up Ollama:
-
-1. Update your `.env` configuration in the JACoB setup by changing the `LLM_PROVIDER` variable to `"ollama"`.
-2. Restart JACoB to apply the changes.
-
-### System Requirements
-
-Ensure your system meets the RAM requirements for the chosen models:
-
-- At least 8 GB for 7B models.
-- 16 GB for 13B models.
-- 32 GB or more for models above 33B.
-
-By integrating Ollama, you leverage local processing of language models, enhancing privacy and reducing latency in your development workflow with JACoB.
 
 ## Contributing
 We welcome contributions! From language support to framework integrations, there's always room for new features and improvements. Join our [Discord](https://discord.gg/sSDbPR4BUH) community for discussions and support.
