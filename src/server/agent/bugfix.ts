@@ -256,7 +256,7 @@ export async function fixBuildErrors(
 
   const { rootPath, baseEventData, repoSettings } = projectContext;
   const successfulFixes: string[] = [];
-  const MAX_ITERATIONS = 5;
+  const MAX_ITERATIONS = 1; // TODO: experiment with higher values
 
   for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     console.log(`Starting iteration ${iteration}`);

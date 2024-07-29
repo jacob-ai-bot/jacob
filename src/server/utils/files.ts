@@ -388,6 +388,11 @@ export const getCodebase = async (rootDir: string): Promise<string> => {
     },
     gitignore,
   );
+  // get the length of the contentToWrite file. If it's more than 2 million characters, truncate it.
+  const maxLength = 2000000;
+  if (contentToWrite.length > maxLength) {
+    contentToWrite = contentToWrite.slice(0, maxLength);
+  }
 
   return contentToWrite;
 };
