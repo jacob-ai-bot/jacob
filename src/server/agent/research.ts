@@ -6,8 +6,9 @@ import {
   sendGptToolRequest,
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
-import { getCodebase } from "~/server/utils/files";
+import { getFiles } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
+import { traverseCodebase } from "../analyze/traverse";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -243,7 +244,16 @@ export async function researchCodebase(
   sourceMap: string,
   rootDir: string,
 ): Promise<string> {
-  const codebase = await getCodebase(rootDir);
+  const allFiles = traverseCodebase(rootDir);
+
+  let relevantFiles: string[];
+  if (allFiles.length <= 50) {
+    relevantFiles = allFiles;
+  } else {
+    relevantFiles = await selectRelevantFiles(query, allFiles);
+  }
+
+  const codebase = getFiles(rootDir, relevantFiles);
 
   const codeResearchTemplateParams = {
     codebase,
@@ -276,6 +286,53 @@ export async function researchCodebase(
     "gemini-1.5-pro-latest",
   );
   return result ?? "No response from the AI model.";
+}
+
+async function selectRelevantFiles(
+  query: string,
+  allFiles: string[],
+): Promise<string[]> {
+  const selectFilesTemplateParams = {
+    query,
+    allFiles: allFiles.join("\n"),
+  };
+
+  const selectFilesSystemPrompt = parseTemplate(
+    "research",
+    "select_files",
+    "system",
+    selectFilesTemplateParams,
+  );
+  const selectFilesUserPrompt = parseTemplate(
+    "research",
+    "select_files",
+    "user",
+    selectFilesTemplateParams,
+  );
+
+  const result = await sendGptRequest(
+    selectFilesUserPrompt,
+    selectFilesSystemPrompt,
+    0.3,
+    undefined,
+    2,
+    60000,
+    null,
+    "claude-3-5-sonnet-20240620",
+  );
+
+  if (!result) {
+    throw new Error("Failed to get relevant files from the AI model.");
+  }
+
+  try {
+    const relevantFiles = JSON.parse(result) as string[];
+    console.log("Top 10 relevant files:", relevantFiles?.slice(0, 10));
+    return relevantFiles.slice(0, 50);
+  } catch (error) {
+    console.error("Error parsing relevant files:", error);
+    return allFiles;
+  }
 }
 
 export async function researchInternet(query: string): Promise<string> {
