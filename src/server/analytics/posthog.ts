@@ -7,7 +7,9 @@ if (!posthogApiKey) {
 }
 
 class DummyPostHogClient {
-  capture() {}
+  capture() {
+    // do nothing
+  }
 }
 
 export const posthogClient = posthogApiKey
