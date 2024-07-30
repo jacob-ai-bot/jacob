@@ -16,6 +16,7 @@ Required Information:
    - Include relevant code snippets from the codebase that can serve as references for maintaining consistency in style and conventions.
    - Highlight any specific coding conventions or style guides that should be followed.
    - Provide code snippets of similar components or functions to guide the implementation. These examples MUST be directly from the codebase, do not make them up.
+   - Provide full functions or components as examples of how to implement the feature. DO NOT provide partial functions or components.
 
 Optional Information (only provide this if it is relevant to the query):
 4. API Contracts:

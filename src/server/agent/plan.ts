@@ -116,6 +116,7 @@ export const createPlan = async function (
   //   "claude-3-5-sonnet-20240620",
   //   "claude-3-5-sonnet-20240620",
   // ];
+  console.log("research", research);
   const models: Model[] = ["gpt-4-0125-preview", "gpt-4o-2024-05-13"];
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
@@ -201,6 +202,8 @@ const getPromptsForNewPlan = (
   research: string,
   files: string,
 ) => {
+  console.log("Creating new plan with prompts:");
+  console.log("Research:", research);
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
   
@@ -214,7 +217,7 @@ const getPromptsForNewPlan = (
           5. Review each of the files listed within the <files> tags and determine which changes need to be made to each file. You MUST provide at least one change per file, and at least one file per step!
           6. Create a detailed, step-by-step plan for making the necessary changes to the codebase:
               - Clearly specify the full path of the file to be edited or created.
-              - Provide precise instructions on the changes to be made within each file.
+              - Provide precise instructions on the changes to be made within each file. You MUST use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions!
               - Ensure there is at least one file modified per step.
               - Include any necessary imports or function calls.
               - Identify dependencies and specify the order in which the changes should be made.
@@ -225,6 +228,7 @@ const getPromptsForNewPlan = (
           - Approach the task from the perspective of an experienced developer working on the codebase.
           - Utilize the provided research and codebase information to make informed decisions.
           - Ensure that the plan is clear, concise, and easy to follow.
+          - The instructions are extremely important to the success of the plan. Use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions! If you do not have specific instructions you can be very general, but you MUST use the research data and/or GitHub issue to inform your instructions. NEVER make up specific instructions that are not based on the research data and/or GitHub issue.
           - Use proper formatting and syntax when specifying the file path, code snippets, or commands.
           - Follow existing coding conventions and styles when making changes to the codebase. For example, if the system is using TypeScript, ensure that all new code is strictly typed correctly. Or if the codebase uses Tailwind CSS, do not introduce new CSS classes or frameworks.
           - Be sure to take into account any changes that may impact other parts of the codebase, such as functions that call or depend on the modified code.
@@ -262,7 +266,7 @@ const getPromptsForNewPlan = (
               - Use the list of specific files within the  <files> tags that need to be modified or created to address the issue.
               - For each plan step, follow these guidelines:
                   - Specify the exact file path in the filePath tool output.
-                  - Provide clear, detailed instructions on the changes to be made.
+                  - Provide clear, detailed instructions on the changes to be made. You MUST use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions! If you do not have specific instructions you can be very general, but you MUST use the research data and/or GitHub issue to inform your instructions. NEVER make up specific instructions that are not based on the research data and/or GitHub issue.
                   - Include any necessary code snippets, imports, or function calls.
                   - Minimize the number of files that are modified per step.
               - Outline the order in which the changes should be made.

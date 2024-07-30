@@ -21,15 +21,22 @@ export const getFiles = (
   fileNamesToInclude: string[],
   shouldAddLineNumbers = true,
 ) => {
-  // simple function to get the files from the list.
-  // Add the name of the file at the beginning, and add line numbers to each line in the file.
-  // return a string that has all of the files concatenated together.
   let output = "";
   for (const fileName of fileNamesToInclude) {
     const filePath = path.join(rootDir, fileName);
-    const fileContent = fs.readFileSync(filePath).toString("utf-8");
-    output += `File: ${fileName}\n`;
-    output += shouldAddLineNumbers ? addLineNumbers(fileContent) : fileContent;
+    if (fs.existsSync(filePath)) {
+      try {
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        output += `File: ${fileName}\n`;
+        output += shouldAddLineNumbers
+          ? addLineNumbers(fileContent)
+          : fileContent;
+      } catch (error) {
+        console.error(`Error reading file ${fileName}`);
+      }
+    } else {
+      console.error(`File not found: ${fileName}`);
+    }
   }
   return output;
 };
