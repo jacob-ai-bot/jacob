@@ -9,6 +9,7 @@ import { db } from "~/server/db/db";
 import { getFiles } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
 import { traverseCodebase } from "../analyze/traverse";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -274,17 +275,33 @@ export async function researchCodebase(
     "user",
     codeResearchTemplateParams,
   );
+  let result: string | null = "";
 
-  const result = await sendGptRequest(
-    codeResearchUserPrompt,
-    codeResearchSystemPrompt,
-    0.3,
-    undefined,
-    2,
-    60000,
-    null,
-    "gemini-1.5-pro-latest",
-  );
+  // First try to send the request to the claude model. If that fails because the codebase is too large, call gemini.
+  try {
+    result = await sendGptRequest(
+      codeResearchUserPrompt,
+      codeResearchSystemPrompt,
+      0.3,
+      undefined,
+      2,
+      60000,
+      null,
+      "claude-3-5-sonnet-20240620",
+    );
+  } catch (error) {
+    result = await sendGptRequest(
+      codeResearchUserPrompt,
+      codeResearchSystemPrompt,
+      0.3,
+      undefined,
+      2,
+      60000,
+      null,
+      "gemini-1.5-pro-latest",
+    );
+  }
+
   return result ?? "No response from the AI model.";
 }
 
