@@ -1,0 +1,81 @@
+[
+  {
+    "file": "src/server/anthropic/request.ts",
+    "code": [
+      "(lexical_declaration) 9: const ONE_MILLION = 1000000;",
+      "(lexical_declaration) 23: const INPUT_TOKEN_COSTS = {\n  \"claude-3-opus-20240229\": 15 / ONE_MILLION,\n  \"claude-3-haiku-20240307\": 0.25 / ONE_MILLION,\n  \"claude-3-5-sonnet-20240620\": 3 / ONE_MILLION,\n} as const;",
+      "(lexical_declaration) 29: const OUTPUT_TOKEN_COSTS = {\n  \"claude-3-opus-20240229\": 75 / ONE_MILLION,\n  \"claude-3-haiku-20240307\": 1.25 / ONE_MILLION,\n  \"claude-3-5-sonnet-20240620\": 15 / ONE_MILLION,\n} as const;",
+      "(lexical_declaration) 37: const anthropic = new Anthropic({\n  apiKey: process.env.ANTHROPIC_API_KEY,\n  defaultHeaders: {\n    \"anthropic-beta\": \"max-tokens-3-5-sonnet-2024-07-15\",\n  },\n});"
+    ],
+    "importStatements": [
+      "import Anthropic from \"@anthropic-ai/sdk\";",
+      "import { type BaseEventData } from \"../utils\";",
+      "import { emitPromptEvent } from \"../utils/events\";"
+    ],
+    "text": "This file, `src/server/anthropic/request.ts`, contains functionality for making requests to the Anthropic API, specifically for interacting with Claude AI models. It defines constants for token costs, context windows, and maximum output for different Claude models. The main exported function is `sendAnthropicRequest`, which handles sending prompts to the Anthropic API and processing the response.\n\nKey components:\n1. Constants:\n   - `ONE_MILLION`: Used for calculating token costs.\n   - `INPUT_TOKEN_COSTS` and `OUTPUT_TOKEN_COSTS`: Define costs per token for different Claude models.\n   - `CONTEXT_WINDOW` and `MAX_OUTPUT`: Specify limits for different Claude models.\n\n2. `anthropic` instance: Initializes the Anthropic client with API key and default headers.\n\n3. `getMaxTokensForResponse` function: Calculates the maximum number of tokens for a response based on the input text and model.\n\n4. `sendAnthropicRequest` function: The main function for sending requests to the Anthropic API. It handles:\n   - Constructing the request with user and system prompts\n   - Sending the request to the Anthropic API\n   - Processing the response, including calculating costs and tokens\n   - Error handling and retries\n   - Emitting prompt events for analytics\n\nThe file also exports type definitions and constants related to the Claude models.",
+    "diagram": "```mermaid\nflowchart TB\n    subgraph Constants\n        ONE_MILLION\n        INPUT_TOKEN_COSTS\n        OUTPUT_TOKEN_COSTS\n        CONTEXT_WINDOW\n        MAX_OUTPUT\n    end\n\n    subgraph Types\n        Model\n    end\n\n    subgraph Functions\n        getMaxTokensForResponse\n        sendAnthropicRequest\n    end\n\n    anthropic[Anthropic Client]\n\n    sendAnthropicRequest --> |uses| getMaxTokensForResponse\n    sendAnthropicRequest --> |uses| anthropic\n    sendAnthropicRequest --> |uses| Constants\n    sendAnthropicRequest --> |emits| emitPromptEvent[emitPromptEvent]\n\n    getMaxTokensForResponse --> |uses| MAX_OUTPUT\n    getMaxTokensForResponse --> |uses| CONTEXT_WINDOW\n\n    anthropic --> |configured with| env[ANTHROPIC_API_KEY]\n```",
+    "overview": "This file provides functionality for making requests to the Anthropic API, specifically for interacting with Claude AI models, including token cost calculations, request handling, and response processing.",
+    "importedFiles": [
+      "src/server/utils/index.ts",
+      "src/server/utils/events.ts"
+    ],
+    "exports": [
+      {
+        "name": "CONTEXT_WINDOW",
+        "exportType": "lexical_declaration",
+        "line_no": 11,
+        "code_referenced": "export const CONTEXT_WINDOW = {\n  \"claude-3-opus-20240229\": 200000,\n  \"claude-3-haiku-20240307\": 200000,\n  \"claude-3-5-sonnet-20240620\": 200000,\n} as const;"
+      },
+      {
+        "name": "MAX_OUTPUT",
+        "exportType": "lexical_declaration",
+        "line_no": 17,
+        "code_referenced": "export const MAX_OUTPUT = {\n  \"claude-3-opus-20240229\": 4096,\n  \"claude-3-haiku-20240307\": 4096,\n  \"claude-3-5-sonnet-20240620\": 8192,\n} as const;"
+      },
+      {
+        "name": "Model",
+        "exportType": "type_alias_declaration",
+        "line_no": 35,
+        "code_referenced": "export type Model = keyof typeof CONTEXT_WINDOW;"
+      },
+      {
+        "name": "getMaxTokensForResponse",
+        "exportType": "lexical_declaration",
+        "line_no": 44,
+        "code_referenced": "export const getMaxTokensForResponse = (\n  inputText: string,\n  model: Model,\n): number => {\n  try {\n    return MAX_OUTPUT[model];\n  } catch (error) {\n    console.log(\"Error in getMaxTokensForResponse: \", error);\n    return Math.round(CONTEXT_WINDOW[model] / 2);\n  }\n};"
+      },
+      {
+        "name": "sendAnthropicRequest, max_tokens, messages, startTime, response, endTime, duration, content, inputTokens, outputTokens, tokens, cost",
+        "exportType": "lexical_declaration",
+        "line_no": 56,
+        "code_referenced": "export const sendAnthropicRequest = async (\n  userPrompt: string,\n  systemPrompt = \"You are a helpful assistant.\",\n  temperature = 0.2,\n  baseEventData: BaseEventData | undefined = undefined,\n  retries = 10,\n  delay = 60000,\n  model: Model = \"claude-3-5-sonnet-20240620\",\n  isJSONMode = false,\n): Promise<string | null> => {\n  try {\n    const max_tokens = getMaxTokensForResponse(\n      userPrompt + systemPrompt,\n      model,\n    );\n\n    const messages: Anthropic.MessageParam[] = [\n      { role: \"user\", content: userPrompt },\n    ];\n\n    console.log(\n      `\\n +++ Calling ${model} with the Anthropic API with max_tokens: ${max_tokens} `,\n    );\n    const startTime = Date.now();\n    const response: Anthropic.Messages.Message =\n      await anthropic.messages.create({\n        model,\n        messages,\n        max_tokens,\n        temperature,\n        system: systemPrompt,\n      });\n    const endTime = Date.now();\n    const duration = endTime - startTime;\n    console.log(`\\n +++ ${model} Response time ${duration} ms`);\n    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access\n    if (!response?.content?.length) {\n      throw new Error(\"No content in response\");\n    }\n\n    const content =\n      response.content![0]!.type === \"text\" ? response.content![0]!.text : \"\";\n\n    const inputTokens = response.usage.input_tokens;\n    const outputTokens = response.usage.output_tokens;\n    const tokens = inputTokens + outputTokens;\n    const cost =\n      inputTokens * INPUT_TOKEN_COSTS[model] +\n      outputTokens * OUTPUT_TOKEN_COSTS[model];\n\n    if (baseEventData) {\n      await emitPromptEvent({\n        ...baseEventData,\n        cost,\n        tokens,\n        duration,\n        model,\n        requestPrompts: messages.map((message) => ({\n          promptType: message.role as \"User\" | \"System\" | \"Assistant\",\n          prompt:\n            typeof message.content === \"string\"\n              ? message.content\n              : JSON.stringify(message.content),\n        })),\n        responsePrompt: content,\n      });\n    }\n\n    return content as string;\n  } catch (error) {\n    if (retries === 0) {\n      console.error(`Error in Anthropic request: ${String(error)}`);\n      throw error;\n    } else {\n      console.log(\n        `Error occurred, retries remaining: ${retries}. Retrying in ${delay} ms...`,\n      );\n      return new Promise((resolve, reject) => {\n        setTimeout(() => {\n          sendAnthropicRequest(\n            userPrompt,\n            systemPrompt,\n            temperature,\n            baseEventData,\n            retries - 1,\n            delay * 2,\n            model,\n            isJSONMode,\n          )\n            .then(resolve)\n            .catch(reject);\n        }, delay);\n      });\n    }\n  }\n};"
+      }
+    ],
+    "referencedImportDetails": [
+      {
+        "name": "",
+        "exportType": "re-export",
+        "line_no": 10,
+        "code_referenced": "export { type RepoSettings, getRepoSettings } from \"./settings\";",
+        "source": "\"./settings\"",
+        "overview": "This file provides a comprehensive set of utility functions and types for server-side operations, including template parsing, command execution, GitHub interactions, and error handling."
+      },
+      {
+        "name": "BaseEventData",
+        "exportType": "interface_declaration",
+        "line_no": 24,
+        "code_referenced": "export interface BaseEventData {\n  projectId: number;\n  repoFullName: string;\n  userId: string;\n  issueId?: number;\n}",
+        "source": "src/server/utils/index.ts",
+        "overview": "This file provides a comprehensive set of utility functions and types for server-side operations, including template parsing, command execution, GitHub interactions, and error handling."
+      },
+      {
+        "name": "emitPromptEvent",
+        "exportType": "function_declaration",
+        "line_no": 180,
+        "code_referenced": "export async function emitPromptEvent(params: EmitPromptEventParams) {\n  const {\n    cost,\n    tokens,\n    model,\n    duration,\n    requestPrompts,\n    responsePrompt,\n    ...baseEventData\n  } = params;\n  const timestamp = new Date().toISOString();\n\n  const event = await db.events.selectAll().insert({\n    ...baseEventData,\n    type: TaskType.prompt,\n    payload: {\n      type: TaskType.prompt,\n      metadata: {\n        timestamp,\n        cost,\n        tokens,\n        duration,\n        model,\n      },\n      request: {\n        prompts: requestPrompts.map((prompt) => ({\n          ...prompt,\n          timestamp,\n        })),\n      },\n      response: {\n        prompt: {\n          promptType: \"Assistant\",\n          prompt: responsePrompt,\n          timestamp,\n        },\n      },\n    },\n  });\n  await redisConnection.publish(\"events\", JSON.stringify(event));\n}",
+        "source": "src/server/utils/events.ts",
+        "overview": "This file defines interfaces and functions for emitting and managing various types of events in the system, using database storage and Redis for real-time publishing."
+      }
+    ]
+  }
+]

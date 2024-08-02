@@ -6,7 +6,6 @@ import { useCookies } from "react-cookie";
 import GitHubButton from "react-github-btn";
 
 import "./GitHubOAuth.css";
-import { Logo } from "~/images/Logo";
 
 const githubOAuthURL = `https://github.com/login/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID}&scope=user`;
 
@@ -238,7 +237,11 @@ export function GitHubOAuth({ redirectURI }: { redirectURI: string }) {
         figma ? "figmacontainer" : "webcontainer p-4 sm:px-40 sm:py-24"
       }
     >
-      <Logo className="logo mb-4 h-[50px] w-auto sm:h-[100px]" />
+      <img
+        src="/images/logo.svg"
+        className="logo mb-4 h-[50px] w-auto sm:h-[100px]"
+        alt="logo"
+      />
       {!accessToken && !figma && (
         <>
           <p className="description">

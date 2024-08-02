@@ -1,0 +1,12 @@
+Please analyze the following code section and provide a concise yet detailed analysis according to the specified schema:
+
+${section}
+
+In your analysis, pay special attention to:
+- The overall structure and organization of the code
+- Key functions, classes, or interfaces and their purposes
+- Relationships and dependencies between different components
+- Any imports or dependencies, referencing the file list provided in the system prompt. Ensure all files in the "importStatements" array are correctly added to the "importedFiles" and each file listed has an exact match in the provided list of all <files>.
+- Create a Mermaid diagram that effectively visualizes these components, their relationships, and the overall structure of the code.
+
+Ensure your response adheres strictly to the Zod schema specified in the system prompt, including a detailed description, a one-sentence overview, a list of imported files, and a Mermaid diagram.
