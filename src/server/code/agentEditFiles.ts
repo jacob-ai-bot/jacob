@@ -91,8 +91,11 @@ export async function editFiles(params: EditFilesParams) {
       break;
     }
     let stepNumber = 0;
-    // Get all the filePaths from the plan
-    const filePaths = plan.steps.map((step) => step.filePath);
+    // Get all the existing filePaths from the plan
+    const filePaths = plan.steps
+      .filter((step) => step.type === PlanningAgentActionType.EditExistingCode)
+      .map((step) => step.filePath);
+
     // Get the codebase context for each file in the plan
     const contexts = getCodebaseContext(rootPath, filePaths);
     for (const step of plan.steps.slice(0, maxSteps)) {
@@ -132,7 +135,7 @@ export async function editFiles(params: EditFilesParams) {
         plan: filePlan,
         snapshotUrl: snapshotUrl ?? "",
         codePatch,
-        context: JSON.stringify(context, null, 2),
+        context: context ? JSON.stringify(context, null, 2) : "",
       };
 
       const codeSystemPrompt = parseTemplate(
