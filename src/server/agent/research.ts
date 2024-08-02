@@ -6,10 +6,8 @@ import {
   sendGptToolRequest,
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
-import { getFiles } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
-import { traverseCodebase } from "../analyze/traverse";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
+import { type Context, getCodebaseContext } from "../utils/codebaseContext";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -105,6 +103,15 @@ export const researchIssue = async function (
   model: Model = "gpt-4-0125-preview",
 ): Promise<Research[]> {
   console.log("Researching issue...");
+  // First get the context for the full codebase
+  const codebaseContext = await getCodebaseContext(rootDir);
+
+  // For now, change the sourcemap to be a list of all the files from the context and overview of each file
+  sourceMap = codebaseContext
+    .map((file) => `${file.file} - ${file.overview}`)
+    .join("\n");
+
+  console.log("sourceMap", sourceMap);
   const researchTemplateParams = {
     githubIssue,
     sourceMap,
@@ -170,6 +177,7 @@ export const researchIssue = async function (
           githubIssue,
           sourceMap,
           rootDir,
+          codebaseContext,
         );
         if (functionName === ResearchAgentActionType.AskProjectOwner) {
           questionsForProjectOwner.push(args.query);
@@ -221,6 +229,7 @@ async function callFunction(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
+  codebaseContext: Context,
 ): Promise<string> {
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:
@@ -229,6 +238,7 @@ async function callFunction(
         githubIssue,
         sourceMap,
         rootDir,
+        codebaseContext,
       );
     case ResearchAgentActionType.ResearchInternet:
       return await researchInternet(args.query);
@@ -244,17 +254,22 @@ export async function researchCodebase(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
+  codebaseContext: Context,
 ): Promise<string> {
-  const allFiles = traverseCodebase(rootDir);
+  const allFiles = codebaseContext.map((file) => file.file);
 
   let relevantFiles: string[];
   if (allFiles.length <= 50) {
     relevantFiles = allFiles;
   } else {
-    relevantFiles = await selectRelevantFiles(query, allFiles);
+    relevantFiles = await selectRelevantFiles(query, codebaseContext);
   }
+  // get the context for all of the relevant files
+  const relevantContext = codebaseContext.filter((file) =>
+    relevantFiles.includes(file.file),
+  );
 
-  const codebase = getFiles(rootDir, relevantFiles);
+  const codebase = JSON.stringify(relevantContext, null, 2);
 
   const codeResearchTemplateParams = {
     codebase,
@@ -305,13 +320,26 @@ export async function researchCodebase(
   return result ?? "No response from the AI model.";
 }
 
-async function selectRelevantFiles(
+export async function selectRelevantFiles(
   query: string,
-  allFiles: string[],
+  codebaseContext?: Context,
+  allFiles?: string[],
+  numFiles = 50,
 ): Promise<string[]> {
+  if (!codebaseContext && !allFiles) {
+    throw new Error("Either codebaseContext or allFiles must be provided.");
+  }
   const selectFilesTemplateParams = {
     query,
-    allFiles: allFiles.join("\n"),
+    allFiles: allFiles
+      ? allFiles.join("\n")
+      : codebaseContext
+          ?.map(
+            (file) =>
+              `${file.file} - ${file.overview}. Diagram: ${file.diagram}`,
+          )
+          .join("\n") ?? "",
+    numFiles: numFiles.toString(),
   };
 
   const selectFilesSystemPrompt = parseTemplate(
@@ -348,7 +376,7 @@ async function selectRelevantFiles(
     return relevantFiles.slice(0, 50);
   } catch (error) {
     console.error("Error parsing relevant files:", error);
-    return allFiles;
+    return [];
   }
 }
 
