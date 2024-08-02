@@ -361,7 +361,7 @@ export async function researchInternet(query: string): Promise<string> {
     2,
     60000,
     null,
-    "llama-3-sonar-large-32k-online",
+    "llama-3.1-sonar-large-128k-online",
   );
 
   return result ?? "No response from the AI model.";
