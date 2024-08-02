@@ -363,7 +363,7 @@ export async function selectRelevantFiles(
     2,
     60000,
     null,
-    "claude-3-5-sonnet-20240620",
+    "gpt-4-0125-preview",
   );
 
   if (!result) {
@@ -371,9 +371,18 @@ export async function selectRelevantFiles(
   }
 
   try {
-    const relevantFiles = JSON.parse(result) as string[];
+    // ensure that all of the relevant files are in the list of all files
+
+    let relevantFiles = JSON.parse(result) as string[];
+    relevantFiles = relevantFiles.filter((file) =>
+      allFiles?.some((setFile) => file.includes(setFile)),
+    );
     console.log("Top 10 relevant files:", relevantFiles?.slice(0, 10));
-    return relevantFiles.slice(0, 50);
+    console.log(
+      `Bottom ${numFiles - 10} relevant files:`,
+      relevantFiles?.slice(0, 10),
+    );
+    return relevantFiles.slice(0, numFiles);
   } catch (error) {
     console.error("Error parsing relevant files:", error);
     return [];

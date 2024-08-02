@@ -46,38 +46,38 @@ ghApp.webhooks.on("issues.opened", async (event) => {
       `[${repository.full_name}] Issue #${payload.issue.number} contains ${AT_MENTION} mention`,
     );
     void publishGitHubEventToQueue(event);
+    // Create a new todo item in the database
+    try {
+      const project = await db.projects.findBy({
+        repoFullName: repository.full_name,
+      });
+      const todos = await db.todos.selectAll().where({
+        projectId: project.id,
+      });
+      // if the todo for this issue is already in the database, do not create a new todo item
+      if (!todos.some((todo) => todo.issueId === payload.issue.number)) {
+        const installationAuthentication = await authInstallation(
+          installation?.id,
+        );
+        await createTodo(
+          repository.full_name,
+          project.id,
+          payload?.issue.number,
+          installationAuthentication?.token,
+        );
+
+        console.log(
+          `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[${repository.full_name}] Error creating todo item for issue #${payload.issue.number}: ${String(error)}`,
+      );
+    }
   } else {
     console.log(
       `[${repository.full_name}] Issue #${payload.issue.number} has no ${AT_MENTION} mention`,
-    );
-  }
-  // Create a new todo item in the database
-  try {
-    const project = await db.projects.findBy({
-      repoFullName: repository.full_name,
-    });
-    const todos = await db.todos.selectAll().where({
-      projectId: project.id,
-    });
-    // if the todo for this issue is already in the database, do not create a new todo item
-    if (!todos.some((todo) => todo.issueId === payload.issue.number)) {
-      const installationAuthentication = await authInstallation(
-        installation?.id,
-      );
-      await createTodo(
-        repository.full_name,
-        project.id,
-        payload?.issue.number,
-        installationAuthentication?.token,
-      );
-
-      console.log(
-        `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
-      );
-    }
-  } catch (error) {
-    console.error(
-      `[${repository.full_name}] Error creating todo item for issue #${payload.issue.number}: ${String(error)}`,
     );
   }
 });

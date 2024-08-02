@@ -83,7 +83,7 @@ async function initializeTreeSitter() {
 export const getCodebaseContext = async function (
   rootPath: string,
   files: string[] = [],
-  model: Model = "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
+  model: Model = "gpt-4o-mini-2024-07-18", // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
 ): Promise<Context> {
   if (!rootPath) {
     throw new Error("No rootPath provided");
@@ -133,9 +133,8 @@ export const getCodebaseContext = async function (
       originalRelevantFiles,
     );
   }
-
   const output = contextSchema.parse(contextSections);
-  console.log("Codebase context generated.");
+
   return output;
 };
 
@@ -144,9 +143,8 @@ async function removeExtraFiles(
   files: string[],
 ): Promise<Context> {
   // Remove any sections that were not in the original list of files
-  const filesSet = new Set(files);
   contextSections = contextSections.filter((section) =>
-    filesSet.has(section.file),
+    files.some((file) => file.includes(section.file)),
   );
   return contextSections;
 }

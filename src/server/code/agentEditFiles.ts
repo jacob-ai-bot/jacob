@@ -29,6 +29,8 @@ import { PlanningAgentActionType } from "~/server/db/enums";
 import { addCommitAndPush } from "../git/commit";
 import { runBuildCheck } from "../build/node/check";
 import { getCodebaseContext } from "../utils/codebaseContext";
+import { traverseCodebase } from "../analyze/traverse";
+import { selectRelevantFiles } from "../agent/research";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -64,6 +66,24 @@ export async function editFiles(params: EditFilesParams) {
     .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
     .join("\n\n");
 
+  // get the plan context
+  const allFiles = traverseCodebase(rootPath);
+  const query = `Based on the GitHub issue and the research, your job is to find the most important files in this codebase.\n
+  Here is the issue <issue>${issueBody}</issue> \n
+  Here is the research <research>${research}</research> \n
+  Based on the GitHub issue and the research, what are the 25 most relevant files to resolving this GitHub issue in this codebase?`;
+  const relevantPlanFiles = await selectRelevantFiles(
+    query,
+    undefined,
+    allFiles,
+    25,
+  );
+  console.log("**** relevantPlanFiles ****", relevantPlanFiles);
+  const planContext = await getCodebaseContext(rootPath, relevantPlanFiles);
+  console.log("**** planContext ****", planContext);
+  if (!planContext || planContext.length === 0) {
+    throw new Error("No plan context generated");
+  }
   let codePatch = "";
   const maxPlanIterations = 2; // TODO: experiment with other values
   const maxSteps = 10;
@@ -75,7 +95,7 @@ export async function editFiles(params: EditFilesParams) {
     planIterations++;
     const plan = await createPlan(
       issueText,
-      sourceMap,
+      JSON.stringify(planContext, null, 2),
       research,
       codePatch,
       buildErrors,

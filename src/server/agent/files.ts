@@ -2,7 +2,7 @@ import { sendSelfConsistencyChainOfThoughtGptRequest } from "~/server/openai/uti
 
 export const findFiles = async function (
   githubIssue: string,
-  sourceMap: string,
+  context: string,
   research: string,
 ): Promise<string> {
   const systemPrompt = `You are an AI coding assistant tasked with identifying the specific files in a codebase that need to be modified or created to address a GitHub issue. Your role is to analyze the provided GitHub issue, codebase source map, and research to determine the files that require changes.
@@ -36,7 +36,7 @@ export const findFiles = async function (
           - Issue: ${githubIssue}
       
       ### Codebase Information:
-          - Repo Source Map: ${sourceMap}
+          - Codebase: ${context}
           - Research: ${research}
       
       ### Task:
