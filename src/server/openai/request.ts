@@ -124,8 +124,8 @@ export const sendGptRequest = async (
   model: Model = "claude-3-5-sonnet-20240620",
   isJSONMode = false,
 ): Promise<string | null> => {
-  // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
-  // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
+  console.log("\n\n --- User Prompt --- \n\n", userPrompt);
+  console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
     // For now, if we get a request to use Sonnet 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
@@ -185,7 +185,7 @@ export const sendGptRequest = async (
     console.log(`\n +++ ${model} Response time ${duration} ms`);
 
     const gptResponse = response.choices[0]?.message;
-    // console.log("\n\n --- GPT Response --- \n\n", gptResponse);
+    console.log("\n\n --- GPT Response --- \n\n", gptResponse);
     let content = gptResponse?.content ?? "";
     if (needsJsonHelper) {
       content = `{${content}`; // add the starting bracket back to the JSON response
@@ -241,6 +241,9 @@ export const sendGptRequest = async (
             baseEventData,
             retries - 1,
             delay * 2,
+            imagePrompt,
+            model,
+            isJSONMode,
           )
             .then(resolve)
             .catch(reject);
@@ -365,7 +368,7 @@ export const sendGptVisionRequest = async (
 
   if (!snapshotUrl?.length) {
     // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest(
-    return sendSelfConsistencyChainOfThoughtGptRequest(
+    return sendGptRequest(
       userPrompt,
       systemPrompt,
       temperature,

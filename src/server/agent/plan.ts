@@ -100,7 +100,7 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
 
 export const createPlan = async function (
   githubIssue: string,
-  sourceMap: string,
+  context: string,
   research: string,
   codePatch: string,
   buildErrors: string,
@@ -109,7 +109,7 @@ export const createPlan = async function (
   // If there was a previous plan, we need the new plan to reflect the changes made in the code patch
   // First, find all of the files that need to be modified or created
   const files = !hasExistingPlan
-    ? await findFiles(githubIssue, sourceMap, research)
+    ? await findFiles(githubIssue, context, research)
     : "";
 
   // const models: Model[] = [
@@ -121,7 +121,7 @@ export const createPlan = async function (
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
       ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue)
-      : getPromptsForNewPlan(githubIssue, sourceMap, research, files);
+      : getPromptsForNewPlan(githubIssue, context, research, files);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
@@ -198,16 +198,16 @@ export const createPlan = async function (
 
 const getPromptsForNewPlan = (
   githubIssue: string,
-  sourceMap: string,
   research: string,
   files: string,
+  context: string,
 ) => {
   console.log("Creating new plan with prompts:");
   console.log("Research:", research);
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
   
-      Here is the source map for the repository you are working with: <source_map>${sourceMap}</source_map>
+      Here are details about the source code for the repository you are working with: <source_map>${context}</source_map>
 
       Key Responsibilities:
           1. Review the provided list of files to modify or create based on the GitHub issue. Each step should include detailed instructions on how to modify or create one or more of the specific files from the code respository.

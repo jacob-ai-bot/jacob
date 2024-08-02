@@ -21,10 +21,10 @@ export const evaluate = async (
   models: Model[] = [
     "claude-3-5-sonnet-20240620",
     "gpt-4o-2024-05-13",
-    "claude-3-5-sonnet-20240620", // Replacing gemini with claude for now since gemini is having problems returning valid JSON
+    "claude-3-5-sonnet-20240620",
   ],
 ): Promise<EvaluationInfo[]> => {
-  const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated code output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
+  const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
   If this is a code change, your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. 
   If this is a text response, your evaluation should specifically note if the response is accurate, relevant, and complete based on the original prompts.
   Provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
@@ -51,7 +51,7 @@ export const evaluate = async (
 
     ## INSTRUCTIONS 
     Review the original user prompt, system prompt, and response. Evaluate how well the response addresses the original user prompt and system prompt. Provide a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. Note any unrelated code changes if needed, provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
-    Your response MUST adhere exactly to the EXACT format provided in the EvaluationSchema schema or the system will crash.`;
+    Your response MUST be in JSON format and adhere exactly to the EXACT format provided in the EvaluationSchema schema or the system will crash.`;
 
   // Evaluate using each model, then return the average the scores
 
@@ -87,7 +87,8 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   // ],
   models: Model[] = [
     "claude-3-5-sonnet-20240620",
-    "claude-3-5-sonnet-20240620",
+    "gpt-4o-2024-05-13",
+    // "gemini-1.5-pro-exp-0801",
   ],
   minTemperature = 0.2,
   maxTemperature = 0.5,

@@ -38,6 +38,11 @@ const config = {
     ],
     "@next/next/no-img-element": "off",
     "prettier/prettier": ["error"],
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-return": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/no-explicit-any": "off",
   },
 };
 module.exports = config;
