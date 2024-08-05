@@ -1,9 +1,11 @@
-import { cloneAndGetSourceMap, getExtractedIssue } from "../api/utils";
+import { getExtractedIssue } from "../api/utils";
 import { getIssue } from "../github/issue";
 import { db } from "../db/db";
 import { TodoStatus } from "../db/enums";
 import { researchIssue } from "~/server/agent/research";
+import { getRepoSettings } from "./settings";
 import { cloneRepo } from "../git/clone";
+import { getSourceMap } from "~/server/analyze/sourceMap";
 
 export const createTodo = async (
   repo: string,
@@ -50,8 +52,8 @@ export const createTodo = async (
     });
     cleanupClone = cleanup;
 
-    const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
-
+    const repoSettings = getRepoSettings(rootPath);
+    const sourceMap = getSourceMap(rootPath, repoSettings);
     const extractedIssue = await getExtractedIssue(sourceMap, issueText);
 
     const newTodo = await db.todos.create({

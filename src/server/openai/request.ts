@@ -32,6 +32,8 @@ const CONTEXT_WINDOW = {
   "llama-3.1-sonar-large-128k-online": 127072,
   "llama-3.1-sonar-small-128k-online": 127072,
   "llama-3.1-70b-versatile": 8192, // Limited to 8K during preview, will be 128K in the future
+  "llama-3-sonar-large-32k-online": 32768,
+  "llama-3-sonar-small-32k-online": 32768,
 };
 
 // Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
@@ -49,6 +51,8 @@ export const MAX_OUTPUT = {
   "llama-3.1-sonar-large-128k-online": 4096,
   "llama-3.1-sonar-small-128k-online": 4096,
   "llama-3.1-70b-versatile": 4096,
+  "llama-3-sonar-large-32k-online": 4096,
+  "llama-3-sonar-small-32k-online": 4096,
 };
 
 const ONE_MILLION = 1000000;
@@ -66,6 +70,8 @@ const INPUT_TOKEN_COSTS = {
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
   "llama-3.1-70b-versatile": 0.59 / ONE_MILLION,
+  "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
+  "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
@@ -81,6 +87,8 @@ const OUTPUT_TOKEN_COSTS = {
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
   "llama-3.1-70b-versatile": 0.79 / ONE_MILLION,
+  "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
+  "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
 };
 const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
@@ -98,6 +106,8 @@ const PORTKEY_VIRTUAL_KEYS = {
   "llama-3.1-sonar-small-128k-online":
     process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3.1-70b-versatile": process.env.PORTKEY_VIRTUAL_KEY_GROK,
+  "llama-3-sonar-large-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
+  "llama-3-sonar-small-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
