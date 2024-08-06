@@ -1,10 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { type Issue, type Repository } from "@octokit/webhooks-types";
-import {
-  runBuildCheck,
-  type RunBuildCheckParams,
-} from "~/server/build/node/check";
-import { applyCodePatchViaLLM } from "./patch";
+import { runBuildCheck } from "~/server/build/node/check";
 
 import path from "path";
 import { type RepoSettings, type BaseEventData } from "~/server/utils";
@@ -16,7 +12,8 @@ import {
 import { z } from "zod";
 import { type PullRequest } from "~/server/code/agentFixError";
 import { getFiles } from "../utils/files";
-import { addCommitAndPush } from "~/server/git/commit";
+import { applyAndEvaluateFix } from "./applyFix";
+import { type ErrorInfo, parseBuildErrors } from "./llmParseErrors";
 
 /**
  * This module implements a bug fixing system using a hybrid approach
@@ -49,14 +46,7 @@ import { addCommitAndPush } from "~/server/git/commit";
  *
  */
 
-type ErrorInfo = {
-  filePath: string;
-  lineNumber: number;
-  errorType: string;
-  errorMessage: string;
-};
-
-type BugAgent = {
+export type BugAgent = {
   id: string;
   errors: ErrorInfo[];
   potentialFixes: string[];
@@ -86,93 +76,6 @@ export type ProjectContext = {
 
 const MAX_FIXES_PER_BUG = 3;
 
-/**
- * Applies a potential fix to the codebase and evaluates its effectiveness.
- * This function is a core part of the bug-fixing process, handling the actual
- * code modification, build testing, and result evaluation.
- *
- * @param agent - The BugAgent object representing the current bug being addressed.
- * @param fix - The potential fix to be applied.
- * @param projectContext - The context of the project, including paths and settings.
- * @returns An object containing the success status, build output, and resolved errors.
- */
-async function applyAndEvaluateFix(
-  agent: BugAgent,
-  fix: string,
-  projectContext: ProjectContext,
-  allErrors: ErrorInfo[],
-): Promise<{
-  success: boolean;
-  buildOutput: string;
-  resolvedErrors: ErrorInfo[];
-}> {
-  console.log("Applying and evaluating fix");
-  const { token, repoSettings, baseEventData, rootPath, branch } =
-    projectContext;
-  const { errors } = agent;
-  const filePath = errors[0]?.filePath ?? "";
-
-  try {
-    // Apply the fix
-    await applyCodePatchViaLLM(rootPath, filePath, fix);
-
-    // Commit and push changes
-    const commitMessage = `Apply fix for ${filePath}`;
-    await addCommitAndPush({
-      rootPath,
-      branchName: branch,
-      commitMessage,
-      token,
-      ...baseEventData,
-    });
-
-    // Run build check
-    const buildCheckParams: RunBuildCheckParams = {
-      ...baseEventData,
-      path: rootPath,
-      afterModifications: true,
-      repoSettings,
-    };
-
-    let buildOutput = "";
-    let buildSuccess = false;
-    try {
-      await runBuildCheck(buildCheckParams);
-      buildOutput = "Build successful";
-      buildSuccess = true;
-    } catch (error) {
-      buildOutput = (error as Error).message;
-    }
-    console.log("Build output:", buildOutput);
-
-    // Analyze remaining errors
-    const remainingErrors = await parseBuildErrors(buildOutput);
-    const resolvedErrors = allErrors.filter(
-      (error) =>
-        !remainingErrors.some(
-          (remaining) =>
-            remaining.filePath === error.filePath &&
-            remaining.lineNumber === error.lineNumber &&
-            remaining.errorType === error.errorType,
-        ),
-    );
-    console.log("Resolved errors:", resolvedErrors);
-    console.log("Remaining errors:", remainingErrors);
-
-    return {
-      success: buildSuccess,
-      buildOutput,
-      resolvedErrors,
-    };
-  } catch (error) {
-    console.error("Error applying and evaluating fix:", error);
-    return {
-      success: false,
-      buildOutput: (error as Error).message,
-      resolvedErrors: [],
-    };
-  }
-}
 const NpmAssessmentSchema = z.object({
   needsNpmInstall: z.boolean(),
   packagesToInstall: z.array(z.string()),
@@ -329,82 +232,6 @@ export async function fixBuildErrors(
     `Unable to resolve all errors after ${MAX_ITERATIONS} iterations`,
   );
   return successfulFixes;
-}
-const ErrorInfoSchema = z.object({
-  filePath: z.string().nullable(),
-  lineNumber: z.number().nullable(),
-  errorType: z.string().nullable(),
-  errorMessage: z.string().nullable(),
-});
-
-/**
- * Parses the build output to extract structured error information.
- * This function is crucial for understanding the nature and location of each error,
- * allowing the system to target fixes more accurately.
- *
- * @param buildOutput - The raw build output containing error messages.
- * @returns An array of ErrorInfo objects, each representing a parsed error.
- */
-
-async function parseBuildErrors(buildOutput: string): Promise<ErrorInfo[]> {
-  console.log("Parsing build errors for buildOutput:", buildOutput);
-
-  const prompt = `
-    Analyze the following build output and extract error information.
-    For each error, provide the following details:
-    - filePath: The path of the file where the error occurred
-    - lineNumber: The line number where the error occurred (as a number)
-    - errorType: The type or category of the error
-    - errorMessage: The detailed error message
-
-    Build Output:
-    ${buildOutput}
-
-    Respond with a JSON array of objects, each containing the above fields.
-    Your response MUST be an array of objects that adhere to the following zod schema:
-    {
-      filePath: z.ZodString;
-      lineNumber: z.ZodNumber;
-      errorType: z.ZodString;
-      errorMessage: z.ZodString;
-    }
-    
-    Here is an example response:
-    [
-      {
-        "filePath": "src/index.ts",
-        "lineNumber": 10,
-        "errorType": "SyntaxError",
-        "errorMessage": "Unexpected token 'const'"
-      },
-      {
-        "filePath": "src/utils.ts",
-        "lineNumber": 20,
-        "errorType": "TypeError",
-        "errorMessage": "Cannot read property 'map' of undefined"
-      }
-    ]
-
-    If you can't determine a value, use an empty string for string fields or 0 for lineNumber.
-  `;
-
-  try {
-    const parsedErrors = (await sendGptRequestWithSchema(
-      prompt,
-      "You are an expert in analyzing build outputs and extracting error information. Your response MUST be an array of objects that adhere to a given zod schema. Do not include any additional information in your response.",
-      ErrorInfoSchema,
-      0.2,
-      undefined,
-      5,
-      "gpt-4-turbo-2024-04-09",
-    )) as ErrorInfo[];
-
-    console.log("Parsed errors:", parsedErrors);
-    return parsedErrors;
-  } catch (error) {
-    console.error("Error parsing build errors:", error);
-    return [];
-  }
 }
 
 /**
