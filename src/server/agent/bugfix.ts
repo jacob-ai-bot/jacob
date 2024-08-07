@@ -277,7 +277,7 @@ async function createBugAgents(buildErrors: string): Promise<BugAgent[]> {
  * @param projectContext - The context of the project, including paths and settings.
  * @returns An array of strings, each representing a potential fix in LLM Diff Format.
  */
-async function generatePotentialFixes(
+export async function generatePotentialFixes(
   agent: BugAgent,
   projectContext: ProjectContext,
 ): Promise<string[]> {
