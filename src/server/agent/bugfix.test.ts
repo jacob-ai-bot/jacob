@@ -2,7 +2,7 @@
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { type Repository } from "@octokit/webhooks-types";
 
-import { generatePotentialFixes } from "./bugfix";
+import { generatePotentialFixes, createBugAgents } from "./bugfix";
 import { type PullRequest } from "~/server/code/agentFixError";
 
 const mockFileContent = vi.hoisted(() => "File: file.txt\n1| file-content\n");
@@ -23,7 +23,27 @@ const mockEventData = {
   userId: "test-user",
 };
 
-describe("generatePotentialFixes", () => {
+const mockParsedErrors = vi.hoisted(() => [
+  {
+    filePath: "src/file.txt",
+    lineNumber: 4,
+    errorType: "error",
+    errorMessage: "error message",
+  },
+  {
+    filePath: "src/file.ts",
+    lineNumber: 7,
+    errorType: "warning",
+    errorMessage: "warning message",
+  },
+]);
+
+const mockedLLMParseErrors = vi.hoisted(() => ({
+  parseBuildErrors: vi.fn().mockResolvedValue(mockParsedErrors),
+}));
+vi.mock("./llmParseErrors", () => mockedLLMParseErrors);
+
+describe("bugfix functions", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -32,7 +52,30 @@ describe("generatePotentialFixes", () => {
     vi.restoreAllMocks();
   });
 
-  test("success", async () => {
+  test("createBugAgents - success", async () => {
+    const result = await createBugAgents("build errors");
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      appliedFix: null,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      branchName: expect.stringContaining("fix-file.txt-"),
+      buildOutput: null,
+      commitHash: null,
+      errors: [mockParsedErrors[0]],
+      potentialFixes: [],
+    });
+    expect(result[1]).toMatchObject({
+      appliedFix: null,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      branchName: expect.stringContaining("fix-file.ts-"),
+      buildOutput: null,
+      commitHash: null,
+      errors: [mockParsedErrors[1]],
+      potentialFixes: [],
+    });
+  });
+
+  test("generatePotentialFixes - success", async () => {
     const allErrors = [
       {
         filePath: "src/file.txt",

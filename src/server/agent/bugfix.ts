@@ -243,7 +243,9 @@ export async function fixBuildErrors(
  * @param rootPath - The root path of the project.
  * @returns An array of BugAgent objects, each responsible for a group of related errors.
  */
-async function createBugAgents(buildErrors: string): Promise<BugAgent[]> {
+export async function createBugAgents(
+  buildErrors: string,
+): Promise<BugAgent[]> {
   const errors = await parseBuildErrors(buildErrors);
   const groupedErrors = errors.reduce(
     (acc, error) => {
