@@ -2,20 +2,39 @@
 import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { type Repository } from "@octokit/webhooks-types";
 
-import { generatePotentialFixes, createBugAgents } from "./bugfix";
+import {
+  generatePotentialFixes,
+  createBugAgents,
+  fixBuildErrors,
+} from "./bugfix";
 import { type PullRequest } from "~/server/code/agentFixError";
 
 const mockFileContent = vi.hoisted(() => "File: file.txt\n1| file-content\n");
-const mockFiles = vi.hoisted(() => ({
+const mockedFiles = vi.hoisted(() => ({
   getFiles: vi.fn().mockReturnValue(mockFileContent),
 }));
-vi.mock("../utils/files", () => mockFiles);
+vi.mock("../utils/files", () => mockedFiles);
 
 const mockedRequest = vi.hoisted(() => ({
-  sendGptRequestWithSchema: vi.fn().mockResolvedValue([]),
+  sendGptRequestWithSchema: vi
+    .fn()
+    .mockResolvedValue({ needsNpmInstall: false, packagesToInstall: [] }),
   sendGptRequest: vi.fn().mockResolvedValue("<code_patch>patch</code_patch>"),
 }));
 vi.mock("~/server/openai/request", () => mockedRequest);
+
+const mockedCheck = vi.hoisted(() => ({
+  runBuildCheck: vi.fn().mockResolvedValue(undefined),
+  runNpmInstall: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("~/server/build/node/check", () => mockedCheck);
+
+const mockedApplyFix = vi.hoisted(() => ({
+  applyAndEvaluateFix: vi
+    .fn()
+    .mockResolvedValue({ success: true, buildOutput: "", resolvedErrors: [] }),
+}));
+vi.mock("./applyFix", () => mockedApplyFix);
 
 const mockEventData = {
   projectId: 1,
@@ -44,6 +63,26 @@ const mockedLLMParseErrors = vi.hoisted(() => ({
 vi.mock("./llmParseErrors", () => mockedLLMParseErrors);
 
 describe("bugfix functions", () => {
+  const projectContext = {
+    repository: {
+      owner: { login: "test-login" },
+      name: "test-repo",
+    } as Repository,
+    baseEventData: mockEventData,
+    existingPr: { number: 48 } as PullRequest,
+    rootPath: "/rootpath",
+    token: "token",
+    prIssue: null,
+    body: null,
+    branch: "branch-name",
+    types: "types",
+    packages: "packages",
+    styles: "styles",
+    images: "images",
+    research: "research",
+    sourceMapOrFileList: "source map",
+  };
+
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -95,30 +134,12 @@ describe("bugfix functions", () => {
       branchName: "branch-name",
     };
 
-    const result = await generatePotentialFixes(agent, {
-      repository: {
-        owner: { login: "test-login" },
-        name: "test-repo",
-      } as Repository,
-      baseEventData: mockEventData,
-      existingPr: { number: 48 } as PullRequest,
-      rootPath: "/rootpath",
-      token: "token",
-      prIssue: null,
-      body: null,
-      branch: "branch-name",
-      types: "types",
-      packages: "packages",
-      styles: "styles",
-      images: "images",
-      research: "research",
-      sourceMapOrFileList: "source map",
-    });
+    const result = await generatePotentialFixes(agent, projectContext);
 
     expect(result).toStrictEqual(["patch"]);
 
-    expect(mockFiles.getFiles).toHaveBeenCalledOnce();
-    expect(mockFiles.getFiles).toHaveBeenLastCalledWith("/rootpath", [
+    expect(mockedFiles.getFiles).toHaveBeenCalledOnce();
+    expect(mockedFiles.getFiles).toHaveBeenLastCalledWith("/rootpath", [
       "src/file.txt",
     ]);
 
@@ -153,5 +174,56 @@ describe("bugfix functions", () => {
     expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
       "Research: research",
     );
+  });
+
+  test("fixBuildErrors - success", async () => {
+    const result = await fixBuildErrors(projectContext);
+
+    expect(result).toStrictEqual([]);
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledOnce();
+
+    expect(mockedRequest.sendGptRequestWithSchema).not.toHaveBeenCalled();
+    expect(mockedLLMParseErrors.parseBuildErrors).not.toHaveBeenCalled();
+    expect(mockedFiles.getFiles).not.toHaveBeenCalled();
+    expect(mockedApplyFix.applyAndEvaluateFix).not.toHaveBeenCalled();
+  });
+
+  test("fixBuildErrors - two parsed build errors resolved", async () => {
+    mockedCheck.runBuildCheck.mockRejectedValueOnce("build errors");
+
+    const result = await fixBuildErrors(projectContext);
+
+    expect(result).toStrictEqual(["patch", "patch"]);
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(2);
+
+    expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledOnce();
+
+    expect(mockedLLMParseErrors.parseBuildErrors).toHaveBeenCalledOnce();
+
+    expect(mockedFiles.getFiles).toHaveBeenCalledTimes(2);
+
+    expect(mockedApplyFix.applyAndEvaluateFix).toHaveBeenCalledTimes(2);
+  });
+
+  test("fixBuildErrors - npm package install error resolved", async () => {
+    mockedCheck.runBuildCheck.mockRejectedValueOnce("missing package error");
+    mockedRequest.sendGptRequestWithSchema.mockResolvedValue({
+      needsNpmInstall: true,
+      packagesToInstall: ["example-package"],
+    });
+
+    const result = await fixBuildErrors(projectContext);
+
+    expect(result).toStrictEqual(["Installed required npm package(s)"]);
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(2);
+
+    expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledOnce();
+
+    expect(mockedLLMParseErrors.parseBuildErrors).not.toHaveBeenCalled();
+    expect(mockedFiles.getFiles).not.toHaveBeenCalled();
+    expect(mockedApplyFix.applyAndEvaluateFix).not.toHaveBeenCalled();
   });
 });

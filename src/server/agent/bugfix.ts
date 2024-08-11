@@ -1,10 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
-import { type Issue, type Repository } from "@octokit/webhooks-types";
-import { runBuildCheck } from "~/server/build/node/check";
-
 import path from "path";
+import { type Issue, type Repository } from "@octokit/webhooks-types";
+
+import { runBuildCheck, runNpmInstall } from "~/server/build/node/check";
 import { type RepoSettings, type BaseEventData } from "~/server/utils";
-import { runNpmInstall } from "~/server/build/node/check";
 import {
   sendGptRequest,
   sendGptRequestWithSchema,
@@ -187,28 +186,27 @@ export async function fixBuildErrors(
     );
     if (installedPackages) {
       successfulFixes.push("Installed required npm package(s)");
-      continue; // Move to next iteration to check for any remaining errors
-    }
+    } else {
+      // Create bug agents and generate fixes
+      const agents = await createBugAgents(buildErrors);
+      const allErrors = agents.flatMap((agent) => agent.errors);
 
-    // Create bug agents and generate fixes
-    const agents = await createBugAgents(buildErrors);
-    const allErrors = agents.flatMap((agent) => agent.errors);
+      for (const agent of agents) {
+        const fixes = await generatePotentialFixes(agent, projectContext);
 
-    for (const agent of agents) {
-      const fixes = await generatePotentialFixes(agent, projectContext);
+        for (const fix of fixes) {
+          const result = await applyAndEvaluateFix(
+            agent,
+            fix,
+            projectContext,
+            allErrors,
+          );
 
-      for (const fix of fixes) {
-        const result = await applyAndEvaluateFix(
-          agent,
-          fix,
-          projectContext,
-          allErrors,
-        );
-
-        if (result.success) {
-          successfulFixes.push(fix);
-          console.log("Successfully resolved errors:", result.resolvedErrors);
-          break; // Move to the next agent after a successful fix
+          if (result.success) {
+            successfulFixes.push(fix);
+            console.log("Successfully resolved errors:", result.resolvedErrors);
+            break; // Move to the next agent after a successful fix
+          }
         }
       }
     }
