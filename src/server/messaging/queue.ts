@@ -12,8 +12,10 @@ import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
-import { editFiles } from "../code/agentEditFiles";
-import { fixError } from "../code/agentFixError";
+import { editFiles as agentEditFiles } from "../code/agentEditFiles";
+import { editFiles } from "../code/editFiles";
+import { fixError as agentFixError } from "../code/agentFixError";
+import { fixError } from "../code/fixError";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
 import { createStory } from "../code/createStory";
@@ -39,7 +41,6 @@ import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
-// import { fixError } from "../code/fixError";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -535,7 +536,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             },
           });
         } else {
-          await editFiles({
+          const editFunction = (process.env.AGENT_REPOS ?? "")
+            .split(",")
+            .includes(repository.full_name)
+            ? agentEditFiles
+            : editFiles;
+          await editFunction({
             ...baseEventData,
             repository,
             token: installationAuthentication.token,
@@ -635,7 +641,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             );
             break;
           case PRCommand.FixError:
-            await fixError({
+            const fixFunction = (process.env.AGENT_REPOS ?? "")
+              .split(",")
+              .includes(repository.full_name)
+              ? agentFixError
+              : fixError;
+            await fixFunction({
               ...baseEventData,
               repository,
               token: installationAuthentication.token,

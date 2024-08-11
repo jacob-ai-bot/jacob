@@ -7,6 +7,8 @@ import { getRepoSettings } from "./settings";
 import { cloneRepo } from "../git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
 
+const agentRepos = (process.env.AGENT_REPOS ?? "").split(",");
+
 export const createTodo = async (
   repo: string,
   projectId: number,
@@ -64,13 +66,17 @@ export const createTodo = async (
       issueId: issue.number,
       position: issue.number,
     });
-    await researchIssue(
-      issueText,
-      sourceMap,
-      newTodo?.id,
-      issueNumber,
-      rootPath,
-    );
+
+    // Only research issues for agent repos for now
+    if (agentRepos.includes(repo)) {
+      await researchIssue(
+        issueText,
+        sourceMap,
+        newTodo?.id,
+        issueNumber,
+        rootPath,
+      );
+    }
 
     console.log(`Created new todo for issue #${issue.number}`);
   } catch (error) {

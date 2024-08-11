@@ -14,11 +14,13 @@ import { HttpResponse, http } from "msw";
 import "dotenv/config";
 
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
+import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
 import pullRequestReviewSubmittedPayload from "../../data/test/webhooks/pull_request_review.submitted.json";
 import pullRequestOpenedPayload from "../../data/test/webhooks/pull_request.opened.json";
 import pullRequestClosedPayload from "../../data/test/webhooks/pull_request.closed.json";
 import issueCommentCreatedPRCommandCodeReviewPayload from "../../data/test/webhooks/issue_comment.created.prCommand.codeReview.json";
 import issueCommentCreatedPRCommandCreateStoryPayload from "../../data/test/webhooks/issue_comment.created.prCommand.createStory.json";
+import issueCommentCreatedPRCommandFixErrorPayload from "../../data/test/webhooks/issue_comment.created.prCommand.fixError.json";
 import issueCommentCreatedIssueCommandUnknownPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.unknown.json";
 import issueCommentCreatedIssueCommandOnPRUnknownPayload from "../../data/test/webhooks/issue_comment.created.issueCommandOnPR.unknown.json";
 import issueCommentCreatedIssueCommandBuildPayload from "../../data/test/webhooks/issue_comment.created.issueCommand.build.json";
@@ -93,6 +95,11 @@ const mockedEditFiles = vi.hoisted(() => ({
 }));
 vi.mock("../code/editFiles", () => mockedEditFiles);
 
+const mockedAgentEditFiles = vi.hoisted(() => ({
+  editFiles: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../code/agentEditFiles", () => mockedAgentEditFiles);
+
 const mockedCodeReview = vi.hoisted(() => ({
   codeReview: vi.fn().mockResolvedValue(undefined),
 }));
@@ -107,6 +114,11 @@ const mockedFixError = vi.hoisted(() => ({
   fixError: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/fixError", () => mockedFixError);
+
+const mockedAgentFixError = vi.hoisted(() => ({
+  fixError: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../code/agentFixError", () => mockedAgentFixError);
 
 const mockedRespondToCodeReview = vi.hoisted(() => ({
   respondToCodeReview: vi.fn().mockResolvedValue(undefined),
@@ -158,6 +170,8 @@ const mockedEvents = vi.hoisted(() => ({
 }));
 vi.mock("~/server/utils/events", () => mockedEvents);
 
+const originalAgentRepos = process.env.AGENT_REPOS;
+
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
@@ -173,10 +187,12 @@ describe("onGitHubEvent", () => {
 
   beforeEach(() => {
     server?.resetHandlers();
+    process.env.AGENT_REPOS = "PioneerSquareLabs/t3-starter-template";
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    process.env.AGENT_REPOS = originalAgentRepos;
   });
 
   afterAll(() => {
@@ -245,31 +261,61 @@ describe("onGitHubEvent", () => {
     expect(mockedNewFile.createNewFile).not.toHaveBeenCalled();
   });
 
-  // TODO: Write tests for agent edit files
-  // test("issue opened - edit files", async () => {
-  //   await onGitHubEvent({
-  //     id: "2",
-  //     name: "issues",
-  //     payload: issuesOpenedEditFilesPayload,
-  //   } as WebhookIssueOpenedEvent);
+  test("issue opened - edit files", async () => {
+    process.env.AGENT_REPOS = "";
 
-  //   expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
-  //   expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
-  //   expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
-  //   expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
-  //     projectId: 777,
-  //     repoFullName: "PioneerSquareLabs/t3-starter-template",
-  //     userId: "jacob-ai-bot[bot]",
-  //     issueId: 49,
-  //     path: "/tmp/jacob/1",
-  //     afterModifications: false,
-  //     repoSettings: {
-  //       language: Language.JavaScript,
-  //     },
-  //   });
-  //   expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
-  //   expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
-  // });
+    await onGitHubEvent({
+      id: "2",
+      name: "issues",
+      payload: issuesOpenedEditFilesPayload,
+    } as WebhookIssueOpenedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "jacob-ai-bot[bot]",
+      issueId: 49,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
+    });
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
+    expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
+
+    expect(mockedAgentEditFiles.editFiles).not.toHaveBeenCalled();
+  });
+
+  test("Agent repo: issue opened - edit files", async () => {
+    await onGitHubEvent({
+      id: "2",
+      name: "issues",
+      payload: issuesOpenedEditFilesPayload,
+    } as WebhookIssueOpenedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "jacob-ai-bot[bot]",
+      issueId: 49,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
+    });
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
+    expect(mockedAgentEditFiles.editFiles).toHaveBeenCalledTimes(1);
+
+    expect(mockedEditFiles.editFiles).not.toHaveBeenCalled();
+  });
 
   test("PR comment created - code review command", async () => {
     await onGitHubEvent({
@@ -296,17 +342,35 @@ describe("onGitHubEvent", () => {
   });
 
   // TODO: Write tests for agent fix error
-  // test("PR comment created - fix build/test error command", async () => {
-  //   await onGitHubEvent({
-  //     id: "5",
-  //     name: "issue_comment",
-  //     payload: issueCommentCreatedPRCommandFixErrorPayload,
-  //   } as WebhookPRCommentCreatedEvent);
+  test("PR comment created - fix build/test error command", async () => {
+    process.env.AGENT_REPOS = "";
 
-  //   expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
-  //   expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
-  //   expect(mockedFixError.fixError).toHaveBeenCalledTimes(1);
-  // });
+    await onGitHubEvent({
+      id: "5",
+      name: "issue_comment",
+      payload: issueCommentCreatedPRCommandFixErrorPayload,
+    } as WebhookPRCommentCreatedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedFixError.fixError).toHaveBeenCalledTimes(1);
+
+    expect(mockedAgentFixError.fixError).not.toHaveBeenCalled();
+  });
+
+  test("Agent repo: PR comment created - fix build/test error command", async () => {
+    await onGitHubEvent({
+      id: "5",
+      name: "issue_comment",
+      payload: issueCommentCreatedPRCommandFixErrorPayload,
+    } as WebhookPRCommentCreatedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedAgentFixError.fixError).toHaveBeenCalledTimes(1);
+
+    expect(mockedFixError.fixError).not.toHaveBeenCalled();
+  });
 
   test("PR review submitted", async () => {
     await onGitHubEvent({
