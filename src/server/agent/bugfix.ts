@@ -10,7 +10,7 @@ import {
 } from "~/server/openai/request";
 import { z } from "zod";
 import { type PullRequest } from "~/server/code/agentFixError";
-import { getFiles } from "../utils/files";
+import { getFiles, standardizePath } from "../utils/files";
 import { applyAndEvaluateFix } from "./applyFix";
 import { type ErrorInfo, parseBuildErrors } from "./llmParseErrors";
 
@@ -291,7 +291,7 @@ export async function generatePotentialFixes(
     .join("\n");
   console.log("errorSummary: ", errorSummary);
 
-  const filePath = agent.errors[0]?.filePath ?? "";
+  const filePath = standardizePath(agent.errors[0]?.filePath ?? "");
 
   const fileContent = getFiles(projectContext.rootPath, [filePath]);
   // We should pass in type information here, and potentially the file list

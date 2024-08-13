@@ -177,6 +177,10 @@ export async function fixError(params: FixErrorParams) {
         codeSystemPrompt,
         0.2,
         baseEventData,
+        3,
+        60000,
+        undefined,
+        "gpt-4o-64k-output-alpha",
       ))!;
 
       if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {

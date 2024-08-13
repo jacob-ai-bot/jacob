@@ -33,7 +33,6 @@ import {
   SKIP_BUILD,
   SKIP_DEBUGGING,
   SKIP_STORYBOOK,
-  CUSTOM_BRANCH,
 } from "../utils";
 import {
   addFailedWorkComment,
@@ -447,18 +446,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     );
     existingPr = result.data;
     prBranch = existingPr.head.ref;
+
     if (baseEventData.issueId) {
       console.error(
         `[${repository.full_name}] Unexpected issueId when handling PR event`,
       );
     }
     baseEventData.issueId = extractIssueNumberFromBranchName(prBranch);
-  }
-
-  if (body?.includes(CUSTOM_BRANCH)) {
-    // the user can specify a custom branch name in the PR body by including --branch <branch-name> in the issue body
-    const customBranch = body.split(CUSTOM_BRANCH)[1]?.trim().split(" ")[0];
-    prBranch = customBranch;
   }
 
   const newFileName = issueOpenedTitle

@@ -7,7 +7,6 @@ import {
   executeWithLogRequiringSuccessWithoutEvent,
 } from "../utils";
 import { type ProjectContext } from "../agent/bugfix";
-import { type StandardizedPath } from "../utils/files";
 
 interface GitOperationParams {
   directory: string;

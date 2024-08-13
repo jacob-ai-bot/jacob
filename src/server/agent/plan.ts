@@ -118,7 +118,11 @@ export const createPlan = async function (
   //   "claude-3-5-sonnet-20240620",
   // ];
   console.log("research", research);
-  const models: Model[] = ["gpt-4-0125-preview", "gpt-4o-2024-05-13"];
+  const models: Model[] = [
+    "gpt-4-0125-preview",
+    "gpt-4o-2024-08-06",
+    "gpt-4o-2024-08-06",
+  ];
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
       ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue)
@@ -209,7 +213,8 @@ const getPromptsForNewPlan = (
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
   
-      Here are details about the source code for the repository you are working with: <source_map>${context}</source_map>
+      ${context?.length ? `Here are details about the source code for the repository you are working with: <source_map>${context}</source_map>` : ""}    
+      ${research?.length ? `Here is some research about the codebase and this issue: <research>${research}</research>` : ""}
 
       Key Responsibilities:
           1. Review the provided list of files to modify or create based on the GitHub issue. Each step should include detailed instructions on how to modify or create one or more of the specific files from the code respository.
@@ -244,7 +249,6 @@ const getPromptsForNewPlan = (
   const userPrompt = `You are an AI coding assistant tasked with creating a detailed plan for addressing a specific GitHub issue within a codebase. Your goal is to analyze the provided information and develop a step-by-step guide for making the necessary changes to resolve the issue.
         
       ### Code Repository Information:
-          ${research?.length ? `- Research: <research>${research}</research>` : ""}
           - Files to Modify or Create: <files>${files}</files>
 
       ### GitHub Issue Details:

@@ -8,11 +8,7 @@ import {
   getStyles,
   generateJacobBranchName,
 } from "../utils";
-import {
-  getFiles,
-  standardizePath,
-  type StandardizedPath,
-} from "../utils/files";
+import { getFiles, standardizePath } from "../utils/files";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
@@ -105,7 +101,7 @@ export async function editFiles(params: EditFilesParams) {
     planIterations++;
     const plan = await createPlan(
       issueText,
-      JSON.stringify(planContext, null, 2),
+      planContext?.map((c) => `${c.file}:\n${c.text}`).join("\n") ?? "",
       research,
       codePatch,
       buildErrors,
@@ -127,10 +123,16 @@ export async function editFiles(params: EditFilesParams) {
       .map((step) => step.filePath);
 
     // Get the codebase context for each file in the plan
-    const contexts = getOrCreateCodebaseContext(projectId, rootPath, filePaths);
+    const contexts = await getOrCreateCodebaseContext(
+      projectId,
+      rootPath,
+      filePaths,
+    );
     for (const step of plan.steps.slice(0, maxSteps)) {
       stepNumber++;
-      const context = (await contexts).find((c) => c.file === step.filePath);
+      const contextItem = contexts.find(
+        (c) => standardizePath(c.file) === step.filePath,
+      );
       const isNewFile = step.type === PlanningAgentActionType.CreateNewCode;
       await emitPlanStepEvent({ ...baseEventData, planStep: step });
       // const step = plan.steps[0];
@@ -165,7 +167,7 @@ export async function editFiles(params: EditFilesParams) {
         plan: filePlan,
         snapshotUrl: snapshotUrl ?? "",
         codePatch,
-        context: context ? JSON.stringify(context, null, 2) : "",
+        context: JSON.stringify(contextItem, null, 2) ?? "",
       };
 
       const codeSystemPrompt = parseTemplate(

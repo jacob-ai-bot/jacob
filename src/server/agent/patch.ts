@@ -15,11 +15,30 @@ export async function applyCodePatchViaLLM(
   filePath: string,
   patch: string,
   isNewFile = false,
+  retryCount = 0,
 ): Promise<FileContent[]> {
-  if (isNewFile) {
-    return createNewFile(rootPath, filePath, patch);
-  } else {
-    return updateExistingFile(rootPath, filePath, patch);
+  const maxRetries = 3;
+  if (retryCount >= maxRetries) {
+    console.error(
+      `Failed to apply patch to ${filePath} after ${maxRetries} attempts`,
+    );
+    throw new Error(`Failed to apply patch to ${filePath}`);
+  }
+  try {
+    if (isNewFile) {
+      return createNewFile(rootPath, filePath, patch);
+    } else {
+      return updateExistingFile(rootPath, filePath, patch);
+    }
+  } catch (error) {
+    console.error(`Error applying patch to ${filePath}:`, error);
+    return applyCodePatchViaLLM(
+      rootPath,
+      filePath,
+      patch,
+      isNewFile,
+      retryCount + 1,
+    );
   }
 }
 

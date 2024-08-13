@@ -18,7 +18,7 @@ export type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
 
 export const getFiles = (
   rootDir: string,
-  fileNamesToInclude: string[],
+  fileNamesToInclude: StandardizedPath[],
   shouldAddLineNumbers = true,
 ) => {
   let output = "";
