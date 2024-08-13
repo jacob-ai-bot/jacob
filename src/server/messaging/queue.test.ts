@@ -220,6 +220,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedNewFile.createNewFile).toHaveBeenCalledTimes(1);
@@ -255,6 +256,7 @@ describe("onGitHubEvent", () => {
       statusMessage: "Error: test error",
       subType: TaskSubType.CREATE_NEW_FILE,
       userId: "jacob-ai-bot[bot]",
+      skipBuild: false,
     });
 
     expect(mockedCheck.runBuildCheck).not.toHaveBeenCalled();
@@ -283,6 +285,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
@@ -310,6 +313,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedAgentEditFiles.editFiles).toHaveBeenCalledTimes(1);
@@ -493,6 +497,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
@@ -516,6 +521,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
@@ -543,6 +549,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
     expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
@@ -562,6 +569,7 @@ describe("onGitHubEvent", () => {
       statusMessage: "Error: build error",
       subType: TaskSubType.EDIT_FILES,
       userId: "cpirich",
+      skipBuild: false,
     });
   });
 
@@ -615,6 +623,7 @@ describe("onGitHubEvent", () => {
       status: TaskStatus.CLOSED,
       subType: TaskSubType.EDIT_FILES,
       userId: "cpirich",
+      skipBuild: undefined,
     });
     expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
   });
