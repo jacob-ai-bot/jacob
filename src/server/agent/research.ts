@@ -7,7 +7,12 @@ import {
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
 import { parseTemplate } from "../utils";
-import { type Context, getCodebaseContext } from "../utils/codebaseContext";
+import {
+  type ContextItem,
+  getOrCreateCodebaseContext,
+} from "../utils/codebaseContext";
+import { traverseCodebase } from "../analyze/traverse";
+import { type StandardizedPath, standardizePath } from "../utils/files";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -99,13 +104,18 @@ export const researchIssue = async function (
   todoId: number,
   issueId: number,
   rootDir: string,
+  projectId: number,
   maxLoops = 10,
   model: Model = "gpt-4-0125-preview",
 ): Promise<Research[]> {
   console.log("Researching issue...");
   // First get the context for the full codebase
-  const codebaseContext = await getCodebaseContext(rootDir);
-
+  const allFiles = traverseCodebase(rootDir);
+  const codebaseContext = await getOrCreateCodebaseContext(
+    projectId,
+    rootDir,
+    allFiles?.map((file) => standardizePath(file)) ?? [],
+  );
   // For now, change the sourcemap to be a list of all the files from the context and overview of each file
   sourceMap = codebaseContext
     .map((file) => `${file.file} - ${file.overview}`)
@@ -229,7 +239,7 @@ async function callFunction(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
-  codebaseContext: Context,
+  codebaseContext: ContextItem[],
 ): Promise<string> {
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:
@@ -254,9 +264,9 @@ export async function researchCodebase(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
-  codebaseContext: Context,
+  codebaseContext: ContextItem[],
 ): Promise<string> {
-  const allFiles = codebaseContext.map((file) => file.file);
+  const allFiles = codebaseContext.map((file) => standardizePath(file.file));
 
   let relevantFiles: string[];
   if (allFiles.length <= 50) {
@@ -322,10 +332,10 @@ export async function researchCodebase(
 
 export async function selectRelevantFiles(
   query: string,
-  codebaseContext?: Context,
+  codebaseContext?: ContextItem[],
   allFiles?: string[],
   numFiles = 50,
-): Promise<string[]> {
+): Promise<StandardizedPath[]> {
   if (!codebaseContext && !allFiles) {
     throw new Error("Either codebaseContext or allFiles must be provided.");
   }
@@ -382,7 +392,9 @@ export async function selectRelevantFiles(
       `Bottom ${numFiles - 10} relevant files:`,
       relevantFiles?.slice(0, 10),
     );
-    return relevantFiles.slice(0, numFiles);
+    return relevantFiles
+      .slice(0, numFiles)
+      .map((file) => standardizePath(file));
   } catch (error) {
     console.error("Error parsing relevant files:", error);
     return [];

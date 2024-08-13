@@ -10,6 +10,13 @@ import Parser from "web-tree-sitter";
 import path, { join } from "path";
 import fs from "fs/promises";
 import { selectRelevantFiles } from "../agent/research";
+import { db } from "~/server/db/db";
+import { getFileLatestCommitHash } from "../git/operations";
+import {
+  type NewCodebaseFile,
+  type CodebaseFileUpdate,
+} from "../db/tables/codebaseContext.table";
+import { standardizePath, type StandardizedPath } from "./files";
 
 interface ExportInfo {
   name: string;
@@ -20,7 +27,7 @@ interface ExportInfo {
   overview?: string;
 }
 
-const contextItem = z.object({
+export const ContextItemSchema = z.object({
   file: z.string(),
   code: z.array(z.string()),
   importStatements: z.array(z.string()),
@@ -52,10 +59,7 @@ const contextItem = z.object({
     .optional(),
 });
 
-const contextSchema = z.array(contextItem);
-
-type ContextItem = z.infer<typeof contextItem>;
-export type Context = z.infer<typeof contextSchema>;
+export type ContextItem = z.infer<typeof ContextItemSchema>;
 
 let parser: Parser;
 let TypeScript: Parser.Language;
@@ -80,11 +84,120 @@ async function initializeTreeSitter() {
   parser.setLanguage(TypeScript);
 }
 
-export const getCodebaseContext = async function (
+export async function getOrCreateCodebaseContext(
+  projectId: number,
+  rootPath: string,
+  filePaths: StandardizedPath[],
+  model: Model = "gpt-4o-mini-2024-07-18",
+): Promise<ContextItem[]> {
+  const contextItems: ContextItem[] = [];
+  const filesToProcess: string[] = [];
+
+  // First pass: Get existing contexts from the database
+  for (const _filePath of filePaths) {
+    const filePath = standardizePath(_filePath);
+    const existingContext = await db.codebaseContext.findByOptional({
+      projectId,
+      filePath,
+    });
+
+    if (existingContext) {
+      console.log("Found existing context for", filePath);
+      const currentHash = await getFileLatestCommitHash(filePath, {
+        directory: rootPath,
+      });
+
+      if (existingContext.lastCommitHash === currentHash) {
+        console.log("Context is up to date for", filePath);
+        try {
+          const parsedContext = ContextItemSchema.parse(
+            existingContext.context,
+          );
+          contextItems.push(parsedContext);
+          continue;
+        } catch (error) {
+          console.error(
+            `Error parsing existing context for ${filePath}:`,
+            error,
+          );
+        }
+      } else {
+        console.log("Context is outdated for", filePath);
+      }
+    } else {
+      console.log("No existing context found for", filePath);
+      console.log("Project ID:", projectId);
+      console.log("Root path:", rootPath);
+    }
+
+    filesToProcess.push(filePath);
+  }
+
+  // Second pass: Process remaining files in bulk
+  if (filesToProcess.length > 0) {
+    const newContextItems = await getCodebaseContext(
+      rootPath,
+      filesToProcess,
+      model,
+    );
+
+    for (let i = 0; i < newContextItems.length; i++) {
+      const filePath = filesToProcess[i];
+      const newContext = newContextItems[i];
+      if (filePath && newContext) {
+        const standardizedFilePath = standardizePath(filePath);
+        await updateFileContext(
+          projectId,
+          standardizedFilePath,
+          rootPath,
+          newContext,
+        );
+        contextItems.push(newContext);
+      }
+    }
+  }
+
+  return contextItems.map((c) => ContextItemSchema.parse(c));
+}
+
+async function updateFileContext(
+  projectId: number,
+  filePath: StandardizedPath,
+  rootPath: string,
+  newContext: ContextItem,
+): Promise<void> {
+  const currentHash = await getFileLatestCommitHash(filePath, {
+    directory: rootPath,
+  });
+
+  const existingFile = await db.codebaseContext.findByOptional({
+    projectId,
+    filePath,
+  });
+
+  if (existingFile) {
+    const updateData: CodebaseFileUpdate = {
+      lastCommitHash: currentHash,
+      context: newContext,
+      updatedAt: new Date(),
+    };
+    await db.codebaseContext.find(existingFile.id).update(updateData);
+  } else {
+    const newData: NewCodebaseFile = {
+      projectId,
+      filePath,
+      lastCommitHash: currentHash,
+      context: newContext,
+    };
+    await db.codebaseContext.create(newData);
+  }
+}
+
+const getCodebaseContext = async function (
   rootPath: string,
   files: string[] = [],
   model: Model = "gpt-4o-mini-2024-07-18", // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
-): Promise<Context> {
+): Promise<ContextItem[]> {
   if (!rootPath) {
     throw new Error("No rootPath provided");
   }
@@ -98,7 +211,7 @@ export const getCodebaseContext = async function (
     relevantFiles = await selectRelevantFiles(query, undefined, allFiles, 100);
   }
   let analyzedFiles = new Set<string>();
-  let contextSections: Context = [];
+  let contextSections: ContextItem[] = [];
   let iterations = 2;
   const originalRelevantFiles = relevantFiles;
 
@@ -133,15 +246,17 @@ export const getCodebaseContext = async function (
       originalRelevantFiles,
     );
   }
-  const output = contextSchema.parse(contextSections);
+  const output = contextSections?.map((section) =>
+    ContextItemSchema.parse(section),
+  );
 
   return output;
 };
 
 async function removeExtraFiles(
-  contextSections: Context,
+  contextSections: ContextItem[],
   files: string[],
-): Promise<Context> {
+): Promise<ContextItem[]> {
   // Remove any sections that were not in the original list of files
   contextSections = contextSections.filter((section) =>
     files.some((file) => file.includes(section.file)),
@@ -154,14 +269,16 @@ async function analyzeFiles(
   rootPath: string,
   model: Model,
   allFiles: string[],
-): Promise<Context> {
+): Promise<ContextItem[]> {
   const codeStructure = await analyzeCodeStructure(rootPath, files);
   const contextSections = await createContextSections(codeStructure);
   await enhanceWithLLM(contextSections, model, allFiles);
   return contextSections;
 }
 
-async function addRelevantExports(contextSections: Context): Promise<void> {
+async function addRelevantExports(
+  contextSections: ContextItem[],
+): Promise<void> {
   for (const section of contextSections) {
     section.referencedImportDetails = await getRelevantExports(
       section.file,
@@ -287,12 +404,12 @@ function extractExportInfo(node: Parser.SyntaxNode): ExportInfo {
 }
 async function createContextSections(
   codeStructure: Record<string, any>,
-): Promise<Context> {
-  const sections: Context = [];
+): Promise<ContextItem[]> {
+  const sections: ContextItem[] = [];
 
   for (const [filePath, fileInfo] of Object.entries(codeStructure)) {
     const fileSection: ContextItem = {
-      file: filePath.replace(/^\//, ""),
+      file: standardizePath(filePath),
       code: [],
       text: "",
       diagram: "",
@@ -342,7 +459,7 @@ async function createContextSections(
 }
 
 async function enhanceWithLLM(
-  sections: Context,
+  sections: ContextItem[],
   model: Model,
   allFiles: string[],
 ): Promise<void> {
@@ -447,7 +564,7 @@ function filterImports(importedFiles: string[], allFiles: string[]): string[] {
 
 export const getRelevantExports = async function (
   filePath: string,
-  allContext: Context,
+  allContext: ContextItem[],
 ): Promise<ExportInfo[]> {
   const mainContext = allContext.find((item) => item.file === filePath);
   if (!mainContext) {
@@ -461,7 +578,7 @@ export const getRelevantExports = async function (
 
 function filterImportedContext(
   parentFile: ContextItem,
-  allContext: Context,
+  allContext: ContextItem[],
 ): ExportInfo[] {
   const relevantImports: ExportInfo[] = [];
 

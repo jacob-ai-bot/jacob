@@ -57,6 +57,10 @@ export async function runBuildCheck({
   repoSettings,
   ...baseEventData
 }: RunBuildCheckParams): ExecPromise {
+  if (baseEventData?.skipBuild) {
+    console.log("Build skipped due to skipBuild flag");
+    return { stdout: "", stderr: "" };
+  }
   const env = getEnv(repoSettings);
   const {
     installCommand = "npm install",

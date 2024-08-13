@@ -7,6 +7,7 @@ import {
   executeWithLogRequiringSuccessWithoutEvent,
 } from "../utils";
 import { type ProjectContext } from "../agent/bugfix";
+import { type StandardizedPath } from "../utils/files";
 
 interface GitOperationParams {
   directory: string;
@@ -233,4 +234,20 @@ export async function gitStashPop(
     console.error("Error popping stashed changes:", error);
     // If there's nothing to pop, it's not a critical error, so we can continue
   }
+}
+export async function getFileLatestCommitHash(
+  filePath: string,
+  gitParams: GitOperationParams,
+): Promise<string> {
+  // Remove the leading '/' to make the path relative
+  const relativePath = filePath?.slice(1) ?? "";
+
+  const { stdout } = await executeWithLogRequiringSuccessWithoutEvent({
+    ...gitParams,
+    command: `git log -n 1 --format="%H" -- ${relativePath}`,
+  });
+  if (typeof stdout !== "string") {
+    return "";
+  }
+  return stdout.trim();
 }

@@ -3,12 +3,13 @@ import { sendGptToolRequest, type Model } from "~/server/openai/request";
 import { evaluate } from "~/server/openai/utils";
 import { PlanningAgentActionType } from "~/server/db/enums";
 import { findFiles } from "~/server/agent/files";
+import { type StandardizedPath, standardizePath } from "../utils/files";
 
 export interface PlanStep {
   type: PlanningAgentActionType;
   title: string;
   instructions: string;
-  filePath: string;
+  filePath: StandardizedPath;
   exitCriteria: string;
   dependencies?: string;
 }
@@ -177,11 +178,12 @@ export const createPlan = async function (
 
       const { title, filePath, instructions, exitCriteria, dependencies } =
         args;
+      const standardizedPath = standardizePath(filePath);
       const step = {
         type: functionName,
         title,
         instructions,
-        filePath,
+        filePath: standardizedPath,
         exitCriteria,
         dependencies,
       };

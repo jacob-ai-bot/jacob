@@ -8,7 +8,11 @@ import {
   getStyles,
   generateJacobBranchName,
 } from "../utils";
-import { getFiles } from "../utils/files";
+import {
+  getFiles,
+  standardizePath,
+  type StandardizedPath,
+} from "../utils/files";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
@@ -28,7 +32,7 @@ import { PlanningAgentActionType } from "~/server/db/enums";
 
 import { addCommitAndPush } from "../git/commit";
 import { runBuildCheck } from "../build/node/check";
-import { getCodebaseContext } from "../utils/codebaseContext";
+import { getOrCreateCodebaseContext } from "../utils/codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
 import { selectRelevantFiles } from "../agent/research";
 
@@ -57,6 +61,7 @@ export async function editFiles(params: EditFilesParams) {
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = `${issue.title}${issueBody}`;
+  const projectId = baseEventData.projectId;
 
   // Fetch research data from the database based on the issue ID
   const researchData = await db.research.where({ issueId: issue.number }).all();
@@ -79,13 +84,18 @@ export async function editFiles(params: EditFilesParams) {
     25,
   );
   console.log("**** relevantPlanFiles ****", relevantPlanFiles);
-  const planContext = await getCodebaseContext(rootPath, relevantPlanFiles);
+  const planContext = await getOrCreateCodebaseContext(
+    projectId,
+    rootPath,
+    relevantPlanFiles?.map((file) => standardizePath(file)) ?? [],
+  );
+
   console.log("**** planContext ****", planContext);
   if (!planContext || planContext.length === 0) {
     throw new Error("No plan context generated");
   }
   let codePatch = "";
-  const maxPlanIterations = 2; // TODO: experiment with other values
+  const maxPlanIterations = 1; // TODO: experiment with other values
   const maxSteps = 10;
   let isPlanComplete = false;
   let planIterations = 0;
@@ -117,7 +127,7 @@ export async function editFiles(params: EditFilesParams) {
       .map((step) => step.filePath);
 
     // Get the codebase context for each file in the plan
-    const contexts = getCodebaseContext(rootPath, filePaths);
+    const contexts = getOrCreateCodebaseContext(projectId, rootPath, filePaths);
     for (const step of plan.steps.slice(0, maxSteps)) {
       stepNumber++;
       const context = (await contexts).find((c) => c.file === step.filePath);

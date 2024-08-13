@@ -30,6 +30,10 @@ import {
   enumFromStringValue,
   getRepoSettings,
   extractIssueNumberFromBranchName,
+  SKIP_BUILD,
+  SKIP_DEBUGGING,
+  SKIP_STORYBOOK,
+  CUSTOM_BRANCH,
 } from "../utils";
 import {
   addFailedWorkComment,
@@ -356,6 +360,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       eventName === "pull_request" || eventName === "pull_request_review"
         ? event.payload.pull_request.number
         : undefined,
+    skipBuild: body?.includes(SKIP_BUILD),
   };
 
   const prCommand = enumFromStringValue(
@@ -448,6 +453,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       );
     }
     baseEventData.issueId = extractIssueNumberFromBranchName(prBranch);
+  }
+
+  if (body?.includes(CUSTOM_BRANCH)) {
+    // the user can specify a custom branch name in the PR body by including --branch <branch-name> in the issue body
+    const customBranch = body.split(CUSTOM_BRANCH)[1]?.trim().split(" ")[0];
+    prBranch = customBranch;
   }
 
   const newFileName = issueOpenedTitle
@@ -588,6 +599,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         }
         switch (prCommand) {
           case PRCommand.CreateStory:
+            if (body?.includes(SKIP_STORYBOOK)) {
+              console.log(
+                `[${repository.full_name}] Quietly ignoring PR command event (skip storybook flag detected)`,
+              );
+              break;
+            }
             await createStory({
               ...baseEventData,
               repository,
@@ -641,6 +658,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             );
             break;
           case PRCommand.FixError:
+            if (body?.includes(SKIP_DEBUGGING)) {
+              console.log(
+                `[${repository.full_name}] Quietly ignoring PR command event (skip debugging flag detected)`,
+              );
+              break;
+            }
             const fixFunction = (process.env.AGENT_REPOS ?? "")
               .split(",")
               .includes(repository.full_name)

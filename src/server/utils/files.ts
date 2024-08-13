@@ -423,3 +423,26 @@ export const removeLineNumbers = (numberedContent: string): string => {
   );
   return originalLines.join("\n");
 };
+
+export type StandardizedPath = string & { __brand: "StandardizedPath" };
+
+function isValidPath(path: string): boolean {
+  return /^\/[a-zA-Z0-9_\-./]+$/.test(path);
+}
+
+export function standardizePath(filePath: string): StandardizedPath {
+  let cleanPath = filePath.replace(/^\.\//, "");
+
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+
+  cleanPath = path.posix.normalize(cleanPath);
+  cleanPath = cleanPath.replace(/\\/g, "/");
+
+  if (!isValidPath(cleanPath)) {
+    throw new Error(`Invalid file path: ${filePath}`);
+  }
+
+  return cleanPath as StandardizedPath;
+}
