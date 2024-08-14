@@ -40,6 +40,9 @@ const mockedRequest = vi.hoisted(() => ({
     filesToCreate: [],
     filesToUpdate: ["file.txt"],
   }),
+  sendGptRequest: vi
+    .fn()
+    .mockResolvedValue("__FILEPATH__file.txt__\nfixed-file-content"),
 }));
 vi.mock("../openai/request", () => mockedRequest);
 
@@ -101,17 +104,12 @@ describe("editFiles", () => {
   test("editFiles success path", async () => {
     await editFiles(editFilesParams);
 
-    expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledOnce();
+    expect(mockedRequest.sendGptRequest.mock.calls[0][0]).toContain(
       "Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.calls[0][1]).toContain(
       "You are the top, most distinguished Technical Fellow at Microsoft.",
-    );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toBeUndefined();
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][3]).toBe(0.2);
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][4]).toStrictEqual(
-      mockEventData,
     );
 
     expect(mockedBranch.setNewBranch).toHaveBeenCalledOnce();

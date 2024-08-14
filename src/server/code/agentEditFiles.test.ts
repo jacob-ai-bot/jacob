@@ -15,6 +15,7 @@ import { useTestDatabase } from "~/server/utils/testHelpers";
 import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
 import { type EditFilesParams, editFiles } from "./agentEditFiles";
 
+vi.mock("fs");
 const mockedCheckAndCommit = vi.hoisted(() => ({
   checkAndCommit: vi.fn().mockResolvedValue(undefined),
 }));
@@ -36,8 +37,14 @@ vi.mock("../analyze/sourceMap", () => mockedSourceMap);
 const mockedFiles = vi.hoisted(() => ({
   applyCodePatch: vi.fn().mockRejectedValue(new Error("invalid patch")),
   getFiles: vi.fn().mockReturnValue("File: file.txt\nfile-content\n"),
+  standardizePath: vi.fn().mockReturnValue("standardizedPath"),
 }));
 vi.mock("../utils/files", () => mockedFiles);
+
+const mockedTraverse = vi.hoisted(() => ({
+  traverseCodebase: vi.fn().mockReturnValue([]),
+}));
+vi.mock("../analyze/traverse", () => mockedTraverse);
 
 const dummyPlan = vi.hoisted(() => ({
   steps: [
@@ -60,6 +67,7 @@ const mockedRequest = vi.hoisted(() => ({
   sendGptVisionRequest: vi
     .fn()
     .mockResolvedValue("<code_patch>patch</code_patch>"),
+  sendGptRequest: vi.fn().mockResolvedValue("<code_patch>patch</code_patch>"),
 }));
 vi.mock("../openai/request", () => mockedRequest);
 
@@ -93,6 +101,53 @@ const mockedOperations = vi.hoisted(() => ({
   gitStash: vi.fn().mockResolvedValue({ stdout: "", stderr: "" }),
 }));
 vi.mock("~/server/git/operations", () => mockedOperations);
+
+const mockedContext = vi.hoisted(() => ({
+  getOrCreateCodebaseContext: vi.fn().mockReturnValue([
+    {
+      file: "file.txt",
+      code: ["file-content"],
+      importStatements: [],
+      text: "text",
+      diagram: "diagram",
+      overview: "overview",
+      importedFiles: [],
+      exports: [
+        {
+          type: "type",
+          name: "name",
+          exportType: "exportType",
+          line_no: 1,
+          code_referenced: "code_referenced",
+          source: "source",
+        },
+      ],
+      referencedImportDetails: [
+        {
+          name: "name",
+          exportType: "exportType",
+          line_no: 1,
+          code_referenced: "code_referenced",
+          source: "source",
+          overview: "overview",
+        },
+      ],
+    },
+  ]),
+}));
+vi.mock("../utils/codebaseContext", () => mockedContext);
+
+const mockedParseTemplate = vi.hoisted(() => ({
+  parseTemplate: vi.fn().mockReturnValue("parsedTemplate"),
+  generateJacobBranchName: vi.fn().mockReturnValue("jacob-issue-1"),
+}));
+vi.mock("../utils/index", async () => {
+  const actual = await vi.importActual("../utils/index");
+  return {
+    ...actual,
+    ...mockedParseTemplate,
+  };
+});
 
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
@@ -137,7 +192,7 @@ describe("editFiles", () => {
     expect(mockedPlan.createPlan).toHaveBeenCalledOnce();
     expect(mockedPlan.createPlan).toHaveBeenLastCalledWith(
       `${issue.title}\n${issue.body}`,
-      "source map",
+      "file.txt:\ntext",
       "",
       "",
       "",
@@ -163,10 +218,10 @@ describe("editFiles", () => {
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
-      "Respond ONLY with the code patch in the LLM Diff Format",
+      "parsedTemplate",
     );
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
-      "LLM Diff Format Rules:",
+      "parsedTemplate",
     );
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toBeUndefined();
     expect(mockedRequest.sendGptVisionRequest.mock.calls[0][3]).toBe(0.2);

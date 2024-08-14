@@ -12,6 +12,7 @@ import { type PullRequest } from "~/server/code/agentFixError";
 const mockFileContent = vi.hoisted(() => "File: file.txt\n1| file-content\n");
 const mockedFiles = vi.hoisted(() => ({
   getFiles: vi.fn().mockReturnValue(mockFileContent),
+  standardizePath: vi.fn().mockReturnValue("/src/file.txt"),
 }));
 vi.mock("../utils/files", () => mockedFiles);
 
@@ -44,13 +45,13 @@ const mockEventData = {
 
 const mockParsedErrors = vi.hoisted(() => [
   {
-    filePath: "src/file.txt",
+    filePath: "/src/file.txt",
     lineNumber: 4,
     errorType: "error",
     errorMessage: "error message",
   },
   {
-    filePath: "src/file.ts",
+    filePath: "/src/file.ts",
     lineNumber: 7,
     errorType: "warning",
     errorMessage: "warning message",
@@ -117,7 +118,7 @@ describe("bugfix functions", () => {
   test("generatePotentialFixes - success", async () => {
     const allErrors = [
       {
-        filePath: "src/file.txt",
+        filePath: "/src/file.txt",
         lineNumber: 4,
         errorType: "error",
         errorMessage: "error message",
@@ -140,7 +141,7 @@ describe("bugfix functions", () => {
 
     expect(mockedFiles.getFiles).toHaveBeenCalledOnce();
     expect(mockedFiles.getFiles).toHaveBeenLastCalledWith("/rootpath", [
-      "src/file.txt",
+      "/src/file.txt",
     ]);
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledOnce();
@@ -148,7 +149,7 @@ describe("bugfix functions", () => {
       "Given the following TypeScript build errors and file content, suggest up to 3 potential fixes:",
     );
     expect(mockedRequest.sendGptRequest.mock.lastCall[0]).toContain(
-      "src/file.txt: 4 - error: error message",
+      "/src/file.txt: 4 - error: error message",
     );
     expect(mockedRequest.sendGptRequest.mock.lastCall[0]).toContain(
       mockFileContent,

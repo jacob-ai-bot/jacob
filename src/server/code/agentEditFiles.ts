@@ -86,7 +86,6 @@ export async function editFiles(params: EditFilesParams) {
     relevantPlanFiles?.map((file) => standardizePath(file)) ?? [],
   );
 
-  console.log("**** planContext ****", planContext);
   if (!planContext || planContext.length === 0) {
     throw new Error("No plan context generated");
   }
