@@ -14,6 +14,11 @@ Now that you have the information about the issue and the existing changes made 
 ${plan}
 </plan_step>
 
+Here is additional context about the code file (if it exists!) that you will be working on:
+<code_context>
+${context}
+</code_context>
+
 Now that you have the specific step in the plan, you need to address it by making the necessary changes to the code. You should only address the instructions and exit criteria directly related to this specific <plan_step>. You may use information and research from the GitHub Issue as a guide to help you make the necessary changes. But only address the <plan_step> instructions to update the file below.
 ## Code to be updated (if this is blank, create a new file according to the <plan_step> instructions)
 <code>

@@ -8,7 +8,7 @@ import {
   getStyles,
   generateJacobBranchName,
 } from "../utils";
-import { getFiles } from "../utils/files";
+import { getFiles, standardizePath } from "../utils/files";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
@@ -28,6 +28,9 @@ import { PlanningAgentActionType } from "~/server/db/enums";
 
 import { addCommitAndPush } from "../git/commit";
 import { runBuildCheck } from "../build/node/check";
+import { getOrCreateCodebaseContext } from "../utils/codebaseContext";
+import { traverseCodebase } from "../analyze/traverse";
+import { selectRelevantFiles } from "../agent/research";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -54,6 +57,7 @@ export async function editFiles(params: EditFilesParams) {
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = `${issue.title}${issueBody}`;
+  const projectId = baseEventData.projectId;
 
   // Fetch research data from the database based on the issue ID
   const researchData = await db.research.where({ issueId: issue.number }).all();
@@ -63,6 +67,29 @@ export async function editFiles(params: EditFilesParams) {
     .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
     .join("\n\n");
 
+  // get the plan context
+  const allFiles = traverseCodebase(rootPath);
+  const query = `Based on the GitHub issue and the research, your job is to find the most important files in this codebase.\n
+  Here is the issue <issue>${issueBody}</issue> \n
+  Here is the research <research>${research}</research> \n
+  Based on the GitHub issue and the research, what are the 25 most relevant files to resolving this GitHub issue in this codebase?`;
+  const relevantPlanFiles = await selectRelevantFiles(
+    query,
+    undefined,
+    allFiles,
+    25,
+  );
+  console.log("**** relevantPlanFiles ****", relevantPlanFiles);
+  const planContext = await getOrCreateCodebaseContext(
+    projectId,
+    rootPath,
+    relevantPlanFiles?.map((file) => standardizePath(file)) ?? [],
+  );
+
+  console.log("**** planContext ****", planContext);
+  if (!planContext || planContext.length === 0) {
+    throw new Error("No plan context generated");
+  }
   let codePatch = "";
   const maxPlanIterations = 1; // TODO: experiment with other values
   const maxSteps = 10;
@@ -74,7 +101,7 @@ export async function editFiles(params: EditFilesParams) {
     planIterations++;
     const plan = await createPlan(
       issueText,
-      sourceMap,
+      planContext?.map((c) => `${c.file}:\n${c.text}`).join("\n") ?? "",
       research,
       codePatch,
       buildErrors,
@@ -90,8 +117,22 @@ export async function editFiles(params: EditFilesParams) {
       break;
     }
     let stepNumber = 0;
+    // Get all the existing filePaths from the plan
+    const filePaths = plan.steps
+      .filter((step) => step.type === PlanningAgentActionType.EditExistingCode)
+      .map((step) => step.filePath);
+
+    // Get the codebase context for each file in the plan
+    const contexts = await getOrCreateCodebaseContext(
+      projectId,
+      rootPath,
+      filePaths,
+    );
     for (const step of plan.steps.slice(0, maxSteps)) {
       stepNumber++;
+      const contextItem = contexts.find(
+        (c) => standardizePath(c.file) === step.filePath,
+      );
       const isNewFile = step.type === PlanningAgentActionType.CreateNewCode;
       await emitPlanStepEvent({ ...baseEventData, planStep: step });
       // const step = plan.steps[0];
@@ -126,6 +167,7 @@ export async function editFiles(params: EditFilesParams) {
         plan: filePlan,
         snapshotUrl: snapshotUrl ?? "",
         codePatch,
+        context: JSON.stringify(contextItem, null, 2) ?? "",
       };
 
       const codeSystemPrompt = parseTemplate(

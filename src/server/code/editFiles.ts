@@ -10,10 +10,7 @@ import {
   generateJacobBranchName,
 } from "../utils";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
-import {
-  sendGptRequestWithSchema,
-  sendGptVisionRequest,
-} from "../openai/request";
+import { sendGptRequest, sendGptRequestWithSchema } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
@@ -128,12 +125,15 @@ export async function editFiles(params: EditFilesParams) {
   );
 
   // Call sendGptRequest with the issue and concatenated code file
-  const updatedCode = (await sendGptVisionRequest(
+  const updatedCode = (await sendGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
-    snapshotUrl,
     0.2,
     baseEventData,
+    3,
+    60000,
+    undefined,
+    "gpt-4o-64k-output-alpha",
   ))!;
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {

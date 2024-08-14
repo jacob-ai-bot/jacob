@@ -75,7 +75,10 @@ export const createTodo = async (
         newTodo?.id,
         issueNumber,
         rootPath,
+        projectId,
       );
+    } else {
+      console.log(`Skipping research for issue #${issue.number}`);
     }
 
     console.log(`Created new todo for issue #${issue.number}`);

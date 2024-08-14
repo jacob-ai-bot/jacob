@@ -15,6 +15,7 @@ import {
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
 import { sendAnthropicRequest } from "../anthropic/request";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -23,6 +24,8 @@ const CONTEXT_WINDOW = {
   "gpt-4-0125-preview": 128000,
   "gpt-4o-2024-05-13": 128000,
   "gpt-4o-mini-2024-07-18": 128000,
+  "gpt-4o-64k-output-alpha": 128000,
+  "gpt-4o-2024-08-06": 128000,
   "gemini-1.5-pro-latest": 2097152,
   "gemini-1.5-pro-exp-0801": 2097152,
   "gemini-1.5-flash-latest": 2097152,
@@ -42,6 +45,8 @@ export const MAX_OUTPUT = {
   "gpt-4-0125-preview": 4096,
   "gpt-4o-2024-05-13": 4096,
   "gpt-4o-mini-2024-07-18": 16384,
+  "gpt-4o-64k-output-alpha": 64000,
+  "gpt-4o-2024-08-06": 16384,
   "gemini-1.5-pro-latest": 8192,
   "gemini-1.5-pro-exp-0801": 8192,
   "gemini-1.5-flash-latest": 8192,
@@ -59,8 +64,10 @@ const ONE_MILLION = 1000000;
 const INPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 10 / ONE_MILLION,
   "gpt-4-0125-preview": 10 / ONE_MILLION,
-  "gpt-4o-2024-05-13": 10 / ONE_MILLION,
+  "gpt-4o-2024-05-13": 5 / ONE_MILLION,
   "gpt-4o-mini-2024-07-18": 0.15 / ONE_MILLION,
+  "gpt-4o-64k-output-alpha": 10 / ONE_MILLION,
+  "gpt-4o-2024-08-06": 2.5 / ONE_MILLION,
   "gemini-1.5-pro-latest": 3.5 / ONE_MILLION,
   "gemini-1.5-pro-exp-0801": 3.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
@@ -78,6 +85,8 @@ const OUTPUT_TOKEN_COSTS = {
   "gpt-4-0125-preview": 30 / ONE_MILLION,
   "gpt-4o-2024-05-13": 30 / ONE_MILLION,
   "gpt-4o-mini-2024-07-18": 0.6 / ONE_MILLION,
+  "gpt-4o-64k-output-alpha": 30 / ONE_MILLION,
+  "gpt-4o-2024-08-06": 10 / ONE_MILLION,
   "gemini-1.5-pro-latest": 10.5 / ONE_MILLION,
   "gemini-1.5-pro-exp-0801": 10.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
@@ -95,6 +104,8 @@ const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-0125-preview": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4o-2024-05-13": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4o-mini-2024-07-18": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gpt-4o-64k-output-alpha": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gpt-4o-2024-08-06": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gemini-1.5-pro-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "gemini-1.5-pro-exp-0801": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
@@ -240,6 +251,9 @@ export const sendGptRequest = async (
             baseEventData,
             retries - 1,
             delay * 2,
+            imagePrompt,
+            model,
+            isJSONMode,
           )
             .then(resolve)
             .catch(reject);
@@ -360,11 +374,11 @@ export const sendGptVisionRequest = async (
   retries = 3,
   delay = 60000,
 ): Promise<string | null> => {
-  const model: Model = "gpt-4o-2024-05-13";
+  const model: Model = "gpt-4o-2024-08-06";
 
   if (!snapshotUrl?.length) {
     // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest(
-    return sendGptRequest(
+    return sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
       temperature,
@@ -415,7 +429,7 @@ export const sendGptVisionRequest = async (
 };
 
 export const OpenAIStream = async (
-  model: Model = "gpt-4o-2024-05-13",
+  model: Model = "gpt-4o-2024-08-06",
   messages: Message[],
   systemPrompt = "You are a helpful friendly assistant.",
   temperature = 1,

@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { getServerAuthSession } from "~/server/auth";
-import { Logo } from "~/images/Logo";
 import { SignInButton } from "~/app/_components/SignInButton";
 import { SignOutButton } from "~/app/_components/SignOutButton";
 
@@ -12,7 +11,7 @@ export default async function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#f8e8e0] text-[#1d265d]">
       <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-          <Logo className="h-[100px] w-auto" />
+          <img src="/images/logo.svg" className="h-[100px] w-auto" alt="logo" />
         </h1>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
           <Link

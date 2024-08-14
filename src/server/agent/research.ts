@@ -6,9 +6,13 @@ import {
   sendGptToolRequest,
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
-import { getFiles } from "~/server/utils/files";
 import { parseTemplate } from "../utils";
+import {
+  type ContextItem,
+  getOrCreateCodebaseContext,
+} from "../utils/codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
+import { type StandardizedPath, standardizePath } from "../utils/files";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -100,10 +104,24 @@ export const researchIssue = async function (
   todoId: number,
   issueId: number,
   rootDir: string,
+  projectId: number,
   maxLoops = 10,
   model: Model = "gpt-4-0125-preview",
 ): Promise<Research[]> {
   console.log("Researching issue...");
+  // First get the context for the full codebase
+  const allFiles = traverseCodebase(rootDir);
+  const codebaseContext = await getOrCreateCodebaseContext(
+    projectId,
+    rootDir,
+    allFiles?.map((file) => standardizePath(file)) ?? [],
+  );
+  // For now, change the sourcemap to be a list of all the files from the context and overview of each file
+  sourceMap = codebaseContext
+    .map((file) => `${file.file} - ${file.overview}`)
+    .join("\n");
+
+  console.log("sourceMap", sourceMap);
   const researchTemplateParams = {
     githubIssue,
     sourceMap,
@@ -169,6 +187,7 @@ export const researchIssue = async function (
           githubIssue,
           sourceMap,
           rootDir,
+          codebaseContext,
         );
         if (functionName === ResearchAgentActionType.AskProjectOwner) {
           questionsForProjectOwner.push(args.query);
@@ -220,6 +239,7 @@ async function callFunction(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
+  codebaseContext: ContextItem[],
 ): Promise<string> {
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:
@@ -228,6 +248,7 @@ async function callFunction(
         githubIssue,
         sourceMap,
         rootDir,
+        codebaseContext,
       );
     case ResearchAgentActionType.ResearchInternet:
       return await researchInternet(args.query);
@@ -243,17 +264,22 @@ export async function researchCodebase(
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
+  codebaseContext: ContextItem[],
 ): Promise<string> {
-  const allFiles = traverseCodebase(rootDir);
+  const allFiles = codebaseContext.map((file) => standardizePath(file.file));
 
   let relevantFiles: string[];
   if (allFiles.length <= 50) {
     relevantFiles = allFiles;
   } else {
-    relevantFiles = await selectRelevantFiles(query, allFiles);
+    relevantFiles = await selectRelevantFiles(query, codebaseContext);
   }
+  // get the context for all of the relevant files
+  const relevantContext = codebaseContext.filter((file) =>
+    relevantFiles.includes(file.file),
+  );
 
-  const codebase = getFiles(rootDir, relevantFiles);
+  const codebase = JSON.stringify(relevantContext, null, 2);
 
   const codeResearchTemplateParams = {
     codebase,
@@ -274,27 +300,56 @@ export async function researchCodebase(
     "user",
     codeResearchTemplateParams,
   );
+  let result: string | null = "";
 
-  const result = await sendGptRequest(
-    codeResearchUserPrompt,
-    codeResearchSystemPrompt,
-    0.3,
-    undefined,
-    2,
-    60000,
-    null,
-    "gemini-1.5-pro-latest",
-  );
+  // First try to send the request to the claude model. If that fails because the codebase is too large, call gemini.
+  try {
+    result = await sendGptRequest(
+      codeResearchUserPrompt,
+      codeResearchSystemPrompt,
+      0.3,
+      undefined,
+      2,
+      60000,
+      null,
+      "claude-3-5-sonnet-20240620",
+    );
+  } catch (error) {
+    result = await sendGptRequest(
+      codeResearchUserPrompt,
+      codeResearchSystemPrompt,
+      0.3,
+      undefined,
+      2,
+      60000,
+      null,
+      "gemini-1.5-pro-latest",
+    );
+  }
+
   return result ?? "No response from the AI model.";
 }
 
-async function selectRelevantFiles(
+export async function selectRelevantFiles(
   query: string,
-  allFiles: string[],
-): Promise<string[]> {
+  codebaseContext?: ContextItem[],
+  allFiles?: string[],
+  numFiles = 50,
+): Promise<StandardizedPath[]> {
+  if (!codebaseContext && !allFiles) {
+    throw new Error("Either codebaseContext or allFiles must be provided.");
+  }
   const selectFilesTemplateParams = {
     query,
-    allFiles: allFiles.join("\n"),
+    allFiles: allFiles
+      ? allFiles.join("\n")
+      : codebaseContext
+          ?.map(
+            (file) =>
+              `${file.file} - ${file.overview}. Diagram: ${file.diagram}`,
+          )
+          .join("\n") ?? "",
+    numFiles: numFiles.toString(),
   };
 
   const selectFilesSystemPrompt = parseTemplate(
@@ -318,7 +373,7 @@ async function selectRelevantFiles(
     2,
     60000,
     null,
-    "claude-3-5-sonnet-20240620",
+    "gpt-4-0125-preview",
   );
 
   if (!result) {
@@ -326,12 +381,23 @@ async function selectRelevantFiles(
   }
 
   try {
-    const relevantFiles = JSON.parse(result) as string[];
+    // ensure that all of the relevant files are in the list of all files
+
+    let relevantFiles = JSON.parse(result) as string[];
+    relevantFiles = relevantFiles.filter((file) =>
+      allFiles?.some((setFile) => file.includes(setFile)),
+    );
     console.log("Top 10 relevant files:", relevantFiles?.slice(0, 10));
-    return relevantFiles.slice(0, 50);
+    console.log(
+      `Bottom ${numFiles - 10} relevant files:`,
+      relevantFiles?.slice(0, 10),
+    );
+    return relevantFiles
+      .slice(0, numFiles)
+      .map((file) => standardizePath(file));
   } catch (error) {
     console.error("Error parsing relevant files:", error);
-    return allFiles;
+    return [];
   }
 }
 

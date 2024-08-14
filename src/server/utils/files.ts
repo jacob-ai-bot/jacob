@@ -18,18 +18,25 @@ export type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
 
 export const getFiles = (
   rootDir: string,
-  fileNamesToInclude: string[],
+  fileNamesToInclude: StandardizedPath[],
   shouldAddLineNumbers = true,
 ) => {
-  // simple function to get the files from the list.
-  // Add the name of the file at the beginning, and add line numbers to each line in the file.
-  // return a string that has all of the files concatenated together.
   let output = "";
   for (const fileName of fileNamesToInclude) {
     const filePath = path.join(rootDir, fileName);
-    const fileContent = fs.readFileSync(filePath).toString("utf-8");
-    output += `File: ${fileName}\n`;
-    output += shouldAddLineNumbers ? addLineNumbers(fileContent) : fileContent;
+    if (fs.existsSync(filePath)) {
+      try {
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        output += `File: ${fileName}\n`;
+        output += shouldAddLineNumbers
+          ? addLineNumbers(fileContent)
+          : fileContent;
+      } catch (error) {
+        console.error(`Error reading file ${fileName}`);
+      }
+    } else {
+      console.error(`File not found: ${fileName}`);
+    }
   }
   return output;
 };
@@ -416,3 +423,26 @@ export const removeLineNumbers = (numberedContent: string): string => {
   );
   return originalLines.join("\n");
 };
+
+export type StandardizedPath = string & { __brand: "StandardizedPath" };
+
+function isValidPath(path: string): boolean {
+  return /^\/[a-zA-Z0-9_\-./]+$/.test(path);
+}
+
+export function standardizePath(filePath: string): StandardizedPath {
+  let cleanPath = filePath.replace(/^\.\//, "");
+
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+
+  cleanPath = path.posix.normalize(cleanPath);
+  cleanPath = cleanPath.replace(/\\/g, "/");
+
+  if (!isValidPath(cleanPath)) {
+    throw new Error(`Invalid file path: ${filePath}`);
+  }
+
+  return cleanPath as StandardizedPath;
+}
