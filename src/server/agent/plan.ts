@@ -132,10 +132,10 @@ export const createPlan = async function (
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
   ];
-  console.log("\n\n\n\n\n\n\n\nCreating plans with prompts:");
-  console.log("User prompt:", userPrompt);
-  console.log("System prompt:", systemPrompt);
-  console.log("\n\n\n\n\n\n\n\nCreated plans with prompts:");
+  // console.log("\n\n\n\n\n\n\n\nCreating plans with prompts:");
+  // console.log("User prompt:", userPrompt);
+  // console.log("System prompt:", systemPrompt);
+  // console.log("\n\n\n\n\n\n\n\nCreated plans with prompts:");
   const responses = await Promise.all(
     models.flatMap((model) =>
       [1, 2].map((_, index) =>
@@ -153,14 +153,14 @@ export const createPlan = async function (
       ),
     ),
   );
-  console.log(
-    "\n\n\n<all responses>\n\n\n",
-    responses.map(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (r) =>
-        JSON.stringify(r.choices[0]?.message?.tool_calls) ?? "No message found",
-    ),
-  );
+  // console.log(
+  //   "\n\n\n<all responses>\n\n\n",
+  //   responses.map(
+  //     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  //     (r) =>
+  //       JSON.stringify(r.choices[0]?.message?.tool_calls) ?? "No message found",
+  //   ),
+  // );
   const plans: Plan[] = responses.map((response) => {
     const toolCalls = response.choices[0]?.message.tool_calls;
     if (!toolCalls) {
@@ -197,8 +197,8 @@ export const createPlan = async function (
   });
 
   const bestPlan = await getBestPlan(plans, userPrompt, systemPrompt);
-  console.log("<best plan>\n\n", JSON.stringify(bestPlan));
-  console.log("\n\n</best plan>");
+  // console.log("<best plan>\n\n", JSON.stringify(bestPlan));
+  // console.log("\n\n</best plan>");
   return bestPlan;
 };
 
@@ -209,7 +209,6 @@ const getPromptsForNewPlan = (
   context: string,
 ) => {
   console.log("Creating new plan with prompts:");
-  console.log("Research:", research);
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
   
@@ -402,13 +401,13 @@ const getBestPlan = async (
     return current.averageRating > best.averageRating ? current : best;
   });
 
-  console.log(`Best plan average rating: ${bestEvaluatedPlan.averageRating}`);
-  console.log("Best plan evaluations:");
-  bestEvaluatedPlan.evaluations.forEach((evaluation, index) => {
-    console.log(`Evaluation ${index + 1}:`);
-    console.log(`Summary: ${evaluation.summary}`);
-    console.log(`Rating: ${evaluation.rating}`);
-  });
+  // console.log(`Best plan average rating: ${bestEvaluatedPlan.averageRating}`);
+  // console.log("Best plan evaluations:");
+  // bestEvaluatedPlan.evaluations.forEach((evaluation, index) => {
+  //   console.log(`Evaluation ${index + 1}:`);
+  //   console.log(`Summary: ${evaluation.summary}`);
+  //   console.log(`Rating: ${evaluation.rating}`);
+  // });
 
   return bestEvaluatedPlan.plan;
 };

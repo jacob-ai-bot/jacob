@@ -41,18 +41,6 @@ const anthropic = new Anthropic({
   },
 });
 
-export const getMaxTokensForResponse = (
-  inputText: string,
-  model: Model,
-): number => {
-  try {
-    return MAX_OUTPUT[model];
-  } catch (error) {
-    console.log("Error in getMaxTokensForResponse: ", error);
-    return Math.round(CONTEXT_WINDOW[model] / 2);
-  }
-};
-
 export const sendAnthropicRequest = async (
   userPrompt: string,
   systemPrompt = "You are a helpful assistant.",
@@ -64,10 +52,7 @@ export const sendAnthropicRequest = async (
   isJSONMode = false,
 ): Promise<string | null> => {
   try {
-    const max_tokens = getMaxTokensForResponse(
-      userPrompt + systemPrompt,
-      model,
-    );
+    const max_tokens = MAX_OUTPUT[model];
 
     const messages: Anthropic.MessageParam[] = [
       { role: "user", content: userPrompt },
@@ -127,6 +112,7 @@ export const sendAnthropicRequest = async (
       console.error(`Error in Anthropic request: ${String(error)}`);
       throw error;
     } else {
+      console.error(`Error in Anthropic request: ${String(error)}`);
       console.log(
         `Error occurred, retries remaining: ${retries}. Retrying in ${delay} ms...`,
       );

@@ -23,18 +23,18 @@ interface ExportInfo {
   exportType: string;
   line_no: number;
   code_referenced: string;
-  source?: string;
+  source?: StandardizedPath;
   overview?: string;
 }
 
 export const ContextItemSchema = z.object({
-  file: z.string(),
+  file: z.custom<StandardizedPath>(),
   code: z.array(z.string()),
   importStatements: z.array(z.string()),
   text: z.string(),
   diagram: z.string(),
   overview: z.string(),
-  importedFiles: z.array(z.string()),
+  importedFiles: z.array(z.custom<StandardizedPath>()),
   exports: z.array(
     z.object({
       type: z.string().nullable().optional(),
@@ -42,7 +42,7 @@ export const ContextItemSchema = z.object({
       exportType: z.string(),
       line_no: z.number(),
       code_referenced: z.string(),
-      source: z.string().optional(),
+      source: z.custom<StandardizedPath>().optional(),
     }),
   ),
   referencedImportDetails: z
@@ -91,7 +91,7 @@ export async function getOrCreateCodebaseContext(
   model: Model = "gpt-4o-mini-2024-07-18",
 ): Promise<ContextItem[]> {
   const contextItems: ContextItem[] = [];
-  const filesToProcess: string[] = [];
+  const filesToProcess: StandardizedPath[] = [];
 
   // First pass: Get existing contexts from the database
   for (const _filePath of filePaths) {
@@ -102,13 +102,11 @@ export async function getOrCreateCodebaseContext(
     });
 
     if (existingContext) {
-      console.log("Found existing context for", filePath);
       const currentHash = await getFileLatestCommitHash(filePath, {
         directory: rootPath,
       });
 
       if (existingContext.lastCommitHash === currentHash) {
-        console.log("Context is up to date for", filePath);
         try {
           const parsedContext = ContextItemSchema.parse(
             existingContext.context,
@@ -121,13 +119,7 @@ export async function getOrCreateCodebaseContext(
             error,
           );
         }
-      } else {
-        console.log("Context is outdated for", filePath);
       }
-    } else {
-      console.log("No existing context found for", filePath);
-      console.log("Project ID:", projectId);
-      console.log("Root path:", rootPath);
     }
 
     filesToProcess.push(filePath);
@@ -195,7 +187,7 @@ async function updateFileContext(
 
 const getCodebaseContext = async function (
   rootPath: string,
-  files: string[] = [],
+  files: StandardizedPath[] = [],
   model: Model = "gpt-4o-mini-2024-07-18", // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
 ): Promise<ContextItem[]> {
   if (!rootPath) {
@@ -203,8 +195,10 @@ const getCodebaseContext = async function (
   }
 
   await initializeTreeSitter();
-  const allFiles = traverseCodebase(rootPath);
-  let relevantFiles: string[] = files ?? [];
+  const allFiles = traverseCodebase(rootPath)?.map((file) =>
+    standardizePath(file),
+  );
+  let relevantFiles: StandardizedPath[] = files ?? [];
   if (!files.length) {
     // If no files are provided, analyze the entire codebase
     const query = `What are the 100 most important files in this codebase?`;
@@ -265,10 +259,10 @@ async function removeExtraFiles(
 }
 
 async function analyzeFiles(
-  files: string[],
+  files: StandardizedPath[],
   rootPath: string,
   model: Model,
-  allFiles: string[],
+  allFiles: StandardizedPath[],
 ): Promise<ContextItem[]> {
   const codeStructure = await analyzeCodeStructure(rootPath, files);
   const contextSections = await createContextSections(codeStructure);
@@ -289,7 +283,7 @@ async function addRelevantExports(
 
 async function analyzeCodeStructure(
   rootPath: string,
-  files: string[],
+  files: StandardizedPath[],
 ): Promise<Record<string, any>> {
   const structure: Record<string, any> = {};
 
@@ -397,7 +391,9 @@ function extractExportInfo(node: Parser.SyntaxNode): ExportInfo {
     }
   } else if (node.childForFieldName("source")) {
     exportInfo.exportType = "re-export";
-    exportInfo.source = node.childForFieldName("source")?.text ?? "";
+    exportInfo.source = standardizePath(
+      node.childForFieldName("source")?.text ?? "",
+    );
   }
 
   return exportInfo;
@@ -461,7 +457,7 @@ async function createContextSections(
 async function enhanceWithLLM(
   sections: ContextItem[],
   model: Model,
-  allFiles: string[],
+  allFiles: StandardizedPath[],
 ): Promise<void> {
   const maxConcurrentRequests = 20;
   for (let i = 0; i < sections.length; i += maxConcurrentRequests) {
@@ -493,7 +489,7 @@ async function enhanceWithLLM(
 const EnhancedDescriptionSchema = z.object({
   description: z.string(),
   overview: z.string(),
-  importedFiles: z.array(z.string()),
+  importedFiles: z.array(z.custom<StandardizedPath>()),
   diagram: z.string(),
 });
 
@@ -502,7 +498,7 @@ type EnhancedDescription = z.infer<typeof EnhancedDescriptionSchema>;
 async function generateDescription(
   section: ContextItem,
   model: Model,
-  allFiles: string[],
+  allFiles: StandardizedPath[],
 ): Promise<EnhancedDescription> {
   const templateParams = {
     section: JSON.stringify(section, null, 2),
@@ -551,7 +547,10 @@ async function generateDescription(
   }
 }
 
-function filterImports(importedFiles: string[], allFiles: string[]): string[] {
+function filterImports(
+  importedFiles: StandardizedPath[],
+  allFiles: StandardizedPath[],
+): StandardizedPath[] {
   const removedFiles = importedFiles.filter((imp) => !allFiles.includes(imp));
   const updatedImports = importedFiles.filter((imp) => allFiles.includes(imp));
 
@@ -559,7 +558,7 @@ function filterImports(importedFiles: string[], allFiles: string[]): string[] {
     console.log("Files removed from dependencies:", removedFiles);
   }
 
-  return updatedImports;
+  return updatedImports.map((imp) => standardizePath(imp));
 }
 
 export const getRelevantExports = async function (
@@ -596,7 +595,7 @@ function filterImportedContext(
       // Add the file and overview from the imported context
       usedExports.forEach((exp) => {
         relevantImports.push({
-          source: importedFile,
+          source: standardizePath(importedFile),
           overview: importedContext.overview,
           ...exp,
         });

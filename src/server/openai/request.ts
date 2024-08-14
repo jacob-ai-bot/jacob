@@ -16,6 +16,7 @@ import {
 import { type Stream } from "openai/streaming";
 import { sendAnthropicRequest } from "../anthropic/request";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
+import { encode } from "gpt-tokenizer";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -123,6 +124,20 @@ const PORTKEY_VIRTUAL_KEYS = {
 
 export type Model = keyof typeof CONTEXT_WINDOW;
 
+export function countTokens(text: string): number {
+  return encode(text).length;
+}
+
+// Function to check if the prompt fits within the model's context window
+export function isPromptWithinContextWindow(
+  userPrompt: string,
+  systemPrompt: string,
+  model: Model,
+): boolean {
+  const totalTokens = countTokens(userPrompt) + countTokens(systemPrompt);
+  return totalTokens <= 0.95 * CONTEXT_WINDOW[model]; // give a 5% buffer to account for variations in tokenization between models
+}
+
 export const sendGptRequest = async (
   userPrompt: string,
   systemPrompt = "You are a helpful assistant.",
@@ -138,6 +153,20 @@ export const sendGptRequest = async (
   // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
+    // Check if the prompt fits within the context window
+    if (!isPromptWithinContextWindow(userPrompt, systemPrompt, model)) {
+      // If it doesn't fit, try with the largest model
+      const largestModel: Model = "gemini-1.5-pro-exp-0801";
+      if (isPromptWithinContextWindow(userPrompt, systemPrompt, largestModel)) {
+        console.log(
+          `Prompt too large for ${model}. Switching to ${largestModel}.`,
+        );
+        model = largestModel;
+      } else {
+        throw new Error("Prompt is too large for all available models.");
+      }
+    }
+
     // For now, if we get a request to use Sonnet 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
     if (model === "claude-3-5-sonnet-20240620" && !isJSONMode) {
       return sendAnthropicRequest(
@@ -319,6 +348,9 @@ export const sendGptRequestWithSchema = async (
         );
 
         if (failedValidations.length > 0) {
+          console.log("Failed Validations: ", failedValidations);
+          console.log("gptResponse: ", gptResponse);
+          console.log("Extracted Info: ", extractedInfo);
           throw new Error(
             `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
               failedValidations,

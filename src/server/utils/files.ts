@@ -427,7 +427,7 @@ export const removeLineNumbers = (numberedContent: string): string => {
 export type StandardizedPath = string & { __brand: "StandardizedPath" };
 
 function isValidPath(path: string): boolean {
-  return /^\/[a-zA-Z0-9_\-./]+$/.test(path);
+  return /^\/[a-zA-Z0-9_\-./[\]...]+$/.test(path);
 }
 
 export function standardizePath(filePath: string): StandardizedPath {
@@ -441,6 +441,8 @@ export function standardizePath(filePath: string): StandardizedPath {
   cleanPath = cleanPath.replace(/\\/g, "/");
 
   if (!isValidPath(cleanPath)) {
+    console.log("Invalid file path:", filePath);
+    console.log("Standardized path:", cleanPath);
     throw new Error(`Invalid file path: ${filePath}`);
   }
 

@@ -3,6 +3,7 @@ import dedent from "ts-dedent";
 import {
   type Model,
   sendGptRequest,
+  sendGptRequestWithSchema,
   sendGptToolRequest,
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
@@ -13,6 +14,7 @@ import {
 } from "../utils/codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
 import { type StandardizedPath, standardizePath } from "../utils/files";
+import { z } from "zod";
 
 export enum ResearchAgentActionType {
   ResearchCodebase = "ResearchCodebase",
@@ -106,7 +108,7 @@ export const researchIssue = async function (
   rootDir: string,
   projectId: number,
   maxLoops = 10,
-  model: Model = "gpt-4-0125-preview",
+  model: Model = "gpt-4o-2024-08-06",
 ): Promise<Research[]> {
   console.log("Researching issue...");
   // First get the context for the full codebase
@@ -121,7 +123,6 @@ export const researchIssue = async function (
     .map((file) => `${file.file} - ${file.overview}`)
     .join("\n");
 
-  console.log("sourceMap", sourceMap);
   const researchTemplateParams = {
     githubIssue,
     sourceMap,
@@ -329,15 +330,21 @@ export async function researchCodebase(
 
   return result ?? "No response from the AI model.";
 }
+// Define the schema for the response
+const RelevantFilesSchema = z.string();
+type RelevantFiles = z.infer<typeof RelevantFilesSchema>;
 
 export async function selectRelevantFiles(
   query: string,
   codebaseContext?: ContextItem[],
-  allFiles?: string[],
+  allFiles?: StandardizedPath[],
   numFiles = 50,
 ): Promise<StandardizedPath[]> {
   if (!codebaseContext && !allFiles) {
     throw new Error("Either codebaseContext or allFiles must be provided.");
+  }
+  if (allFiles && allFiles.length <= numFiles) {
+    return allFiles;
   }
   const selectFilesTemplateParams = {
     query,
@@ -346,11 +353,14 @@ export async function selectRelevantFiles(
       : codebaseContext
           ?.map(
             (file) =>
-              `${file.file} - ${file.overview}. Diagram: ${file.diagram}`,
+              `${file.file} - ${file.overview}. Diagram: ${file.diagram ?? ""}`,
           )
           .join("\n") ?? "",
     numFiles: numFiles.toString(),
   };
+  if (!allFiles) {
+    allFiles = codebaseContext?.map((file) => standardizePath(file.file));
+  }
 
   const selectFilesSystemPrompt = parseTemplate(
     "research",
@@ -365,38 +375,34 @@ export async function selectRelevantFiles(
     selectFilesTemplateParams,
   );
 
-  const result = await sendGptRequest(
-    selectFilesUserPrompt,
-    selectFilesSystemPrompt,
-    0.3,
-    undefined,
-    2,
-    60000,
-    null,
-    "gpt-4-0125-preview",
-  );
-
-  if (!result) {
-    throw new Error("Failed to get relevant files from the AI model.");
-  }
-
   try {
-    // ensure that all of the relevant files are in the list of all files
+    const relevantFiles = (await sendGptRequestWithSchema(
+      selectFilesUserPrompt,
+      selectFilesSystemPrompt,
+      RelevantFilesSchema,
+      0.3,
+      undefined,
+      3,
+      "gpt-4o-2024-08-06",
+    )) as RelevantFiles[];
 
-    let relevantFiles = JSON.parse(result) as string[];
-    relevantFiles = relevantFiles.filter((file) =>
-      allFiles?.some((setFile) => file.includes(setFile)),
+    // convert relevant files to standard paths
+    const standardRelevantFiles = relevantFiles.map(standardizePath);
+
+    // Filter the relevant files to ensure they exist in allFiles
+    const filteredRelevantFiles = standardRelevantFiles.filter((file) =>
+      allFiles?.some((setFile) => setFile === file),
     );
-    console.log("Top 10 relevant files:", relevantFiles?.slice(0, 10));
+
+    console.log("Top 10 relevant files:", filteredRelevantFiles.slice(0, 10));
     console.log(
       `Bottom ${numFiles - 10} relevant files:`,
-      relevantFiles?.slice(0, 10),
+      filteredRelevantFiles.slice(-10),
     );
-    return relevantFiles
-      .slice(0, numFiles)
-      .map((file) => standardizePath(file));
+    // remove duplicates and return the top numFiles
+    return Array.from(new Set(filteredRelevantFiles)).slice(0, numFiles);
   } catch (error) {
-    console.error("Error parsing relevant files:", error);
+    console.error("Error selecting relevant files:", error);
     return [];
   }
 }
