@@ -6,6 +6,8 @@ import { EventsTable } from "./tables/events.table";
 import { TodosTable } from "./tables/todos.table";
 import { UsersTable } from "./tables/users.table";
 import { AccountsTable } from "./tables/accounts.table";
+import { ResearchTable } from "./tables/research.table";
+import { CodebaseContextTable } from "./tables/codebaseContext.table";
 
 export const db = orchidORM(config.database, {
   projects: ProjectsTable,
@@ -14,4 +16,6 @@ export const db = orchidORM(config.database, {
   todos: TodosTable,
   users: UsersTable,
   accounts: AccountsTable,
+  research: ResearchTable,
+  codebaseContext: CodebaseContextTable,
 });

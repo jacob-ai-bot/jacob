@@ -43,6 +43,7 @@ export interface RepoSettings {
     styles?: string;
     staticAssets?: string;
     tailwindConfig?: string;
+    tsConfig?: string;
   };
   stateManagement?: {
     tool?: string;
@@ -74,7 +75,6 @@ export function getRepoSettings(rootPath: string) {
   } catch (e) {
     // Ignore failures on repos where we can't load/parse package.json
   }
-  const hasTSConfig = fs.existsSync(path.join(rootPath, "tsconfig.json"));
   let settingsFromFile: RepoSettings | undefined;
   try {
     const settingsContent = fs.readFileSync(
@@ -85,10 +85,15 @@ export function getRepoSettings(rootPath: string) {
   } catch (e) {
     // Ignore failures on repos where we can't load/parse jacob.json
   }
+
+  const defaultTSConfig = "tsconfig.json";
+  const tsConfig = settingsFromFile?.directories?.tsConfig ?? defaultTSConfig;
+  const hasTSConfig = fs.existsSync(path.join(rootPath, tsConfig));
   const settings: RepoSettings = {
     language: hasTSConfig ? Language.TypeScript : Language.JavaScript,
     ...settingsFromFile,
   };
+
   if (typeof packageJson?.dependencies === "object") {
     settings.packageDependencies = packageJson.dependencies as Record<
       string,

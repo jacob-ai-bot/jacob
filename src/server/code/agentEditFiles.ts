@@ -1,6 +1,6 @@
 import { type Issue, type Repository } from "@octokit/webhooks-types";
-import fs from "fs";
 import { getTypes, getImages } from "../analyze/sourceMap";
+import { db } from "~/server/db/db";
 import {
   parseTemplate,
   type RepoSettings,
@@ -8,11 +8,13 @@ import {
   getStyles,
   generateJacobBranchName,
 } from "../utils";
-import { addLineNumbers, getFiles, removeLineNumbers } from "../utils/files";
+import { getFiles, standardizePath } from "../utils/files";
 import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
+import { applyCodePatch, type FileContent } from "~/server/utils/files";
+import { gitStash } from "~/server/git/operations";
 
 import {
   emitCodeEvent,
@@ -21,12 +23,14 @@ import {
 } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { createPlan } from "~/server/agent/plan";
+import { applyCodePatchViaLLM } from "~/server/agent/patch";
 import { PlanningAgentActionType } from "~/server/db/enums";
 
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 import { addCommitAndPush } from "../git/commit";
-import path from "path";
 import { runBuildCheck } from "../build/node/check";
+import { getOrCreateCodebaseContext } from "../utils/codebaseContext";
+import { traverseCodebase } from "../analyze/traverse";
+import { selectRelevantFiles } from "../agent/research";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -37,7 +41,7 @@ export interface EditFilesParams extends BaseEventData {
   repoSettings?: RepoSettings;
 }
 
-export async function agentEditFiles(params: EditFilesParams) {
+export async function editFiles(params: EditFilesParams) {
   const {
     repository,
     token,
@@ -53,23 +57,50 @@ export async function agentEditFiles(params: EditFilesParams) {
   // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = `${issue.title}${issueBody}`;
-  //   const research = await researchIssue(
-  //     issueText,
-  //     sourceMapOrFileList,
-  //     rootPath,
-  //   );
-  const research = ""; // TODO: currently this is part of the GitHub issue, need to separate it out
+  const projectId = baseEventData.projectId;
+
+  // Fetch research data from the database based on the issue ID
+  const researchData = await db.research.where({ issueId: issue.number }).all();
+
+  // Convert the fetched research data into a string of question/answers
+  const research = researchData
+    .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
+    .join("\n\n");
+
+  // get the plan context
+  const allFiles = traverseCodebase(rootPath);
+  const query = `Based on the GitHub issue and the research, your job is to find the most important files in this codebase.\n
+  Here is the issue <issue>${issueBody}</issue> \n
+  Here is the research <research>${research}</research> \n
+  Based on the GitHub issue and the research, what are the 25 most relevant files to resolving this GitHub issue in this codebase?`;
+  const relevantPlanFiles = await selectRelevantFiles(
+    query,
+    undefined,
+    allFiles,
+    25,
+  );
+  console.log("**** relevantPlanFiles ****", relevantPlanFiles);
+  const planContext = await getOrCreateCodebaseContext(
+    projectId,
+    rootPath,
+    relevantPlanFiles?.map((file) => standardizePath(file)) ?? [],
+  );
+
+  if (!planContext || planContext.length === 0) {
+    throw new Error("No plan context generated");
+  }
   let codePatch = "";
-  const maxPlanIterations = 3;
+  const maxPlanIterations = 1; // TODO: experiment with other values
   const maxSteps = 10;
+  let isPlanComplete = false;
   let planIterations = 0;
   let buildErrors = "";
   let newPrBody = "";
-  while (planIterations < maxPlanIterations) {
+  while (planIterations < maxPlanIterations && !isPlanComplete) {
     planIterations++;
     const plan = await createPlan(
       issueText,
-      sourceMap,
+      planContext?.map((c) => `${c.file}:\n${c.text}`).join("\n") ?? "",
       research,
       codePatch,
       buildErrors,
@@ -85,8 +116,22 @@ export async function agentEditFiles(params: EditFilesParams) {
       break;
     }
     let stepNumber = 0;
+    // Get all the existing filePaths from the plan
+    const filePaths = plan.steps
+      .filter((step) => step.type === PlanningAgentActionType.EditExistingCode)
+      .map((step) => step.filePath);
+
+    // Get the codebase context for each file in the plan
+    const contexts = await getOrCreateCodebaseContext(
+      projectId,
+      rootPath,
+      filePaths,
+    );
     for (const step of plan.steps.slice(0, maxSteps)) {
       stepNumber++;
+      const contextItem = contexts.find(
+        (c) => standardizePath(c.file) === step.filePath,
+      );
       const isNewFile = step.type === PlanningAgentActionType.CreateNewCode;
       await emitPlanStepEvent({ ...baseEventData, planStep: step });
       // const step = plan.steps[0];
@@ -121,6 +166,7 @@ export async function agentEditFiles(params: EditFilesParams) {
         plan: filePlan,
         snapshotUrl: snapshotUrl ?? "",
         codePatch,
+        context: JSON.stringify(contextItem, null, 2) ?? "",
       };
 
       const codeSystemPrompt = parseTemplate(
@@ -159,12 +205,25 @@ export async function agentEditFiles(params: EditFilesParams) {
           branchName: newBranch,
         });
 
-        const files = await applyCodePatch(
-          rootPath,
-          step.filePath,
-          patch,
-          isNewFile,
-        );
+        let patchResult: FileContent[] | undefined;
+        try {
+          patchResult = await applyCodePatch(rootPath, patch);
+        } catch (e) {
+          // Stash in case we have a partially applied local patch that failed
+          await gitStash({ directory: rootPath, baseEventData });
+          console.log(
+            `Will attempt applyCodePatchViaLLM() since local applyCodePatch failed with ${String(e)}`,
+          );
+        }
+
+        const files =
+          patchResult ??
+          (await applyCodePatchViaLLM(
+            rootPath,
+            step.filePath,
+            patch,
+            isNewFile,
+          ));
         await Promise.all(
           files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
         );
@@ -203,6 +262,7 @@ export async function agentEditFiles(params: EditFilesParams) {
         afterModifications: true,
         repoSettings,
       });
+      isPlanComplete = true;
     } catch (error) {
       const { message } = error as Error;
       buildErrors = message;
@@ -222,192 +282,4 @@ export async function agentEditFiles(params: EditFilesParams) {
     newPrBody,
     newPrReviewers: issue.assignees.map((assignee) => assignee.login),
   });
-}
-
-interface FileContent {
-  fileName: string;
-  filePath: string;
-  codeBlock: string;
-}
-
-export async function applyCodePatch(
-  rootPath: string,
-  filePath: string,
-  patch: string,
-  isNewFile = false,
-): Promise<FileContent[]> {
-  if (isNewFile) {
-    return createNewFile(rootPath, filePath, patch);
-  } else {
-    return updateExistingFile(rootPath, filePath, patch);
-  }
-}
-async function createNewFile(
-  rootPath: string,
-  filePath: string,
-  patch: string,
-): Promise<FileContent[]> {
-  const files: FileContent[] = [];
-  try {
-    const fullFilePath = path.join(rootPath, filePath);
-    const dirPath = path.dirname(fullFilePath);
-
-    // Prepare the prompt for the LLM
-    const userPrompt = `
-I want to create a new file with the following patch:
-
-${patch}
-
-Please provide the complete file content based on this patch. Your response should:
-1. Include the entire file content, not just the changed parts.
-2. Remove any diff-specific syntax (like +, -, @@ lines).
-3. Be surrounded by <file_content> tags.
-4. Contain no additional commentary, explanations, or code blocks.
-
-Here's an example of how your response should be formatted:
-
-<file_content>
-import React from 'react';
-
-function App() {
-  return (
-    <div>
-      <h1>Hello, World!</h1>
-    </div>
-  );
-}
-
-export default App;
-</file_content>`;
-
-    const systemPrompt = `You are an expert code creator. Your task is to generate the complete file content based on the given patch for a new file. Make sure to remove any diff-specific syntax and provide only the actual file content. Your response must be the complete file content surrounded by <file_content> tags, with no additional commentary or code blocks.`;
-
-    // Call the LLM to generate the file content
-    const rawFileContent = await sendSelfConsistencyChainOfThoughtGptRequest(
-      userPrompt,
-      systemPrompt,
-    );
-
-    if (rawFileContent) {
-      // Extract content between <file_content> tags
-      const contentMatch = rawFileContent.match(
-        /<file_content>([\s\S]*)<\/file_content>/,
-      );
-      if (contentMatch?.[1]) {
-        const fileContent = contentMatch[1].trim();
-
-        // Create directory if it doesn't exist
-        if (!fs.existsSync(dirPath)) {
-          fs.mkdirSync(dirPath, { recursive: true });
-        }
-
-        // Write the new file
-        fs.writeFileSync(fullFilePath, fileContent, "utf-8");
-        console.log(`Successfully created new file ${filePath}`);
-
-        files.push({
-          fileName: path.basename(filePath),
-          filePath,
-          codeBlock: fileContent,
-        });
-      } else {
-        throw new Error(
-          "LLM response did not contain properly formatted file content",
-        );
-      }
-    } else {
-      throw new Error(`Failed to generate content for new file ${filePath}`);
-    }
-  } catch (error) {
-    console.error(`Error creating new file ${filePath}:`, error);
-  }
-
-  return files;
-}
-async function updateExistingFile(
-  rootPath: string,
-  filePath: string,
-  patch: string,
-): Promise<FileContent[]> {
-  const files: FileContent[] = [];
-  try {
-    // First, check to see if the file exists
-    const fullFilePath = path.join(rootPath, filePath);
-    if (!fs.existsSync(fullFilePath)) {
-      console.error(`File ${filePath} does not exist`);
-      return files;
-    }
-    // Read the existing file content
-    const existingContent = fs.readFileSync(fullFilePath, "utf-8");
-    const numberedContent = addLineNumbers(existingContent);
-
-    // Prepare the prompt for the LLM
-    const userPrompt = `
-I have an existing file with the following content (line numbers added for reference):
-
-${numberedContent}
-
-I want to apply the following patch to this file:
-
-${patch}
-
-Please provide the updated file content after applying the patch. Your response should:
-1. Include the entire file content, not just the changed parts.
-2. Maintain the original line numbers.
-3. Be surrounded by <file_content> tags.
-4. Contain no additional commentary, explanations, or code blocks.
-
-Here's an example of how your response should be formatted:
-
-<file_content>
-1| import React from 'react';
-2| 
-3| function App() {
-4|   return (
-5|     <div>
-6|       <h1>Hello, World!</h1>
-7|     </div>
-8|   );
-9| }
-10| 
-11| export default App;
-</file_content>`;
-
-    const systemPrompt = `You are an expert code editor. Your task is to apply the given patch to the existing file content and return the entire updated file content, including line numbers. Make sure to handle line numbers correctly, even if they are inconsistent in the patch. If a hunk in the patch cannot be applied, skip it and continue with the next one. Your response must be the complete file content surrounded by <file_content> tags, with no additional commentary or code blocks.`;
-
-    // Call the LLM to apply the patch
-    const rawUpdatedContent = await sendSelfConsistencyChainOfThoughtGptRequest(
-      userPrompt,
-      systemPrompt,
-    );
-
-    if (rawUpdatedContent) {
-      // Extract content between <file_content> tags
-      const contentMatch = rawUpdatedContent.match(
-        /<file_content>([\s\S]*)<\/file_content>/,
-      );
-      if (contentMatch?.[1]) {
-        const numberedUpdatedContent = contentMatch[1].trim();
-        const updatedContent = removeLineNumbers(numberedUpdatedContent);
-
-        fs.writeFileSync(fullFilePath, updatedContent, "utf-8");
-        console.log(`Successfully updated ${filePath}`);
-        files.push({
-          fileName: path.basename(filePath),
-          filePath,
-          codeBlock: updatedContent,
-        });
-      } else {
-        throw new Error(
-          "LLM response did not contain properly formatted file content",
-        );
-      }
-    } else {
-      throw new Error(`Failed to apply patch to ${filePath}`);
-    }
-  } catch (error) {
-    console.error(`Error processing ${filePath}:`, error);
-  }
-
-  return files;
 }

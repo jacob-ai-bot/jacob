@@ -1,18 +1,15 @@
-import OpenAI from "openai";
-import { MAX_OUTPUT, type Model } from "~/server/openai/request";
+import type OpenAI from "openai";
+import { sendGptToolRequest, type Model } from "~/server/openai/request";
 import { evaluate } from "~/server/openai/utils";
 import { PlanningAgentActionType } from "~/server/db/enums";
 import { findFiles } from "~/server/agent/files";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { type StandardizedPath, standardizePath } from "../utils/files";
 
 export interface PlanStep {
   type: PlanningAgentActionType;
   title: string;
   instructions: string;
-  filePath: string;
+  filePath: StandardizedPath;
   exitCriteria: string;
   dependencies?: string;
 }
@@ -104,7 +101,7 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
 
 export const createPlan = async function (
   githubIssue: string,
-  sourceMap: string,
+  context: string,
   research: string,
   codePatch: string,
   buildErrors: string,
@@ -113,63 +110,57 @@ export const createPlan = async function (
   // If there was a previous plan, we need the new plan to reflect the changes made in the code patch
   // First, find all of the files that need to be modified or created
   const files = !hasExistingPlan
-    ? await findFiles(githubIssue, sourceMap, research)
+    ? await findFiles(githubIssue, context, research)
     : "";
-  // To get the best possible plan, we run the request multiple times with various models at varying temps, and choose the most comprehensive response (as measured naively by the number of tool calls and length of arguments)
-  const models: Model[] = ["gpt-4-0125-preview", "gpt-4o-2024-05-13"];
+
   // const models: Model[] = [
   //   "claude-3-5-sonnet-20240620",
   //   "claude-3-5-sonnet-20240620",
   // ];
+  console.log("research", research);
+  const models: Model[] = [
+    "gpt-4-0125-preview",
+    "gpt-4o-2024-08-06",
+    "gpt-4o-2024-08-06",
+  ];
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
-      ? getPromptsForUpdatedPlan(codePatch, buildErrors)
-      : getPromptsForNewPlan(githubIssue, sourceMap, research, files);
+      ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue)
+      : getPromptsForNewPlan(githubIssue, context, research, files);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
   ];
-  console.log("\n\n\n\n\n\n\n\nCreating plans with prompts:");
-  console.log("User prompt:", userPrompt);
-  console.log("System prompt:", systemPrompt);
-  console.log("\n\n\n\n\n\n\n\nCreated plans with prompts:");
+  // console.log("\n\n\n\n\n\n\n\nCreating plans with prompts:");
+  // console.log("User prompt:", userPrompt);
+  // console.log("System prompt:", systemPrompt);
+  // console.log("\n\n\n\n\n\n\n\nCreated plans with prompts:");
   const responses = await Promise.all(
     models.flatMap((model) =>
-      [1, 2].map((_, index) => {
-        // sendGptToolRequest(
-        //   userPrompt,
-        //   systemPrompt,
-        //   planningTools,
-        //   index === 1 ? 0.4 : 0.3,
-        //   undefined,
-        //   3,
-        //   60000,
-        //   model,
-        //   "required",
-        //   true,
-        // ),
-        console.log(`\n +++ Calling ${model} for plan...`);
-        return openai.chat.completions.create({
-          model,
+      [1, 2].map((_, index) =>
+        sendGptToolRequest(
           messages,
-          max_tokens: MAX_OUTPUT[model],
-          temperature: index === 1 ? 0.4 : 0.3,
-          tools: planningTools,
-          tool_choice: "required",
-          parallel_tool_calls: true,
-        });
-      }),
+          planningTools,
+          index === 1 ? 0.4 : 0.3,
+          undefined,
+          3,
+          60000,
+          model,
+          "required",
+          true,
+        ),
+      ),
     ),
   );
-  console.log(
-    "\n\n\n<all responses>\n\n\n",
-    responses.map(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (r) =>
-        JSON.stringify(r.choices[0]?.message?.tool_calls) ?? "No message found",
-    ),
-  );
+  // console.log(
+  //   "\n\n\n<all responses>\n\n\n",
+  //   responses.map(
+  //     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  //     (r) =>
+  //       JSON.stringify(r.choices[0]?.message?.tool_calls) ?? "No message found",
+  //   ),
+  // );
   const plans: Plan[] = responses.map((response) => {
     const toolCalls = response.choices[0]?.message.tool_calls;
     if (!toolCalls) {
@@ -191,11 +182,12 @@ export const createPlan = async function (
 
       const { title, filePath, instructions, exitCriteria, dependencies } =
         args;
+      const standardizedPath = standardizePath(filePath);
       const step = {
         type: functionName,
         title,
         instructions,
-        filePath,
+        filePath: standardizedPath,
         exitCriteria,
         dependencies,
       };
@@ -205,21 +197,23 @@ export const createPlan = async function (
   });
 
   const bestPlan = await getBestPlan(plans, userPrompt, systemPrompt);
-  console.log("<best plan>\n\n", JSON.stringify(bestPlan));
-  console.log("\n\n</best plan>");
+  // console.log("<best plan>\n\n", JSON.stringify(bestPlan));
+  // console.log("\n\n</best plan>");
   return bestPlan;
 };
 
 const getPromptsForNewPlan = (
   githubIssue: string,
-  sourceMap: string,
   research: string,
   files: string,
+  context: string,
 ) => {
+  console.log("Creating new plan with prompts:");
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an advanced AI coding assistant designed to efficiently analyze GitHub issues and create detailed plans for resolving them. Your role is to thoroughly understand the provided GitHub issue, codebase source map, and previously gathered research to determine the necessary steps for addressing the issue.
   
-      Here is the source map for the repository you are working with: <source_map>${sourceMap}</source_map>
+      ${context?.length ? `Here are details about the source code for the repository you are working with: <source_map>${context}</source_map>` : ""}    
+      ${research?.length ? `Here is some research about the codebase and this issue: <research>${research}</research>` : ""}
 
       Key Responsibilities:
           1. Review the provided list of files to modify or create based on the GitHub issue. Each step should include detailed instructions on how to modify or create one or more of the specific files from the code respository.
@@ -229,7 +223,7 @@ const getPromptsForNewPlan = (
           5. Review each of the files listed within the <files> tags and determine which changes need to be made to each file. You MUST provide at least one change per file, and at least one file per step!
           6. Create a detailed, step-by-step plan for making the necessary changes to the codebase:
               - Clearly specify the full path of the file to be edited or created.
-              - Provide precise instructions on the changes to be made within each file.
+              - Provide precise instructions on the changes to be made within each file. You MUST use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions!
               - Ensure there is at least one file modified per step.
               - Include any necessary imports or function calls.
               - Identify dependencies and specify the order in which the changes should be made.
@@ -240,6 +234,7 @@ const getPromptsForNewPlan = (
           - Approach the task from the perspective of an experienced developer working on the codebase.
           - Utilize the provided research and codebase information to make informed decisions.
           - Ensure that the plan is clear, concise, and easy to follow.
+          - The instructions are extremely important to the success of the plan. Use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions! If you do not have specific instructions you can be very general, but you MUST use the research data and/or GitHub issue to inform your instructions. NEVER make up specific instructions that are not based on the research data and/or GitHub issue.
           - Use proper formatting and syntax when specifying the file path, code snippets, or commands.
           - Follow existing coding conventions and styles when making changes to the codebase. For example, if the system is using TypeScript, ensure that all new code is strictly typed correctly. Or if the codebase uses Tailwind CSS, do not introduce new CSS classes or frameworks.
           - Be sure to take into account any changes that may impact other parts of the codebase, such as functions that call or depend on the modified code.
@@ -253,7 +248,6 @@ const getPromptsForNewPlan = (
   const userPrompt = `You are an AI coding assistant tasked with creating a detailed plan for addressing a specific GitHub issue within a codebase. Your goal is to analyze the provided information and develop a step-by-step guide for making the necessary changes to resolve the issue.
         
       ### Code Repository Information:
-          ${research?.length ? `- Research: <research>${research}</research>` : ""}
           - Files to Modify or Create: <files>${files}</files>
 
       ### GitHub Issue Details:
@@ -277,7 +271,7 @@ const getPromptsForNewPlan = (
               - Use the list of specific files within the  <files> tags that need to be modified or created to address the issue.
               - For each plan step, follow these guidelines:
                   - Specify the exact file path in the filePath tool output.
-                  - Provide clear, detailed instructions on the changes to be made.
+                  - Provide clear, detailed instructions on the changes to be made. You MUST use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions! If you do not have specific instructions you can be very general, but you MUST use the research data and/or GitHub issue to inform your instructions. NEVER make up specific instructions that are not based on the research data and/or GitHub issue.
                   - Include any necessary code snippets, imports, or function calls.
                   - Minimize the number of files that are modified per step.
               - Outline the order in which the changes should be made.
@@ -302,7 +296,11 @@ const getPromptsForNewPlan = (
   return { systemPrompt, userPrompt };
 };
 
-const getPromptsForUpdatedPlan = (codePatch: string, buildErrors: string) => {
+const getPromptsForUpdatedPlan = (
+  codePatch: string,
+  buildErrors: string,
+  githubIssue: string,
+) => {
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an AI code review assistant specializing in identifying and resolving issues that arise from sequential code changes. Your task is to analyze a given code patch and create a concise plan to address any inconsistencies or errors that may have been introduced due to the order of changes. Focus only on critical issues that affect the functionality or integrity of the code.
   
@@ -319,16 +317,22 @@ const getPromptsForUpdatedPlan = (codePatch: string, buildErrors: string) => {
   - It is critically important to include ALL fixes for a one file in a single step in your plan.
   - Provide context for each change, explaining why it's necessary.
   - If no critical issues are found, it's acceptable to state that no further changes are needed.
+  - Only provide a plan if there are critical issues to address. Otherwise just say "No critical issues identified. No further changes are needed."
   - Prioritize changes that affect functionality, imports, or component props.
   - Keep your plan concise and actionable.`;
 
-  const userPrompt = `Review the following code patch and build errors, and create a focused plan to address any critical issues that may have been introduced due to the sequential nature of the changes. Pay special attention to:
+  const userPrompt = `Review the following GitHub Issue, the resulting code patch, and build errors (if any), and create a focused plan to address any critical issues that may have been introduced due to the sequential nature of the changes. Pay special attention to:
   
   1. Missing or incorrect imports
   2. Changes in component props that aren't reflected in all relevant files
   3. New variables or functions that may need to be added to earlier files
   4. Any other dependencies between files that may have been overlooked
   5. Major type errors or syntax issues
+
+  GitHub Issue Details:
+  <github_issue>
+  ${githubIssue}
+  </github_issue>
   
   Code Patch:
   <code_patch>
@@ -397,13 +401,13 @@ const getBestPlan = async (
     return current.averageRating > best.averageRating ? current : best;
   });
 
-  console.log(`Best plan average rating: ${bestEvaluatedPlan.averageRating}`);
-  console.log("Best plan evaluations:");
-  bestEvaluatedPlan.evaluations.forEach((evaluation, index) => {
-    console.log(`Evaluation ${index + 1}:`);
-    console.log(`Summary: ${evaluation.summary}`);
-    console.log(`Rating: ${evaluation.rating}`);
-  });
+  // console.log(`Best plan average rating: ${bestEvaluatedPlan.averageRating}`);
+  // console.log("Best plan evaluations:");
+  // bestEvaluatedPlan.evaluations.forEach((evaluation, index) => {
+  //   console.log(`Evaluation ${index + 1}:`);
+  //   console.log(`Summary: ${evaluation.summary}`);
+  //   console.log(`Rating: ${evaluation.rating}`);
+  // });
 
   return bestEvaluatedPlan.plan;
 };

@@ -18,18 +18,25 @@ export type FilesRangesMap = Record<string, NewOrModifiedRange[]>;
 
 export const getFiles = (
   rootDir: string,
-  fileNamesToInclude: string[],
+  fileNamesToInclude: StandardizedPath[],
   shouldAddLineNumbers = true,
 ) => {
-  // simple function to get the files from the list.
-  // Add the name of the file at the beginning, and add line numbers to each line in the file.
-  // return a string that has all of the files concatenated together.
   let output = "";
   for (const fileName of fileNamesToInclude) {
     const filePath = path.join(rootDir, fileName);
-    const fileContent = fs.readFileSync(filePath).toString("utf-8");
-    output += `File: ${fileName}\n`;
-    output += shouldAddLineNumbers ? addLineNumbers(fileContent) : fileContent;
+    if (fs.existsSync(filePath)) {
+      try {
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        output += `File: ${fileName}\n`;
+        output += shouldAddLineNumbers
+          ? addLineNumbers(fileContent)
+          : fileContent;
+      } catch (error) {
+        console.error(`Error reading file ${fileName}`);
+      }
+    } else {
+      console.error(`File not found: ${fileName}`);
+    }
   }
   return output;
 };
@@ -276,8 +283,15 @@ export function getNewOrModifiedRangesMapFromDiff(diff: string) {
   return rangeMap;
 }
 
+export interface FileContent {
+  fileName: string;
+  filePath: string;
+  codeBlock: string;
+}
+
 export function applyCodePatch(rootPath: string, patch: string) {
-  return new Promise<void>((resolve, reject) => {
+  const files: FileContent[] = [];
+  return new Promise<FileContent[]>((resolve, reject) => {
     applyPatches(patch, {
       loadFile: (index, callback) => {
         if (!index.oldFileName) {
@@ -293,13 +307,18 @@ export function applyCodePatch(rootPath: string, patch: string) {
           return callback(new Error("newFileName is required"));
         }
         fs.writeFileSync(path.join(rootPath, index.newFileName), content);
+        files.push({
+          fileName: path.basename(index.newFileName),
+          filePath: index.newFileName,
+          codeBlock: content,
+        });
         callback(null);
       },
       complete: (err) => {
         if (err) {
           reject(err);
         } else {
-          resolve();
+          resolve(files);
         }
       },
     });
@@ -376,6 +395,11 @@ export const getCodebase = async (rootDir: string): Promise<string> => {
     },
     gitignore,
   );
+  // get the length of the contentToWrite file. If it's more than 2 million characters, truncate it.
+  const maxLength = 2000000;
+  if (contentToWrite.length > maxLength) {
+    contentToWrite = contentToWrite.slice(0, maxLength);
+  }
 
   return contentToWrite;
 };
@@ -399,3 +423,28 @@ export const removeLineNumbers = (numberedContent: string): string => {
   );
   return originalLines.join("\n");
 };
+
+export type StandardizedPath = string & { __brand: "StandardizedPath" };
+
+function isValidPath(path: string): boolean {
+  return /^\/[a-zA-Z0-9_\-./[\]...]+$/.test(path);
+}
+
+export function standardizePath(filePath: string): StandardizedPath {
+  let cleanPath = filePath.replace(/^\.\//, "");
+
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+
+  cleanPath = path.posix.normalize(cleanPath);
+  cleanPath = cleanPath.replace(/\\/g, "/");
+
+  if (!isValidPath(cleanPath)) {
+    console.log("Invalid file path:", filePath);
+    console.log("Standardized path:", cleanPath);
+    throw new Error(`Invalid file path: ${filePath}`);
+  }
+
+  return cleanPath as StandardizedPath;
+}

@@ -8,14 +8,15 @@ Required Information:
    - Write a concise description of why the information is needed and how it will be used.
 
 2. File Structure and File Paths:
-   - Identify and list the existing files that need to be modified, including their full paths.
+   - Identify and list the existing files that need to be modified, including their full paths. Note that this MUST be scoped to just the research query, not the original GitHub issue.
    - Specify the paths for any new files that need to be created.
    - Provide an overview of the directory structure to help understand the file organization.
 
 3. Code Snippets:
    - Include relevant code snippets from the codebase that can serve as references for maintaining consistency in style and conventions.
    - Highlight any specific coding conventions or style guides that should be followed.
-   - Provide examples of similar components or functions to guide the implementation.
+   - Provide code snippets of similar components or functions to guide the implementation. These examples MUST be directly from the codebase, do not make them up.
+   - Provide full functions or components as examples of how to implement the feature. DO NOT provide partial functions or components.
 
 Optional Information (only provide this if it is relevant to the query):
 4. API Contracts:
@@ -23,13 +24,13 @@ Optional Information (only provide this if it is relevant to the query):
    - Detail the required and optional parameters for each request, including data types and validation rules.
    - Describe the structure of the API responses, including data types and example JSON payloads.
    - Specify how errors should be handled and returned by the API.
-   - Provide code snippets of relevant APIs or examples of similar functions to guide the implementation.
+   - Provide code snippets of relevant APIs or example snippets from the codebase of similar functions to guide the implementation.
 
 5. Component Breakdown:
    - Break down the implementation into individual frontend components and backend modules.
    - Describe the purpose and functionality of each component or module in detail.
    - Explain how the components and modules fit into the overall feature.
-   - Provide code snippets of relevant components or examples of similar components or functions to guide the implementation.
+   - Provide code snippets of relevant components or example snippets from the codebase of similar components or functions to guide the implementation.
 
 6. Styles and Themes:
    - Specify the stylesheets that need to be modified or created.
@@ -43,6 +44,6 @@ For each request, you must provide very detailed information to address all of t
 
 If the codebase lacks sufficient information to cover all aspects of the rubric, indicate which areas are missing and suggest potential sources or methods to obtain the necessary details.
 
-Remember, your knowledge is limited to the contents of the provided codebase. Do not make assumptions or provide information that is not directly supported by the codebase. If you are unsure about any aspect, clearly state that limitation in your response.
+Remember, your knowledge is limited to the contents of the provided codebase. Never provide code samples that are not directly taken from the codebase. Do not make assumptions or provide information that is not directly supported by the codebase. If you are unsure about any aspect, clearly state that limitation in your response.
 
 When you have completed your analysis and have a structured response ready, present the information without any additional formatting or conversation. The user will review your response and provide further instructions if needed.

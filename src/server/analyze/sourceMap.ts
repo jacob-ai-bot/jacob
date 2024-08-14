@@ -118,8 +118,9 @@ export const getTypes = (
     }
 
     let sourceFile: SourceFile | undefined;
-
-    const configPath = path.join(rootPath, "tsconfig.json"); // Path to tsconfig.json
+    const defaultTSConfig = "tsconfig.json";
+    const tsConfig = repoSettings?.directories?.tsConfig ?? defaultTSConfig;
+    const configPath = path.join(rootPath, tsConfig); // Path to tsconfig.json
     const project = new Project({
       tsConfigFilePath: configPath,
     });

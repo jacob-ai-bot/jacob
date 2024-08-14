@@ -118,7 +118,14 @@ describe("applyCodePatch", () => {
     const readFileSpy = vi.spyOn(fs, "readFileSync").mockReturnValue(test001);
     const writeFileSpy = vi.spyOn(fs, "writeFileSync").mockReturnValue();
 
-    await applyCodePatch("/rootpath", test001Diff);
+    const result = await applyCodePatch("/rootpath", test001Diff);
+    expect(result).toStrictEqual([
+      {
+        fileName: "test001.txt",
+        filePath: "test001.txt",
+        codeBlock: test002,
+      },
+    ]);
     expect(readFileSpy).toHaveBeenCalledWith("/rootpath/test001.txt");
     expect(writeFileSpy).toHaveBeenCalledWith("/rootpath/test001.txt", test002);
   });

@@ -15,6 +15,8 @@ import {
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
 import { sendAnthropicRequest } from "../anthropic/request";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
+import { encode } from "gpt-tokenizer";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -23,14 +25,19 @@ const CONTEXT_WINDOW = {
   "gpt-4-0125-preview": 128000,
   "gpt-4o-2024-05-13": 128000,
   "gpt-4o-mini-2024-07-18": 128000,
-  "gemini-1.5-pro-latest": 1048576,
-  "gemini-1.5-flash-latest": 1048576,
+  "gpt-4o-64k-output-alpha": 128000,
+  "gpt-4o-2024-08-06": 128000,
+  "gemini-1.5-pro-latest": 2097152,
+  "gemini-1.5-pro-exp-0801": 2097152,
+  "gemini-1.5-flash-latest": 2097152,
   "claude-3-opus-20240229": 200000,
   "claude-3-haiku-20240307": 200000,
   "claude-3-5-sonnet-20240620": 200000,
+  "llama-3.1-sonar-large-128k-online": 127072,
+  "llama-3.1-sonar-small-128k-online": 127072,
+  "llama-3.1-70b-versatile": 8192, // Limited to 8K during preview, will be 128K in the future
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
-  "llama-3.1-70b-versatile": 8192, // Limited to 8K during preview, will be 128K in the future
 };
 
 // Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
@@ -39,61 +46,97 @@ export const MAX_OUTPUT = {
   "gpt-4-0125-preview": 4096,
   "gpt-4o-2024-05-13": 4096,
   "gpt-4o-mini-2024-07-18": 16384,
+  "gpt-4o-64k-output-alpha": 64000,
+  "gpt-4o-2024-08-06": 16384,
   "gemini-1.5-pro-latest": 8192,
+  "gemini-1.5-pro-exp-0801": 8192,
   "gemini-1.5-flash-latest": 8192,
   "claude-3-opus-20240229": 4096,
   "claude-3-haiku-20240307": 4096,
   "claude-3-5-sonnet-20240620": 4096,
+  "llama-3.1-sonar-large-128k-online": 4096,
+  "llama-3.1-sonar-small-128k-online": 4096,
+  "llama-3.1-70b-versatile": 4096,
   "llama-3-sonar-large-32k-online": 4096,
   "llama-3-sonar-small-32k-online": 4096,
-  "llama-3.1-70b-versatile": 4096,
 };
 
 const ONE_MILLION = 1000000;
 const INPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 10 / ONE_MILLION,
   "gpt-4-0125-preview": 10 / ONE_MILLION,
-  "gpt-4o-2024-05-13": 10 / ONE_MILLION,
+  "gpt-4o-2024-05-13": 5 / ONE_MILLION,
   "gpt-4o-mini-2024-07-18": 0.15 / ONE_MILLION,
+  "gpt-4o-64k-output-alpha": 10 / ONE_MILLION,
+  "gpt-4o-2024-08-06": 2.5 / ONE_MILLION,
   "gemini-1.5-pro-latest": 3.5 / ONE_MILLION,
+  "gemini-1.5-pro-exp-0801": 3.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
   "claude-3-opus-20240229": 15 / ONE_MILLION,
   "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 3 / ONE_MILLION,
+  "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
+  "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
+  "llama-3.1-70b-versatile": 0.59 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
-  "llama-3.1-70b-versatile": 0.59 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
   "gpt-4-0125-preview": 30 / ONE_MILLION,
   "gpt-4o-2024-05-13": 30 / ONE_MILLION,
   "gpt-4o-mini-2024-07-18": 0.6 / ONE_MILLION,
+  "gpt-4o-64k-output-alpha": 30 / ONE_MILLION,
+  "gpt-4o-2024-08-06": 10 / ONE_MILLION,
   "gemini-1.5-pro-latest": 10.5 / ONE_MILLION,
+  "gemini-1.5-pro-exp-0801": 10.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
   "claude-3-opus-20240229": 75 / ONE_MILLION,
   "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 15 / ONE_MILLION,
+  "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
+  "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
+  "llama-3.1-70b-versatile": 0.79 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
-  "llama-3.1-70b-versatile": 0.79 / ONE_MILLION,
 };
 const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4-0125-preview": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4o-2024-05-13": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4o-mini-2024-07-18": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gpt-4o-64k-output-alpha": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "gpt-4o-2024-08-06": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gemini-1.5-pro-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
+  "gemini-1.5-pro-exp-0801": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "claude-3-opus-20240229": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-haiku-20240307": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-5-sonnet-20240620": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
+  "llama-3.1-sonar-large-128k-online":
+    process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
+  "llama-3.1-sonar-small-128k-online":
+    process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
+  "llama-3.1-70b-versatile": process.env.PORTKEY_VIRTUAL_KEY_GROK,
   "llama-3-sonar-large-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3-sonar-small-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
-  "llama-3.1-70b-versatile": process.env.PORTKEY_VIRTUAL_KEY_GROK,
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
+
+export function countTokens(text: string): number {
+  return encode(text).length;
+}
+
+// Function to check if the prompt fits within the model's context window
+export function isPromptWithinContextWindow(
+  userPrompt: string,
+  systemPrompt: string,
+  model: Model,
+): boolean {
+  const totalTokens = countTokens(userPrompt) + countTokens(systemPrompt);
+  return totalTokens <= 0.95 * CONTEXT_WINDOW[model]; // give a 5% buffer to account for variations in tokenization between models
+}
 
 export const sendGptRequest = async (
   userPrompt: string,
@@ -110,6 +153,20 @@ export const sendGptRequest = async (
   // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
+    // Check if the prompt fits within the context window
+    if (!isPromptWithinContextWindow(userPrompt, systemPrompt, model)) {
+      // If it doesn't fit, try with the largest model
+      const largestModel: Model = "gemini-1.5-pro-exp-0801";
+      if (isPromptWithinContextWindow(userPrompt, systemPrompt, largestModel)) {
+        console.log(
+          `Prompt too large for ${model}. Switching to ${largestModel}.`,
+        );
+        model = largestModel;
+      } else {
+        throw new Error("Prompt is too large for all available models.");
+      }
+    }
+
     // For now, if we get a request to use Sonnet 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
     if (model === "claude-3-5-sonnet-20240620" && !isJSONMode) {
       return sendAnthropicRequest(
@@ -223,6 +280,9 @@ export const sendGptRequest = async (
             baseEventData,
             retries - 1,
             delay * 2,
+            imagePrompt,
+            model,
+            isJSONMode,
           )
             .then(resolve)
             .catch(reject);
@@ -288,6 +348,9 @@ export const sendGptRequestWithSchema = async (
         );
 
         if (failedValidations.length > 0) {
+          console.log("Failed Validations: ", failedValidations);
+          console.log("gptResponse: ", gptResponse);
+          console.log("Extracted Info: ", extractedInfo);
           throw new Error(
             `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
               failedValidations,
@@ -343,11 +406,11 @@ export const sendGptVisionRequest = async (
   retries = 3,
   delay = 60000,
 ): Promise<string | null> => {
-  const model: Model = "gpt-4o-2024-05-13";
+  const model: Model = "gpt-4o-2024-08-06";
 
   if (!snapshotUrl?.length) {
     // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest(
-    return sendGptRequest(
+    return sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
       temperature,
@@ -398,7 +461,7 @@ export const sendGptVisionRequest = async (
 };
 
 export const OpenAIStream = async (
-  model: Model = "gpt-4o-2024-05-13",
+  model: Model = "gpt-4o-2024-08-06",
   messages: Message[],
   systemPrompt = "You are a helpful friendly assistant.",
   temperature = 1,

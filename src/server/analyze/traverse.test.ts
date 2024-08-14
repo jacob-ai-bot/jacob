@@ -31,6 +31,6 @@ describe("traverseCodebase", () => {
     );
 
     const result = traverseCodebase("/rootpath");
-    expect(result).toEqual(["file1.js", "dir1/file2.js"]);
+    expect(result).toEqual(["/file1.js", "/dir1/file2.js"]);
   });
 });

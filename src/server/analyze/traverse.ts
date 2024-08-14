@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
 import ignore from "ignore";
+import { type StandardizedPath, standardizePath } from "../utils/files";
 
-export function traverseCodebase(rootPath: string) {
+export function traverseCodebase(rootPath: string): StandardizedPath[] {
   const gitignoreContent = fs.readFileSync(
     path.join(rootPath, ".gitignore"),
     "utf-8",
@@ -42,7 +43,7 @@ export function traverseCodebase(rootPath: string) {
     return files;
   }
 
-  return processDirectory(rootPath);
+  return processDirectory(rootPath)?.map(standardizePath);
 }
 
 function isRelevantFile(filePath: string): boolean {

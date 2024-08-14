@@ -1,0 +1,57 @@
+[
+  {
+    "file": "src/app/page.tsx",
+    "code": [
+      "(function_declaration) 8: async function Home() {\n  const session = await getServerAuthSession();\n\n  return (\n    <main className=\"flex min-h-screen flex-col items-center justify-center bg-[#f8e8e0] text-[#1d265d]\">\n      <div className=\"container flex flex-col items-center justify-center gap-12 px-4 py-16 \">\n        <h1 className=\"text-5xl font-extrabold tracking-tight sm:text-[5rem]\">\n          <Logo className=\"h-[100px] w-auto\" />\n        </h1>\n        <div className=\"grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8\">\n          <Link\n            className=\"flex max-w-xs flex-col gap-4 rounded-xl bg-white/40 p-4 hover:bg-white/70\"\n            href=\"https://jacb.ai\"\n            target=\"_blank\"\n          >\n            <h3 className=\"text-2xl font-bold\">JACoB Website →</h3>\n            <div className=\"text-lg\">An overview of JACoB.</div>\n          </Link>\n          <Link\n            className=\"flex max-w-xs flex-col gap-4 rounded-xl bg-white/40 p-4 hover:bg-white/70\"\n            href=\"https://docs.jacb.ai\"\n            target=\"_blank\"\n          >\n            <h3 className=\"text-2xl font-bold\">Documentation →</h3>\n            <div className=\"text-lg\">\n              Learn more about how to use JACoB in your projects.\n            </div>\n          </Link>\n        </div>\n        <div className=\"flex flex-col items-center gap-2\">\n          <div className=\"flex flex-col items-center justify-center gap-4\">\n            <p className=\"text-center text-2xl\">\n              {session && <span>Logged in as {session.user?.name}</span>}\n            </p>\n            {session && <SignOutButton />}\n            {!session && <SignInButton callbackUrl=\"/\" />}\n          </div>\n        </div>\n      </div>\n    </main>\n  );\n}",
+      "(lexical_declaration) 9: const session = await getServerAuthSession();"
+    ],
+    "importStatements": [
+      "import Link from \"next/link\";",
+      "import { getServerAuthSession } from \"~/server/auth\";",
+      "import { SignInButton } from \"~/app/_components/SignInButton\";",
+      "import { SignOutButton } from \"~/app/_components/SignOutButton\";"
+    ],
+    "text": "# Analysis of `src/app/page.tsx`\n\nThe `page.tsx` file defines the main component of a Next.js application, specifically the `Home` function, which is an asynchronous React component. This component is responsible for rendering the homepage layout, including user authentication status and links to external resources.\n\n### Key Components:\n1. **Home Function**:  \n   - An asynchronous function that retrieves the current user session using `getServerAuthSession()`.  \n   - Renders a main layout with a welcoming message, links to the JACoB website and documentation, and conditional rendering of sign-in or sign-out buttons based on the user's authentication status.\n\n2. **Session Handling**:  \n   - Uses `session` to determine if a user is logged in. If logged in, it displays the user's name and a sign-out button; otherwise, it shows a sign-in button.\n\n3. **Layout Structure**:  \n   - The layout is styled using Tailwind CSS classes, providing a responsive design that adapts to different screen sizes.\n   - Contains a header with a logo and two links that navigate to external sites, enhancing user engagement.\n\n### Interaction with Other Components:\n- **Link**:  \n   - Imported from `next/link`, used to create navigable links to external resources.\n- **getServerAuthSession**:  \n   - Authenticates the user by fetching session data from the server.\n- **Logo**:  \n   - Displays the application logo, enhancing brand visibility.\n- **SignInButton** and **SignOutButton**:  \n   - Conditional components that manage user authentication state, allowing users to sign in or out.\n\n### External Dependencies:\n- The file imports several components and functions that are essential for its functionality, including authentication and navigation components from Next.js and local components for user interaction.\n\n### Summary of Imports:\n- `next/link`: Provides client-side navigation.\n- `~/server/auth`: Contains the authentication logic to manage user sessions.\n- `~/images/Logo`: Represents the application logo.\n- `~/app/_components/SignInButton`: A button component for user sign-in.\n- `~/app/_components/SignOutButton`: A button component for user sign-out.",
+    "diagram": "```mermaid\ngraph TD;\n    A[Home Function] -->|calls| B[getServerAuthSession()];\n    A --> C[Logo];\n    A --> D[Link];\n    A --> E[SignInButton];\n    A --> F[SignOutButton];\n    D -->|navigates to| G[JACoB Website];\n    D -->|navigates to| H[Documentation];\n    B --> I[Session];\n    I -->|displays| J[Logged in as {session.user?.name}];\n    I -->|conditional| K[SignOutButton];\n    I -->|conditional| L[SignInButton];\n```",
+    "overview": "The `page.tsx` file defines the main homepage component of a Next.js application, handling user authentication and navigation.",
+    "importedFiles": [
+      "src/app/_components/SignInButton.tsx",
+      "src/app/_components/SignOutButton.tsx",
+      "src/server/auth.ts"
+    ],
+    "exports": [
+      {
+        "name": "Home",
+        "exportType": "function_declaration",
+        "line_no": 8,
+        "code_referenced": "export default async function Home() {\n  const session = await getServerAuthSession();\n\n  return (\n    <main className=\"flex min-h-screen flex-col items-center justify-center bg-[#f8e8e0] text-[#1d265d]\">\n      <div className=\"container flex flex-col items-center justify-center gap-12 px-4 py-16 \">\n        <h1 className=\"text-5xl font-extrabold tracking-tight sm:text-[5rem]\">\n          <Logo className=\"h-[100px] w-auto\" />\n        </h1>\n        <div className=\"grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8\">\n          <Link\n            className=\"flex max-w-xs flex-col gap-4 rounded-xl bg-white/40 p-4 hover:bg-white/70\"\n            href=\"https://jacb.ai\"\n            target=\"_blank\"\n          >\n            <h3 className=\"text-2xl font-bold\">JACoB Website →</h3>\n            <div className=\"text-lg\">An overview of JACoB.</div>\n          </Link>\n          <Link\n            className=\"flex max-w-xs flex-col gap-4 rounded-xl bg-white/40 p-4 hover:bg-white/70\"\n            href=\"https://docs.jacb.ai\"\n            target=\"_blank\"\n          >\n            <h3 className=\"text-2xl font-bold\">Documentation →</h3>\n            <div className=\"text-lg\">\n              Learn more about how to use JACoB in your projects.\n            </div>\n          </Link>\n        </div>\n        <div className=\"flex flex-col items-center gap-2\">\n          <div className=\"flex flex-col items-center justify-center gap-4\">\n            <p className=\"text-center text-2xl\">\n              {session && <span>Logged in as {session.user?.name}</span>}\n            </p>\n            {session && <SignOutButton />}\n            {!session && <SignInButton callbackUrl=\"/\" />}\n          </div>\n        </div>\n      </div>\n    </main>\n  );\n}"
+      }
+    ],
+    "referencedImportDetails": [
+      {
+        "name": "SignInButton",
+        "exportType": "lexical_declaration",
+        "line_no": 8,
+        "code_referenced": "export const SignInButton = ({ callbackUrl }: SignInButtonProps) => (\n  <button\n    className=\"rounded-lg bg-blueGray-700 px-6 py-3 text-center text-sm font-medium text-white shadow-md transition duration-300 ease-in-out hover:bg-indigo-700\"\n    onClick={() => signIn(\"github\", { callbackUrl })}\n  >\n    Sign in with GitHub\n  </button>\n);",
+        "source": "src/app/_components/SignInButton.tsx",
+        "overview": "This file exports a SignInButton component for GitHub authentication using NextAuth."
+      },
+      {
+        "name": "SignOutButton",
+        "exportType": "lexical_declaration",
+        "line_no": 8,
+        "code_referenced": "export const SignOutButton = ({ callbackUrl }: SignOutButtonProps) => (\n  <button\n    className=\"rounded-lg bg-blueGray-700 px-6 py-3 text-center text-sm font-medium text-white shadow-md transition duration-300 ease-in-out hover:bg-indigo-700\"\n    onClick={() => signOut({ callbackUrl })}\n  >\n    Sign out\n  </button>\n);",
+        "source": "src/app/_components/SignOutButton.tsx",
+        "overview": "This file exports a SignOutButton component that allows users to sign out and optionally redirect to a specified URL."
+      },
+      {
+        "name": "getServerAuthSession",
+        "exportType": "lexical_declaration",
+        "line_no": 167,
+        "code_referenced": "export const getServerAuthSession = () => getServerSession(authOptions);",
+        "source": "src/server/auth.ts",
+        "overview": "This file manages authentication logic using NextAuth.js with a PostgreSQL adapter, handling user sessions and account updates."
+      }
+    ]
+  }
+]

@@ -102,7 +102,7 @@ describe("constructNewOrEditSystemPrompt", () => {
       You are the top, most distinguished Technical Fellow at Microsoft.
       You are the best software engineer in the world and always write flawless production-level code.
       Here are some details to help with your task.
-
+      
       ## Types (optional)
       types
 
@@ -154,7 +154,7 @@ describe("constructNewOrEditSystemPrompt", () => {
       You are the top, most distinguished Technical Fellow at Microsoft.
       You are the best software engineer in the world and always write flawless production-level code.
       Here are some details to help with your task.
-
+      
       ## Types (optional)
       types
 
@@ -203,57 +203,57 @@ describe("constructNewOrEditSystemPrompt", () => {
       { language: Language.JavaScript, style: Style.CSS },
     );
     expect(codeSystemPrompt).toEqual(dedent`
-  You are the top, most distinguished Technical Fellow at Microsoft.
-  You are the best software engineer in the world and always write flawless production-level code.
-  Here are some details to help with your task.
+      You are the top, most distinguished Technical Fellow at Microsoft.
+      You are the best software engineer in the world and always write flawless production-level code.
+      Here are some details to help with your task.
+      
+      ## Types (optional)
+      types
 
-  ## Types (optional)
-  types
+      ## Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
+      packages
 
-  ## Package Dependencies (these are already in use and it is preferable to import from these instead of adding imports to similar pacakges not in this list)
-  packages
+      ## Custom Styles (optional)
+      styles
+      
+      ## Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
+      sourceMap
 
-  ## Custom Styles (optional)
-  styles
-  
-  ## Source Map (optional, this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)
-  sourceMap
-
-  ## Images (optional)
-  images
-  
-  ## Instructions:
-  You are the top, most distinguished Technical Fellow at Microsoft. Your goal is to write flawless production-level code to address the GitHub issue. 
-  You will be assigned a GitHub issue and you must complete this task by editing the "code.txt" file. 
-  Make the absolute minimumal number of code changes necessary to completely address the GitHub Issue.
-  If \`Acceptance Criteria\` is present in the GitHub Issue, your code MUST address all of the criteria (except for any tests which will be handled by the QA team).
-  Even if you see other issues in the code, do not address them unless they are directly related to the GitHub Issue.
-  You MUST return the entire code file, not just the changes. The system will crash if you provide only the changes in diff format. You must provide the entire code file with your changes.
-  Here is the code that needs to be updated. It is a file called "code.txt":
-  
-  ## Code
-  code
-  Include website copy as needed.
-  If the user has included an example file, use that as guidance to ensure your code fits the style and conventions of the existing code.
-  Any code included in the GitHub issue is example code and may contain bugs or incorrect information or approaches.
-  If text is provided as part of sample code, determine if the given text should be used as-is, or if this is placeholder text and needs to be replaced by variables.
-  This output will be sent to a parser that will extract the code into the correct files.
-  DO NOT include backticks or ANY comments in your response. ONLY respond with the full, complete working file.
-  Your response MUST be valid, modern JavaScript
-  You MUST use clean code and follow best practices for naming conventions, indentation, quality comments, etc.
-  Do not import any css files directly.
-  Create all styles using a "style" object and use the "style.{cssClass}" syntax to apply them to elements.
-  Here is an example of how to use the style object:
-  \`\`\`
-  const styles = {
-    root: {
-      background: '#000000',
-      color: '#ffffff',
-    },
-  };
-  
-  return <div style={styles.root}>Hello World!</div>;
-  \`\`\`
+      ## Images (optional)
+      images
+      
+      ## Instructions:
+      You are the top, most distinguished Technical Fellow at Microsoft. Your goal is to write flawless production-level code to address the GitHub issue. 
+      You will be assigned a GitHub issue and you must complete this task by editing the "code.txt" file. 
+      Make the absolute minimumal number of code changes necessary to completely address the GitHub Issue.
+      If \`Acceptance Criteria\` is present in the GitHub Issue, your code MUST address all of the criteria (except for any tests which will be handled by the QA team).
+      Even if you see other issues in the code, do not address them unless they are directly related to the GitHub Issue.
+      You MUST return the entire code file, not just the changes. The system will crash if you provide only the changes in diff format. You must provide the entire code file with your changes.
+      Here is the code that needs to be updated. It is a file called "code.txt":
+      
+      ## Code
+      code
+      Include website copy as needed.
+      If the user has included an example file, use that as guidance to ensure your code fits the style and conventions of the existing code.
+      Any code included in the GitHub issue is example code and may contain bugs or incorrect information or approaches.
+      If text is provided as part of sample code, determine if the given text should be used as-is, or if this is placeholder text and needs to be replaced by variables.
+      This output will be sent to a parser that will extract the code into the correct files.
+      DO NOT include backticks or ANY comments in your response. ONLY respond with the full, complete working file.
+      Your response MUST be valid, modern JavaScript
+      You MUST use clean code and follow best practices for naming conventions, indentation, quality comments, etc.
+      Do not import any css files directly.
+      Create all styles using a "style" object and use the "style.{cssClass}" syntax to apply them to elements.
+      Here is an example of how to use the style object:
+      \`\`\`
+      const styles = {
+        root: {
+          background: '#000000',
+          color: '#ffffff',
+        },
+      };
+      
+      return <div style={styles.root}>Hello World!</div>;
+      \`\`\`
     `);
   });
   it("produces the expected Snapshot System Prompt", () => {

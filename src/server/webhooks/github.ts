@@ -36,6 +36,7 @@ ghApp.webhooks.on("issues.opened", async (event) => {
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} opened event`,
   );
+
   // NOTE: We avoid reacting to our own command suggestion in the repo installed message
   if (
     payload?.issue.body?.includes(AT_MENTION) &&
@@ -49,42 +50,42 @@ ghApp.webhooks.on("issues.opened", async (event) => {
     console.log(
       `[${repository.full_name}] Issue #${payload.issue.number} has no ${AT_MENTION} mention`,
     );
-  }
-  // Create a new todo item in the database
-  try {
-    const project = await db.projects.findBy({
-      repoFullName: repository.full_name,
-    });
-    const todos = await db.todos.selectAll().where({
-      projectId: project.id,
-    });
-    // if the todo for this issue is already in the database, do not create a new todo item
-    if (!todos.some((todo) => todo.issueId === payload.issue.number)) {
-      const installationAuthentication = await authInstallation(
-        installation?.id,
-      );
-      await createTodo(
-        repository.full_name,
-        project.id,
-        payload?.issue.number,
-        installationAuthentication?.token,
-      );
+    // Create a new todo item in the database
+    try {
+      const project = await db.projects.findBy({
+        repoFullName: repository.full_name,
+      });
+      const todos = await db.todos.selectAll().where({
+        projectId: project.id,
+      });
+      // if the todo for this issue is already in the database, do not create a new todo item
+      if (!todos.some((todo) => todo.issueId === payload.issue.number)) {
+        const installationAuthentication = await authInstallation(
+          installation?.id,
+        );
+        await createTodo(
+          repository.full_name,
+          project.id,
+          payload?.issue.number,
+          installationAuthentication?.token,
+        );
 
-      console.log(
-        `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
+        console.log(
+          `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[${repository.full_name}] Error creating todo item for issue #${payload.issue.number}: ${String(error)}`,
       );
     }
-  } catch (error) {
-    console.error(
-      `[${repository.full_name}] Error creating todo item for issue #${payload.issue.number}: ${String(error)}`,
-    );
   }
 });
 
 // add a new webhook event handler for when an issue is edited
 ghApp.webhooks.on("issues.edited", async (event) => {
   const { payload } = event;
-  const { repository, installation } = payload;
+  const { repository } = payload;
   // Only add a new issue to the queue if the issue body contains the @jacob-ai-bot mention for the first time
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} edited event`,
@@ -101,39 +102,6 @@ ghApp.webhooks.on("issues.edited", async (event) => {
   } else {
     console.log(
       `[${repository.full_name}] Issue #${payload.issue.number} has no ${AT_MENTION} mention`,
-    );
-  }
-
-  // Delete the existing todo and create a new one
-  try {
-    const project = await db.projects.findBy({
-      repoFullName: repository.full_name,
-    });
-    const todos = await db.todos.selectAll().where({
-      projectId: project.id,
-    });
-    const existingTodo = todos.find(
-      (todo) => todo.issueId === payload.issue.number,
-    );
-    if (existingTodo) {
-      await db.todos.where({ id: existingTodo.id }).delete();
-      console.log(
-        `[${repository.full_name}] Existing todo item deleted for issue #${payload.issue.number}`,
-      );
-    }
-    const installationAuthentication = await authInstallation(installation?.id);
-    await createTodo(
-      repository.full_name,
-      project.id,
-      payload.issue.number,
-      installationAuthentication?.token,
-    );
-    console.log(
-      `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
-    );
-  } catch (error) {
-    console.error(
-      `[${repository.full_name}] Error updating todo item for issue #${payload.issue.number}: ${String(error)}`,
     );
   }
 });

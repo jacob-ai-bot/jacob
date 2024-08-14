@@ -16,7 +16,6 @@ import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
-// import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 import { sendGptRequest } from "../openai/request";
 
 export type PullRequest =
@@ -173,12 +172,15 @@ export async function fixError(params: FixErrorParams) {
         "user",
         codeTemplateParams,
       );
-      // TODO: Use the self-consistency chain of thought model
       const updatedCode = (await sendGptRequest(
         codeUserPrompt,
         codeSystemPrompt,
         0.2,
         baseEventData,
+        3,
+        60000,
+        undefined,
+        "gpt-4o-64k-output-alpha",
       ))!;
 
       if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {

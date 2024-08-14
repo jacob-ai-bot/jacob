@@ -26,6 +26,7 @@ export interface BaseEventData {
   repoFullName: string;
   userId: string;
   issueId?: number;
+  skipBuild?: boolean;
 }
 
 export const parseTemplate = (
@@ -278,6 +279,11 @@ export enum PRCommand {
   CreateStory = `${AT_MENTION} create story`,
   CodeReview = `${AT_MENTION} code review`,
 }
+
+export const SKIP_BUILD = "--skip-build";
+export const SKIP_DEBUGGING = "--skip-debugging";
+export const SKIP_STORYBOOK = "--skip-storybook";
+export const CUSTOM_BRANCH = "--branch";
 
 export const PR_COMMAND_VALUES = Object.values(PRCommand);
 

@@ -12,9 +12,10 @@ import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
+import { editFiles as agentEditFiles } from "../code/agentEditFiles";
 import { editFiles } from "../code/editFiles";
-// import { agentEditFiles } from "../code/agentEditFiles";
-// import { agentFixError } from "../code/agentFixError";
+import { fixError as agentFixError } from "../code/agentFixError";
+import { fixError } from "../code/fixError";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
 import { createStory } from "../code/createStory";
@@ -29,6 +30,9 @@ import {
   enumFromStringValue,
   getRepoSettings,
   extractIssueNumberFromBranchName,
+  SKIP_BUILD,
+  SKIP_DEBUGGING,
+  SKIP_STORYBOOK,
 } from "../utils";
 import {
   addFailedWorkComment,
@@ -40,7 +44,6 @@ import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
-import { fixError } from "../code/fixError";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -356,6 +359,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       eventName === "pull_request" || eventName === "pull_request_review"
         ? event.payload.pull_request.number
         : undefined,
+    skipBuild: body?.includes(SKIP_BUILD),
   };
 
   const prCommand = enumFromStringValue(
@@ -442,6 +446,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     );
     existingPr = result.data;
     prBranch = existingPr.head.ref;
+
     if (baseEventData.issueId) {
       console.error(
         `[${repository.full_name}] Unexpected issueId when handling PR event`,
@@ -536,7 +541,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             },
           });
         } else {
-          await editFiles({
+          const editFunction = (process.env.AGENT_REPOS ?? "")
+            .split(",")
+            .includes(repository.full_name)
+            ? agentEditFiles
+            : editFiles;
+          await editFunction({
             ...baseEventData,
             repository,
             token: installationAuthentication.token,
@@ -583,6 +593,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         }
         switch (prCommand) {
           case PRCommand.CreateStory:
+            if (body?.includes(SKIP_STORYBOOK)) {
+              console.log(
+                `[${repository.full_name}] Quietly ignoring PR command event (skip storybook flag detected)`,
+              );
+              break;
+            }
             await createStory({
               ...baseEventData,
               repository,
@@ -636,7 +652,18 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             );
             break;
           case PRCommand.FixError:
-            await fixError({
+            if (body?.includes(SKIP_DEBUGGING)) {
+              console.log(
+                `[${repository.full_name}] Quietly ignoring PR command event (skip debugging flag detected)`,
+              );
+              break;
+            }
+            const fixFunction = (process.env.AGENT_REPOS ?? "")
+              .split(",")
+              .includes(repository.full_name)
+              ? agentFixError
+              : fixError;
+            await fixFunction({
               ...baseEventData,
               repository,
               token: installationAuthentication.token,

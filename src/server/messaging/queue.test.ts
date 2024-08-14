@@ -95,6 +95,11 @@ const mockedEditFiles = vi.hoisted(() => ({
 }));
 vi.mock("../code/editFiles", () => mockedEditFiles);
 
+const mockedAgentEditFiles = vi.hoisted(() => ({
+  editFiles: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../code/agentEditFiles", () => mockedAgentEditFiles);
+
 const mockedCodeReview = vi.hoisted(() => ({
   codeReview: vi.fn().mockResolvedValue(undefined),
 }));
@@ -109,6 +114,11 @@ const mockedFixError = vi.hoisted(() => ({
   fixError: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../code/fixError", () => mockedFixError);
+
+const mockedAgentFixError = vi.hoisted(() => ({
+  fixError: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../code/agentFixError", () => mockedAgentFixError);
 
 const mockedRespondToCodeReview = vi.hoisted(() => ({
   respondToCodeReview: vi.fn().mockResolvedValue(undefined),
@@ -160,6 +170,8 @@ const mockedEvents = vi.hoisted(() => ({
 }));
 vi.mock("~/server/utils/events", () => mockedEvents);
 
+const originalAgentRepos = process.env.AGENT_REPOS;
+
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
@@ -175,10 +187,12 @@ describe("onGitHubEvent", () => {
 
   beforeEach(() => {
     server?.resetHandlers();
+    process.env.AGENT_REPOS = "PioneerSquareLabs/t3-starter-template";
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    process.env.AGENT_REPOS = originalAgentRepos;
   });
 
   afterAll(() => {
@@ -206,6 +220,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedNewFile.createNewFile).toHaveBeenCalledTimes(1);
@@ -241,6 +256,7 @@ describe("onGitHubEvent", () => {
       statusMessage: "Error: test error",
       subType: TaskSubType.CREATE_NEW_FILE,
       userId: "jacob-ai-bot[bot]",
+      skipBuild: false,
     });
 
     expect(mockedCheck.runBuildCheck).not.toHaveBeenCalled();
@@ -248,6 +264,8 @@ describe("onGitHubEvent", () => {
   });
 
   test("issue opened - edit files", async () => {
+    process.env.AGENT_REPOS = "";
+
     await onGitHubEvent({
       id: "2",
       name: "issues",
@@ -267,9 +285,40 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
     expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
+
+    expect(mockedAgentEditFiles.editFiles).not.toHaveBeenCalled();
+  });
+
+  test("Agent repo: issue opened - edit files", async () => {
+    await onGitHubEvent({
+      id: "2",
+      name: "issues",
+      payload: issuesOpenedEditFilesPayload,
+    } as WebhookIssueOpenedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "jacob-ai-bot[bot]",
+      issueId: 49,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
+      skipBuild: false,
+    });
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
+    expect(mockedAgentEditFiles.editFiles).toHaveBeenCalledTimes(1);
+
+    expect(mockedEditFiles.editFiles).not.toHaveBeenCalled();
   });
 
   test("PR comment created - code review command", async () => {
@@ -296,7 +345,10 @@ describe("onGitHubEvent", () => {
     expect(mockedCreateStory.createStory).toHaveBeenCalledTimes(1);
   });
 
+  // TODO: Write tests for agent fix error
   test("PR comment created - fix build/test error command", async () => {
+    process.env.AGENT_REPOS = "";
+
     await onGitHubEvent({
       id: "5",
       name: "issue_comment",
@@ -306,6 +358,22 @@ describe("onGitHubEvent", () => {
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedFixError.fixError).toHaveBeenCalledTimes(1);
+
+    expect(mockedAgentFixError.fixError).not.toHaveBeenCalled();
+  });
+
+  test("Agent repo: PR comment created - fix build/test error command", async () => {
+    await onGitHubEvent({
+      id: "5",
+      name: "issue_comment",
+      payload: issueCommentCreatedPRCommandFixErrorPayload,
+    } as WebhookPRCommentCreatedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedAgentFixError.fixError).toHaveBeenCalledTimes(1);
+
+    expect(mockedFixError.fixError).not.toHaveBeenCalled();
   });
 
   test("PR review submitted", async () => {
@@ -429,6 +497,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
@@ -452,6 +521,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(1);
   });
@@ -479,6 +549,7 @@ describe("onGitHubEvent", () => {
       repoSettings: {
         language: Language.JavaScript,
       },
+      skipBuild: false,
     });
     expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
     expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
@@ -498,6 +569,7 @@ describe("onGitHubEvent", () => {
       statusMessage: "Error: build error",
       subType: TaskSubType.EDIT_FILES,
       userId: "cpirich",
+      skipBuild: false,
     });
   });
 
@@ -551,6 +623,7 @@ describe("onGitHubEvent", () => {
       status: TaskStatus.CLOSED,
       subType: TaskSubType.EDIT_FILES,
       userId: "cpirich",
+      skipBuild: undefined,
     });
     expect(mockedClone.cloneRepo).not.toHaveBeenCalled();
   });
