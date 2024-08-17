@@ -1,8 +1,11 @@
-import { CONTEXT_ITEMS } from "~/data/codebaseContext";
+import { api } from "~/trpc/server";
 import Codebase from "./Codebase";
 
 const DashboardPage = async () => {
-  return <Codebase contextItems={CONTEXT_ITEMS} />;
+  const contextItems = await api.codebaseContext.getAll({
+    projectId: 567,
+  });
+  return <Codebase contextItems={contextItems} />;
 };
 
 export default DashboardPage;

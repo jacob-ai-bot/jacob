@@ -7,7 +7,6 @@ interface CodebaseParams {
 }
 
 const Codebase: React.FC<CodebaseParams> = ({ contextItems }) => {
-  //   return <div> HOLD</div>;
   return <CodebaseVisualizer contextItems={contextItems} />;
 };
 

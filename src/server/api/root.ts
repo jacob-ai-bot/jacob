@@ -2,6 +2,7 @@ import { createCallerFactory, createTRPCRouter } from "./trpc";
 import { githubRouter } from "./routers/github";
 import { eventsRouter } from "./routers/events";
 import { todoRouter } from "./routers/todos";
+import { codebaseContextRouter } from "./routers/codebaseContext";
 
 /**
  * This is the primary router for your server.
@@ -12,6 +13,7 @@ export const appRouter = createTRPCRouter({
   github: githubRouter,
   events: eventsRouter,
   todos: todoRouter,
+  codebaseContext: codebaseContextRouter,
 });
 
 // export type definition of API

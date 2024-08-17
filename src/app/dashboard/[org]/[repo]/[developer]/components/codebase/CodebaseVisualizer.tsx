@@ -1,137 +1,225 @@
-// components/CodebaseVisualizer.tsx
-import React, { useState, useCallback, useMemo } from "react";
-import {
-  ReactFlow,
-  type Node,
-  type Edge,
-  Controls,
-  MiniMap,
-  Background,
-  useNodesState,
-  useEdgesState,
-  useReactFlow,
-  ReactFlowProvider,
-  type FitViewOptions,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { AnimatePresence } from "framer-motion";
-import { type ContextItem } from "~/server/utils/codebaseContext";
-import CodebaseNode from "./CodebaseNode";
-import CodebaseDetails from "./CodebaseDetails";
-import ParticleBackground from "./ParticleBackground";
+"use client";
 
-const nodeTypes = {
-  codebase: CodebaseNode,
-};
+import React, { useState, useMemo, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Tree } from "./Tree";
+import CodebaseDetails from "./CodebaseDetails";
+import { type ContextItem } from "~/server/utils/codebaseContext";
+import { type FileType } from "./types";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
 }
 
-const CodebaseVisualizerInner: React.FC<CodebaseVisualizerProps> = ({
+export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   contextItems,
 }) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
-  const [selectedNode, setSelectedNode] = useState<ContextItem | null>(null);
-  const { fitView, getNode } = useReactFlow();
+  const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
+  const [currentPath, setCurrentPath] = useState<string[]>(["root"]);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [isMounted, setIsMounted] = useState(false);
+  const [detailsWidth, setDetailsWidth] = useState(30); // New state for details width
+  const [allFiles, setAllFiles] = useState<string[]>([]);
 
-  // Transform ContextItems into nodes and edges
-  useMemo(() => {
-    const newNodes: Node[] = contextItems.map((item, index) => ({
-      id: item.file,
-      type: "codebase",
-      data: { label: item.file, item },
-      position: { x: index * 250, y: Math.sin(index) * 100 },
-    }));
+  useEffect(() => {
+    setIsMounted(true);
+    const updateDimensions = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight * 0.7,
+      });
+    };
 
-    const newEdges: Edge[] = contextItems.flatMap((item) =>
-      item.importedFiles.map((importedFile) => ({
-        id: `${item.file}-${importedFile}`,
-        source: item.file,
-        target: importedFile,
-        animated: true,
-        style: { stroke: "url(#edge-gradient)" },
-      })),
-    );
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
 
-    setNodes(newNodes);
-    setEdges(newEdges);
-  }, [contextItems, setNodes, setEdges]);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
 
-  const onNodeClick = useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      const nodePosition = getNode(node.id)?.position;
-      if (nodePosition) {
-        const fitViewOptions: FitViewOptions = {
-          duration: 800,
-          padding: 0.2,
-        };
-        fitView(fitViewOptions);
-        setTimeout(() => setSelectedNode(node.data.item), 400);
+  useEffect(() => {
+    const files = contextItems.map((item) => item.file);
+    setAllFiles(files);
+  }, [contextItems]);
+
+  const filteredContextItems = useMemo(() => {
+    const prefix = "/" + currentPath.slice(1).join("/");
+    return contextItems.filter((item) => item.file.startsWith(prefix));
+  }, [contextItems, currentPath]);
+
+  const treeData = useMemo(() => {
+    return processContextItems(filteredContextItems, currentPath);
+  }, [filteredContextItems, currentPath]);
+
+  const handleNodeClick = (path: string) => {
+    console.log("Node clicked", path);
+    const folder = path
+      .split("/")
+      .filter(Boolean)
+      .find((part) => !part.includes("."));
+    if (folder) {
+      setCurrentPath([...path.split("/").filter(Boolean)]);
+    }
+
+    const item = contextItems.find((item) => item.file?.includes(path));
+    if (item) {
+      console.log("Selected item", item);
+      setSelectedItem(item);
+      const parts = ["root", ...path.split("/").filter(Boolean)];
+      // If it's a file, remove the last part to show its containing folder
+      if (!item.children) {
+        parts.pop();
       }
-    },
-    [getNode, fitView],
-  );
+      setCurrentPath(parts);
+    } else {
+      // if the item isn't found, check to see if the path is a folder. Folders don't have extensions
+
+      console.log("item", item);
+      console.log(
+        "contextItems",
+        contextItems
+          ?.map((item) => item.file)
+          .filter((file) => file?.includes("src/server/git")),
+      );
+      console.error("Item not found for path", path);
+    }
+  };
+
+  const handleBreadcrumbClick = (index: number) => {
+    setCurrentPath(currentPath.slice(0, index + 1));
+    setSelectedItem(null);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedItem(null);
+  };
+
+  const toggleDetailsWidth = () => {
+    setDetailsWidth(detailsWidth === 30 ? 50 : 30);
+  };
+
+  if (!isMounted) {
+    return null; // or a loading spinner
+  }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
-      <ParticleBackground />
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
-        nodeTypes={nodeTypes}
-        fitView
-        className="transition-all duration-300 ease-in-out"
-      >
-        <defs>
-          <linearGradient
-            id="edge-gradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
+    <div className="flex h-screen flex-col overflow-hidden bg-blueGray-700">
+      <div className="flex w-full flex-1 flex-row overflow-hidden">
+        <div className="flex w-full flex-col">
+          <div className="h-12 w-full flex-row bg-blueGray-900/30 p-2 text-left">
+            {currentPath.map((part, index) => (
+              <React.Fragment key={index}>
+                <span className="text-blueGray-400">{index > 0 && " / "}</span>
+                <button
+                  className="text-blueGray-400 hover:text-blue-500 hover:underline"
+                  onClick={() => handleBreadcrumbClick(index)}
+                >
+                  {part}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
+          <motion.div
+            className="tree-container py-8"
+            initial={{ width: "100%" }}
+            animate={{
+              width: selectedItem ? `${100 - detailsWidth}%` : "100%",
+            }}
+            transition={{ duration: 0.3 }}
           >
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="100%" stopColor="#8b5cf6" />
-          </linearGradient>
-        </defs>
-        <Controls className="bg-blueGray-800 bg-opacity-75 backdrop-blur" />
-        <MiniMap
-          nodeColor={(node) => {
-            switch (node.type) {
-              case "codebase":
-                return "#ec4899";
-              default:
-                return "#8b5cf6";
-            }
-          }}
-          className="bg-blueGray-800 bg-opacity-75 backdrop-blur"
-        />
-        <Background color="#60a5fa" gap={16} />
-      </ReactFlow>
-      <AnimatePresence>
-        {selectedNode && (
-          <CodebaseDetails
-            item={selectedNode}
-            onClose={() => setSelectedNode(null)}
-          />
-        )}
-      </AnimatePresence>
+            <Tree
+              data={treeData}
+              maxDepth={12}
+              colorEncoding="type"
+              filesChanged={[]}
+              customFileColors={{}}
+              onNodeClick={handleNodeClick}
+              width={
+                selectedItem
+                  ? dimensions.width * ((100 - detailsWidth) / 100)
+                  : dimensions.width
+              }
+              height={dimensions.height}
+              selectedItem={selectedItem}
+              selectedFolder={"/" + currentPath?.join("/")}
+            />
+          </motion.div>
+        </div>
+        <AnimatePresence>
+          {selectedItem && (
+            <motion.div
+              className="details-container w-full"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: `${detailsWidth}%`, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <CodebaseDetails
+                item={selectedItem}
+                onClose={handleCloseDetails}
+                onToggleWidth={toggleDetailsWidth}
+                isExpanded={detailsWidth === 50}
+                allFiles={allFiles}
+                onNodeClick={handleNodeClick}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
 
-// Wrapper component that provides ReactFlowProvider
-const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = (props) => {
-  return (
-    <ReactFlowProvider>
-      <CodebaseVisualizerInner {...props} />
-    </ReactFlowProvider>
-  );
-};
+function processContextItems(
+  contextItems: ContextItem[],
+  currentPath: string[],
+): FileType {
+  const root: FileType = {
+    name: currentPath[currentPath.length - 1],
+    path: "/" + currentPath.slice(1).join("/"),
+    size: 0,
+    children: [],
+  };
+
+  contextItems.forEach((item) => {
+    const parts = item.file
+      .split("/")
+      .filter(Boolean)
+      .slice(currentPath.length - 1);
+    let currentNode = root;
+
+    parts.forEach((part, index) => {
+      let child = currentNode.children?.find((c) => c.name === part);
+      if (!child) {
+        child = {
+          name: part,
+          path: currentPath
+            .slice(1)
+            .concat(parts.slice(0, index + 1))
+            .join("/"),
+          size: 0,
+          children: [],
+        };
+        // before we push the child, make sure the file exists in the contextItems.files array
+        // if it doesn't, don't push it
+        const fileExists = contextItems.find((contextItem) =>
+          contextItem.file?.includes(child?.path ?? ""),
+        );
+        if (fileExists) {
+          currentNode.children?.push(child);
+        }
+      }
+      if (index === parts.length - 1) {
+        child.size = item.text?.length ?? 50;
+        // If it's a file, remove the children array
+        if (!item.children) {
+          delete child.children;
+        }
+      }
+      currentNode = child;
+    });
+  });
+
+  return root;
+}
 
 export default CodebaseVisualizer;

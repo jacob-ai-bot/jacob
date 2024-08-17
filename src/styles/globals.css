@@ -272,6 +272,102 @@ h1 {
   @apply border border-blueGray-700;
 }
 
+.details {
+  @apply font-figtree;
+  @apply text-base;
+  @apply font-light;
+  @apply text-neutral-300;
+}
+
+.markdown-details {
+  @apply font-figtree;
+  @apply text-base;
+  @apply font-light;
+  @apply text-neutral-300;
+}
+
+.markdown-details h1 {
+  @apply text-base;
+  @apply font-figtree;
+  @apply font-medium;
+  @apply text-neutral-200;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-details h2 {
+  @apply text-base;
+  @apply font-figtree;
+  @apply font-medium;
+  @apply text-neutral-200;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-details h3 {
+  @apply text-base;
+  @apply font-figtree;
+  @apply font-medium;
+  @apply text-neutral-200;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-details h4 {
+  @apply text-base;
+  @apply font-figtree;
+  @apply text-neutral-200;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-details h5 {
+  @apply text-base;
+  @apply font-figtree;
+  @apply text-neutral-200;
+  @apply mt-1;
+  @apply mb-3;
+}
+
+.markdown-details hr {
+  @apply border-neutral-500;
+  @apply my-3;
+}
+
+.markdown-details p {
+  @apply font-figtree;
+  @apply my-3;
+}
+
+.markdown-details ul {
+  @apply font-figtree;
+  list-style: disc;
+  @apply p-2;
+}
+
+.markdown-details li {
+  @apply font-figtree;
+  @apply mb-2;
+}
+
+.markdown-details strong {
+  @apply font-figtree;
+  @apply text-base;
+  @apply font-semibold;
+}
+
+.markdown-details code {
+  @apply text-neutral-200;
+  @apply font-figtree;
+  @apply font-semibold;
+}
+
+.markdown-details a {
+  @apply font-figtree;
+  @apply text-light-blue;
+  @apply underline;
+}
+
 @keyframes blink {
   50% {
     opacity: 0.5;
@@ -291,6 +387,32 @@ h1 {
 }
 .fade-in {
   animation: fade-in 0.5s ease-in-out;
+}
+
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.75);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  position: relative;
+  background: #1f2937;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  outline: none;
+  width: 90%;
+  height: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @tailwind utilities;
