@@ -4,12 +4,7 @@ import { type ContextItem } from "~/server/utils/codebaseContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTimes,
-  faFileCode,
-  faFileImport,
-  faFileExport,
   faInfoCircle,
-  faProjectDiagram,
-  faLink,
   faChevronLeft,
   faChevronRight,
   faChevronDown,

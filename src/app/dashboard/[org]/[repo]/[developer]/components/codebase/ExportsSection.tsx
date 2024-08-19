@@ -9,7 +9,7 @@ import {
 import { Section } from "./CodebaseDetails";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import { ContextItem } from "~/server/utils/codebaseContext";
+import { type ContextItem } from "~/server/utils/codebaseContext";
 
 export interface ExportsSectionProp {
   contextItem: ContextItem;

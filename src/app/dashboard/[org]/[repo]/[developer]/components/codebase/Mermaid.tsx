@@ -62,9 +62,9 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
     const interval = setInterval(() => {
       if (mermaid.mermaidAPI) {
         clearInterval(interval);
-        renderChart();
+        void renderChart();
       }
-    }, 100);
+    }, 300);
   }, [chart]);
 
   if (hideDiagram) {

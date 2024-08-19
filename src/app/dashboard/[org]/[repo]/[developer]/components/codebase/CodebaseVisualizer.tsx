@@ -51,7 +51,6 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   }, [filteredContextItems, currentPath]);
 
   const handleNodeClick = (path: string) => {
-    console.log("Node clicked", path);
     const folder = path
       .split("/")
       .filter(Boolean)
@@ -62,24 +61,15 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
 
     const item = contextItems.find((item) => item.file?.includes(path));
     if (item) {
-      console.log("Selected item", item);
       setSelectedItem(item);
       const parts = ["root", ...path.split("/").filter(Boolean)];
       // If it's a file, remove the last part to show its containing folder
-      if (!item.children) {
+      if (item.file?.includes(".")) {
         parts.pop();
       }
       setCurrentPath(parts);
     } else {
       // if the item isn't found, check to see if the path is a folder. Folders don't have extensions
-
-      console.log("item", item);
-      console.log(
-        "contextItems",
-        contextItems
-          ?.map((item) => item.file)
-          .filter((file) => file?.includes("src/server/git")),
-      );
       console.error("Item not found for path", path);
     }
   };
@@ -174,7 +164,7 @@ function processContextItems(
   currentPath: string[],
 ): FileType {
   const root: FileType = {
-    name: currentPath[currentPath.length - 1],
+    name: currentPath[currentPath.length - 1] ?? "root",
     path: "/" + currentPath.slice(1).join("/"),
     size: 0,
     children: [],
@@ -211,7 +201,7 @@ function processContextItems(
       if (index === parts.length - 1) {
         child.size = item.text?.length ?? 50;
         // If it's a file, remove the children array
-        if (!item.children) {
+        if (!item.file?.includes(".")) {
           delete child.children;
         }
       }

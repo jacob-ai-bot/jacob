@@ -4,19 +4,14 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faCode,
   faFileImport,
   faFileExport,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 
-interface CodebaseNodeData {
-  label: string;
-  item: ContextItem;
-}
-
-const CodebaseNode: React.FC<NodeProps<CodebaseNodeData>> = ({ data }) => {
+const CodebaseNode: React.FC<NodeProps<any>> = ({ data }) => {
+  const { item, label } = data as { item: ContextItem; label: string };
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -52,7 +47,7 @@ const CodebaseNode: React.FC<NodeProps<CodebaseNodeData>> = ({ data }) => {
           className="!bg-pink-500"
         />
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-100">{data.label}</h3>
+          <h3 className="text-lg font-semibold text-gray-100">{label}</h3>
           <div className="flex space-x-2">
             <motion.span
               className="flex items-center text-sm text-gray-300"
@@ -63,7 +58,7 @@ const CodebaseNode: React.FC<NodeProps<CodebaseNodeData>> = ({ data }) => {
                 icon={faFileImport}
                 className="text-pink-500 mr-1"
               />
-              {data.item.importStatements.length}
+              {item.importStatements.length}
             </motion.span>
             <motion.span
               className="flex items-center text-sm text-gray-300"
@@ -74,7 +69,7 @@ const CodebaseNode: React.FC<NodeProps<CodebaseNodeData>> = ({ data }) => {
                 icon={faFileExport}
                 className="mr-1 text-purple-500"
               />
-              {data.item.exports.length}
+              {item.exports.length}
             </motion.span>
           </div>
         </div>
@@ -88,7 +83,7 @@ const CodebaseNode: React.FC<NodeProps<CodebaseNodeData>> = ({ data }) => {
               className="mt-2 overflow-hidden"
             >
               <p className="text-sm text-gray-300">
-                {data.item.overview.slice(0, 100)}...
+                {item.overview.slice(0, 100)}...
               </p>
             </motion.div>
           )}

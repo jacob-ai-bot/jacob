@@ -15,7 +15,6 @@ export const CircleText = ({
   r = 10,
   rotate = 0,
   text = "",
-  strokeOpacity = 1,
   ...props
 }: CircleTextProps) => {
   const id = useMemo(() => uniqueId("CircleText--"), []);

@@ -66,7 +66,7 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
     ];
     return imports.reduce(
       (acc, imp) => {
-        const parsedImport = parseImport(imp);
+        const parsedImport = parseImport(imp) ?? "";
         const category =
           isInternalImport(parsedImport) && parsedImport !== currentFile
             ? "internal"
@@ -75,8 +75,8 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
         return acc;
       },
       { internal: [] as string[], external: [] as string[] },
-    );
-  }, [importStatements, importedFiles, allFiles, currentFile]);
+    ); // eslint-disable-next-line
+  }, [importStatements, importedFiles, currentFile]);
 
   const renderInternalImport = (
     imp: string,
@@ -84,9 +84,9 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
     index: number,
   ) => {
     const isExpanded = expandedItems.has(index);
-    const fileName = imp.split("/").pop() || imp;
+    const fileName = imp.split("/").pop() ?? imp;
     const previewCode =
-      `${details?.code_referenced?.slice(0, 50).trim()}...` || "";
+      `${details?.code_referenced?.slice(0, 50).trim()}...` ?? "";
 
     return (
       <motion.div
