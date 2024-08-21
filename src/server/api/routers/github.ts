@@ -14,15 +14,21 @@ import { AT_MENTION } from "~/server/utils";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 
 export const githubRouter = createTRPCRouter({
-  getRepos: protectedProcedure.input(z.object({}).optional()).query(
-    async ({
-      ctx: {
-        session: { accessToken },
+  getRepos: protectedProcedure
+    .input(z.object({ includeProjects: z.boolean().optional() }).optional())
+    .query(
+      async ({
+        input,
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        return await getAllRepos(accessToken, input?.includeProjects);
       },
-    }) => {
-      return await getAllRepos(accessToken);
-    },
-  ),
+    ),
+  getGithubAppName: protectedProcedure.query(async () => {
+    return process.env.GITHUB_APP_NAME;
+  }),
   getIssueTitleAndBody: protectedProcedure
     .input(z.object({ repo: z.string(), title: z.string(), body: z.string() }))
     .query(

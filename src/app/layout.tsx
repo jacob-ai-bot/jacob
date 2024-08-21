@@ -1,16 +1,9 @@
 import "~/styles/globals.css";
-
-import { Poppins } from "next/font/google";
+import "~/index.css";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-sans",
-});
 
 export const metadata = {
   title: "JACoB",
@@ -25,9 +18,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        className={`h-screen w-screen bg-[#1d265d] text-center font-sans leading-relaxed text-white ${poppins.variable}`}
-      >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className={`h-screen w-screen text-dark-blue`}>
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <ToastContainer />
       </body>

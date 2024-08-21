@@ -16,19 +16,15 @@
 
 html,
 body {
-  @apply min-h-full w-full bg-blueGray-900;
+  @apply min-h-full w-full;
 }
 
 body {
-  @apply flex flex-col bg-beige font-poppins;
+  @apply flex w-full flex-col bg-beige;
 }
 
 #__next {
   @apply flex h-full min-h-screen w-full;
-}
-
-h1 {
-  @apply font-gooper text-4xl font-semibold;
 }
 
 .button-primary {
