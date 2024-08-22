@@ -106,10 +106,10 @@ export async function initRabbitMQ({ listener }: { listener: boolean }) {
   }
 }
 
-async function addProjectToDB(
+export async function addProjectToDB(
   repository: Pick<Repository, "id" | "node_id" | "name" | "full_name">,
-  eventId: string,
-  eventName: string,
+  eventId?: string,
+  eventName?: string,
 ) {
   const projectUpdate = {
     repoName: repository.name,
@@ -123,9 +123,11 @@ async function addProjectToDB(
     })
     .onConflict("repoId")
     .merge(projectUpdate);
-  console.log(
-    `[${repository.full_name}] onGitHubEvent: ${eventId} ${eventName} : DB project ID: ${project.id}`,
-  );
+  if (eventId && eventName) {
+    console.log(
+      `[${repository.full_name}] onGitHubEvent: ${eventId} ${eventName} : DB project ID: ${project.id}`,
+    );
+  }
   return project;
 }
 
