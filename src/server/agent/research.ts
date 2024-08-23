@@ -387,7 +387,9 @@ export async function selectRelevantFiles(
     )) as RelevantFiles[];
 
     // convert relevant files to standard paths
-    const standardRelevantFiles = relevantFiles.map(standardizePath);
+    const standardRelevantFiles = relevantFiles
+      .map(standardizePath)
+      .filter((p) => p?.length);
 
     // Filter the relevant files to ensure they exist in allFiles
     const filteredRelevantFiles = standardRelevantFiles.filter((file) =>

@@ -443,7 +443,7 @@ export function standardizePath(filePath: string): StandardizedPath {
   if (!isValidPath(cleanPath)) {
     console.log("Invalid file path:", filePath);
     console.log("Standardized path:", cleanPath);
-    throw new Error(`Invalid file path: ${filePath}`);
+    return "" as StandardizedPath;
   }
 
   return cleanPath as StandardizedPath;

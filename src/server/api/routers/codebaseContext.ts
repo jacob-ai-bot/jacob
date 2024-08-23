@@ -9,7 +9,12 @@ import { cloneRepo } from "~/server/git/clone";
 import { traverseCodebase } from "~/server/analyze/traverse";
 import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
-import { addProjectToDB } from "~/server/messaging/queue";
+import {
+  addProjectToDB,
+  createWebEvent,
+  publishWebEventToQueue,
+  WebEvent,
+} from "~/server/messaging/queue";
 
 export const codebaseContextRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -48,7 +53,7 @@ export const codebaseContextRouter = createTRPCRouter({
         return (existingContext?.context as ContextItem) ?? null;
       },
     ),
-
+  // TODO: CALL THIS FROM THE FRONT END, ALSO CREATE THE PROMPT THAT AUTO-CREATES THE CONFIG AND PASSES IT TO THE SETUP SCREEN. CALL THESE IN PAGE.TSX. ALSO TRY TO RUN THE BUILD OR AT LEAST TRY TO CHECK TO SEE IF THE USER HAS ISSUES ENABLED IN THE REPO OR NOT.
   generateCodebaseContext: protectedProcedure
     .input(
       z.object({
@@ -62,7 +67,7 @@ export const codebaseContextRouter = createTRPCRouter({
         ctx: {
           session: { accessToken },
         },
-      }): Promise<ContextItem[]> => {
+      }): Promise<void> => {
         const octokit = new Octokit({ auth: accessToken });
 
         if (!org || !repoName) {
@@ -73,39 +78,23 @@ export const codebaseContextRouter = createTRPCRouter({
         }
 
         // Call Octokit to get the repository
-        const { data: respository } = await octokit.rest.repos.get({
+        const { data: repository } = await octokit.rest.repos.get({
           owner: org,
           repo: repoName,
         });
-        const repoFullName = respository.full_name;
+        const repoFullName = repository.full_name;
 
-        // Try to fetch the project from the database
-        let project = await db.projects.findByOptional({ repoFullName });
-
-        // If the project doesn't exist, create it
-        if (!project) {
-          project = await addProjectToDB(respository, "", "");
-        }
-
-        // Clone the repository
-        const { path: rootPath, cleanup } = await cloneRepo({
-          repoName: repoFullName,
+        const webEvent = createWebEvent({
+          repoId: repository.id,
+          repoFullName,
+          action: "generate_context",
           token: accessToken,
+          params: {
+            repository,
+          },
         });
 
-        try {
-          // Generate or retrieve the codebase context
-          const allFiles = traverseCodebase(rootPath);
-          const contextItems = await getOrCreateCodebaseContext(
-            project.id,
-            rootPath,
-            allFiles ?? [],
-          );
-          return contextItems;
-        } finally {
-          // Ensure cleanup is called after processing
-          await cleanup();
-        }
+        await publishWebEventToQueue(webEvent);
       },
     ),
 });

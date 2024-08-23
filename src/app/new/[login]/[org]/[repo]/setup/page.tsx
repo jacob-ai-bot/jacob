@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// import { api } from "~/trpc/server";
+import { api } from "~/trpc/server";
 import { getServerAuthSession } from "~/server/auth";
 import Setup from "./Setup";
 
@@ -18,7 +18,13 @@ const SetupPage = async ({
     redirect("/");
   }
 
-  return <Setup />;
+  // Generate the codebase context, this will add it to the queue
+  await api.codebaseContext.generateCodebaseContext({
+    org: params.org,
+    repoName: params.repo,
+  });
+
+  return <Setup org={params.org} repo={params.repo} />;
 };
 
 export default SetupPage;

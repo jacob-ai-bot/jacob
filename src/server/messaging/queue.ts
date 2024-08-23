@@ -44,6 +44,8 @@ import { getFile } from "../github/repo";
 import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
+import { traverseCodebase } from "../analyze/traverse";
+import { getOrCreateCodebaseContext } from "../utils/codebaseContext";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -84,10 +86,12 @@ export async function initRabbitMQ({ listener }: { listener: boolean }) {
       }
       console.log(`Received queue message: ${message.properties.messageId}`);
       try {
-        const event = JSON.parse(
-          message.content.toString(),
-        ) as WebhookQueuedEvent;
-        await onGitHubEvent(event);
+        const event = JSON.parse(message.content.toString()) as QueuedEvent;
+        if (event.name === "web_event") {
+          await handleWebEvent(event);
+        } else {
+          await onGitHubEvent(event);
+        }
         channel?.ack(message);
       } catch (error) {
         console.error(`Error parsing or processing message: ${String(error)}`);
@@ -103,6 +107,42 @@ export async function initRabbitMQ({ listener }: { listener: boolean }) {
   } catch (error) {
     console.error(`Error initializing RabbitMQ: ${String(error)}`);
     return;
+  }
+}
+
+async function handleWebEvent(event: WebEvent) {
+  const { params, action, repoId, repoFullName, token } = event.payload;
+  console.log(
+    `handleWebEvent: ${action} ${repoId} ${repoFullName} ${token} ${JSON.stringify(params)}`,
+  );
+  if (action === "generate_context") {
+    // Try to fetch the project from the database
+    let project = await db.projects.findByOptional({ repoFullName });
+
+    // If the project doesn't exist, create it
+    if (!project) {
+      project = await addProjectToDB(params.repository as Repository, "", "");
+    }
+
+    // Clone the repository
+    const { path: rootPath, cleanup } = await cloneRepo({
+      repoName: repoFullName,
+      token,
+    });
+
+    try {
+      // Generate or retrieve the codebase context
+      const allFiles = traverseCodebase(rootPath);
+      const contextItems = await getOrCreateCodebaseContext(
+        project.id,
+        rootPath,
+        allFiles ?? [],
+      );
+      return contextItems;
+    } finally {
+      // Ensure cleanup is called after processing
+      await cleanup();
+    }
   }
 }
 
@@ -823,6 +863,19 @@ export type WebhookQueuedEvent =
   | WebhookInstallationRepositoriesAddedEvent
   | WebhookInstallationCreatedEvent;
 
+export type WebEvent = {
+  name: "web_event";
+  payload: {
+    repoId: number;
+    repoFullName: string;
+    action: string;
+    token: string;
+    params: Record<string, unknown>;
+  };
+};
+
+export type QueuedEvent = WebhookQueuedEvent | WebEvent;
+
 type WithOctokit<T> = T & {
   octokit: Octokit;
 };
@@ -865,4 +918,50 @@ export const publishGitHubEventToQueue = async (
   console.log(
     `[${repoName}] publishGitHubEventToQueue: ${event.id} ${event.name}`,
   );
+};
+
+// This function is used to publish events from the web frontend to the queue via the API.
+export const publishWebEventToQueue = async (event: WebEvent) => {
+  await initRabbitMQ({ listener: false });
+  if (!channel) {
+    console.error(`publishWebEventToQueue: NO CHANNEL`);
+    return;
+  }
+  console.log(`publishWebEventToQueue: ${event.payload.action}`);
+  channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(event)), {
+    persistent: true,
+  });
+  console.log(
+    `[${event.payload.repoFullName}] Web Event queued: ${event.payload.action}`,
+  );
+};
+
+export type WebEventAction =
+  | "generate_context"
+  | "create_project"
+  | "generate_settings";
+
+export const createWebEvent = ({
+  repoId,
+  repoFullName,
+  action,
+  token,
+  params = {},
+}: {
+  repoId: number;
+  repoFullName: string;
+  action: WebEventAction;
+  token: string;
+  params: Record<string, unknown>;
+}): WebEvent => {
+  return {
+    name: "web_event",
+    payload: {
+      repoId,
+      repoFullName,
+      action,
+      token,
+      params,
+    },
+  };
 };

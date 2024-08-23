@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRocket, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+
 export enum Language {
   TypeScript = "TypeScript",
   JavaScript = "JavaScript",
@@ -65,12 +66,18 @@ export interface RepoSettings {
   packageDependencies?: Record<string, string>;
 }
 
-const Setup: React.FC = () => {
+interface SetupProps {
+  org: string;
+  repo: string;
+}
+
+const Setup: React.FC<SetupProps> = ({ org, repo }) => {
   const [settings, setSettings] = useState<Partial<RepoSettings>>({
     language: Language.TypeScript,
     style: Style.CSS,
   });
 
+  // TODO: try to automatically populate the settings
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement

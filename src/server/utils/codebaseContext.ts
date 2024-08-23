@@ -127,6 +127,7 @@ export async function getOrCreateCodebaseContext(
 
   // Second pass: Process remaining files in bulk
   if (filesToProcess.length > 0) {
+    console.log("processing files for context", filesToProcess);
     const newContextItems = await getCodebaseContext(
       rootPath,
       filesToProcess,
