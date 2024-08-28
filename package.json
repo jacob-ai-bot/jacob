@@ -16,7 +16,6 @@
     "start": "NODE_ENV=production tsx src/server/prodServer.cts",
     "lint:fix": "next lint --fix",
     "test": "vitest",
-    "test:debug": "vitest run --no-file-parallelism --reporter verbose",
     "test:coverage": "vitest run --coverage",
     "listener": "tsx src/server/messaging/listener.ts",
     "db": "tsx src/server/db/dbScript.ts",

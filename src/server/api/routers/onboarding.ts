@@ -84,7 +84,6 @@ export const onboardingRouter = createTRPCRouter({
           if (!project) {
             throw new Error("Project not found");
           }
-          console.log("repoSettings", JSON.stringify(repoSettings, null, 2));
           try {
             await runBuildCheck({
               path,

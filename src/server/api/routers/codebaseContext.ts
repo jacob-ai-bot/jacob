@@ -46,7 +46,6 @@ export const codebaseContextRouter = createTRPCRouter({
         return (existingContext?.context as ContextItem) ?? null;
       },
     ),
-  // TODO: CALL THIS FROM THE FRONT END, ALSO CREATE THE PROMPT THAT AUTO-CREATES THE CONFIG AND PASSES IT TO THE SETUP SCREEN. CALL THESE IN PAGE.TSX. ALSO TRY TO RUN THE BUILD OR AT LEAST TRY TO CHECK TO SEE IF THE USER HAS ISSUES ENABLED IN THE REPO OR NOT.
   generateCodebaseContext: protectedProcedure
     .input(
       z.object({
