@@ -40,7 +40,7 @@ export const GetStarted: React.FC = () => {
             </Link>
           </div>
 
-          <SignInButton callbackUrl={`/new/success`} />
+          <SignInButton callbackUrl={`/setup/success`} />
         </div>
 
         <div className="relative w-1/2 overflow-hidden bg-gradient-to-br from-aurora-100 to-blossom-100 p-12">
