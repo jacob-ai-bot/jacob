@@ -244,6 +244,7 @@ export async function getFileLatestCommitHash(
   const { stdout } = await executeWithLogRequiringSuccessWithoutEvent({
     ...gitParams,
     command: `git log -n 1 --format="%H" -- ${relativePath}`,
+    shouldLog: false,
   });
   if (typeof stdout !== "string") {
     return "";

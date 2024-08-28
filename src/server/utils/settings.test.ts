@@ -4,7 +4,7 @@ import path from "path";
 
 import { Language, getRepoSettings } from "./settings";
 
-describe("getRepoSettings", () => {
+describe("getRepoSettings", async () => {
   const rootPath = "./";
   const settingsFilePath = path.join(rootPath, "jacob.json");
   const packageJsonFilePath = path.join(rootPath, "package.json");
@@ -20,21 +20,21 @@ describe("getRepoSettings", () => {
     vi.clearAllMocks();
   });
 
-  it("returns language as either TypeScript or JavaScript when there is no jacob.json file", () => {
+  it("returns language as either TypeScript or JavaScript when there is no jacob.json file", async () => {
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     vi.spyOn(fs, "readFileSync").mockImplementation(() => {
       throw new Error("ENOENT: no such file or directory");
     });
-    expect(getRepoSettings(rootPath)).toStrictEqual({
+    await expect(getRepoSettings(rootPath)).resolves.toStrictEqual({
       language: Language.TypeScript,
     });
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
-    expect(getRepoSettings(rootPath)).toStrictEqual({
+    await expect(getRepoSettings(rootPath)).resolves.toStrictEqual({
       language: Language.JavaScript,
     });
   });
 
-  it("returns a valid RepoSettings when there is a jacob.json file", () => {
+  it("returns a valid RepoSettings when there is a jacob.json file", async () => {
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
     const fileContents = {
       env: { VAR1: "var1", VAR2: "var2" },
@@ -45,7 +45,7 @@ describe("getRepoSettings", () => {
       }
       throw new Error("ENOENT: no such file or directory");
     });
-    const settings = getRepoSettings(rootPath);
+    const settings = await getRepoSettings(rootPath);
     expect(settings).toStrictEqual({
       ...fileContents,
       language: Language.JavaScript,
@@ -53,13 +53,13 @@ describe("getRepoSettings", () => {
 
     // with language set to TypeScript when tsconfig.json is present
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    expect(getRepoSettings(rootPath)).toStrictEqual({
+    await expect(getRepoSettings(rootPath)).resolves.toStrictEqual({
       ...fileContents,
       language: Language.TypeScript,
     });
   });
 
-  it("returns the same jacob.json settings regardless of tsconfig.json when language is specified", () => {
+  it("returns the same jacob.json settings regardless of tsconfig.json when language is specified", async () => {
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
     const fileContents = {
       language: Language.JavaScript,
@@ -70,15 +70,17 @@ describe("getRepoSettings", () => {
       }
       throw new Error("ENOENT: no such file or directory");
     });
-    const settings = getRepoSettings(rootPath);
+    const settings = await getRepoSettings(rootPath);
     expect(settings).toStrictEqual(fileContents);
 
     // with language set to TypeScript when tsconfig.json is present
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    expect(getRepoSettings(rootPath)).toStrictEqual(fileContents);
+    await expect(getRepoSettings(rootPath)).resolves.toStrictEqual(
+      fileContents,
+    );
   });
 
-  it("returns a valid RepoSettings when there is no jacob.json file, but there is a package.json file with dependencies", () => {
+  it("returns a valid RepoSettings when there is no jacob.json file, but there is a package.json file with dependencies", async () => {
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
     vi.spyOn(fs, "readFileSync").mockImplementation((file) => {
       if (file === packageJsonFilePath) {
@@ -87,7 +89,7 @@ describe("getRepoSettings", () => {
       throw new Error("ENOENT: no such file or directory");
     });
 
-    const settings = getRepoSettings(rootPath);
+    const settings = await getRepoSettings(rootPath);
     expect(settings).toStrictEqual({
       language: Language.JavaScript,
       packageDependencies: packageJsonContents.dependencies,
@@ -105,7 +107,7 @@ describe("getRepoSettings", () => {
       throw new Error("ENOENT: no such file or directory");
     });
 
-    const settings = getRepoSettings(rootPath);
+    const settings = await getRepoSettings(rootPath);
     expect(settings).toStrictEqual({
       ...fileContents,
       language: Language.JavaScript,

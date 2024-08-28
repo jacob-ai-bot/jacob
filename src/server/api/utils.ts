@@ -154,7 +154,7 @@ export const cloneAndGetSourceMap = async (
     });
     cleanupClone = cleanup;
 
-    const repoSettings = getRepoSettings(path);
+    const repoSettings = await getRepoSettings(path, repo);
     const sourceMap = getSourceMap(path, repoSettings);
     return sourceMap;
   } finally {

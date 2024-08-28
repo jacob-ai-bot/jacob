@@ -3,6 +3,7 @@ import path from "path";
 import { traverseCodebase } from "../analyze/traverse";
 import { z } from "zod";
 import { sendGptRequestWithSchema } from "../openai/request";
+import { db } from "../db/db";
 
 export enum Language {
   TypeScript = "TypeScript",
@@ -60,10 +61,13 @@ export interface RepoSettings {
   packageDependencies?: Record<string, any>;
 }
 
-function getBaseRepoSettings(rootPath: string): {
+async function getBaseRepoSettings(
+  rootPath: string,
+  repoFullName?: string,
+): Promise<{
   settings: RepoSettings;
   packageJson: Record<string, any> | undefined;
-} {
+}> {
   let packageJson: Record<string, any> | undefined;
   try {
     const packageJsonContent = fs.readFileSync(
@@ -85,13 +89,24 @@ function getBaseRepoSettings(rootPath: string): {
   } catch (e) {
     // Ignore failures on repos where we can't load/parse jacob.json
   }
+  // if settingsContent is undefined, we will use the repoName to try to get the settings from the db.projects table
+  let settingsFromDb: RepoSettings | undefined;
+  if (!settingsFromFile && repoFullName && repoFullName?.length > 0) {
+    const project = await db.projects.findByOptional({
+      repoFullName,
+    });
+    if (project) {
+      settingsFromDb = project.settings as RepoSettings;
+    }
+  }
 
   const defaultTSConfig = "tsconfig.json";
   const tsConfig = settingsFromFile?.directories?.tsConfig ?? defaultTSConfig;
   const hasTSConfig = fs.existsSync(path.join(rootPath, tsConfig));
   const settings: RepoSettings = {
     language: hasTSConfig ? Language.TypeScript : Language.JavaScript,
-    ...settingsFromFile,
+    ...(settingsFromFile ?? {}),
+    ...(settingsFromDb ?? {}),
   };
 
   if (typeof packageJson?.dependencies === "object") {
@@ -101,15 +116,18 @@ function getBaseRepoSettings(rootPath: string): {
   return { settings, packageJson };
 }
 
-export function getRepoSettings(rootPath: string): RepoSettings {
-  const { settings } = getBaseRepoSettings(rootPath);
+export async function getRepoSettings(
+  rootPath: string,
+  repoFullName?: string,
+): Promise<RepoSettings> {
+  const { settings } = await getBaseRepoSettings(rootPath, repoFullName);
   return settings;
 }
 
 export async function generateRepoSettings(
   rootPath: string,
 ): Promise<RepoSettings> {
-  const { settings, packageJson } = getBaseRepoSettings(rootPath);
+  const { settings, packageJson } = await getBaseRepoSettings(rootPath, "");
   const generatedSettings = await generateSettings(
     settings,
     rootPath,

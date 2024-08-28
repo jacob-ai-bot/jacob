@@ -37,10 +37,10 @@ export function GitHubOAuth({ redirectURI }: { redirectURI: string }) {
   const [writeKey, setWriteKey] = useState<string | undefined>();
   const [cookies, setCookie] = useCookies(["writeKey"]);
 
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
-  const figma = searchParams.get("figma");
-  const writeKeyParam = searchParams.get("writeKey");
+  const code = searchParams?.get("code");
+  const state = searchParams?.get("state");
+  const figma = searchParams?.get("figma");
+  const writeKeyParam = searchParams?.get("writeKey");
 
   // Remove the writeKey from the URL
   // after storing it in state and writing it to a cookie
@@ -50,7 +50,9 @@ export function GitHubOAuth({ redirectURI }: { redirectURI: string }) {
     setWriteKey(writeKeyParam);
     setCookie("writeKey", writeKeyParam);
 
-    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    const nextSearchParams = new URLSearchParams(
+      searchParams?.toString() ?? "",
+    );
     nextSearchParams.delete("writeKey");
 
     router.replace(`${pathname}?${nextSearchParams.toString()}`);
@@ -128,7 +130,9 @@ export function GitHubOAuth({ redirectURI }: { redirectURI: string }) {
 
           setError(undefined);
 
-          const nextSearchParams = new URLSearchParams(searchParams.toString());
+          const nextSearchParams = new URLSearchParams(
+            searchParams?.toString() ?? "",
+          );
           nextSearchParams.delete("code");
 
           router.replace(`${pathname}?${nextSearchParams.toString()}`);

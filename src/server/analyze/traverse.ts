@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import ignore from "ignore";
 import { type StandardizedPath, standardizePath } from "../utils/files";
-import { file } from "tmp-promise";
 
 export function traverseCodebase(rootPath: string): StandardizedPath[] {
   const gitignorePath = path.join(rootPath, ".gitignore");

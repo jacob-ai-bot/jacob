@@ -252,7 +252,7 @@ async function onReposAdded(
 
       console.log(`[${repo.full_name}] repo cloned to ${path}`);
 
-      const repoSettings = getRepoSettings(path);
+      const repoSettings = await getRepoSettings(path, repo.full_name);
 
       try {
         if (isNodeRepo) {
@@ -547,7 +547,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
 
     console.log(`[${repository.full_name}] repo cloned to ${path}`);
 
-    const repoSettings = getRepoSettings(path);
+    const repoSettings = await getRepoSettings(path, repository.full_name);
 
     try {
       if (issueOpened) {

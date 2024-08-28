@@ -4,16 +4,11 @@ import { z } from "zod";
 import { db } from "~/server/db/db";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type ContextItem } from "~/server/utils/codebaseContext";
-import { getOrCreateCodebaseContext } from "~/server/utils/codebaseContext";
-import { cloneRepo } from "~/server/git/clone";
-import { traverseCodebase } from "~/server/analyze/traverse";
 import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
 import {
-  addProjectToDB,
   createWebEvent,
   publishWebEventToQueue,
-  WebEvent,
 } from "~/server/messaging/queue";
 
 export const codebaseContextRouter = createTRPCRouter({

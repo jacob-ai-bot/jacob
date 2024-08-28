@@ -14,6 +14,7 @@ export class ProjectsTable extends BaseTable {
     repoNodeId: t.varchar(255).unique(),
     repoName: t.text(0, Infinity),
     repoFullName: t.text(0, Infinity).unique(),
+    settings: t.json().default({}),
     ...t.timestamps(),
   }));
 }

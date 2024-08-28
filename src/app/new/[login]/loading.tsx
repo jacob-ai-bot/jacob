@@ -1,8 +1,6 @@
 "use client";
 
 import React from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCode } from "@fortawesome/free-solid-svg-icons";
 
 const Loading = () => {
   return (
@@ -12,8 +10,10 @@ const Loading = () => {
           Indexing your codebase
         </h1>
         <p className="text-xl text-aurora-700">
-          This may take a few moments. We&apos;re creating your project
-          configuration...
+          JACoB works in a similar way to a CI system. To optimize the code
+          creation process, JACoB will run builds to ensure the code is working
+          properly. To speed up this process, we&apos;re reviewing your code and
+          creating a first draft of your project configuration...
         </p>
         <div className="mt-6 flex flex-row items-center justify-center  space-x-2">
           <div className="h-8 w-8 animate-bounce rounded-full bg-aurora-500 [animation-delay:-0.3s]"></div>

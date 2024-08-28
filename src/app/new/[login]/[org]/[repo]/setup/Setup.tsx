@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import FormField from "~/app/new/[login]/components/FormField";
+import { api } from "~/trpc/react";
+import { useRouter } from "next/navigation";
 
 export enum Language {
   TypeScript = "TypeScript",
@@ -81,12 +83,17 @@ const Setup: React.FC<SetupProps> = ({
   settings: initialSettings,
 }) => {
   const [settings, setSettings] = useState<RepoSettings>(initialSettings);
+  const [isLoading, setIsLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
     commands: false,
     directories: false,
     advanced: false,
   });
+
+  const router = useRouter();
+
+  const saveSettings = api.onboarding.saveSettings.useMutation();
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -97,10 +104,22 @@ const Setup: React.FC<SetupProps> = ({
     setSettings((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("RepoSettings:", JSON.stringify(settings, null, 2));
-    // TODO: Submit to endpoint
+    setIsLoading(true);
+    try {
+      await saveSettings.mutateAsync({
+        settings,
+        org,
+        repo,
+      });
+      console.log("Settings saved successfully");
+      router.push(`/dashboard/${org}/${repo}/otto`);
+    } catch (error) {
+      console.error("Error saving settings:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -304,7 +323,14 @@ const Setup: React.FC<SetupProps> = ({
               type="submit"
               className="mx-auto flex w-full max-w-xl transform items-center justify-center space-x-2 rounded-lg bg-aurora-500 px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-aurora-600 focus:outline-none focus:ring-2 focus:ring-aurora-400 focus:ring-offset-2 active:translate-y-0"
             >
-              <span>Create Project</span>
+              {isLoading ? (
+                <span>
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                  Creating Project...
+                </span>
+              ) : (
+                <span>Create Project</span>
+              )}
             </button>
           </div>
         </form>

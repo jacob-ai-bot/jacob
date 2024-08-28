@@ -18,16 +18,16 @@ const SetupPage = async ({
     redirect("/");
   }
 
-  const [, settings] = await Promise.all([
-    api.codebaseContext.generateCodebaseContext({
-      org: params.org,
-      repoName: params.repo,
-    }),
-    api.onboarding.analyzeProjectForSettings({
-      org: params.org,
-      repoName: params.repo,
-    }),
-  ]);
+  await api.codebaseContext.generateCodebaseContext({
+    org: params.org,
+    repoName: params.repo,
+  });
+  console.log("Codebase context request generated");
+  const settings = await api.onboarding.analyzeProjectForSettings({
+    org: params.org,
+    repoName: params.repo,
+  });
+  console.log("Project settings analyzed");
 
   return <Setup org={params.org} repo={params.repo} settings={settings} />;
 };

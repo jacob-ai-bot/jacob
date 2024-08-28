@@ -29,8 +29,8 @@ const FormField: React.FC<FormFieldProps> = ({
   tooltip,
   className,
 }) => {
-  const inputClasses =
-    "w-full rounded-full border-2 border-aurora-200 bg-white px-4 py-2 text-aurora-700 shadow-sm transition-all duration-300 focus:border-aurora-500 focus:outline-none focus:ring-2 focus:ring-aurora-500/50";
+  const inputClasses = `w-full  border-2 border-aurora-200 bg-white px-4 py-2 text-aurora-700 shadow-sm transition-all duration-300 
+    focus:border-aurora-500 focus:outline-none focus:ring-2 focus:ring-aurora-500/50 ${type === "textarea" ? "min-h-[200px] resize-y rounded-2xl" : "rounded-full"}`;
   const labelClasses = "mb-2 block text-sm font-medium text-aurora-700";
 
   const inputId = `input-${name}`;

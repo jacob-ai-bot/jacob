@@ -165,6 +165,19 @@ const mockedGetFile = vi.hoisted(() => ({
 }));
 vi.mock("../github/repo", () => mockedGetFile);
 
+const mockedGetRepoSettings = vi.hoisted(() => ({
+  getRepoSettings: vi.fn().mockResolvedValue({
+    language: "JavaScript",
+  }),
+}));
+vi.mock("../utils/settings", () => ({
+  ...mockedGetRepoSettings,
+  Language: {
+    JavaScript: "JavaScript",
+    TypeScript: "TypeScript",
+  },
+}));
+
 const mockedEvents = vi.hoisted(() => ({
   emitTaskEvent: vi.fn().mockResolvedValue(undefined),
 }));
