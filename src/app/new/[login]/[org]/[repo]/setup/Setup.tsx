@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRocket, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import FormField from "~/app/new/[login]/components/FormField";
 
 export enum Language {
   TypeScript = "TypeScript",
@@ -48,6 +49,7 @@ export interface RepoSettings {
     staticAssets?: string;
     tailwindConfig?: string;
     tsConfig?: string;
+    types?: string;
   };
   stateManagement?: {
     tool?: string;
@@ -59,9 +61,6 @@ export interface RepoSettings {
     writeStories?: boolean;
     storiesLocation?: string;
   };
-  envVariables?: {
-    exampleFile?: string;
-  };
   env?: Record<string, string>;
   packageDependencies?: Record<string, string>;
 }
@@ -69,15 +68,26 @@ export interface RepoSettings {
 interface SetupProps {
   org: string;
   repo: string;
+  settings: RepoSettings;
 }
 
-const Setup: React.FC<SetupProps> = ({ org, repo }) => {
-  const [settings, setSettings] = useState<Partial<RepoSettings>>({
-    language: Language.TypeScript,
-    style: Style.CSS,
+const InputGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">{children}</div>
+);
+
+const Setup: React.FC<SetupProps> = ({
+  org,
+  repo,
+  settings: initialSettings,
+}) => {
+  const [settings, setSettings] = useState<RepoSettings>(initialSettings);
+  const [expandedSections, setExpandedSections] = useState({
+    basic: true,
+    commands: false,
+    directories: false,
+    advanced: false,
   });
 
-  // TODO: try to automatically populate the settings
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -89,20 +99,54 @@ const Setup: React.FC<SetupProps> = ({ org, repo }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("RepoSettings:", settings);
+    console.log("RepoSettings:", JSON.stringify(settings, null, 2));
     // TODO: Submit to endpoint
   };
 
-  const inputClasses =
-    "w-full rounded-full border-2 border-aurora-200 bg-white px-4 py-2 text-aurora-700 shadow-sm transition-all duration-300 focus:border-aurora-500 focus:outline-none focus:ring-2 focus:ring-aurora-500/50";
-  const labelClasses = "mb-2 block text-sm font-medium text-aurora-700";
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
+  const renderSection = (
+    title: string,
+    sectionKey: keyof typeof expandedSections,
+    fields: JSX.Element,
+  ) => (
+    <div className="mb-8 w-full">
+      <button
+        type="button"
+        onClick={() => toggleSection(sectionKey)}
+        className="mb-4 flex w-full items-center justify-between text-left text-xl font-semibold text-aurora-900"
+      >
+        <span>{title}</span>
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className={`transition-transform ${
+            expandedSections[sectionKey] ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <AnimatePresence>
+        {expandedSections[sectionKey] && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="w-full"
+          >
+            <InputGrid>{fields}</InputGrid>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mx-auto mt-8 max-w-4xl"
+      className="mx-auto mt-8 w-full max-w-4xl"
     >
       <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-white to-indigo-50/50 shadow-xl">
         <div className="rounded-t-3xl border border-b-0 border-aurora-100 bg-aurora-50 p-8">
@@ -110,164 +154,159 @@ const Setup: React.FC<SetupProps> = ({ org, repo }) => {
             Configure Your Project
           </h1>
           <p className="text-xl text-aurora-700">
-            Set up your JACoB project with these configuration options.
+            JACoB scanned your project and found these settings. Please review
+            and adjust as needed.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8 p-8">
-          <div className="grid gap-8 md:grid-cols-2">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <label className={labelClasses}>Language</label>
-              <select
+        <form onSubmit={handleSubmit} className="w-full space-y-8  p-8">
+          {renderSection(
+            "Basic Settings",
+            "basic",
+            <>
+              <FormField
+                label="Language"
                 name="language"
                 value={settings.language}
                 onChange={handleChange}
-                className={inputClasses}
-              >
-                {Object.values(Language).map((lang) => (
-                  <option key={lang} value={lang}>
-                    {lang}
-                  </option>
-                ))}
-              </select>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <label className={labelClasses}>Style</label>
-              <select
+                type="select"
+                options={Object.values(Language).map((lang) => ({
+                  value: lang,
+                  label: lang,
+                }))}
+                tooltip="Select the primary language for your project"
+              />
+              <FormField
+                label="Style"
                 name="style"
                 value={settings.style}
                 onChange={handleChange}
-                className={inputClasses}
-              >
-                {Object.values(Style).map((style) => (
-                  <option key={style} value={style}>
-                    {style}
-                  </option>
-                ))}
-              </select>
-            </motion.div>
-          </div>
+                type="select"
+                options={Object.values(Style).map((style) => ({
+                  value: style,
+                  label: style,
+                }))}
+                tooltip="Choose the styling approach for your project"
+              />
+            </>,
+          )}
 
-          <div className="grid gap-8 md:grid-cols-2">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <label className={labelClasses}>Install Command</label>
-              <input
-                type="text"
+          {renderSection(
+            "Commands",
+            "commands",
+            <>
+              <FormField
+                label="Install Command"
                 name="installCommand"
-                value={settings.installCommand ?? ""}
+                value={settings.installCommand}
                 onChange={handleChange}
                 placeholder="npm install"
-                className={inputClasses}
+                tooltip="Command used to install dependencies before building"
               />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <label className={labelClasses}>Build Command</label>
-              <input
-                type="text"
+              <FormField
+                label="Format Command"
+                name="formatCommand"
+                value={settings.formatCommand}
+                onChange={handleChange}
+                placeholder="npm run lint:fix"
+                tooltip="Command used to fix formatting"
+              />
+              <FormField
+                label="Build Command"
                 name="buildCommand"
-                value={settings.buildCommand ?? ""}
+                value={settings.buildCommand}
                 onChange={handleChange}
                 placeholder="npm run build"
-                className={inputClasses}
+                tooltip="Command used to build the project"
               />
-            </motion.div>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-2">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <label className={labelClasses}>Output Directory</label>
-              <input
-                type="text"
-                name="outputDirectory"
-                value={settings.directories?.staticAssets ?? ""}
+              <FormField
+                label="Test Command"
+                name="testCommand"
+                value={settings.testCommand}
                 onChange={handleChange}
-                placeholder="dist"
-                className={inputClasses}
+                placeholder="npm run test"
+                tooltip="Command used to run tests"
               />
-            </motion.div>
+            </>,
+          )}
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 }}
-            >
-              <label className={labelClasses}>Icon Set</label>
-              <select
+          {renderSection(
+            "Directories",
+            "directories",
+            <>
+              {Object.entries(settings.directories ?? {}).map(
+                ([key, value]) => (
+                  <FormField
+                    key={key}
+                    label={key}
+                    name={`directories.${key}`}
+                    value={value}
+                    onChange={handleChange}
+                    tooltip={`Path for ${key} directory`}
+                  />
+                ),
+              )}
+            </>,
+          )}
+
+          {renderSection(
+            "Advanced Settings",
+            "advanced",
+            <>
+              <FormField
+                label="Icon Set"
                 name="iconSet"
                 value={settings.iconSet}
                 onChange={handleChange}
-                className={inputClasses}
-              >
-                <option value="">Select an icon set</option>
-                {Object.values(IconSet).map((iconSet) => (
-                  <option key={iconSet} value={iconSet}>
-                    {iconSet}
-                  </option>
-                ))}
-              </select>
-            </motion.div>
-          </div>
+                type="select"
+                options={[
+                  { value: "", label: "Select an icon set" },
+                  ...Object.values(IconSet).map((iconSet) => ({
+                    value: iconSet,
+                    label: iconSet,
+                  })),
+                ]}
+                tooltip="Preferred icon set for the project"
+              />
+              <FormField
+                label="Write Tests"
+                name="testing.writeTests"
+                value={settings.testing?.writeTests ? "true" : "false"}
+                onChange={handleChange}
+                type="checkbox"
+                tooltip="Enable automatic test generation"
+              />
+              <FormField
+                label="Environment Variables"
+                name="envVariables"
+                value={Object.entries(settings.env ?? {})
+                  .map(([key, value]) => `${key}=${value}`)
+                  .join("\n")}
+                onChange={(e) => {
+                  const envObj = Object.fromEntries(
+                    e.target.value.split("\n").map((line) => {
+                      const [key, ...valueParts] = line.split("=");
+                      return [key?.trim(), valueParts.join("=").trim()];
+                    }),
+                  );
+                  setSettings((prev) => ({ ...prev, env: envObj }));
+                }}
+                type="textarea"
+                placeholder="KEY=value"
+                tooltip="Environment variables needed for the app to build (for testing, not production)"
+                className="col-span-2"
+              />
+            </>,
+          )}
 
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <label className={labelClasses}>Environment Variables</label>
-            <textarea
-              name="envVariables"
-              value={settings.envVariables?.exampleFile ?? ""}
-              onChange={handleChange}
-              placeholder="KEY=value"
-              className="min-h-[100px] w-full resize-y rounded-none border-2 border-aurora-200 bg-white px-4 py-2 text-aurora-700 shadow-sm transition-all duration-300 focus:border-aurora-500 focus:outline-none focus:ring-2 focus:ring-aurora-500/50"
-            />
-            <p className="mt-2 text-sm text-aurora-600">
-              Paste a .env above to populate the form
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="pt-4"
-          >
+          <div className="pt-4">
             <button
               type="submit"
-              className="group relative w-full overflow-hidden rounded-full bg-indigo-600 px-8 py-3 text-lg font-semibold text-white transition-all duration-300 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="mx-auto flex w-full max-w-xl transform items-center justify-center space-x-2 rounded-lg bg-aurora-500 px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-aurora-600 focus:outline-none focus:ring-2 focus:ring-aurora-400 focus:ring-offset-2 active:translate-y-0"
             >
-              <span className="relative z-10 flex items-center justify-center">
-                <FontAwesomeIcon icon={faRocket} className="mr-2" />
-                <span>Deploy Project</span>
-                <FontAwesomeIcon
-                  icon={faArrowRight}
-                  className="ml-2 transform transition-transform duration-300 group-hover:translate-x-1"
-                />
-              </span>
+              <span>Create Project</span>
             </button>
-          </motion.div>
+          </div>
         </form>
       </div>
     </motion.div>

@@ -90,7 +90,7 @@
     "react-router-dom": "^6.16.0",
     "react-syntax-highlighter": "^15.5.0",
     "react-toastify": "^10.0.5",
-    "react-tooltip": "^5.26.4",
+    "react-tooltip": "^5.28.0",
     "remark-gfm": "^4.0.0",
     "semver": "^7.6.0",
     "server-only": "^0.0.1",

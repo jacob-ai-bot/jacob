@@ -32,7 +32,8 @@ export const onboardingRouter = createTRPCRouter({
           cleanupClone = cleanup;
 
           const settings = await generateRepoSettings(path);
-          return { settings };
+          console.log("settings", settings);
+          return settings;
         } finally {
           if (cleanupClone) {
             await cleanupClone();

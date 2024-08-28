@@ -18,13 +18,18 @@ const SetupPage = async ({
     redirect("/");
   }
 
-  // Generate the codebase context, this will add it to the queue
-  await api.codebaseContext.generateCodebaseContext({
-    org: params.org,
-    repoName: params.repo,
-  });
+  const [, settings] = await Promise.all([
+    api.codebaseContext.generateCodebaseContext({
+      org: params.org,
+      repoName: params.repo,
+    }),
+    api.onboarding.analyzeProjectForSettings({
+      org: params.org,
+      repoName: params.repo,
+    }),
+  ]);
 
-  return <Setup org={params.org} repo={params.repo} />;
+  return <Setup org={params.org} repo={params.repo} settings={settings} />;
 };
 
 export default SetupPage;

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import ignore from "ignore";
 import { type StandardizedPath, standardizePath } from "../utils/files";
+import { file } from "tmp-promise";
 
 export function traverseCodebase(rootPath: string): StandardizedPath[] {
   const gitignorePath = path.join(rootPath, ".gitignore");
@@ -38,5 +39,11 @@ export function traverseCodebase(rootPath: string): StandardizedPath[] {
 }
 
 function isRelevantFile(fileName: string): boolean {
-  return /\.(ts|tsx|js|jsx)$/.test(fileName);
+  return (
+    /\.(ts|tsx|js|jsx|py|example)$/.test(fileName) || isSpecialFile(fileName)
+  );
+}
+
+function isSpecialFile(fileName: string): boolean {
+  return fileName.includes(".env.") || fileName.includes("README");
 }
