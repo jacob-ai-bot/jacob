@@ -1,12 +1,11 @@
-import { GetStarted } from "./components/GetStarted";
 import { getServerAuthSession } from "~/server/auth";
 import { redirect } from "next/navigation";
 
-export default async function NewProjectPage() {
+export default async function Success() {
   const session = await getServerAuthSession();
 
   if (session?.user?.login) {
-    redirect(`/new/${session.user.login}`);
+    redirect(`/setup/${session.user.login}`);
   }
-  return <GetStarted />;
+  return redirect("/setup");
 }

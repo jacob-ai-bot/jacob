@@ -1,5 +1,3 @@
-// src/tables/CodebaseContextTable.ts
-
 import type { Selectable, Insertable, Updateable, Queryable } from "orchid-orm";
 import { BaseTable } from "../baseTable";
 

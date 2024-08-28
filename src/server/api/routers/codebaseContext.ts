@@ -1,5 +1,3 @@
-// src/server/api/routers/codebaseContext.ts
-
 import { z } from "zod";
 import { db } from "~/server/db/db";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";

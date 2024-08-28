@@ -1,5 +1,3 @@
-// src/server/api/routers/onboarding.ts
-
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { runBuildCheck } from "~/server/build/node/check";
@@ -7,7 +5,6 @@ import { db } from "~/server/db/db";
 import { cloneRepo } from "~/server/git/clone";
 import { generateRepoSettings, getRepoSettings } from "~/server/utils/settings";
 
-// TODO: NAVIGATE TO A PAGE THAT FIRST CHECKS TO SEE IF IT'S A NODE PROJECT, THEN CHECKS TO SEE IF IT BUILDS. IF IT DOESN'T BUILD, THEN TAKE THE ERROR MESSAGES AND TRY TO USE IT AS A FIRST SAMPLE PROJECT. NAVIGATE TO THE NEW DASHBOARD THAT HAS THE CONTEXT VISUALIZER (SHOW THIS FIRST THEN THE LIVE CHAT THEN THE "TODOS" WITH THE MORE DETAILED ISSUES AND THEN THE "SHOW WHAT JACOB IS DOING" SECTION.
 export const onboardingRouter = createTRPCRouter({
   analyzeProjectForSettings: protectedProcedure
     .input(
@@ -72,7 +69,7 @@ export const onboardingRouter = createTRPCRouter({
         },
       }) => {
         let cleanupClone: (() => Promise<void>) | undefined;
-        let buildErrorMessage: string | undefined;
+        let buildErrorMessage: string | undefined = "";
         try {
           const repoFullName = `${org}/${repoName}`;
           const { path, cleanup } = await cloneRepo({
@@ -87,6 +84,7 @@ export const onboardingRouter = createTRPCRouter({
           if (!project) {
             throw new Error("Project not found");
           }
+          console.log("repoSettings", JSON.stringify(repoSettings, null, 2));
           try {
             await runBuildCheck({
               path,

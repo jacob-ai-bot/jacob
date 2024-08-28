@@ -243,7 +243,7 @@ const AddNewRepo: React.FC<AddNewRepoProps> = ({ login }) => {
                     </button>
                   </Link>
                 ) : (
-                  <Link href={`/new/${login}/${repo.org}/${repo.repo}/setup`}>
+                  <Link href={`/setup/${login}/${repo.org}/${repo.repo}/setup`}>
                     <button className="rounded-full bg-blossom-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blossom-600">
                       Create Project
                     </button>

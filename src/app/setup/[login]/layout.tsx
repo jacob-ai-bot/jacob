@@ -11,10 +11,10 @@ export default async function NewLoggedInLayout({
 }) {
   const session = await getServerAuthSession();
   if (!session?.user?.login) {
-    redirect("/new");
+    redirect("/setup");
   }
   if (session?.user?.login !== params.login) {
-    redirect(`/new/${session.user.login}`);
+    redirect(`/setup/${session.user.login}`);
   }
   return (
     <div className="hide-scrollbar w-screen overflow-y-scroll text-dark-blue ">
