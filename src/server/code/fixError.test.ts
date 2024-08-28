@@ -155,7 +155,7 @@ describe("fixError", () => {
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0][1];
+    const systemPrompt = mockedRequest.sendGptRequest.mock.calls[0]![1];
     expect(systemPrompt).toContain("## Types\ntypes\n");
     expect(systemPrompt).toContain(
       "## Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n## END Source Map\n",
@@ -164,7 +164,7 @@ describe("fixError", () => {
       '## Code\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__\ncode-with-error\n',
     );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const eventData = mockedRequest.sendGptRequest.mock.calls[0][3];
+    const eventData = mockedRequest.sendGptRequest.mock.calls[0]![3];
     expect(eventData).toEqual(mockEventData);
 
     expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
@@ -185,7 +185,7 @@ describe("fixError", () => {
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      checkAndCommitCalls[0][0] as CheckAndCommitOptions;
+      checkAndCommitCalls[0]![0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB fix error: something went wrong",
     );

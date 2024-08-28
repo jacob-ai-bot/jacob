@@ -217,15 +217,17 @@ describe("editFiles", () => {
     );
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![0]).toContain(
       "parsedTemplate",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "parsedTemplate",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toBeUndefined();
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][3]).toBe(0.2);
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][4]).toStrictEqual(
+    expect(
+      mockedRequest.sendGptVisionRequest.mock.calls[0]![2],
+    ).toBeUndefined();
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![3]).toBe(0.2);
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![4]).toStrictEqual(
       mockEventData,
     );
 

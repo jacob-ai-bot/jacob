@@ -117,35 +117,35 @@ describe("newIssueForFigmaFile", () => {
     expect(res.status).toBe(200);
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![0]).toContain(
       "Act as an expert-level TypeScript Front-End TailwindCSS software developer.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![0]).toContain(
       "=== START FigML ===\ntest-figma-map\n=== END FigML ===\n",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![0]).toContain(
       "test-additional-instructions",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "Your job is to take a representation of a Figma design and convert it into JSX to be used in a React functional component.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "w-[40px] h-[40px] border-solid border-black",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "Re-write the psuedo-TailwindCSS using only the standard TailwindCSS classes.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![2]).toContain(
       "https://example.com/snapshot.png",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][3]).toBe(0.5);
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![3]).toBe(0.5);
 
     expect(mockedGetRepoInstallation).toHaveBeenCalledOnce();
     expect(mockedOctokitRest.Octokit).toHaveBeenCalledOnce();
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    const createIssueOptions = mockedCreateIssue.mock.calls[0]![0];
     expect(createIssueOptions.owner).toBe("test-login");
     expect(createIssueOptions.repo).toBe("test-repo");
     expect(createIssueOptions.assignees).toStrictEqual(["test-login-user"]);
@@ -199,29 +199,29 @@ describe("newIssueForFigmaFile", () => {
     expect(res.status).toBe(200);
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![0]).toContain(
       "=== START FigML ===\ntest-figma-map\n=== END FigML ===\n",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![0]).toContain(
       "test-additional-instructions",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "Your job is to take a representation of a Figma design and convert it into JSX to be used in a React functional component.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "Use the Font Awesome package if possible.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][2]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![2]).toContain(
       "https://example.com/snapshot.png",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][3]).toBe(0.5);
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![3]).toBe(0.5);
 
     expect(mockedGetRepoInstallation).toHaveBeenCalledOnce();
     expect(mockedOctokitRest.Octokit).toHaveBeenCalledOnce();
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    const createIssueOptions = mockedCreateIssue.mock.calls[0]![0];
     expect(createIssueOptions.owner).toBe("test-login");
     expect(createIssueOptions.repo).toBe("test-repo");
     expect(createIssueOptions.assignees).toStrictEqual(["test-login-user"]);
@@ -302,7 +302,7 @@ describe("newIssueForFigmaFile", () => {
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    const createIssueOptions = mockedCreateIssue.mock.calls[0]![0];
     expect(createIssueOptions.title).toBe(
       "Create new file => app/test-page/page.tsx",
     );
@@ -357,7 +357,7 @@ describe("newIssueForFigmaFile", () => {
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    const createIssueOptions = mockedCreateIssue.mock.calls[0]![0];
     expect(createIssueOptions.title).toBe(
       "Create new file => src/app/_components/Test-Component.tsx",
     );
@@ -409,7 +409,7 @@ describe("newIssueForFigmaFile", () => {
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    const createIssueOptions = mockedCreateIssue.mock.calls[0]![0];
     expect(createIssueOptions.title).toBe(
       "Create new file => mycomponentsdir/Test-Component.tsx",
     );
@@ -449,22 +449,22 @@ describe("newIssueForFigmaFile", () => {
     expect(res.status).toBe(200);
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![0]).toContain(
       "Act as an expert-level JavaScript Front-End CSS software developer.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "Re-write the psuedo-CSS using only standard CSS styles.",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "width: 40px; height: 40px; border: 1px solid #000;",
     );
-    expect(mockedRequest.sendGptVisionRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptVisionRequest.mock.calls[0]![1]).toContain(
       "Use the Heroicons package if possible.",
     );
 
     expect(mockedCreateIssue).toHaveBeenCalledOnce();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const createIssueOptions = mockedCreateIssue.mock.calls[0][0];
+    const createIssueOptions = mockedCreateIssue.mock.calls[0]![0];
     expect(createIssueOptions.body).not.toContain(
       "Specifically, ONLY use valid TailwindCSS classes. For arbitrary values, convert to standard TailwindCSS classes as often as possible. Use the custom Tailwind.config color names if there is an exact match.",
     );

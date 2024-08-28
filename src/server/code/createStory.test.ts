@@ -101,7 +101,7 @@ describe("createStory", () => {
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const systemPrompt = mockedRequest.sendGptVisionRequest.mock.calls[0][1];
+    const systemPrompt = mockedRequest.sendGptVisionRequest.mock.calls[0]![1];
     expect(systemPrompt).toContain(dedent`
       Act as a L8 Principal TypeScript Software Engineer at Facebook and create a new storybook story named src/components/ProfileInformation.stories.tsx.
       Use the context and instructions below, along with the code provided by the user, to complete this task.
@@ -135,7 +135,7 @@ describe("createStory", () => {
       DO NOT use the 'any' type because this will result in TypeScript build errors.
     `);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const eventData = mockedRequest.sendGptVisionRequest.mock.calls[0][4];
+    const eventData = mockedRequest.sendGptVisionRequest.mock.calls[0]![4];
     expect(eventData).toEqual(mockEventData);
 
     expect(mockedFiles.saveNewFile).toHaveBeenCalledTimes(1);
@@ -157,7 +157,7 @@ describe("createStory", () => {
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      checkAndCommitCalls[0][0] as CheckAndCommitOptions;
+      checkAndCommitCalls[0]![0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB commit: add storybook story src/components/ProfileInformation.stories.tsx",
     );
@@ -198,7 +198,7 @@ describe("createStory", () => {
 
     expect(mockedRequest.sendGptVisionRequest).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const systemPrompt = mockedRequest.sendGptVisionRequest.mock.calls[0][1];
+    const systemPrompt = mockedRequest.sendGptVisionRequest.mock.calls[0]![1];
     expect(systemPrompt).toContain(dedent`
       Act as a L8 Principal JavaScript Software Engineer at Facebook and create a new storybook story named src/components/ProfileInformation.stories.jsx.
       Use the context and instructions below, along with the code provided by the user, to complete this task.
@@ -230,7 +230,7 @@ describe("createStory", () => {
       ONLY respond with the full, complete working src/components/ProfileInformation.stories.jsx file.
     `);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const eventData = mockedRequest.sendGptVisionRequest.mock.calls[0][4];
+    const eventData = mockedRequest.sendGptVisionRequest.mock.calls[0]![4];
     expect(eventData).toEqual(mockEventData);
 
     expect(mockedFiles.saveNewFile).toHaveBeenCalledTimes(1);
@@ -252,7 +252,7 @@ describe("createStory", () => {
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      checkAndCommitCalls[0][0] as CheckAndCommitOptions;
+      checkAndCommitCalls[0]![0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB commit: add storybook story src/components/ProfileInformation.stories.jsx",
     );

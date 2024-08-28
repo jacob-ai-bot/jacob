@@ -101,7 +101,7 @@ describe("fixError", () => {
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      checkAndCommitCalls[0][0] as CheckAndCommitOptions;
+      checkAndCommitCalls[0]![0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB fix error: Build error fix",
     );

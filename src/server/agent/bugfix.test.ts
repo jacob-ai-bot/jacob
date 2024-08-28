@@ -145,34 +145,34 @@ describe("bugfix functions", () => {
     ]);
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptRequest.mock.lastCall[0]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![0]).toContain(
       "Given the following TypeScript build errors and file content, suggest up to 3 potential fixes:",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[0]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![0]).toContain(
       "/src/file.txt: 4 - error: error message",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[0]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![0]).toContain(
       mockFileContent,
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![1]).toContain(
       "You are a senior Technical Fellow at Microsoft, tasked with addressing TypeScript build errors by making precise, minimal changes to the code.",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![1]).toContain(
       "File List: source map",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![1]).toContain(
       "Types: types",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![1]).toContain(
       "Packages: packages",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![1]).toContain(
       "Styles: styles",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![1]).toContain(
       "Images: images",
     );
-    expect(mockedRequest.sendGptRequest.mock.lastCall[1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.lastCall![1]).toContain(
       "Research: research",
     );
   });
