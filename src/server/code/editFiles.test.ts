@@ -105,10 +105,10 @@ describe("editFiles", () => {
     await editFiles(editFilesParams);
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledOnce();
-    expect(mockedRequest.sendGptRequest.mock.calls[0][0]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.calls[0]![0]).toContain(
       "Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0][1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.calls[0]![1]).toContain(
       "You are the top, most distinguished Technical Fellow at Microsoft.",
     );
 

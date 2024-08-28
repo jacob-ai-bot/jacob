@@ -46,12 +46,12 @@ describe("createNewFile", () => {
       mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest,
     ).toHaveBeenCalledOnce();
     expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall[0],
+      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![0],
     ).toContain(
       "I want to create a new file with the following patch:\n\npatch",
     );
     expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall[1],
+      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![1],
     ).toContain(
       "You are an expert code creator. Your task is to generate the complete file content based on the given patch for a new file.",
     );
@@ -101,7 +101,7 @@ describe("createNewFile", () => {
       mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest,
     ).toHaveBeenCalledOnce();
     expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall[0],
+      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![0],
     ).toContain(dedent`
         I have an existing file with the following content (line numbers added for reference):
 
@@ -111,7 +111,7 @@ describe("createNewFile", () => {
         I want to apply the following patch to this file:
       `);
     expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall[1],
+      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![1],
     ).toContain(
       "You are an expert code editor. Your task is to apply the given patch to the existing file content and return the entire updated file content, including line numbers.",
     );

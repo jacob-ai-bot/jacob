@@ -172,8 +172,8 @@ function execAsyncWithLog(
       response += d.toString();
     }
   });
-  promise.child.on("close", (code) => {
-    console.log(`*:EXIT:${code}`);
+  promise.child.on("close", () => {
+    // console.log(`*:EXIT:${code}`);
     promise.response = response;
   });
 
@@ -217,14 +217,18 @@ export interface ExecuteWithLogRequiringSuccessWithoutEventParams {
   directory: string;
   command: string;
   options?: Parameters<typeof execAsync>[1];
+  shouldLog?: boolean;
 }
 
 export function executeWithLogRequiringSuccessWithoutEvent({
   directory,
   command,
   options,
+  shouldLog = true,
 }: ExecuteWithLogRequiringSuccessWithoutEventParams): ExecPromise {
-  console.log(`*:${command} (cwd: ${directory})`);
+  if (shouldLog) {
+    console.log(`*:${command} (cwd: ${directory})`);
+  }
   return execAsyncWithLog(command, {
     cwd: directory,
     env: getSanitizedEnv() as NodeJS.ProcessEnv,

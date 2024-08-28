@@ -8,6 +8,8 @@ import {
   faChevronLeft,
   faChevronRight,
   faChevronDown,
+  faCopy,
+  faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
 import Markdown from "react-markdown";
@@ -34,61 +36,83 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   isExpanded = false,
   allFiles,
   onNodeClick,
-}) => (
-  <div className="details h-full overflow-y-auto bg-gray-900 text-left text-sm text-white">
-    <div className="sticky top-0 z-10 flex h-12 items-center justify-between bg-gradient-to-r from-gray-800 to-gray-700 px-4 shadow-md">
-      <div className="flex items-center space-x-3">
-        <button
-          onClick={onToggleWidth}
-          className="text-gray-400 transition-colors hover:text-white"
-        >
-          <FontAwesomeIcon
-            icon={isExpanded ? faChevronRight : faChevronLeft}
-            size="lg"
-          />
-        </button>
-        <h2 className="truncate text-lg font-semibold">
-          {path.basename(item.file)}
-        </h2>
+}) => {
+  const [copyStatus, setCopyStatus] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard
+      .writeText(JSON.stringify(item, null, 2))
+      .then(() => {
+        setCopyStatus(true);
+        setTimeout(() => setCopyStatus(false), 2000);
+      })
+      .catch(() => {
+        console.error("Failed to copy context item");
+      });
+  };
+
+  return (
+    <div className="details h-full overflow-y-auto bg-gray-900 text-left text-sm text-white">
+      <div className="sticky top-0 z-10 flex h-12 items-center justify-between bg-gradient-to-r from-gray-800 to-gray-700 px-4 shadow-md">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={onToggleWidth}
+            className="text-gray-400 transition-colors hover:text-white"
+          >
+            <FontAwesomeIcon
+              icon={isExpanded ? faChevronRight : faChevronLeft}
+              size="lg"
+            />
+          </button>
+          <h2 className="truncate text-lg font-semibold text-blueGray-200">
+            {path.basename(item.file)}
+          </h2>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleCopy}
+            className="text-gray-400 transition-colors hover:text-white"
+          >
+            <FontAwesomeIcon icon={copyStatus ? faCheck : faCopy} size="lg" />
+          </button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 transition-colors hover:text-white"
+          >
+            <FontAwesomeIcon icon={faTimes} size="lg" />
+          </button>
+        </div>
       </div>
-      <div className="flex items-center space-x-2">
-        <button
-          onClick={onClose}
-          className="text-gray-400 transition-colors hover:text-white"
-        >
-          <FontAwesomeIcon icon={faTimes} size="lg" />
-        </button>
+
+      <div className="mt-4 space-y-6 px-4">
+        <p className="mb-3 text-gray-300">{item.overview}</p>
+        {item.diagram && <Mermaid chart={item.diagram} />}
+        <Section icon={faInfoCircle} title="Overview" iconColor="text-blue-400">
+          <Markdown
+            remarkPlugins={[gfm]}
+            className={`markdown-details`}
+            components={renderers}
+          >
+            {item.text}
+          </Markdown>
+        </Section>
+
+        <ImportsSection
+          importStatements={item.importStatements}
+          importedFiles={item.importedFiles}
+          allFiles={allFiles}
+          onFileClick={onNodeClick}
+          referencedImportDetails={item.referencedImportDetails ?? []}
+          currentFile={item.file}
+        />
+
+        {item.exports?.length ? <ExportsSection contextItem={item} /> : null}
+
+        {item?.code?.length ? <CodeSection code={item.code} /> : null}
       </div>
     </div>
-
-    <div className="mt-4 space-y-6 px-4">
-      <p className="mb-3 text-gray-300">{item.overview}</p>
-      {item.diagram && <Mermaid chart={item.diagram} />}
-      <Section icon={faInfoCircle} title="Overview" iconColor="text-blue-400">
-        <Markdown
-          remarkPlugins={[gfm]}
-          className={`markdown-details`}
-          components={renderers}
-        >
-          {item.text}
-        </Markdown>
-      </Section>
-
-      <ImportsSection
-        importStatements={item.importStatements}
-        importedFiles={item.importedFiles}
-        allFiles={allFiles}
-        onFileClick={onNodeClick}
-        referencedImportDetails={item.referencedImportDetails ?? []}
-        currentFile={item.file}
-      />
-
-      {item.exports?.length ? <ExportsSection contextItem={item} /> : null}
-
-      {item?.code?.length ? <CodeSection code={item.code} /> : null}
-    </div>
-  </div>
-);
+  );
+};
 
 export const Section: React.FC<{
   icon: any;
@@ -134,4 +158,5 @@ export const Section: React.FC<{
     </motion.section>
   );
 };
+
 export default CodebaseDetails;

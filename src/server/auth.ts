@@ -133,7 +133,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: env.GITHUB_CLIENT_SECRET,
       authorization: {
         params: {
-          scope: "read:user",
+          scope: "read:user, read:org, repo",
         },
       },
       profile(profile: GithubProfile) {

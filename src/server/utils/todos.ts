@@ -54,7 +54,7 @@ export const createTodo = async (
     });
     cleanupClone = cleanup;
 
-    const repoSettings = getRepoSettings(rootPath);
+    const repoSettings = await getRepoSettings(rootPath, repo);
     const sourceMap = getSourceMap(rootPath, repoSettings);
     const extractedIssue = await getExtractedIssue(sourceMap, issueText);
 

@@ -165,6 +165,19 @@ const mockedGetFile = vi.hoisted(() => ({
 }));
 vi.mock("../github/repo", () => mockedGetFile);
 
+const mockedGetRepoSettings = vi.hoisted(() => ({
+  getRepoSettings: vi.fn().mockResolvedValue({
+    language: "JavaScript",
+  }),
+}));
+vi.mock("../utils/settings", () => ({
+  ...mockedGetRepoSettings,
+  Language: {
+    JavaScript: "JavaScript",
+    TypeScript: "TypeScript",
+  },
+}));
+
 const mockedEvents = vi.hoisted(() => ({
   emitTaskEvent: vi.fn().mockResolvedValue(undefined),
 }));
@@ -240,11 +253,11 @@ describe("onGitHubEvent", () => {
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
     expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
-    expect(mockedComments.addFailedWorkComment.mock.calls[0][1]).toBe(47);
-    expect(mockedComments.addFailedWorkComment.mock.calls[0][2]).toBe(
+    expect(mockedComments.addFailedWorkComment.mock.calls[0]![1]).toBe(47);
+    expect(mockedComments.addFailedWorkComment.mock.calls[0]![2]).toBe(
       "fake-token",
     );
-    expect(String(mockedComments.addFailedWorkComment.mock.calls[0][5])).toBe(
+    expect(String(mockedComments.addFailedWorkComment.mock.calls[0]![5])).toBe(
       "Error: test error",
     );
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(2);
@@ -553,11 +566,11 @@ describe("onGitHubEvent", () => {
     });
     expect(mockedIssue.addCommentToIssue).not.toHaveBeenCalled();
     expect(mockedComments.addFailedWorkComment).toHaveBeenCalledTimes(1);
-    expect(mockedComments.addFailedWorkComment.mock.calls[0][1]).toBe(125);
-    expect(mockedComments.addFailedWorkComment.mock.calls[0][2]).toBe(
+    expect(mockedComments.addFailedWorkComment.mock.calls[0]![1]).toBe(125);
+    expect(mockedComments.addFailedWorkComment.mock.calls[0]![2]).toBe(
       "fake-token",
     );
-    expect(String(mockedComments.addFailedWorkComment.mock.calls[0][5])).toBe(
+    expect(String(mockedComments.addFailedWorkComment.mock.calls[0]![5])).toBe(
       "Error: build error",
     );
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);

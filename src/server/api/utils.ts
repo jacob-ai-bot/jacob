@@ -9,12 +9,17 @@ import {
 } from "../code/extractedIssue";
 import { cloneRepo } from "../git/clone";
 import { getSourceMap } from "../analyze/sourceMap";
+import { db } from "~/server/db/db";
 
-export const getAllRepos = async (accessToken: string) => {
+export const getAllRepos = async (
+  accessToken: string,
+  includeProjects = false,
+) => {
   const octokit = new Octokit({ auth: accessToken });
   const {
     data: { installations },
   } = await octokit.rest.apps.listInstallationsForAuthenticatedUser();
+
   const repoLists = await Promise.all(
     installations.map(async (installation) => {
       const {
@@ -22,14 +27,46 @@ export const getAllRepos = async (accessToken: string) => {
       } = await octokit.rest.apps.listInstallationReposForAuthenticatedUser({
         installation_id: installation.id,
       });
-      return repositories.map(({ id, node_id, full_name }) => ({
-        id,
-        node_id,
-        full_name,
-      }));
+
+      return Promise.all(
+        repositories.map(async ({ id, node_id, full_name, description }) => {
+          const [org, repo] = full_name.split("/");
+          let projectId = null;
+
+          if (includeProjects) {
+            const project = await db.projects.findByOptional({
+              repoFullName: full_name,
+            });
+            console.log("project", project);
+            projectId = project?.id ?? null;
+          }
+
+          return {
+            id,
+            node_id,
+            full_name,
+            org,
+            repo,
+            description,
+            projectId,
+          };
+        }),
+      );
     }),
   );
-  return repoLists.flat();
+
+  const flattenedList = repoLists.flat();
+  flattenedList.sort((a, b) => {
+    if (a.projectId === null && b.projectId !== null) {
+      return -1;
+    }
+    if (a.projectId !== null && b.projectId === null) {
+      return 1;
+    }
+    return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+  });
+
+  return flattenedList;
 };
 
 export const getIssue = async (
@@ -117,7 +154,7 @@ export const cloneAndGetSourceMap = async (
     });
     cleanupClone = cleanup;
 
-    const repoSettings = getRepoSettings(path);
+    const repoSettings = await getRepoSettings(path, repo);
     const sourceMap = getSourceMap(path, repoSettings);
     return sourceMap;
   } finally {

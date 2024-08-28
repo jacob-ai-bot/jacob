@@ -29,6 +29,7 @@ describe("traverseCodebase", () => {
         .env
       `,
     );
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
     const result = traverseCodebase("/rootpath");
     expect(result).toEqual(["/file1.js", "/dir1/file2.js"]);

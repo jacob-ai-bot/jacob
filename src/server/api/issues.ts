@@ -44,7 +44,7 @@ export async function getExtractedIssues(req: Request, res: Response) {
     });
     cleanupClone = cleanup;
 
-    const repoSettings = getRepoSettings(path);
+    const repoSettings = await getRepoSettings(path, repo);
     const sourceMap = getSourceMap(path, repoSettings);
 
     const issueData = await Promise.all(
