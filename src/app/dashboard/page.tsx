@@ -11,7 +11,7 @@ const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
 const DashboardPage = async () => {
   const { user } = (await getServerAuthSession()) ?? {};
   if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
-    redirect("/");
+    redirect("/finished");
   }
 
   const cookieStore = cookies();
@@ -27,7 +27,7 @@ const DashboardPage = async () => {
   if (!data?.length) {
     console.log("No repos found");
     // Redirect to home if no repos are available
-    redirect("/");
+    redirect("/setup");
   }
 
   const repos = data.map((d) => d.full_name);
