@@ -26,7 +26,7 @@ function FinishedPage() {
             with an out-of-the-box project built by JACoB and our community.
           </p>
           <p className="text-base text-gray-600">
-            We're also still working on launching the full AI Coding Agent
+            We&apos;re also still working on launching the full AI Coding Agent
             dashboard. This will be coming soon, but in the meantime you can use
             the Figma-to-Code version of JACoB to quickly convert designs into
             working code. Simply install the{" "}
