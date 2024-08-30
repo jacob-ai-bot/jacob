@@ -229,6 +229,10 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   );
 };
 
+function getCircleSize(text: string) {
+  return Math.floor(text.length / 50);
+}
+
 function processContextItems(
   contextItems: ContextItem[],
   currentPath: string[],
@@ -270,7 +274,7 @@ function processContextItems(
                   .concat(parts.slice(0, index + 1))
                   .join("/")
               : parts.slice(0, index + 1).join("/"),
-          size: 0,
+          size: getCircleSize(item.text ?? ""),
           file: item.file,
           taxonomy: taxonomy,
           children: [],
@@ -280,7 +284,7 @@ function processContextItems(
         }
       }
       if (index === parts.length - 1) {
-        child.size = item.text?.length ?? 50;
+        child.size = getCircleSize(item.text ?? "");
         if (!item.file?.includes(".")) {
           delete child.children;
         }
