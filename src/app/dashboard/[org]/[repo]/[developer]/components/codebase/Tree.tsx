@@ -256,7 +256,6 @@ export const Tree = ({
       onClick={(e) => {
         // if there's a selected node, grab the parent node and call onNodeClick with the parent node's path
         // otherwise, call onNodeClick with null to deselect the node
-        debugger;
         const parent = selectedFolder?.split("/").slice(0, -1).join("/");
         onNodeClick && parent ? onNodeClick(parent) : null;
       }}
@@ -282,12 +281,7 @@ export const Tree = ({
         const isHighlighted =
           viewMode === "folder"
             ? selectedItem?.file?.includes(data.path)
-            : selectedItem?.file?.includes(data.path);
-        console.log("isHighlighted", isHighlighted);
-        console.log("selectedItem", selectedItem);
-        console.log("data.path", data.path);
-        console.log("data.file", data.file);
-        console.log("data.taxonomy", data.taxonomy);
+            : selectedItem?.file?.includes(data.file);
         const doHighlight = !!selectedItem;
 
         return (
@@ -352,7 +346,7 @@ export const Tree = ({
         const label = truncateString(
           data.label,
           r < 30 ? Math.floor(r / 2.7) + 3 : 100,
-        );
+        )?.replaceAll("_", " ");
 
         const offsetR = r + 12 - depth * 4;
         const fontSize = 16 - depth;
@@ -397,7 +391,7 @@ export const Tree = ({
         const isHighlighted =
           viewMode === "folder"
             ? selectedItem?.file?.includes(data.path)
-            : selectedItem?.taxonomy?.includes(data.path);
+            : selectedItem?.file?.includes(data.file);
 
         const doHighlight = false;
         if (isParent && !isHighlighted) return null;

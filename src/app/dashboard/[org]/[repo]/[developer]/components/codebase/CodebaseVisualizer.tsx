@@ -110,6 +110,12 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     setSelectedItem(null);
   };
 
+  const handleViewModeChange = (mode: "folder" | "taxonomy") => {
+    setViewMode(mode);
+    setCurrentPath(["root"]);
+    setSelectedItem(null);
+  };
+
   const handleCloseDetails = () => {
     setSelectedItem(null);
   };
@@ -137,29 +143,41 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                     className="text-blueGray-400 hover:text-blue-500 hover:underline"
                     onClick={() => handleBreadcrumbClick(index)}
                   >
-                    {part}
+                    {part?.replaceAll("_", " ")}
                   </button>
                 </React.Fragment>
               ))}
             </div>
-            <button
-              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-              onClick={() => {
-                setViewMode(viewMode === "folder" ? "taxonomy" : "folder");
-                setCurrentPath(["root"]);
-                setSelectedItem(null);
-              }}
-            >
-              {viewMode === "folder"
-                ? "Switch to Taxonomy"
-                : "Switch to Folder"}
-            </button>
+            <div className="flex space-x-2">
+              <button
+                className={`rounded px-3 py-1 text-sm ${
+                  viewMode === "folder"
+                    ? "bg-blueGray-600/40 text-white"
+                    : "text-blueGray-400 hover:bg-blueGray-600/10"
+                }`}
+                onClick={() => handleViewModeChange("folder")}
+              >
+                Folder
+              </button>
+              <button
+                className={`rounded px-3 py-1 text-sm ${
+                  viewMode === "taxonomy"
+                    ? "bg-blueGray-600/40 text-white"
+                    : "text-blueGray-400 hover:bg-blueGray-600/10"
+                }`}
+                onClick={() => handleViewModeChange("taxonomy")}
+              >
+                Architecture
+              </button>
+            </div>
           </div>
           <motion.div
-            className="tree-container py-8"
-            initial={{ width: "100%" }}
+            className="w-full py-8"
+            initial={{ width: dimensions.width }}
             animate={{
-              width: selectedItem ? `${100 - detailsWidth}%` : "100%",
+              width: selectedItem
+                ? `${dimensions.width * ((100 - detailsWidth) / 100)}px`
+                : `${dimensions.width}px`,
             }}
             transition={{ duration: 0.3 }}
           >
@@ -185,9 +203,12 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
         <AnimatePresence>
           {selectedItem && (
             <motion.div
-              className="details-container w-full"
+              className={`hide-scrollbar w-[${dimensions.width * (detailsWidth / 100)}px] overflow-hidden`}
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: `${detailsWidth}%`, opacity: 1 }}
+              animate={{
+                width: `${dimensions.width * (detailsWidth / 100)}px`,
+                opacity: 1,
+              }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
@@ -198,6 +219,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 isExpanded={detailsWidth === 50}
                 allFiles={allFiles}
                 onNodeClick={handleNodeClick}
+                viewMode={viewMode}
               />
             </motion.div>
           )}
