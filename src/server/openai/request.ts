@@ -189,8 +189,8 @@ export const sendGptRequest = async (
       );
     }
     let openai: OpenAI;
-    if (model.startsWith("llama")) {
-      // This is a Cerebras API call
+    if (model === "llama3.1-70b" || model === "llama3.1-8b") {
+      // This is a Cerebras API call, this is a temporary fix until portkey supports cerebras via virtual keys
       openai = new OpenAI({
         apiKey: process.env.CEREBRAS_API_KEY,
         baseURL: "https://api.cerebras.ai/v1",
