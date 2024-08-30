@@ -353,7 +353,7 @@ export const sendGptRequestWithSchema = async (
       if (!gptResponse) {
         throw new Error("/n/n/n/n **** Empty response from GPT **** /n/n/n/n");
       }
-      console.log("GPT Response: ", gptResponse);
+      // console.log("GPT Response: ", gptResponse);
       // Remove any code blocks from the response prior to attempting to parse it
       gptResponse = removeMarkdownCodeblocks(gptResponse);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
