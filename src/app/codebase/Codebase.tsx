@@ -1,6 +1,6 @@
 "use client";
 import { type ContextItem } from "~/server/utils/codebaseContext";
-import CodebaseVisualizer from "../dashboard/[org]/[repo]/[developer]/components/codebase/CodebaseVisualizer";
+import CodebaseVisualizer from "../dashboard/[org]/[repo]/otto/components/codebase/CodebaseVisualizer";
 
 interface CodebaseParams {
   contextItems: ContextItem[];

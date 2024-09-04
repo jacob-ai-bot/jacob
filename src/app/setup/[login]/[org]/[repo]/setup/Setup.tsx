@@ -100,6 +100,8 @@ const Setup: React.FC<SetupProps> = ({
     "Installing Dependencies...",
     "Building...",
     "Validating Settings...",
+    "Reviewing Build Status...",
+    "Creating Project...",
   ];
   const stepIndexRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -117,11 +119,12 @@ const Setup: React.FC<SetupProps> = ({
 
   useEffect(() => {
     if (isLoading) {
+      const timeout = Math.floor(Math.random() * 10000) + 10000;
       intervalRef.current = setInterval(() => {
         stepIndexRef.current =
           (stepIndexRef.current + 1) % (loadingSteps.length - 1);
         setLoadingMessage(loadingSteps[stepIndexRef.current] ?? "");
-      }, 8000);
+      }, timeout);
 
       // Set a timeout to switch to the final message after cycling through the others
       setTimeout(
@@ -129,7 +132,7 @@ const Setup: React.FC<SetupProps> = ({
           if (intervalRef.current) clearInterval(intervalRef.current);
           setLoadingMessage(loadingSteps[loadingSteps.length - 1] ?? "");
         },
-        5000 * (loadingSteps.length - 1),
+        timeout * (loadingSteps.length - 1),
       );
     }
 

@@ -4,6 +4,7 @@ const usedColors = ["green", "red", "purple"];
 
 export default {
   content: ["./src/**/*.tsx"],
+  darkMode: "class",
   theme: {
     extend: {
       animation: {

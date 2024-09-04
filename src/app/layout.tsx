@@ -1,3 +1,5 @@
+import { ThemeProvider } from "next-themes";
+
 import "~/styles/globals.css";
 import "~/index.css";
 
@@ -28,8 +30,10 @@ export default function RootLayout({
         />
       </head>
       <body className={`h-screen w-screen text-dark-blue`}>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
-        <ToastContainer />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <ToastContainer />
+        </ThemeProvider>
       </body>
     </html>
   );

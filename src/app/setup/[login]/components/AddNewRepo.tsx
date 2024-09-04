@@ -236,7 +236,7 @@ const AddNewRepo: React.FC<AddNewRepoProps> = ({ login }) => {
                     {repo.description}
                   </p>
                 </div>
-                {repo.projectId ? (
+                {repo.projectId && repo.hasSettings ? (
                   <Link href={`/dashboard/${repo.org}/${repo.repo}`}>
                     <button className="rounded-full bg-meadow-100 px-4 py-2 text-sm font-medium text-meadow-700 transition-colors hover:bg-meadow-200">
                       View Project
@@ -245,7 +245,7 @@ const AddNewRepo: React.FC<AddNewRepoProps> = ({ login }) => {
                 ) : (
                   <Link href={`/setup/${login}/${repo.org}/${repo.repo}/setup`}>
                     <button className="rounded-full bg-blossom-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blossom-600">
-                      Create Project
+                      {repo.hasSettings ? "Edit Settings" : "Create Project"}
                     </button>
                   </Link>
                 )}
