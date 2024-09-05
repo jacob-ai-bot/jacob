@@ -80,7 +80,6 @@
     "mermaid": "^10.9.1",
     "next": "^14.2.1",
     "next-auth": "^4.24.6",
-    "next-theme": "^0.1.5",
     "next-themes": "^0.3.0",
     "openai": "^4.24.7",
     "orchid-orm": "^1.17.18",
