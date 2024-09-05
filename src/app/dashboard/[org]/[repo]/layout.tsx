@@ -87,19 +87,19 @@ export default function DashboardLayout({
       {/* Left Sidebar */}
       <motion.aside
         initial={{ width: "72px" }}
-        animate={{ width: isExpanded ? "240px" : "72px" }}
+        animate={{ width: isExpanded ? "250px" : "72px" }}
         onHoverStart={handleMouseEnter}
         onHoverEnd={handleMouseLeave}
         transition={{ duration: 0.3 }}
-        className="flex flex-col border-r border-r-aurora-200/80 bg-white/50 dark:border-r-0  dark:bg-slate-800/50"
+        className="absolute flex h-screen flex-col border-r-0 border-r-aurora-200/80 bg-white/50 dark:border-r-0  dark:bg-slate-800/50"
       >
         <div
-          className={`flex h-16 items-center font-gooper ${isExpanded ? "justify-left ml-4 " : "justify-center"}`}
+          className={`flex h-16 items-center bg-white pt-1.5 font-gooper dark:bg-slate-800 ${isExpanded ? "justify-left ml-4 " : "justify-center"}`}
         >
           <Image
             src="/images/logo.png"
-            width={30}
-            height={30}
+            width={34}
+            height={34}
             alt="JACoB Logo"
           />
           {isExpanded && (
@@ -169,7 +169,7 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white/90 shadow-sm dark:bg-slate-800">
+        <header className="bg-white/90 pl-[64px] shadow-sm dark:bg-slate-800">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center space-x-4">
               <select className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400">
@@ -209,7 +209,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-6 dark:from-slate-900 dark:to-slate-800">
+        <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-6 pl-[96px] dark:from-slate-900 dark:to-slate-800">
           {children}
         </main>
       </div>

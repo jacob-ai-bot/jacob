@@ -312,7 +312,7 @@ export const Tree = ({
                 <circle
                   r={r}
                   style={{ transition: "all 0.5s ease-out" }}
-                  stroke="#290819"
+                  stroke={theme === "dark" ? "#290819" : "#00c8ff"}
                   strokeOpacity="0.5"
                   strokeWidth="1"
                   fill="white"
@@ -327,7 +327,13 @@ export const Tree = ({
                 }}
                 r={runningR}
                 strokeWidth={isHighlighted ? "5" : "2"}
-                stroke={isHighlighted ? "#290819" : "#290819"} // We can change this to be a different color when highlighted
+                stroke={
+                  isHighlighted
+                    ? "#290819"
+                    : theme === "dark"
+                      ? "#290819"
+                      : "#29081922"
+                } // We can change this to be a different color when highlighted
               />
             )}
           </g>
@@ -364,16 +370,16 @@ export const Tree = ({
             <CircleText
               style={{ fontSize, transition: "all 0.5s ease-out" }}
               r={Math.max(20, offsetR - 3)}
-              fill="#E0E7FF"
-              stroke="#334155"
-              strokeWidth="3"
+              fill={theme === "dark" ? "#E0E7FF" : "#374151"}
+              stroke={theme === "dark" ? "#334155" : "white"}
+              strokeWidth={theme === "dark" ? "3" : "6"}
               strokeOpacity={0.9 - depth * 0.2}
               rotate={depth * 1 - 0}
               text={label}
             />
             <CircleText
               style={{ fontSize, transition: "all 0.5s ease-out" }}
-              fill="#E0E7FF"
+              fill={theme === "dark" ? "#E0E7FF" : "#374151"}
               rotate={depth * 1 - 0}
               r={Math.max(20, offsetR - 3)}
               text={label}

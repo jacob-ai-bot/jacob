@@ -1,9 +1,9 @@
 import { type Config } from "tailwindcss";
-import { fontFamily } from "tailwindcss/defaultTheme";
 const usedColors = ["green", "red", "purple"];
 
 export default {
   content: ["./src/**/*.tsx"],
+  darkMode: "class",
   theme: {
     container: {
       center: true,

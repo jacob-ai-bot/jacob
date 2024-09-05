@@ -10,7 +10,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Section } from "./CodebaseDetails";
 import SyntaxHighlighter from "react-syntax-highlighter";
-import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import {
+  atomOneDark,
+  atomOneLight,
+} from "react-syntax-highlighter/dist/esm/styles/hljs";
 import Markdown from "react-markdown";
 
 interface ImportsSectionProps {
@@ -96,19 +99,16 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
-        className="mb-4 overflow-hidden rounded-lg bg-gray-800 shadow-lg"
+        className="mb-4 overflow-hidden rounded-lg bg-gray-50 shadow-sm dark:bg-gray-800 dark:shadow-lg"
       >
         <div
-          className="flex cursor-pointer items-center justify-between bg-gray-700 px-4 py-2 text-sm font-medium"
+          className="flex cursor-pointer items-center justify-between bg-gray-100 px-4 py-2 text-sm font-medium dark:bg-gray-700"
           onClick={() => toggleItem(index)}
         >
           <div className="flex flex-col overflow-hidden">
             <div className="flex items-center space-x-2">
-              {/* <span className="whitespace-nowrap text-blue-400">
-                {details.exportType}
-              </span> */}
               <span
-                className="cursor-pointer truncate text-blue-300 hover:text-blue-500"
+                className="cursor-pointer truncate text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-500"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (viewMode === "folder") {
@@ -118,27 +118,29 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
               >
                 {fileName}
               </span>
-              <span className="whitespace-nowrap text-gray-300">
+              <span className="whitespace-nowrap text-gray-600 dark:text-gray-300">
                 {details.line_no}:
               </span>
-              <span className="truncate text-gray-400">{previewCode}</span>
+              <span className="truncate text-gray-500 dark:text-gray-400">
+                {previewCode}
+              </span>
             </div>
           </div>
           <div
-            className={` items-center space-x-2 ${viewMode === "taxonomy" ? "hidden" : "flex"}`}
+            className={`items-center space-x-2 ${viewMode === "taxonomy" ? "hidden" : "flex"}`}
           >
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onFileClick(imp.replace(/^\//, ""));
               }}
-              className="text-blue-400 hover:text-blue-300"
+              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
             >
               <FontAwesomeIcon icon={faExternalLinkAlt} />
             </button>
             <FontAwesomeIcon
               icon={isExpanded ? faChevronDown : faChevronRight}
-              className="text-gray-400"
+              className="text-gray-500 dark:text-gray-400"
             />
           </div>
         </div>
@@ -153,7 +155,13 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
               <div className="p-4">
                 <SyntaxHighlighter
                   language="typescript"
-                  style={atomOneDark}
+                  style={
+                    typeof window !== "undefined" &&
+                    window.matchMedia &&
+                    window.matchMedia("(prefers-color-scheme: dark)").matches
+                      ? atomOneDark
+                      : atomOneLight
+                  }
                   customStyle={{
                     background: "transparent",
                     padding: "0.5rem",
@@ -164,11 +172,11 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
                 </SyntaxHighlighter>
                 {details.overview && (
                   <div className="mt-4">
-                    <h5 className="mb-2 flex items-center text-sm font-semibold text-gray-300">
+                    <h5 className="mb-2 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                       <FontAwesomeIcon icon={faInfoCircle} className="mr-2" />
                       Overview
                     </h5>
-                    <Markdown className="text-sm text-gray-400">
+                    <Markdown className="text-sm text-gray-600 dark:text-gray-400">
                       {details.overview}
                     </Markdown>
                   </div>
@@ -190,7 +198,7 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
-        className="rounded-lg bg-gray-800 shadow-lg"
+        className="rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-lg"
       >
         <AnimatePresence>
           {isExpanded && (
@@ -203,7 +211,13 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
               <div className="whitespace-normal p-4">
                 <SyntaxHighlighter
                   language="typescript"
-                  style={atomOneDark}
+                  style={
+                    typeof window !== "undefined" &&
+                    window.matchMedia &&
+                    window.matchMedia("(prefers-color-scheme: dark)").matches
+                      ? atomOneDark
+                      : atomOneLight
+                  }
                   customStyle={{
                     background: "transparent",
                     padding: 0,

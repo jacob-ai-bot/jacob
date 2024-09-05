@@ -134,7 +134,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   }
 
   return (
-    <div className="dark:border:blueGray-900 flex h-full flex-col overflow-hidden rounded-md border border-gray-200  bg-transparent shadow-lg dark:bg-blueGray-700">
+    <div className="flex h-full flex-col overflow-hidden rounded-md border border-aurora-100/50 bg-transparent  shadow-lg dark:border-blueGray-900 dark:bg-blueGray-700">
       <div className="flex w-full flex-1 flex-row overflow-hidden">
         <div className="flex w-full flex-col">
           <div className="flex h-12 w-full flex-row items-center justify-between bg-aurora-100/50 p-2 text-left dark:bg-blueGray-900/30">
@@ -226,6 +226,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 allFiles={allFiles}
                 onNodeClick={handleNodeClick}
                 viewMode={viewMode}
+                theme={theme}
               />
             </motion.div>
           )}

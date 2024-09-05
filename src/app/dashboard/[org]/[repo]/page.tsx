@@ -14,7 +14,7 @@ const RepoPage = async ({
   if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
     redirect("/");
   }
-  redirect(`/dashboard/${params.org}/${params.repo}/chat`);
+  redirect(`/dashboard/${params.org}/${params.repo}/code-visualizer`);
 };
 
 export default RepoPage;
