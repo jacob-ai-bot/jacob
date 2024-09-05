@@ -131,15 +131,14 @@ export const Tree = ({
   const generateColorByDepth = (filePath: string) => {
     const blueGrayPalette = [
       "#E0F2F1", // Very light teal
-      "#DCEDC8", // Light lime
-      "#FFF9C4", // Light yellow
-      "#FFECB3", // Light amber
       "#FFCCBC", // Light deep orange
       "#D1C4E9", // Light purple
       "#C5CAE9", // Light indigo
       "#BBDEFB", // Light blue
       "#B2EBF2", // Light cyan
       "#B2DFDB", // Light teal
+      "#E0E7FF", // Light indigo
+      "#D7E3FC", // Very light purple
     ];
 
     // Split the file path into parts
@@ -269,18 +268,19 @@ export const Tree = ({
         const runningR = r;
         // if (depth <= 1 && !children) runningR *= 3;
         if (data.path === looseFilesId) return null;
-        const isHighlighted = selectedItem?.file?.includes(data.path);
+        const isHighlighted =
+          selectedItem?.file === data.path ||
+          selectedItem?.file === `/${data.path}`;
         const doHighlight = !!selectedItem;
 
         return (
           <g
             key={data.path}
             style={{
-              fill: isHighlighted ? "#FCE68A" : data.color,
+              fill: isHighlighted ? "#FFF9C4" : data.color,
               transition: `transform ${
                 isHighlighted ? "0.5s" : "0s"
               } ease-out, fill 0.1s ease-out`,
-              opacity: doHighlight && !isHighlighted ? 0.9 : 1,
             }}
             stroke="#000000"
             strokeWidth={5}
@@ -306,12 +306,12 @@ export const Tree = ({
             ) : (
               <circle
                 style={{
-                  filter: isHighlighted ? "url(#glow)" : undefined,
+                  // filter: isHighlighted ? "url(#glow)" : undefined, // Remove glow for now
                   transition: "all 0.5s ease-out",
                 }}
                 r={runningR}
                 strokeWidth={isHighlighted ? "5" : "2"}
-                stroke={isHighlighted ? "#39ff14" : "#290819"}
+                stroke={isHighlighted ? "#290819" : "#290819"} // We can change this to be a different color when highlighted
               />
             )}
           </g>
@@ -372,7 +372,10 @@ export const Tree = ({
         const isParent = !!children;
         // if (depth <= 1 && !children) runningR *= 3;
         if (data.path === looseFilesId) return null;
-        const isHighlighted = selectedItem?.file?.includes(data.path);
+
+        const isHighlighted =
+          selectedItem?.file === data.path ||
+          selectedItem?.file === `/${data.path}`;
         const doHighlight = false;
         if (isParent && !isHighlighted) return null;
         if (selectedNodeId === data.path && !isHighlighted) return null;
@@ -402,13 +405,13 @@ export const Tree = ({
                 pointerEvents: "none",
                 opacity: 0.9,
                 fontSize: "14px",
-                fontWeight: 500,
+                fontWeight: isHighlighted ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               fill="#4B5563"
               textAnchor="middle"
               dominantBaseline="middle"
-              stroke={isHighlighted ? "#fce68a" : data.color}
+              stroke={isHighlighted ? "#FFF9C4" : data.color}
               strokeWidth="5"
               strokeOpacity={1}
               strokeLinejoin="round"
@@ -420,7 +423,7 @@ export const Tree = ({
                 pointerEvents: "none",
                 opacity: 1,
                 fontSize: "14px",
-                fontWeight: 500,
+                fontWeight: isHighlighted ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               textAnchor="middle"
@@ -433,7 +436,7 @@ export const Tree = ({
                 pointerEvents: "none",
                 opacity: 0.9,
                 fontSize: "14px",
-                fontWeight: 500,
+                fontWeight: isHighlighted ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               fill="#110101"

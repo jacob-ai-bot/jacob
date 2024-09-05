@@ -11,6 +11,9 @@ interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
 }
 
+const HEADER_HEIGHT = 100;
+const SIDEBAR_WIDTH = 64;
+
 export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   contextItems,
 }) => {
@@ -25,8 +28,8 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     setIsMounted(true);
     const updateDimensions = () => {
       setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight * 0.7,
+        width: window.innerWidth - SIDEBAR_WIDTH,
+        height: (window.innerHeight - HEADER_HEIGHT) * 0.7,
       });
     };
 
@@ -92,7 +95,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-blueGray-700">
+    <div className="flex h-full flex-col overflow-hidden rounded-md bg-blueGray-700 shadow-lg">
       <div className="flex w-full flex-1 flex-row overflow-hidden">
         <div className="flex w-full flex-col">
           <div className="h-12 w-full flex-row bg-blueGray-900/30 p-2 text-left">

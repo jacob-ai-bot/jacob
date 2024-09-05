@@ -13,7 +13,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
 import Markdown from "react-markdown";
-import { renderers } from "../chat/ChatMessage";
+import { renderers } from "~/app/dashboard/[org]/[repo]/otto/components/chat/ChatMessage";
 import gfm from "remark-gfm";
 import path from "path";
 import CodeSection from "./CodeSection";

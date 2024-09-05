@@ -1,9 +1,14 @@
 import { api } from "~/trpc/server";
 import Codebase from "./Codebase";
 
-const DashboardPage = async () => {
+const DashboardPage = async ({
+  params,
+}: {
+  params: { org: string; repo: string };
+}) => {
   const contextItems = await api.codebaseContext.getAll({
-    projectId: 567,
+    org: params.org,
+    repo: params.repo,
   });
   return <Codebase contextItems={contextItems} />;
 };

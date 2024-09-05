@@ -333,17 +333,20 @@ body {
 .markdown-details p {
   @apply font-figtree;
   @apply my-3;
+  @apply text-neutral-300;
 }
 
 .markdown-details ul {
   @apply font-figtree;
   list-style: disc;
   @apply p-2;
+  @apply text-neutral-300;
 }
 
 .markdown-details li {
   @apply font-figtree;
   @apply mb-2;
+  @apply text-neutral-300;
 }
 
 .markdown-details strong {

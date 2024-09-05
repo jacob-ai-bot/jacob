@@ -13,18 +13,34 @@ export const codebaseContextRouter = createTRPCRouter({
   getAll: protectedProcedure
     .input(
       z.object({
-        projectId: z.number(),
+        org: z.string(),
+        repo: z.string(),
       }),
     )
-    .query(async ({ input: { projectId } }): Promise<ContextItem[]> => {
-      const codebaseContext = await db.codebaseContext
-        .where({ projectId })
-        .order({ filePath: "ASC" })
-        .all();
-      return (
-        codebaseContext?.map((context) => context.context as ContextItem) ?? []
-      );
-    }),
+    .query(
+      async ({
+        input: { org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }): Promise<ContextItem[]> => {
+        const project = await db.projects.findBy({
+          repoFullName: `${org}/${repo}`,
+        });
+        const codebaseContext = await db.codebaseContext
+          .where({ projectId: project?.id })
+          .order({ filePath: "ASC" })
+          .all();
+        // If there's no context, generate it
+        if (codebaseContext.length === 0) {
+          await generateCodebaseContext(org, repo, accessToken);
+        }
+        return (
+          codebaseContext?.map((context) => context.context as ContextItem) ??
+          []
+        );
+      },
+    ),
 
   getByFilePath: protectedProcedure
     .input(
@@ -60,33 +76,41 @@ export const codebaseContextRouter = createTRPCRouter({
           session: { accessToken },
         },
       }): Promise<void> => {
-        const octokit = new Octokit({ auth: accessToken });
-
-        if (!org || !repoName) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid request",
-          });
-        }
-
-        // Call Octokit to get the repository
-        const { data: repository } = await octokit.rest.repos.get({
-          owner: org,
-          repo: repoName,
-        });
-        const repoFullName = repository.full_name;
-
-        const webEvent = createWebEvent({
-          repoId: repository.id,
-          repoFullName,
-          action: "generate_context",
-          token: accessToken,
-          params: {
-            repository,
-          },
-        });
-
-        await publishWebEventToQueue(webEvent);
+        await generateCodebaseContext(org, repoName, accessToken);
       },
     ),
 });
+
+const generateCodebaseContext = async (
+  org: string,
+  repoName: string,
+  accessToken: string,
+): Promise<void> => {
+  const octokit = new Octokit({ auth: accessToken });
+
+  if (!org || !repoName) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Invalid request",
+    });
+  }
+
+  // Call Octokit to get the repository
+  const { data: repository } = await octokit.rest.repos.get({
+    owner: org,
+    repo: repoName,
+  });
+  const repoFullName = repository.full_name;
+
+  const webEvent = createWebEvent({
+    repoId: repository.id,
+    repoFullName,
+    action: "generate_context",
+    token: accessToken,
+    params: {
+      repository,
+    },
+  });
+
+  await publishWebEventToQueue(webEvent);
+};
