@@ -1,7 +1,6 @@
 import { api } from "~/trpc/server";
 import Codebase from "./Codebase";
 import { standardizePath } from "~/app/utils";
-import { useTheme } from "next-themes";
 
 const DashboardPage = async ({
   params,
