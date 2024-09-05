@@ -1,5 +1,7 @@
 import { api } from "~/trpc/server";
 import Codebase from "./Codebase";
+import { standardizePath } from "~/app/utils";
+import { useTheme } from "next-themes";
 
 const DashboardPage = async ({
   params,
@@ -10,7 +12,17 @@ const DashboardPage = async ({
     org: params.org,
     repo: params.repo,
   });
-  return <Codebase contextItems={contextItems} />;
+  // convert the contextItems taxonomy to a folder structure
+  const updatedContextItems = contextItems.map((item) => {
+    let taxonomy = (item.taxonomy as string) ?? "";
+    taxonomy = standardizePath(taxonomy.replaceAll(" ", "_") ?? "");
+    return {
+      ...item,
+      taxonomy,
+    };
+  });
+
+  return <Codebase contextItems={updatedContextItems} />;
 };
 
 export default DashboardPage;

@@ -15,6 +15,8 @@ export type CommitType = {
 export type FileType = {
   name: string;
   path: string;
+  file?: string;
+  taxonomy?: string;
   size: number;
   commits?: CommitType[];
   imports?: ImportType[];

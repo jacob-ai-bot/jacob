@@ -1,12 +1,14 @@
 "use client";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import CodebaseVisualizer from "./codebase/CodebaseVisualizer";
+import { useTheme } from "next-themes";
 
 interface CodebaseParams {
   contextItems: ContextItem[];
 }
 
 const Codebase: React.FC<CodebaseParams> = ({ contextItems }) => {
+  const { resolvedTheme } = useTheme();
   if (contextItems.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4">
@@ -23,7 +25,12 @@ const Codebase: React.FC<CodebaseParams> = ({ contextItems }) => {
     );
   }
 
-  return <CodebaseVisualizer contextItems={contextItems} />;
+  return (
+    <CodebaseVisualizer
+      contextItems={contextItems}
+      theme={resolvedTheme === "dark" ? "dark" : "light"}
+    />
+  );
 };
 
 export default Codebase;

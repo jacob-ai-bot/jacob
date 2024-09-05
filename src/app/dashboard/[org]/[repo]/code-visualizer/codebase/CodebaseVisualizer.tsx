@@ -9,6 +9,7 @@ import { type FileType } from "./types";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
+  theme: "light" | "dark";
 }
 
 const HEADER_HEIGHT = 100;
@@ -16,13 +17,15 @@ const SIDEBAR_WIDTH = 64;
 
 export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   contextItems,
+  theme,
 }) => {
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
   const [currentPath, setCurrentPath] = useState<string[]>(["root"]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isMounted, setIsMounted] = useState(false);
-  const [detailsWidth, setDetailsWidth] = useState(30); // New state for details width
+  const [detailsWidth, setDetailsWidth] = useState(30);
   const [allFiles, setAllFiles] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"folder" | "taxonomy">("folder");
 
   useEffect(() => {
     setIsMounted(true);
@@ -46,39 +49,75 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
 
   const filteredContextItems = useMemo(() => {
     const prefix = "/" + currentPath.slice(1).join("/");
-    return contextItems.filter((item) => item.file.startsWith(prefix));
-  }, [contextItems, currentPath]);
+    return contextItems.filter((item) => {
+      return viewMode === "folder"
+        ? item.file.startsWith(prefix)
+        : item.taxonomy!.startsWith(prefix) ?? false;
+    });
+  }, [contextItems, currentPath, viewMode]);
 
   const treeData = useMemo(() => {
-    return processContextItems(filteredContextItems, currentPath);
-  }, [filteredContextItems, currentPath]);
+    return processContextItems(filteredContextItems, currentPath, viewMode);
+  }, [filteredContextItems, currentPath, viewMode]);
 
   const handleNodeClick = (path: string) => {
-    const folder = path
-      .split("/")
-      .filter(Boolean)
-      .find((part) => !part.includes("."));
-    if (folder) {
-      setCurrentPath([...path.split("/").filter(Boolean)]);
-    }
-
-    const item = contextItems.find((item) => item.file?.includes(path));
-    if (item) {
-      setSelectedItem(item);
-      const parts = ["root", ...path.split("/").filter(Boolean)];
-      // If it's a file, remove the last part to show its containing folder
-      if (item.file?.includes(".")) {
-        parts.pop();
+    if (viewMode === "folder") {
+      const folder = path
+        .split("/")
+        .filter(Boolean)
+        .find((part) => !part.includes("."));
+      if (folder) {
+        setCurrentPath([...path.split("/").filter(Boolean)]);
       }
-      setCurrentPath(parts);
+
+      const item = contextItems.find((item) => item.file?.includes(path));
+      if (item) {
+        setSelectedItem(item);
+        const parts = ["root", ...path.split("/").filter(Boolean)];
+        if (item.file?.includes(".")) {
+          parts.pop();
+        }
+        setCurrentPath(parts);
+      } else {
+        console.error("Item not found for path", path);
+      }
     } else {
-      // if the item isn't found, check to see if the path is a folder. Folders don't have extensions
-      console.error("Item not found for path", path);
+      const folder = path
+        .split("/")
+        .filter(Boolean)
+        .find((part) => !part.includes("."));
+      if (folder) {
+        setCurrentPath([...path.split("/").filter(Boolean)]);
+      }
+      const item = contextItems.find((item) => {
+        const taxonomy =
+          item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
+        return taxonomy?.includes(path);
+      });
+      if (item) {
+        setSelectedItem(item);
+        const taxonomy =
+          item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
+        const parts = ["root", ...taxonomy.split("/").filter(Boolean)];
+
+        if (item.file?.includes(".")) {
+          parts.pop();
+        }
+        setCurrentPath(parts);
+      } else {
+        console.error("Item not found for taxonomy path", path);
+      }
     }
   };
 
   const handleBreadcrumbClick = (index: number) => {
     setCurrentPath(currentPath.slice(0, index + 1));
+    setSelectedItem(null);
+  };
+
+  const handleViewModeChange = (mode: "folder" | "taxonomy") => {
+    setViewMode(mode);
+    setCurrentPath(["root"]);
     setSelectedItem(null);
   };
 
@@ -91,31 +130,59 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   };
 
   if (!isMounted) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-md bg-blueGray-700 shadow-lg">
+    <div className="dark:border:blueGray-900 flex h-full flex-col overflow-hidden rounded-md border border-gray-200  bg-transparent shadow-lg dark:bg-blueGray-700">
       <div className="flex w-full flex-1 flex-row overflow-hidden">
         <div className="flex w-full flex-col">
-          <div className="h-12 w-full flex-row bg-blueGray-900/30 p-2 text-left">
-            {currentPath.map((part, index) => (
-              <React.Fragment key={index}>
-                <span className="text-blueGray-400">{index > 0 && " / "}</span>
-                <button
-                  className="text-blueGray-400 hover:text-blue-500 hover:underline"
-                  onClick={() => handleBreadcrumbClick(index)}
-                >
-                  {part}
-                </button>
-              </React.Fragment>
-            ))}
+          <div className="flex h-12 w-full flex-row items-center justify-between bg-aurora-100/50 p-2 text-left dark:bg-blueGray-900/30">
+            <div>
+              {currentPath.map((part, index) => (
+                <React.Fragment key={index}>
+                  <span className="text-gray-500 dark:text-blueGray-400">
+                    {index > 0 && " / "}
+                  </span>
+                  <button
+                    className="text-gray-600 hover:text-blue-500 hover:underline dark:text-blueGray-400"
+                    onClick={() => handleBreadcrumbClick(index)}
+                  >
+                    {part?.replaceAll("_", " ")}
+                  </button>
+                </React.Fragment>
+              ))}
+            </div>
+            <div className="flex space-x-2">
+              <button
+                className={`rounded px-3 py-1 text-sm ${
+                  viewMode === "folder"
+                    ? "bg-sunset-100 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-sunset-50 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                }`}
+                onClick={() => handleViewModeChange("folder")}
+              >
+                Folder
+              </button>
+              <button
+                className={`rounded px-3 py-1 text-sm ${
+                  viewMode === "taxonomy"
+                    ? "bg-sunset-100 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-sunset-50 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                }`}
+                onClick={() => handleViewModeChange("taxonomy")}
+              >
+                Architecture
+              </button>
+            </div>
           </div>
           <motion.div
-            className="tree-container py-8"
-            initial={{ width: "100%" }}
+            className="w-full py-8"
+            initial={{ width: dimensions.width }}
             animate={{
-              width: selectedItem ? `${100 - detailsWidth}%` : "100%",
+              width: selectedItem
+                ? `${dimensions.width * ((100 - detailsWidth) / 100)}px`
+                : `${dimensions.width}px`,
             }}
             transition={{ duration: 0.3 }}
           >
@@ -134,15 +201,20 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               height={dimensions.height}
               selectedItem={selectedItem}
               selectedFolder={"/" + currentPath?.join("/")}
+              viewMode={viewMode}
+              theme={theme}
             />
           </motion.div>
         </div>
         <AnimatePresence>
           {selectedItem && (
             <motion.div
-              className="details-container w-full"
+              className={`hide-scrollbar w-[${dimensions.width * (detailsWidth / 100)}px] overflow-hidden`}
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: `${detailsWidth}%`, opacity: 1 }}
+              animate={{
+                width: `${dimensions.width * (detailsWidth / 100)}px`,
+                opacity: 1,
+              }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
@@ -153,6 +225,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 isExpanded={detailsWidth === 50}
                 allFiles={allFiles}
                 onNodeClick={handleNodeClick}
+                viewMode={viewMode}
               />
             </motion.div>
           )}
@@ -162,22 +235,37 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   );
 };
 
+function getCircleSize(text: string) {
+  return Math.floor(text.length / 50);
+}
+
 function processContextItems(
   contextItems: ContextItem[],
   currentPath: string[],
+  viewMode: "folder" | "taxonomy",
 ): FileType {
   const root: FileType = {
     name: currentPath[currentPath.length - 1] ?? "root",
     path: "/" + currentPath.slice(1).join("/"),
+    file: "/" + currentPath.slice(1).join("/"),
+    taxonomy: "/" + currentPath.slice(1).join("/"),
     size: 0,
     children: [],
   };
 
   contextItems.forEach((item) => {
-    const parts = item.file
-      .split("/")
-      .filter(Boolean)
-      .slice(currentPath.length - 1);
+    // set the taxonomy to be the taxonomy string + the file (just the actual file name, not the path!)
+    const taxonomy = item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
+    const parts =
+      viewMode === "folder"
+        ? item.file
+            .split("/")
+            .filter(Boolean)
+            .slice(currentPath.length - 1)
+        : taxonomy
+            ?.split("/")
+            .filter(Boolean)
+            .slice(currentPath.length - 1) ?? [];
     let currentNode = root;
 
     parts.forEach((part, index) => {
@@ -185,25 +273,24 @@ function processContextItems(
       if (!child) {
         child = {
           name: part,
-          path: currentPath
-            .slice(1)
-            .concat(parts.slice(0, index + 1))
-            .join("/"),
-          size: 0,
+          path:
+            viewMode === "folder"
+              ? currentPath
+                  .slice(1)
+                  .concat(parts.slice(0, index + 1))
+                  .join("/")
+              : parts.slice(0, index + 1).join("/"),
+          size: getCircleSize(item.text ?? ""),
+          file: item.file,
+          taxonomy: taxonomy,
           children: [],
         };
-        // before we push the child, make sure the file exists in the contextItems.files array
-        // if it doesn't, don't push it
-        const fileExists = contextItems.find((contextItem) =>
-          contextItem.file?.includes(child?.path ?? ""),
-        );
-        if (fileExists) {
-          currentNode.children?.push(child);
+        if (currentNode.children) {
+          currentNode.children.push(child);
         }
       }
       if (index === parts.length - 1) {
-        child.size = item.text?.length ?? 50;
-        // If it's a file, remove the children array
+        child.size = getCircleSize(item.text ?? "");
         if (!item.file?.includes(".")) {
           delete child.children;
         }

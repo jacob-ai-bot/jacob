@@ -27,6 +27,7 @@ interface ImportsSectionProps {
     overview?: string;
   }>;
   currentFile?: string;
+  viewMode: "folder" | "taxonomy";
 }
 
 const ImportsSection: React.FC<ImportsSectionProps> = ({
@@ -36,6 +37,7 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
   onFileClick,
   referencedImportDetails,
   currentFile = "",
+  viewMode,
 }) => {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
@@ -109,7 +111,9 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
                 className="cursor-pointer truncate text-blue-300 hover:text-blue-500"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onFileClick(imp.replace(/^\//, ""));
+                  if (viewMode === "folder") {
+                    onFileClick(imp.replace(/^\//, ""));
+                  }
                 }}
               >
                 {fileName}
@@ -120,7 +124,9 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
               <span className="truncate text-gray-400">{previewCode}</span>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div
+            className={` items-center space-x-2 ${viewMode === "taxonomy" ? "hidden" : "flex"}`}
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();
