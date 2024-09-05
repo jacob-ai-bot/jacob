@@ -13,7 +13,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
 import Markdown from "react-markdown";
-import { renderers } from "../chat/ChatMessage";
+import { renderers } from "~/app/dashboard/[org]/[repo]/otto/components/chat/ChatMessage";
 import gfm from "remark-gfm";
 import path from "path";
 import CodeSection from "./CodeSection";
@@ -28,6 +28,7 @@ interface CodebaseDetailsProps {
   allFiles: string[];
   onNodeClick: (path: string) => void;
   viewMode: "folder" | "taxonomy";
+  theme: "light" | "dark";
 }
 
 const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
@@ -38,6 +39,7 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   allFiles,
   onNodeClick,
   viewMode,
+  theme,
 }) => {
   const [copyStatus, setCopyStatus] = useState(false);
 
@@ -54,32 +56,32 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   };
 
   return (
-    <div className="details hide-scrollbar h-full overflow-scroll bg-gray-900 text-left text-sm text-white">
-      <div className="sticky top-0 z-10 flex h-12 items-center justify-between bg-gradient-to-r from-gray-800 to-gray-700 px-4 shadow-md">
+    <div className="details hide-scrollbar h-full overflow-scroll bg-white text-left text-sm text-gray-800 dark:bg-gray-900 dark:text-white">
+      <div className="sticky top-0 z-10 flex h-12 items-center justify-between bg-gradient-to-r from-aurora-50 to-aurora-100/70 px-4 shadow-sm dark:from-gray-800 dark:to-gray-700">
         <div className="flex items-center space-x-3">
           <button
             onClick={onToggleWidth}
-            className="text-gray-400 transition-colors hover:text-white"
+            className="text-aurora-500 transition-colors hover:text-aurora-600 dark:text-gray-400 dark:hover:text-white"
           >
             <FontAwesomeIcon
               icon={isExpanded ? faChevronRight : faChevronLeft}
               size="lg"
             />
           </button>
-          <h2 className="truncate text-lg font-semibold text-blueGray-200">
+          <h2 className="truncate text-lg font-semibold text-gray-800 dark:text-blueGray-200">
             {path.basename(item.file)}
           </h2>
         </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={handleCopy}
-            className="text-gray-400 transition-colors hover:text-white"
+            className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
           >
             <FontAwesomeIcon icon={copyStatus ? faCheck : faCopy} size="lg" />
           </button>
           <button
             onClick={onClose}
-            className="text-gray-400 transition-colors hover:text-white"
+            className=" text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
           >
             <FontAwesomeIcon icon={faTimes} size="lg" />
           </button>
@@ -87,12 +89,16 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
       </div>
 
       <div className="mt-4 space-y-6 px-4">
-        <p className="mb-3 text-gray-100">{item.overview}</p>
-        {item.diagram && <Mermaid chart={item.diagram} />}
-        <Section icon={faInfoCircle} title="Overview" iconColor="text-blue-400">
+        <p className="mb-3 text-gray-700 dark:text-gray-100">{item.overview}</p>
+        {item.diagram && <Mermaid chart={item.diagram} theme={theme} />}
+        <Section
+          icon={faInfoCircle}
+          title="Overview"
+          iconColor="text-primary-500"
+        >
           <Markdown
             remarkPlugins={[gfm]}
-            className={`markdown-details text-neutral-200`}
+            className={`markdown-details text-gray-700 dark:text-neutral-200`}
             components={renderers}
           >
             {item.text}
@@ -134,7 +140,7 @@ export const Section: React.FC<{
       className="mb-4 whitespace-pre-wrap"
     >
       <h3
-        className="mb-2 flex cursor-pointer items-center justify-between text-base font-semibold"
+        className="mb-2 flex cursor-pointer items-center justify-between text-base font-semibold text-gray-800 dark:text-gray-200"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center">
@@ -143,7 +149,7 @@ export const Section: React.FC<{
         </div>
         <FontAwesomeIcon
           icon={isExpanded ? faChevronDown : faChevronRight}
-          className="text-gray-400"
+          className="text-gray-500 dark:text-gray-400"
         />
       </h3>
       <AnimatePresence>

@@ -279,14 +279,14 @@ body {
   @apply font-figtree;
   @apply text-base;
   @apply font-light;
-  @apply text-neutral-300;
+  @apply text-gray-700 dark:text-neutral-300;
 }
 
 .markdown-details h1 {
   @apply text-base;
   @apply font-figtree;
   @apply font-medium;
-  @apply text-neutral-200;
+  @apply text-gray-900 dark:text-neutral-200;
   @apply mt-1;
   @apply mb-3;
 }
@@ -295,7 +295,7 @@ body {
   @apply text-base;
   @apply font-figtree;
   @apply font-medium;
-  @apply text-neutral-200;
+  @apply text-gray-900 dark:text-neutral-200;
   @apply mt-1;
   @apply mb-3;
 }
@@ -304,7 +304,7 @@ body {
   @apply text-base;
   @apply font-figtree;
   @apply font-medium;
-  @apply text-neutral-200;
+  @apply text-gray-900 dark:text-neutral-200;
   @apply mt-1;
   @apply mb-3;
 }
@@ -312,7 +312,7 @@ body {
 .markdown-details h4 {
   @apply text-base;
   @apply font-figtree;
-  @apply text-neutral-200;
+  @apply text-gray-900 dark:text-neutral-200;
   @apply mt-1;
   @apply mb-3;
 }
@@ -320,48 +320,55 @@ body {
 .markdown-details h5 {
   @apply text-base;
   @apply font-figtree;
-  @apply text-neutral-200;
+  @apply text-gray-900 dark:text-neutral-200;
   @apply mt-1;
   @apply mb-3;
 }
 
 .markdown-details hr {
-  @apply border-neutral-500;
+  @apply border-gray-300 dark:border-neutral-500;
   @apply my-3;
 }
 
 .markdown-details p {
   @apply font-figtree;
   @apply my-3;
-  @apply text-neutral-400;
+  @apply text-gray-700 dark:text-neutral-300;
 }
 
 .markdown-details ul {
   @apply font-figtree;
   list-style: disc;
   @apply p-2;
+  @apply text-gray-700 dark:text-neutral-300;
 }
 
 .markdown-details li {
   @apply font-figtree;
   @apply mb-2;
+  @apply text-gray-700 dark:text-neutral-300;
 }
 
 .markdown-details strong {
   @apply font-figtree;
   @apply text-base;
   @apply font-semibold;
+  @apply text-gray-900 dark:text-neutral-300;
 }
 
 .markdown-details code {
-  @apply text-neutral-200;
+  @apply text-gray-800 dark:text-neutral-200;
+  @apply bg-gray-50 dark:bg-gray-700;
   @apply font-figtree;
   @apply font-semibold;
+  @apply px-1;
+  @apply py-0.5;
+  @apply rounded-sm;
 }
 
 .markdown-details a {
   @apply font-figtree;
-  @apply text-light-blue;
+  @apply text-blue-600 dark:text-light-blue;
   @apply underline;
 }
 

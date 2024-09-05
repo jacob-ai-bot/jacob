@@ -9,10 +9,15 @@ import { type FileType } from "./types";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
+  theme: "light" | "dark";
 }
+
+const HEADER_HEIGHT = 100;
+const SIDEBAR_WIDTH = 64;
 
 export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   contextItems,
+  theme,
 }) => {
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
   const [currentPath, setCurrentPath] = useState<string[]>(["root"]);
@@ -26,8 +31,8 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     setIsMounted(true);
     const updateDimensions = () => {
       setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight * 0.7,
+        width: window.innerWidth - SIDEBAR_WIDTH,
+        height: (window.innerHeight - HEADER_HEIGHT) * 0.7,
       });
     };
 
@@ -129,18 +134,18 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-blueGray-700">
+    <div className="flex h-full flex-col overflow-hidden rounded-md border border-aurora-100/50 bg-transparent  shadow-lg dark:border-blueGray-900 dark:bg-blueGray-700">
       <div className="flex w-full flex-1 flex-row overflow-hidden">
         <div className="flex w-full flex-col">
-          <div className="flex h-12 w-full flex-row items-center justify-between bg-blueGray-900/30 p-2 text-left">
+          <div className="flex h-12 w-full flex-row items-center justify-between bg-aurora-100/50 p-2 text-left dark:bg-blueGray-900/30">
             <div>
               {currentPath.map((part, index) => (
                 <React.Fragment key={index}>
-                  <span className="text-blueGray-400">
+                  <span className="text-gray-500 dark:text-blueGray-400">
                     {index > 0 && " / "}
                   </span>
                   <button
-                    className="text-blueGray-400 hover:text-blue-500 hover:underline"
+                    className="text-gray-600 hover:text-blue-500 hover:underline dark:text-blueGray-400"
                     onClick={() => handleBreadcrumbClick(index)}
                   >
                     {part?.replaceAll("_", " ")}
@@ -152,8 +157,8 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               <button
                 className={`rounded px-3 py-1 text-sm ${
                   viewMode === "folder"
-                    ? "bg-blueGray-600/40 text-white"
-                    : "text-blueGray-400 hover:bg-blueGray-600/10"
+                    ? "bg-sunset-100 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-sunset-50 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
                 }`}
                 onClick={() => handleViewModeChange("folder")}
               >
@@ -162,8 +167,8 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               <button
                 className={`rounded px-3 py-1 text-sm ${
                   viewMode === "taxonomy"
-                    ? "bg-blueGray-600/40 text-white"
-                    : "text-blueGray-400 hover:bg-blueGray-600/10"
+                    ? "bg-sunset-100 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-sunset-50 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
                 }`}
                 onClick={() => handleViewModeChange("taxonomy")}
               >
@@ -197,6 +202,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               selectedItem={selectedItem}
               selectedFolder={"/" + currentPath?.join("/")}
               viewMode={viewMode}
+              theme={theme}
             />
           </motion.div>
         </div>
@@ -220,6 +226,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 allFiles={allFiles}
                 onNodeClick={handleNodeClick}
                 viewMode={viewMode}
+                theme={theme}
               />
             </motion.div>
           )}

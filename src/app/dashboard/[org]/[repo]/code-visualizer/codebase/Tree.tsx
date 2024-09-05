@@ -29,7 +29,7 @@ import defaultFileColors from "./language-colors.json";
 import { CircleText } from "./CircleText";
 import { keepBetween, keepCircleInsideCircle, truncateString } from "./utils";
 import { type ContextItem } from "~/server/utils/codebaseContext";
-
+import { standardizePath } from "~/app/utils";
 type Props = {
   data: FileType;
   filesChanged: string[];
@@ -42,6 +42,7 @@ type Props = {
   selectedItem?: ContextItem | null;
   selectedFolder?: string | null;
   viewMode: "folder" | "taxonomy";
+  theme: "light" | "dark";
 };
 type ExtendedFileType = {
   extension?: string;
@@ -78,6 +79,7 @@ export const Tree = ({
   selectedItem = null,
   selectedFolder = null,
   viewMode = "folder",
+  theme = "light",
 }: Props) => {
   const fileColors = { ...defaultFileColors, ...customFileColors };
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -133,15 +135,14 @@ export const Tree = ({
   const generateColorByDepth = (filePath: string) => {
     const blueGrayPalette = [
       "#E0F2F1", // Very light teal
-      "#DCEDC8", // Light lime
-      "#FFF9C4", // Light yellow
-      "#FFECB3", // Light amber
       "#FFCCBC", // Light deep orange
       "#D1C4E9", // Light purple
       "#C5CAE9", // Light indigo
       "#BBDEFB", // Light blue
       "#B2EBF2", // Light cyan
       "#B2DFDB", // Light teal
+      "#E0E7FF", // Light indigo
+      "#D7E3FC", // Very light purple
     ];
 
     // Split the file path into parts
@@ -280,19 +281,18 @@ export const Tree = ({
         if (data.path === looseFilesId) return null;
         const isHighlighted =
           viewMode === "folder"
-            ? selectedItem?.file?.includes(data.path)
-            : selectedItem?.file?.includes(data.file);
+            ? selectedItem?.file === standardizePath(data.path)
+            : selectedItem?.file === standardizePath(data.file);
         const doHighlight = !!selectedItem;
 
         return (
           <g
             key={data.path + data.file + data.name + data.taxonomy}
             style={{
-              fill: isHighlighted ? "#FCE68A" : data.color,
+              fill: isHighlighted ? "#FFF9C4" : data.color,
               transition: `transform ${
                 isHighlighted ? "0.5s" : "0s"
               } ease-out, fill 0.1s ease-out`,
-              opacity: doHighlight && !isHighlighted ? 0.9 : 1,
             }}
             stroke="#000000"
             strokeWidth={5}
@@ -312,7 +312,7 @@ export const Tree = ({
                 <circle
                   r={r}
                   style={{ transition: "all 0.5s ease-out" }}
-                  stroke="#290819"
+                  stroke={theme === "dark" ? "#290819" : "#00c8ff"}
                   strokeOpacity="0.5"
                   strokeWidth="1"
                   fill="white"
@@ -322,12 +322,18 @@ export const Tree = ({
             ) : (
               <circle
                 style={{
-                  filter: isHighlighted ? "url(#glow)" : undefined,
+                  // filter: isHighlighted ? "url(#glow)" : undefined, // Remove glow for now
                   transition: "all 0.5s ease-out",
                 }}
                 r={runningR}
                 strokeWidth={isHighlighted ? "5" : "2"}
-                stroke={isHighlighted ? "#39ff14" : "#290819"}
+                stroke={
+                  isHighlighted
+                    ? "#290819"
+                    : theme === "dark"
+                      ? "#290819"
+                      : "#29081922"
+                } // We can change this to be a different color when highlighted
               />
             )}
           </g>
@@ -364,16 +370,16 @@ export const Tree = ({
             <CircleText
               style={{ fontSize, transition: "all 0.5s ease-out" }}
               r={Math.max(20, offsetR - 3)}
-              fill="#E0E7FF"
-              stroke="#334155"
-              strokeWidth="3"
+              fill={theme === "dark" ? "#E0E7FF" : "#374151"}
+              stroke={theme === "dark" ? "#334155" : "white"}
+              strokeWidth={theme === "dark" ? "3" : "6"}
               strokeOpacity={0.9 - depth * 0.2}
               rotate={depth * 1 - 0}
               text={label}
             />
             <CircleText
               style={{ fontSize, transition: "all 0.5s ease-out" }}
-              fill="#E0E7FF"
+              fill={theme === "dark" ? "#E0E7FF" : "#374151"}
               rotate={depth * 1 - 0}
               r={Math.max(20, offsetR - 3)}
               text={label}
@@ -390,8 +396,8 @@ export const Tree = ({
         if (data.path === looseFilesId) return null;
         const isHighlighted =
           viewMode === "folder"
-            ? selectedItem?.file?.includes(data.path)
-            : selectedItem?.file?.includes(data.file);
+            ? selectedItem?.file === standardizePath(data.path)
+            : selectedItem?.file === standardizePath(data.file);
 
         const doHighlight = false;
         if (isParent && !isHighlighted) return null;
@@ -426,13 +432,13 @@ export const Tree = ({
                 pointerEvents: "none",
                 opacity: 0.9,
                 fontSize: "14px",
-                fontWeight: 500,
+                fontWeight: isHighlighted ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               fill="#4B5563"
               textAnchor="middle"
               dominantBaseline="middle"
-              stroke={isHighlighted ? "#fce68a" : data.color}
+              stroke={isHighlighted ? "#FFF9C4" : data.color}
               strokeWidth="5"
               strokeOpacity={1}
               strokeLinejoin="round"
@@ -444,7 +450,7 @@ export const Tree = ({
                 pointerEvents: "none",
                 opacity: 1,
                 fontSize: "14px",
-                fontWeight: 500,
+                fontWeight: isHighlighted ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               textAnchor="middle"
@@ -457,7 +463,7 @@ export const Tree = ({
                 pointerEvents: "none",
                 opacity: 0.9,
                 fontSize: "14px",
-                fontWeight: 500,
+                fontWeight: isHighlighted ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               fill="#110101"

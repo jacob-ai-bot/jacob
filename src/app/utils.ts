@@ -4,6 +4,8 @@ import { TaskSubType, TaskType } from "~/server/db/enums";
 import { type StandardizedPath } from "~/server/utils/files";
 import { type Message, Role, SpecialPhrases, SidebarIcon } from "~/types";
 import pathBrowserify from "path-browserify";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export const statusStyles = {
   open: "bg-green-700 text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
@@ -121,6 +123,9 @@ function isValidPath(path: string): boolean {
 }
 
 export function standardizePath(filePath: string): StandardizedPath {
+  if (!filePath) {
+    return "" as StandardizedPath;
+  }
   let cleanPath = filePath.replace(/^\.\//, "");
 
   if (!cleanPath.startsWith("/")) {
@@ -137,4 +142,8 @@ export function standardizePath(filePath: string): StandardizedPath {
   }
 
   return cleanPath as StandardizedPath;
+}
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }

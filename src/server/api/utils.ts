@@ -32,6 +32,7 @@ export const getAllRepos = async (
         repositories.map(async ({ id, node_id, full_name, description }) => {
           const [org, repo] = full_name.split("/");
           let projectId = null;
+          let hasSettings = false;
 
           if (includeProjects) {
             const project = await db.projects.findByOptional({
@@ -39,6 +40,7 @@ export const getAllRepos = async (
             });
             console.log("project", project);
             projectId = project?.id ?? null;
+            hasSettings = Object.keys(project?.settings ?? {}).length > 0;
           }
 
           return {
@@ -49,6 +51,7 @@ export const getAllRepos = async (
             repo,
             description,
             projectId,
+            hasSettings,
           };
         }),
       );

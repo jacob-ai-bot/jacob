@@ -1,18 +1,26 @@
 import { api } from "~/trpc/server";
 import Codebase from "./Codebase";
-import { standardizePath } from "../utils";
+import { standardizePath } from "~/app/utils";
 
-const DashboardPage = async () => {
+const DashboardPage = async ({
+  params,
+}: {
+  params: { org: string; repo: string };
+}) => {
   const contextItems = await api.codebaseContext.getAll({
-    projectId: 567,
+    org: params.org,
+    repo: params.repo,
   });
   // convert the contextItems taxonomy to a folder structure
   const updatedContextItems = contextItems.map((item) => {
+    let taxonomy = (item.taxonomy as string) ?? "";
+    taxonomy = standardizePath(taxonomy.replaceAll(" ", "_") ?? "");
     return {
       ...item,
-      taxonomy: standardizePath(item.taxonomy?.replaceAll(" ", "_") ?? ""),
+      taxonomy,
     };
   });
+
   return <Codebase contextItems={updatedContextItems} />;
 };
 

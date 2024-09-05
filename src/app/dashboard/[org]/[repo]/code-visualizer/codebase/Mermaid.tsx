@@ -3,9 +3,10 @@ import mermaid from "mermaid";
 
 interface MermaidProps {
   chart: string;
+  theme: "light" | "dark";
 }
 
-const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
+const Mermaid: React.FC<MermaidProps> = ({ chart, theme }) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [hideDiagram, setHideDiagram] = React.useState(false);
 
@@ -13,10 +14,11 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
     setHideDiagram(false);
     mermaid.initialize({
       startOnLoad: true,
-      theme: "dark",
+      theme: theme === "light" ? "neutral" : "dark",
       securityLevel: "loose",
       fontFamily: "Fira Code, monospace",
       fontSize: 12,
+      darkMode: theme === "dark",
     });
 
     const cleanAndFixChart = (chart: string): string => {
@@ -70,7 +72,12 @@ const Mermaid: React.FC<MermaidProps> = ({ chart }) => {
   if (hideDiagram) {
     return null;
   }
-  return <div ref={mermaidRef} className="rounded bg-gray-800 p-2 text-xs" />;
+  return (
+    <div
+      ref={mermaidRef}
+      className="rounded bg-white p-2 text-xs shadow-sm dark:bg-gray-800"
+    />
+  );
 };
 
 export default Mermaid;
