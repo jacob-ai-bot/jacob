@@ -28,7 +28,7 @@ import flatten from "lodash/flatten";
 import defaultFileColors from "./language-colors.json";
 import { CircleText } from "./CircleText";
 import { keepBetween, keepCircleInsideCircle, truncateString } from "./utils";
-import { ContextItem } from "~/server/utils/codebaseContext";
+import { type ContextItem } from "~/server/utils/codebaseContext";
 
 type Props = {
   data: FileType;
@@ -41,6 +41,7 @@ type Props = {
   height?: number;
   selectedItem?: ContextItem | null;
   selectedFolder?: string | null;
+  viewMode: "folder" | "taxonomy";
 };
 type ExtendedFileType = {
   extension?: string;
@@ -76,6 +77,7 @@ export const Tree = ({
   width = 1000,
   selectedItem = null,
   selectedFolder = null,
+  viewMode = "folder",
 }: Props) => {
   const fileColors = { ...defaultFileColors, ...customFileColors };
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -143,14 +145,14 @@ export const Tree = ({
     ];
 
     // Split the file path into parts
-    const parts = filePath.split("/").filter(Boolean); // filter(Boolean) removes empty strings
+    const parts = (filePath ?? "").split("/").filter(Boolean); // filter(Boolean) removes empty strings
 
     const lastFolder = parts.length > 1 ? parts[parts.length - 2] : parts[0];
     // return a random color but keep it the same for each filePath so it's stable, mod on the length of the file path
     return blueGrayPalette[(lastFolder ?? "").length % blueGrayPalette.length];
   };
   const getColor = (d) => {
-    return generateColorByDepth(d.path);
+    return generateColorByDepth(d.path ?? d.taxonomy);
     if (colorEncoding === "type") {
       const isParent = d.children;
       if (isParent) {
@@ -169,7 +171,14 @@ export const Tree = ({
   const packedData = useMemo(() => {
     if (!data) return [];
     const hierarchicalData = hierarchy(
-      processChild(data, getColor, cachedOrders.current, 0, fileColors),
+      processChild(
+        data,
+        getColor,
+        cachedOrders.current,
+        0,
+        fileColors,
+        viewMode,
+      ),
     )
       .sum((d) => d.value)
       .sort((a, b) => {
@@ -223,7 +232,7 @@ export const Tree = ({
     });
 
     return children.slice(0, maxChildren);
-  }, [data, fileColors]);
+  }, [data, fileColors, viewMode]);
 
   const selectedNode =
     selectedNodeId && packedData.find((d) => d.data.path === selectedNodeId);
@@ -269,12 +278,15 @@ export const Tree = ({
         const runningR = r;
         // if (depth <= 1 && !children) runningR *= 3;
         if (data.path === looseFilesId) return null;
-        const isHighlighted = selectedItem?.file?.includes(data.path);
+        const isHighlighted =
+          viewMode === "folder"
+            ? selectedItem?.file?.includes(data.path)
+            : selectedItem?.file?.includes(data.file);
         const doHighlight = !!selectedItem;
 
         return (
           <g
-            key={data.path}
+            key={data.path + data.file + data.name + data.taxonomy}
             style={{
               fill: isHighlighted ? "#FCE68A" : data.color,
               transition: `transform ${
@@ -287,8 +299,12 @@ export const Tree = ({
             transform={`translate(${x}, ${y})`}
             onClick={(e) => {
               console.log("clicked", data.path);
+              console.log(
+                "calling onNodeClick",
+                viewMode === "folder" ? data.path : data.taxonomy,
+              );
               e.stopPropagation();
-              onNodeClick?.(data.path);
+              onNodeClick?.(viewMode === "folder" ? data.path : data.taxonomy);
             }}
           >
             {isParent ? (
@@ -330,14 +346,14 @@ export const Tree = ({
         const label = truncateString(
           data.label,
           r < 30 ? Math.floor(r / 2.7) + 3 : 100,
-        );
+        )?.replaceAll("_", " ");
 
         const offsetR = r + 12 - depth * 4;
         const fontSize = 16 - depth;
 
         return (
           <g
-            key={data.path}
+            key={data.path + data.file + data.name + data.taxonomy}
             style={{ pointerEvents: "none", transition: "all 0.5s ease-out" }}
             transform={`translate(${x}, ${y})`}
             onClick={(e) => {
@@ -372,7 +388,11 @@ export const Tree = ({
         const isParent = !!children;
         // if (depth <= 1 && !children) runningR *= 3;
         if (data.path === looseFilesId) return null;
-        const isHighlighted = selectedItem?.file?.includes(data.path);
+        const isHighlighted =
+          viewMode === "folder"
+            ? selectedItem?.file?.includes(data.path)
+            : selectedItem?.file?.includes(data.file);
+
         const doHighlight = false;
         if (isParent && !isHighlighted) return null;
         if (selectedNodeId === data.path && !isHighlighted) return null;
@@ -386,7 +406,7 @@ export const Tree = ({
 
         return (
           <g
-            key={data.path}
+            key={data.path + data.file + data.name + data.taxonomy}
             style={{
               fill: data.color,
               transition: `transform ${isHighlighted ? "0.5s" : "0s"} ease-out`,
@@ -394,7 +414,11 @@ export const Tree = ({
             transform={`translate(${x}, ${y})`}
             onClick={(e) => {
               e.stopPropagation();
-              onNodeClick?.(data.path);
+              console.log("clicked");
+              console.log("viewMode", viewMode);
+              console.log("data.path", data.path);
+              console.log("data.taxonomy", data.taxonomy);
+              onNodeClick?.(viewMode === "folder" ? data.path : data.taxonomy);
             }}
           >
             <text
@@ -507,13 +531,14 @@ const processChild = (
   cachedOrders,
   i = 0,
   fileColors,
+  viewMode,
 ): ExtendedFileType => {
   if (!child) return;
   const isRoot = !child.path;
   let name = child.name;
-  let path = child.path;
+  let path = viewMode === "folder" ? child.path : child.taxonomy;
   let children = child?.children?.map((c, i) =>
-    processChild(c, getColor, cachedOrders, i, fileColors),
+    processChild(c, getColor, cachedOrders, i, fileColors, viewMode),
   );
   if (children?.length === 1) {
     name = `${name}/${children[0].name}`;

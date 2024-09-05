@@ -1,7 +1,9 @@
 import { PLANS } from "~/data/plans";
 import { type Plan } from "~/server/api/routers/events";
 import { TaskSubType, TaskType } from "~/server/db/enums";
+import { type StandardizedPath } from "~/server/utils/files";
 import { type Message, Role, SpecialPhrases, SidebarIcon } from "~/types";
+import pathBrowserify from "path-browserify";
 
 export const statusStyles = {
   open: "bg-green-700 text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
@@ -113,3 +115,26 @@ export const getPlanForTaskSubType = (taskSubType: TaskSubType) => {
   }
   return plan;
 };
+
+function isValidPath(path: string): boolean {
+  return /^\/[a-zA-Z0-9_\-./[\]...]+$/.test(path);
+}
+
+export function standardizePath(filePath: string): StandardizedPath {
+  let cleanPath = filePath.replace(/^\.\//, "");
+
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+
+  cleanPath = pathBrowserify.posix.normalize(cleanPath);
+  cleanPath = cleanPath.replace(/\\/g, "/");
+
+  if (!isValidPath(cleanPath)) {
+    console.log("Invalid file path:", filePath);
+    console.log("Standardized path:", cleanPath);
+    return "" as StandardizedPath;
+  }
+
+  return cleanPath as StandardizedPath;
+}

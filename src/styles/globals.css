@@ -333,6 +333,7 @@ body {
 .markdown-details p {
   @apply font-figtree;
   @apply my-3;
+  @apply text-neutral-400;
 }
 
 .markdown-details ul {

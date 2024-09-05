@@ -27,6 +27,7 @@ interface CodebaseDetailsProps {
   isExpanded?: boolean;
   allFiles: string[];
   onNodeClick: (path: string) => void;
+  viewMode: "folder" | "taxonomy";
 }
 
 const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
@@ -36,6 +37,7 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   isExpanded = false,
   allFiles,
   onNodeClick,
+  viewMode,
 }) => {
   const [copyStatus, setCopyStatus] = useState(false);
 
@@ -52,7 +54,7 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   };
 
   return (
-    <div className="details h-full overflow-y-auto bg-gray-900 text-left text-sm text-white">
+    <div className="details hide-scrollbar h-full overflow-scroll bg-gray-900 text-left text-sm text-white">
       <div className="sticky top-0 z-10 flex h-12 items-center justify-between bg-gradient-to-r from-gray-800 to-gray-700 px-4 shadow-md">
         <div className="flex items-center space-x-3">
           <button
@@ -85,12 +87,12 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
       </div>
 
       <div className="mt-4 space-y-6 px-4">
-        <p className="mb-3 text-gray-300">{item.overview}</p>
+        <p className="mb-3 text-gray-100">{item.overview}</p>
         {item.diagram && <Mermaid chart={item.diagram} />}
         <Section icon={faInfoCircle} title="Overview" iconColor="text-blue-400">
           <Markdown
             remarkPlugins={[gfm]}
-            className={`markdown-details`}
+            className={`markdown-details text-neutral-200`}
             components={renderers}
           >
             {item.text}
@@ -104,6 +106,7 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
           onFileClick={onNodeClick}
           referencedImportDetails={item.referencedImportDetails ?? []}
           currentFile={item.file}
+          viewMode={viewMode}
         />
 
         {item.exports?.length ? <ExportsSection contextItem={item} /> : null}
@@ -128,7 +131,7 @@ export const Section: React.FC<{
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="mb-4"
+      className="mb-4 whitespace-pre-wrap"
     >
       <h3
         className="mb-2 flex cursor-pointer items-center justify-between text-base font-semibold"

@@ -1,0 +1,18 @@
+Analyze the following list of files and their descriptions from a software project:
+
+${files}
+
+Based on this file list, create a custom two-level taxonomy to categorize these files effectively. Follow these steps:
+
+1. Identify the main areas of the project (e.g., Frontend, Backend, Testing, etc.).
+2. For each main area, determine 3-7 subcategories and sub-subcategories that best represent the files in that area.
+3. Ensure that every file in the list can be categorized within your taxonomy.
+4. Create a JSON object where:
+   - Top-level keys are the main categories
+   - Each top-level key contains an object with subcategory names as keys and an array of sub-subcategories as values
+
+5. Aim for 10-15 top-level categories to provide comprehensive coverage without over-complication.
+6. Use clear, concise, and industry-standard terminology for category and subcategory names.
+7. Consider both the current structure of the project and potential future expansions.
+
+Provide ONLY the resulting JSON object, DO NOT include code blocks or any other words.
