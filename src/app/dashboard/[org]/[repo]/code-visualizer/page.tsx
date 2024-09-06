@@ -21,7 +21,13 @@ const DashboardPage = async ({
     };
   });
 
-  return <Codebase contextItems={updatedContextItems} />;
+  return (
+    <Codebase
+      contextItems={updatedContextItems}
+      org={params.org}
+      repo={params.repo}
+    />
+  );
 };
 
 export default DashboardPage;

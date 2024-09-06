@@ -165,7 +165,7 @@ async function generateSettings(
     installCommand: z.string().optional(),
     formatCommand: z.string().optional(),
     buildCommand: z.string().optional(),
-    testCommand: z.string().optional(),
+    // testCommand: z.string().optional(),
     iconSet: z
       .enum([
         "Font Awesome",
@@ -219,7 +219,6 @@ const repoSettingsSchema = z.object({
     installCommand: z.string().optional(),
     formatCommand: z.string().optional(),
     buildCommand: z.string().optional(),
-    testCommand: z.string().optional(),
     iconSet: z
       .enum([
         "Font Awesome",

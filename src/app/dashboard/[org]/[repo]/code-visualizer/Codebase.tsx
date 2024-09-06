@@ -2,13 +2,44 @@
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import CodebaseVisualizer from "./codebase/CodebaseVisualizer";
 import { useTheme } from "next-themes";
+import {
+  setLastUsedRepoCookie,
+  setHasStartedCodebaseGenerationCookie,
+  getHasStartedCodebaseGenerationCookie,
+  getIsLastUsedRepoCookie,
+} from "~/app/actions";
+import { useEffect } from "react";
 
 interface CodebaseParams {
   contextItems: ContextItem[];
+  org: string;
+  repo: string;
 }
 
-const Codebase: React.FC<CodebaseParams> = ({ contextItems }) => {
+const Codebase: React.FC<CodebaseParams> = ({ contextItems, org, repo }) => {
   const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    const fetchData = async (org: string, repo: string) => {
+      if (org && repo) {
+        for (let i = 0; i < 10; i++) {
+          const hasStarted = await getHasStartedCodebaseGenerationCookie(
+            org,
+            repo,
+          );
+          if (!hasStarted) {
+            void setHasStartedCodebaseGenerationCookie(org, repo);
+          }
+          const isLastUsedRepo = await getIsLastUsedRepoCookie(org, repo);
+          if (!isLastUsedRepo) {
+            void setLastUsedRepoCookie(org, repo);
+          }
+        }
+      }
+    };
+    void fetchData(org, repo);
+  }, [org, repo]);
+
   if (contextItems.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4">

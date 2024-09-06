@@ -78,6 +78,7 @@ const InputGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 import { useEffect, useRef } from "react";
+import { setHasStartedCodebaseGenerationCookie } from "~/app/actions";
 
 const Setup: React.FC<SetupProps> = ({
   org,
@@ -118,8 +119,15 @@ const Setup: React.FC<SetupProps> = ({
   );
 
   useEffect(() => {
+    void setHasStartedCodebaseGenerationCookie(org, repo);
+  }, [org, repo]);
+
+  useEffect(() => {
     if (isLoading) {
-      const timeout = Math.floor(Math.random() * 10000) + 10000;
+      const maxTimeout = 20000;
+      const minTimeout = 10000;
+      const timeout =
+        Math.floor(Math.random() * minTimeout) + (maxTimeout - minTimeout);
       intervalRef.current = setInterval(() => {
         stepIndexRef.current =
           (stepIndexRef.current + 1) % (loadingSteps.length - 1);
@@ -132,7 +140,7 @@ const Setup: React.FC<SetupProps> = ({
           if (intervalRef.current) clearInterval(intervalRef.current);
           setLoadingMessage(loadingSteps[loadingSteps.length - 1] ?? "");
         },
-        timeout * (loadingSteps.length - 1),
+        maxTimeout * (loadingSteps.length - 1),
       );
     }
 
@@ -165,7 +173,7 @@ const Setup: React.FC<SetupProps> = ({
         console.log("result.data", result.data);
         setErrorMessage(result.data);
       } else {
-        router.push(`/dashboard/${org}/${repo}/otto`);
+        router.push(`/dashboard/${org}/${repo}`);
       }
     } catch (error) {
       setErrorMessage("An error occurred while validating settings.");
@@ -307,14 +315,14 @@ const Setup: React.FC<SetupProps> = ({
                 placeholder="npm run build"
                 tooltip="Command used to build the project"
               />
-              <FormField
+              {/* <FormField
                 label="Test Command"
                 name="testCommand"
                 value={settings.testCommand}
                 onChange={handleChange}
                 placeholder="npm run test"
                 tooltip="Command used to run tests"
-              />
+              /> */}
             </>,
           )}
 

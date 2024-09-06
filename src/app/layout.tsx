@@ -29,7 +29,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`h-screen w-screen text-dark-blue`}>
+      <body
+        className={`h-screen w-screen bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100`}
+      >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TRPCReactProvider>{children}</TRPCReactProvider>
           <ToastContainer />

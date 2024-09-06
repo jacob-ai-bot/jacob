@@ -8,6 +8,7 @@ import {
   createWebEvent,
   publishWebEventToQueue,
 } from "~/server/messaging/queue";
+import { getHasStartedCodebaseGenerationCookie } from "~/app/actions";
 
 export const codebaseContextRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -32,7 +33,11 @@ export const codebaseContextRouter = createTRPCRouter({
           .order({ filePath: "ASC" })
           .all();
         // If there's no context, generate it
-        if (codebaseContext.length === 0) {
+        const hasStarted = await getHasStartedCodebaseGenerationCookie(
+          org,
+          repo,
+        );
+        if (codebaseContext.length === 0 && !hasStarted) {
           await generateCodebaseContext(org, repo, accessToken);
         }
         return (

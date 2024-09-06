@@ -10,9 +10,6 @@ const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
 
 const DashboardPage = async () => {
   const { user } = (await getServerAuthSession()) ?? {};
-  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
-    redirect("/finished");
-  }
 
   const cookieStore = cookies();
   const lastUsedRepo = cookieStore.get("lastUsedRepo");
@@ -20,6 +17,10 @@ const DashboardPage = async () => {
   // Redirect to the last used repo if available
   if (lastUsedRepo?.value) {
     redirect(`/dashboard/${lastUsedRepo.value}`);
+  }
+
+  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
+    redirect("/finished");
   }
 
   // Fetch the list of repositories

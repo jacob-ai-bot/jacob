@@ -90,11 +90,11 @@ export default function DashboardLayout({
         animate={{ width: isExpanded ? "250px" : "72px" }}
         onHoverStart={handleMouseEnter}
         onHoverEnd={handleMouseLeave}
-        transition={{ duration: 0.3 }}
-        className="absolute flex h-screen flex-col border-r-0 border-r-aurora-200/80 bg-white/50 dark:border-r-0  dark:bg-slate-800/50"
+        transition={{ duration: isExpanded ? 0.3 : 0.2 }}
+        className="absolute flex h-screen flex-col border-r-0 border-r-aurora-200/80 bg-white/80 dark:border-r-0  dark:bg-slate-800/80"
       >
         <div
-          className={`flex h-16 items-center bg-white pt-1.5 font-gooper dark:bg-slate-800 ${isExpanded ? "justify-left ml-4 " : "justify-center"}`}
+          className={`justify-left ml-4 flex h-16 items-center bg-white pt-1.5 font-gooper dark:bg-slate-800`}
         >
           <Image
             src="/images/logo.png"
@@ -129,7 +129,7 @@ export default function DashboardLayout({
                 >
                   <FontAwesomeIcon
                     icon={item.icon}
-                    className={`h-5 w-5 ${isExpanded ? "" : "mx-auto"}`}
+                    className={`ml-[6px] h-5 w-5`}
                   />
                   {isExpanded && (
                     <motion.span

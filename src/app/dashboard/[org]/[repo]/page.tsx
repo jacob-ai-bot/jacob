@@ -14,6 +14,7 @@ const RepoPage = async ({
   if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
     redirect("/");
   }
+  console.log("redirecting to code-visualizer");
   redirect(`/dashboard/${params.org}/${params.repo}/code-visualizer`);
 };
 
