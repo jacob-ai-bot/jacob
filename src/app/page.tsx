@@ -16,10 +16,9 @@ export default async function Home() {
   const lastUsedRepo = cookieStore.get("lastUsedRepo");
 
   // Redirect to the last used repo if available
-  if (lastUsedRepo?.value) {
+  if (session?.user?.login && lastUsedRepo?.value) {
     redirect(`/dashboard/${lastUsedRepo.value}`);
   }
-  console.log("lastUsedRepo", lastUsedRepo);
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-aurora-50 to-blossom-50 p-4">

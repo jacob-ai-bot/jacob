@@ -128,8 +128,8 @@ const PORTKEY_VIRTUAL_KEYS = {
   "llama-3.1-70b-versatile": process.env.PORTKEY_VIRTUAL_KEY_GROK,
   "llama-3-sonar-large-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3-sonar-small-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
-  "llama3.1-8b": process.env.CEREBRAS_API_KEY,
-  "llama3.1-70b": process.env.CEREBRAS_API_KEY,
+  "llama3.1-8b": process.env.PORTKEY_VIRTUAL_KEY_CEREBRAS,
+  "llama3.1-70b": process.env.PORTKEY_VIRTUAL_KEY_CEREBRAS,
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
@@ -188,30 +188,19 @@ export const sendGptRequest = async (
         delay,
       );
     }
-    let openai: OpenAI;
-    if (model === "llama3.1-70b" || model === "llama3.1-8b") {
-      // This is a Cerebras API call, this is a temporary fix until portkey supports cerebras via virtual keys
-      openai = new OpenAI({
-        apiKey: process.env.CEREBRAS_API_KEY,
-        baseURL: "https://api.cerebras.ai/v1",
-      });
-    } else {
-      openai = new OpenAI({
-        apiKey: "using-virtual-portkey-key",
-        baseURL: PORTKEY_GATEWAY_URL,
-        defaultHeaders: {
-          "x-portkey-api-key": process.env.PORTKEY_API_KEY,
-          "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
-          "x-portkey-cache": "simple",
-          "x-portkey-retry-count": "3",
-          "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
-        },
-      });
-    }
-    const cerebrasClient = new OpenAI({
-      apiKey: process.env.CEREBRAS_API_KEY,
-      baseURL: "https://api.cerebras.ai/v1",
+
+    const openai = new OpenAI({
+      apiKey: "using-virtual-portkey-key",
+      baseURL: PORTKEY_GATEWAY_URL,
+      defaultHeaders: {
+        "x-portkey-api-key": process.env.PORTKEY_API_KEY,
+        "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
+        "x-portkey-cache": "simple",
+        "x-portkey-retry-count": "3",
+        "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
+      },
     });
+
     const max_tokens = MAX_OUTPUT[model];
 
     const messages = [
