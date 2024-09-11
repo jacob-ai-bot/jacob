@@ -91,7 +91,7 @@ export default function DashboardLayout({
         onHoverStart={handleMouseEnter}
         onHoverEnd={handleMouseLeave}
         transition={{ duration: isExpanded ? 0.3 : 0.2 }}
-        className="absolute flex h-screen flex-col border-r-0 border-r-aurora-200/80 bg-white/80 dark:border-r-0  dark:bg-slate-800/80"
+        className="absolute z-50 flex h-screen flex-col border-r-0 border-r-aurora-200/80 bg-white/90 dark:border-r-0  dark:bg-slate-800/90"
       >
         <div
           className={`justify-left ml-4 flex h-16 items-center bg-white pt-1.5 font-gooper dark:bg-slate-800`}

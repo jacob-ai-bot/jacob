@@ -9,25 +9,9 @@ import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import Artifact from "./Artifact"; // Import the new Artifact component
-
-// Lazy load SyntaxHighlighter
-const SyntaxHighlighter = lazy(() =>
-  import("react-syntax-highlighter").then((module) => ({
-    default: module.Prism,
-  })),
-);
-const oneDark = lazy(() =>
-  // @ts-ignore
-  import("react-syntax-highlighter/dist/cjs/styles/prism").then((module) => ({
-    default: module.oneDark,
-  })),
-);
-const oneLight = lazy(() =>
-  // @ts-ignore
-  import("react-syntax-highlighter/dist/cjs/styles/prism").then((module) => ({
-    default: module.oneLight,
-  })),
-);
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface ChatProps {
   project: Project;
@@ -41,130 +25,53 @@ const copyToClipboard = async (text: string) => {
 const CHAT_INPUT_HEIGHT = "40px";
 
 export function Chat({ project }: ChatProps) {
-  const [artifactContent, setArtifactContent] = useState<string | null>("test");
+  const [artifactContent, setArtifactContent] = useState<string | null>(null);
   const [artifactFileName, setArtifactFileName] = useState<string>("");
   const [artifactLanguage, setArtifactLanguage] = useState<string>("");
   const [hasStartedStreaming, setHasStartedStreaming] = useState(false);
 
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    setMessages,
-  } = useChat({
-    api: "/api/chat/v2",
-    body: {
-      projectId: project.id,
-    },
-    initialMessages: [
-      {
-        id: "1",
-        role: "system",
-        content:
-          "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
+  const { messages, input, handleInputChange, handleSubmit, isLoading } =
+    useChat({
+      api: "/api/chat/v2",
+      body: {
+        projectId: project.id,
       },
-    ],
-    onResponse: async (response: Response) => {
-      setHasStartedStreaming(true);
-      return;
-      const reader = response.body?.getReader();
-      if (!reader) return;
-
-      let accumulatedContent = "";
-      const newMessageId = Date.now().toString();
-
-      const updateMessage = (content: string) => {
-        // remove any content between <jacobThinking> and </jacobArtifact>
-        content = content.replace(
-          /<jacobThinking>[\s\S]*?<\/jacobArtifact>/g,
-          "",
-        );
-
-        setMessages((currentMessages) => {
-          const updatedMessages = [...currentMessages];
-          const lastMessage = updatedMessages[updatedMessages.length - 1];
-
-          if (lastMessage && lastMessage.role === "assistant") {
-            lastMessage.content = content;
-          } else {
-            updatedMessages.push({
-              id: newMessageId,
-              role: "assistant",
-              content: content,
-            });
-          }
-          // be sure that the last message's content update is returned
-          return updatedMessages;
-        });
-      };
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const parts = chunk.split("\n");
-
-        for (const part of parts) {
-          // do a quick timeout to prevent the chat from freezing
-          // await new Promise((resolve) => setTimeout(resolve, 100));
-          if (part.trim() === "") continue;
-
-          const match = part.match(/^(\d+):"(.+)"$/);
-          if (match) {
-            const [, index, content] = match;
-            // json parse the content to remove extra characters like \n and \t
-            const parsedContent = content ?? ""; // TODO: fix this
-            switch (index) {
-              case "0": // text stream
-                accumulatedContent += parsedContent;
-                updateMessage(accumulatedContent);
-
-                if (accumulatedContent.includes("<jacobThinking>")) {
-                  setHasStartedStreaming(false);
-                }
-                if (accumulatedContent.includes("</jacobArtifact>")) {
-                  setHasStartedStreaming(true);
-                }
-                break;
-              case "1": // data stream
-                console.log(part); // TODO: NEVER REMOVE THIS, but will be created in a few minutes...
-                break;
-              default:
-                break;
-            }
-          }
-        }
-      }
-
-      // Parse for artifact tags
-      const artifactRegex = /<jacobArtifact[^>]*>([\s\S]*?)<\/jacobArtifact>/;
-      console.log("accumulatedContent", accumulatedContent);
-      const match = accumulatedContent.match(artifactRegex);
-      console.log("match", match);
-
-      if (match) {
-        const artifactContent = match[1];
-        const titleMatch = accumulatedContent.match(/title="([^"]*)"/) ?? [
-          "",
-          "Untitled",
-        ];
-        const typeMatch = accumulatedContent.match(/type="([^"]*)"/) ?? [
-          "",
-          "",
-        ];
-
-        setArtifactFileName(titleMatch[1] ?? "Untitled");
-        setArtifactLanguage(typeMatch[1]?.split(".").pop() ?? "javascript");
-        setArtifactContent(artifactContent ?? null);
-      }
-    },
-    onFinish: () => {
-      setHasStartedStreaming(false);
-    },
-  });
+      initialMessages: [
+        {
+          id: "1",
+          role: "system",
+          content:
+            "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
+        },
+      ],
+      onResponse: async () => {
+        setHasStartedStreaming(true);
+        console.log("onResponse");
+      },
+      onError: (error) => {
+        console.error("Error in chat", error);
+        toast.error(`Error in chat: ${error.message}`);
+      },
+      onToolCall: async ({ toolCall }) => {
+        console.log("onToolCall");
+        setHasStartedStreaming(false);
+        console.log("toolCall", toolCall);
+        const toolCallArgs = toolCall.args as {
+          fileName: string;
+          content: string;
+          language: string;
+        };
+        const { fileName, content, language } = toolCallArgs;
+        setArtifactContent(content);
+        setArtifactFileName(fileName);
+        setArtifactLanguage(language);
+      },
+      onFinish: () => {
+        console.log("onFinish");
+        setHasStartedStreaming(false);
+      },
+      keepLastMessageOnError: true,
+    });
 
   const [textareaHeight, setTextareaHeight] = useState(CHAT_INPUT_HEIGHT);
   const { resolvedTheme } = useTheme();
@@ -205,6 +112,7 @@ export function Chat({ project }: ChatProps) {
       ...props
     }: any) => {
       const match = /language-(\w+)/.exec((className as string) ?? "");
+
       if (!inline && match) {
         return (
           <div className="relative w-full max-w-full overflow-hidden">
