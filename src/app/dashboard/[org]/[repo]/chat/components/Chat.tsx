@@ -1,14 +1,8 @@
 import { type Message, useChat } from "ai/react";
-import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import { type Project } from "~/server/db/tables/projects.table";
-import { faClipboard } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { toast } from "react-toastify";
-import { useTheme } from "next-themes";
 import Artifact from "./Artifact"; // Import the new Artifact component
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { trpcClient } from "~/trpc/client";
 import LoadingIndicator from "./LoadingIndicator";
@@ -93,7 +87,6 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
     });
 
   const [textareaHeight, setTextareaHeight] = useState(CHAT_INPUT_HEIGHT);
-  const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

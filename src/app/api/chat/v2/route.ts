@@ -1,11 +1,9 @@
 import { Role, type Message } from "~/types";
 import { type NextRequest } from "next/server";
 import { db } from "~/server/db/db";
-import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { convertToCoreMessages, streamText, tool } from "ai";
 import { z } from "zod";
-import { type Evaluation } from "~/server/api/routers/chat";
 import { sendGptRequest } from "~/server/openai/request";
 
 export const maxDuration = 120;
