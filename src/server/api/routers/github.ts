@@ -13,6 +13,51 @@ import {
 import { AT_MENTION } from "~/server/utils";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 
+export async function fetchGithubFileContents(
+  accessToken: string,
+  org: string,
+  repo: string,
+  branch: string,
+  filePaths: string[],
+) {
+  try {
+    const octokit = new Octokit({ auth: accessToken });
+
+    const fileContents = await Promise.all(
+      filePaths.map(async (path) => {
+        try {
+          const response = await octokit.repos.getContent({
+            owner: org,
+            repo,
+            path,
+            ref: branch,
+          });
+
+          if (!("content" in response.data)) {
+            throw new Error(`File not found: ${path}`);
+          }
+
+          const content = Buffer.from(response.data.content, "base64").toString(
+            "utf-8",
+          );
+          return { path, content };
+        } catch (error) {
+          console.error(`Error fetching file: ${path}`, error);
+          return { path, error: `Failed to fetch file: ${path}` };
+        }
+      }),
+    );
+
+    return fileContents;
+  } catch (error) {
+    console.error("Error in fetchGithubFileContents", error);
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to fetch file contents from GitHub",
+    });
+  }
+}
+
 export const githubRouter = createTRPCRouter({
   getRepos: protectedProcedure
     .input(z.object({ includeProjects: z.boolean().optional() }).optional())
@@ -234,4 +279,25 @@ export const githubRouter = createTRPCRouter({
         return await cloneAndGetSourceMap(`${org}/${repo}`, accessToken);
       },
     ),
+  fetchFileContents: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+        branch: z.string().optional().default("main"),
+        filePaths: z.array(z.string()),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { org, repo, branch, filePaths } = input;
+      const { accessToken } = ctx.session;
+
+      return await fetchGithubFileContents(
+        accessToken,
+        org,
+        repo,
+        branch,
+        filePaths,
+      );
+    }),
 });

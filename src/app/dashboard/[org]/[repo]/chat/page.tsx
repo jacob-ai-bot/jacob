@@ -12,16 +12,23 @@ const Chat = async ({ params }: { params: { org: string; repo: string } }) => {
   if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
     redirect("/");
   }
-  const sourceMap = await api.github.getSourceMap({
-    org: params.org,
-    repo: params.repo,
-  });
+  const { org, repo } = params;
+  const [project, contextItems] = await Promise.all([
+    api.events.getProject({
+      org,
+      repo,
+    }),
+    api.codebaseContext.getAll({
+      org,
+      repo,
+    }),
+  ]);
   return (
     <ChatPage
-      org={params.org}
-      repo={params.repo}
-      developerId="otto"
-      sourceMap={sourceMap}
+      project={project}
+      contextItems={contextItems}
+      org={org}
+      repo={repo}
     />
   );
 };

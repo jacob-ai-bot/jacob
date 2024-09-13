@@ -169,103 +169,82 @@ body {
 .task-list-item input[type="checkbox"] {
   margin-right: 6px;
 }
-
 .markdown-chat {
-  @apply font-figtree;
-  @apply text-base;
-  @apply leading-relaxed;
-  @apply font-light;
-  @apply text-neutral-300;
+  @apply text-base  leading-relaxed;
+  @apply text-neutral-700 dark:text-neutral-300;
 }
 
 .markdown-chat h1 {
-  @apply text-2xl;
-  @apply font-figtree;
-  @apply mt-1;
-  @apply mb-3;
+  @apply mb-3 mt-1 text-2xl;
+  @apply text-neutral-900 dark:text-neutral-100;
 }
 
 .markdown-chat h2 {
-  @apply text-xl;
-  @apply font-figtree;
-  @apply mt-1;
-  @apply mb-3;
+  @apply mb-3 mt-1  text-xl;
+  @apply text-neutral-900 dark:text-neutral-100;
 }
 
 .markdown-chat h3 {
-  @apply text-lg;
-  @apply font-figtree;
-  @apply mt-1;
-  @apply mb-3;
+  @apply mb-3 mt-1  text-lg;
+  @apply text-neutral-900 dark:text-neutral-100;
 }
 
 .markdown-chat h4 {
-  @apply text-base;
-  @apply font-figtree;
-  @apply mt-1;
-  @apply mb-3;
+  @apply mb-3 mt-1  text-base;
+  @apply text-neutral-900 dark:text-neutral-100;
 }
 
 .markdown-chat h5 {
-  @apply text-base;
-  @apply font-figtree;
-  @apply mt-1;
-  @apply mb-3;
+  @apply mb-3 mt-1  text-base;
+  @apply text-neutral-900 dark:text-neutral-100;
 }
 
 .markdown-chat hr {
-  @apply border-neutral-500;
-  @apply my-3;
+  @apply my-3 border-neutral-300 dark:border-neutral-500;
 }
 
 .markdown-chat p {
-  @apply font-figtree;
-  @apply my-3;
+  @apply text-neutral-700 dark:text-neutral-300;
 }
 
 .markdown-chat ul {
-  @apply font-figtree;
-  list-style: disc;
-  @apply p-2;
+  @apply ml-4 list-disc p-2;
 }
 
 .markdown-chat li {
-  @apply font-figtree;
   @apply mb-1;
 }
 
 .markdown-chat strong {
-  @apply font-figtree;
-  @apply text-lg;
-  @apply font-semibold;
-  @apply text-light-blue;
+  @apply text-base font-semibold;
+  @apply text-neutral-700 dark:text-neutral-300;
 }
 
 .markdown-chat code {
-  @apply bg-gray-700/80;
-  @apply font-figtree;
-  @apply px-1;
-  @apply py-1;
-  @apply rounded-sm;
+  @apply whitespace-pre-wrap break-words rounded-md px-1 py-0.5 font-mono text-sm;
+  @apply text-gray-800 dark:text-gray-200;
+  @apply bg-gray-100 dark:bg-gray-800/60;
+}
+
+.markdown-chat pre {
+  @apply relative my-1 w-full max-w-full overflow-x-auto whitespace-normal break-all rounded-md px-1 py-0.5;
+  @apply text-gray-800 dark:text-gray-200;
+}
+
+.markdown-chat pre > div {
+  @apply whitespace-pre-wrap break-all;
 }
 
 .markdown-chat a {
-  @apply font-figtree;
-  @apply text-light-blue;
   @apply underline;
+  @apply text-blue-600 dark:text-light-blue;
 }
 
 .markdown-issue code {
-  @apply text-blueGray-200;
-  @apply bg-blueGray-800;
-  @apply px-3;
-  @apply py-2;
-  @apply my-2;
-  @apply rounded-md;
-  @apply block;
-  @apply overflow-x-auto;
-  @apply whitespace-pre;
-  @apply border border-blueGray-700;
+  @apply my-2 block overflow-x-auto whitespace-pre rounded-md px-3 py-2;
+  @apply text-gray-800 dark:text-blueGray-200;
+  @apply bg-gray-100 dark:bg-blueGray-800;
+  @apply border border-gray-300 dark:border-blueGray-700;
 }
 
 .details {
@@ -367,6 +346,12 @@ body {
 }
 
 .markdown-details a {
+  @apply font-figtree;
+  @apply text-blue-600 dark:text-light-blue;
+  @apply underline;
+}
+
+.markdown-details span {
   @apply font-figtree;
   @apply text-blue-600 dark:text-light-blue;
   @apply underline;
