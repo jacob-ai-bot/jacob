@@ -16,9 +16,10 @@ import { type ContextItem } from "~/server/utils/codebaseContext";
 
 export interface ExportsSectionProp {
   contextItem: ContextItem;
+  theme: "light" | "dark";
 }
 
-export const ExportsSection = ({ contextItem }: ExportsSectionProp) => {
+export const ExportsSection = ({ contextItem, theme }: ExportsSectionProp) => {
   const exports = contextItem.exports;
   const [expandedItems, setExpandedItems] = React.useState<Set<number>>(
     new Set(),
@@ -85,13 +86,7 @@ export const ExportsSection = ({ contextItem }: ExportsSectionProp) => {
                 <div className="p-4">
                   <SyntaxHighlighter
                     language="typescript"
-                    style={
-                      typeof window !== "undefined" &&
-                      window.matchMedia &&
-                      window.matchMedia("(prefers-color-scheme: dark)").matches
-                        ? atomOneDark
-                        : atomOneLight
-                    }
+                    style={theme === "dark" ? atomOneDark : atomOneLight}
                     customStyle={{
                       background: "transparent",
                       padding: 0,

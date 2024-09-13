@@ -13,7 +13,10 @@ import {
   atomOneLight,
 } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
-export const CodeSection: React.FC<{ code: string[] }> = ({ code }) => {
+export const CodeSection: React.FC<{
+  code: string[];
+  theme: "light" | "dark";
+}> = ({ code, theme }) => {
   const [expandedItems, setExpandedItems] = React.useState<Set<number>>(
     new Set(),
   );
@@ -87,13 +90,7 @@ export const CodeSection: React.FC<{ code: string[] }> = ({ code }) => {
                 <div className="p-4">
                   <SyntaxHighlighter
                     language="typescript"
-                    style={
-                      typeof window !== "undefined" &&
-                      window.matchMedia &&
-                      window.matchMedia("(prefers-color-scheme: dark)").matches
-                        ? atomOneDark
-                        : atomOneLight
-                    }
+                    style={theme === "dark" ? atomOneDark : atomOneLight}
                     customStyle={{
                       background: "transparent",
                       padding: 0,

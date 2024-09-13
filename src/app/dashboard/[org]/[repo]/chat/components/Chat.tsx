@@ -1,40 +1,58 @@
 import { type Message, useChat } from "ai/react";
 import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { type Project } from "~/server/db/tables/projects.table";
-import gfm from "remark-gfm";
-import Markdown from "react-markdown";
 import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
-import { motion } from "framer-motion";
 import Artifact from "./Artifact"; // Import the new Artifact component
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { type ContextItem } from "~/server/utils/codebaseContext";
+import { trpcClient } from "~/trpc/client";
+import LoadingIndicator from "./LoadingIndicator";
+import { LoadingCard } from "./LoadingCard";
+import { type Evaluation } from "~/server/api/routers/chat";
+import { api } from "~/trpc/react";
 
 interface ChatProps {
   project: Project;
+  contextItems: ContextItem[];
+  org: string;
+  repo: string;
 }
 
-const copyToClipboard = async (text: string) => {
-  await navigator.clipboard.writeText(text);
-  toast.success("Copied to clipboard");
-};
+export interface CodeFile {
+  path: string;
+  content: string;
+}
 
 const CHAT_INPUT_HEIGHT = "40px";
 
-export function Chat({ project }: ChatProps) {
+import { motion, AnimatePresence } from "framer-motion";
+import MarkdownRenderer from "~/app/_components/MarkdownRenderer";
+export function Chat({ project, contextItems, org, repo }: ChatProps) {
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
   const [artifactFileName, setArtifactFileName] = useState<string>("");
   const [artifactLanguage, setArtifactLanguage] = useState<string>("");
   const [hasStartedStreaming, setHasStartedStreaming] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [currentEvaluation, setCurrentEvaluation] = useState<Evaluation | null>(
+    null,
+  );
+  const [artifactFilePath, setArtifactFilePath] = useState<string>("");
+  const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
+  const [showLoadingCard, setShowLoadingCard] = useState(false);
+  const [codeFiles, setCodeFiles] = useState<CodeFile[]>([]);
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } =
     useChat({
       api: "/api/chat/v2",
       body: {
         projectId: project.id,
+        org,
+        repo,
       },
       initialMessages: [
         {
@@ -46,29 +64,30 @@ export function Chat({ project }: ChatProps) {
       ],
       onResponse: async () => {
         setHasStartedStreaming(true);
-        console.log("onResponse");
       },
       onError: (error) => {
         console.error("Error in chat", error);
         toast.error(`Error in chat: ${error.message}`);
       },
       onToolCall: async ({ toolCall }) => {
-        console.log("onToolCall");
-        setHasStartedStreaming(false);
         console.log("toolCall", toolCall);
+        setHasStartedStreaming(false);
         const toolCallArgs = toolCall.args as {
           fileName: string;
           content: string;
           language: string;
+          filePath: string;
         };
-        const { fileName, content, language } = toolCallArgs;
+        const { fileName, content, language, filePath } = toolCallArgs;
         setArtifactContent(content);
         setArtifactFileName(fileName);
         setArtifactLanguage(language);
+        setArtifactFilePath(filePath);
       },
       onFinish: () => {
-        console.log("onFinish");
         setHasStartedStreaming(false);
+        setIsCreatingArtifact(false);
+        setCurrentEvaluation(null);
       },
       keepLastMessageOnError: true,
     });
@@ -79,11 +98,69 @@ export function Chat({ project }: ChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    setHasStartedStreaming(false);
+  const evaluateChatMessage = api.chat.evaluateChatMessage.useMutation();
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    handleSubmit();
+    setHasStartedStreaming(false);
+    setIsEvaluating(true);
+    // get the text from the textarea
+    const text = textareaRef.current?.value ?? "";
+    // clear the textarea and append the new message
+    textareaRef.current!.disabled = true;
+    textareaRef.current!.style.height = CHAT_INPUT_HEIGHT;
+    textareaRef.current!.style.opacity = "0.5";
+
+    const newMessage = {
+      role: "user",
+      content: text,
+    };
+    const newMessages = [...messages, newMessage];
+    const evaluation = await evaluateChatMessage.mutateAsync({
+      codeFileStructureContext: contextItems
+        .map((item) => `${item.file} - ${item.overview}`)
+        .join("\n"),
+      messages: newMessages,
+    });
+    if (evaluation.shouldCreateArtifact) {
+      setCurrentEvaluation(evaluation);
+      // wait a second and then set is creating artifact to true
+      setTimeout(() => {
+        setIsCreatingArtifact(true);
+      }, 1000);
+    }
+    if (evaluation.filesToUse) {
+      // call the github fetch files router
+      const codeFileResponse =
+        (await trpcClient.github.fetchFileContents.query({
+          org,
+          repo,
+          branch: "main",
+          filePaths: evaluation.filesToUse,
+        })) ?? [];
+      evaluation.codeFiles = codeFileResponse.map(
+        (file) => `\`\`\` ${file.path}\n\n${file.content}\n\`\`\``,
+      );
+
+      setCodeFiles(
+        codeFileResponse.map((file) => ({
+          path: file.path ?? "",
+          content: file.content ?? "",
+        })),
+      );
+    }
+    handleSubmit(e, {
+      body: {
+        evaluateChatMessageData: JSON.stringify(evaluation),
+      },
+    });
+    setIsEvaluating(false);
     setTextareaHeight(CHAT_INPUT_HEIGHT);
+    textareaRef.current!.value = "";
+    textareaRef.current!.disabled = false;
+    textareaRef.current!.style.height = CHAT_INPUT_HEIGHT;
+    textareaRef.current!.style.opacity = "1";
+    textareaRef.current!.focus();
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -104,95 +181,80 @@ export function Chat({ project }: ChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const CodeBlock = useMemo(() => {
-    const CodeBlockComponent = ({
-      inline,
-      className,
-      children,
-      ...props
-    }: any) => {
-      const match = /language-(\w+)/.exec((className as string) ?? "");
+  useEffect(() => {
+    if (isCreatingArtifact) {
+      const timer = setTimeout(() => {
+        setShowLoadingCard(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowLoadingCard(false);
+    }
+  }, [isCreatingArtifact]);
+  //   const CodeBlockComponent = ({
+  //     inline,
+  //     className,
+  //     children,
+  //     ...props
+  //   }: any) => {
+  //     const match = /language-(\w+)/.exec((className as string) ?? "");
 
-      if (!inline && match) {
-        return (
-          <div className="relative w-full max-w-full overflow-hidden">
-            <button
-              className="absolute right-2 top-2 z-10 rounded bg-gray-300 px-2 py-1 text-blueGray-50 hover:bg-gray-400 dark:bg-gray-700/80 dark:text-white dark:hover:bg-gray-600/80"
-              onClick={() => copyToClipboard(String(children))}
-            >
-              <FontAwesomeIcon icon={faClipboard} />
-            </button>
-            <Suspense fallback={<div>Loading...</div>}>
-              <SyntaxHighlighter
-                style={resolvedTheme === "dark" ? oneDark : oneLight}
-                language={match[1]}
-                PreTag="div"
-                customStyle={{
-                  margin: 0,
-                  padding: "1rem 2.5rem 1rem 1rem",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-all",
-                  overflowWrap: "break-word",
-                  maxWidth: "100%",
-                }}
-                wrapLines={true}
-                wrapLongLines={true}
-                {...props}
-              >
-                {children}
-              </SyntaxHighlighter>
-            </Suspense>
-          </div>
-        );
-      } else if (inline) {
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      } else {
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      }
-    };
-    CodeBlockComponent.displayName = "CodeBlock";
-    return CodeBlockComponent;
-  }, [resolvedTheme]);
+  //     if (!inline && match) {
+  //       return (
+  //         <div className="relative w-full max-w-full overflow-hidden">
+  //           <button
+  //             className="absolute right-2 top-2 z-10 rounded bg-gray-300 px-2 py-1 text-blueGray-50 hover:bg-gray-400 dark:bg-gray-700/80 dark:text-white dark:hover:bg-gray-600/80"
+  //             onClick={() => copyToClipboard(String(children))}
+  //           >
+  //             <FontAwesomeIcon icon={faClipboard} />
+  //           </button>
+  //           <Suspense fallback={<div>Loading...</div>}>
+  //             <SyntaxHighlighter
+  //               style={resolvedTheme === "dark" ? oneDark : oneLight}
+  //               language={match[1]}
+  //               PreTag="div"
+  //               customStyle={{
+  //                 margin: 0,
+  //                 padding: "1rem 2.5rem 1rem 1rem",
+  //                 whiteSpace: "pre-wrap",
+  //                 wordBreak: "break-all",
+  //                 overflowWrap: "break-word",
+  //                 maxWidth: "100%",
+  //               }}
+  //               wrapLines={true}
+  //               wrapLongLines={true}
+  //               {...props}
+  //             >
+  //               {children}
+  //             </SyntaxHighlighter>
+  //           </Suspense>
+  //         </div>
+  //       );
+  //     } else if (inline) {
+  //       return (
+  //         <code className={className} {...props}>
+  //           {children}
+  //         </code>
+  //       );
+  //     } else {
+  //       return (
+  //         <code className={className} {...props}>
+  //           {children}
+  //         </code>
+  //       );
+  //     }
+  //   };
+  //   CodeBlockComponent.displayName = "CodeBlock";
+  //   return CodeBlockComponent;
+  // }, [resolvedTheme]);
 
-  const memoizedRenderers = useMemo(() => {
-    return {
-      code: CodeBlock,
-    };
-  }, [CodeBlock]);
+  // const memoizedRenderers = useMemo(() => {
+  //   return {
+  //     code: CodeBlock,
+  //   };
+  // }, [CodeBlock]);
 
   useEffect(() => setMounted(true), []);
-
-  const LoadingIndicator = () => (
-    <div className="flex items-center justify-center space-x-2 p-2">
-      {[
-        { light: "#BBDEFB", dark: "#B2EBF2" },
-        { light: "#FFCCBC", dark: "#D1C4E9" },
-        { light: "#B2DFDB", dark: "#E0E7FF" },
-      ].map((colors, index) => (
-        <motion.div
-          key={index}
-          className={`h-3 w-3 rounded-full bg-[${colors.light}] dark:bg-[${colors.dark}]`}
-          animate={{
-            y: ["0%", "-50%", "0%"],
-          }}
-          transition={{
-            duration: 0.8,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: index * 0.15,
-          }}
-        />
-      ))}
-    </div>
-  );
 
   if (!mounted) return null;
 
@@ -201,7 +263,7 @@ export function Chat({ project }: ChatProps) {
       <div className="mx-auto flex  h-full w-full max-w-4xl  flex-row rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
         <div className="mx-auto mr-4 flex flex-1 flex-col">
           <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
-            {messages.map((m: Message) => (
+            {messages.map((m: Message, index: number) => (
               <div
                 key={m.id}
                 className={`mb-4 flex ${
@@ -211,21 +273,34 @@ export function Chat({ project }: ChatProps) {
                 <div
                   className={`inline-block max-w-[80%] rounded-lg p-2 ${
                     m.role === "user"
-                      ? "bg-aurora-50 text-white dark:bg-sky-500/40"
+                      ? "bg-aurora-50 text-dark-blue dark:bg-sky-500/40"
                       : "bg-white text-dark-blue dark:bg-slate-700 dark:text-slate-100"
                   }`}
                 >
-                  <Markdown
-                    remarkPlugins={[gfm]}
-                    className={`markdown-chat px-1`}
-                    components={memoizedRenderers}
-                  >
+                  <MarkdownRenderer className={`markdown-chat px-1`}>
                     {m.content}
-                  </Markdown>
+                  </MarkdownRenderer>
+                  {isCreatingArtifact &&
+                    index === messages.length - 1 &&
+                    m.role === "assistant" && (
+                      <AnimatePresence>
+                        {showLoadingCard && (
+                          <motion.div
+                            className="m-2"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <LoadingCard evaluation={currentEvaluation} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    )}
                 </div>
               </div>
             ))}
-            {isLoading && !hasStartedStreaming && (
+            {(isLoading || isEvaluating) && !hasStartedStreaming && (
               <div className="flex justify-start">
                 <div className="inline-block max-w-[80%] rounded-lg bg-white/20 p-2 text-dark-blue dark:bg-slate-700 dark:text-slate-100">
                   <LoadingIndicator />
@@ -234,7 +309,13 @@ export function Chat({ project }: ChatProps) {
             )}
             <div ref={messagesEndRef} />
           </div>
-          <form onSubmit={onSubmit} className="flex flex-col">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await onSubmit(e);
+            }}
+            className="flex flex-col"
+          >
             <div className="relative flex w-full items-center rounded-2xl border border-aurora-100 bg-aurora-50/30 p-1.5 dark:border-sky-600/30 dark:bg-slate-700">
               <textarea
                 ref={textareaRef}
@@ -244,7 +325,9 @@ export function Chat({ project }: ChatProps) {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.metaKey) {
                     e.preventDefault();
-                    handleSubmit();
+                    void onSubmit(
+                      e as unknown as React.FormEvent<HTMLFormElement>,
+                    );
                   }
                 }}
                 placeholder="Type your message..."
@@ -254,7 +337,7 @@ export function Chat({ project }: ChatProps) {
               <button
                 type="submit"
                 className="mb-1 me-1 flex h-8 w-8 items-center justify-center rounded-full bg-aurora-500 text-white transition-colors hover:bg-aurora-600 focus-visible:outline-none disabled:bg-gray-300 dark:bg-sky-600 dark:hover:bg-sky-700 dark:disabled:bg-gray-600"
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isLoading || isEvaluating}
                 aria-label="Send message - or use cmd + enter"
               >
                 <svg
@@ -281,6 +364,8 @@ export function Chat({ project }: ChatProps) {
           content={artifactContent}
           fileName={artifactFileName}
           language={artifactLanguage}
+          codeFiles={codeFiles}
+          filePath={artifactFilePath}
         />
       )}
     </div>

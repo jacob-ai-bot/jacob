@@ -31,6 +31,7 @@ interface ImportsSectionProps {
   }>;
   currentFile?: string;
   viewMode: "folder" | "taxonomy";
+  theme: "light" | "dark";
 }
 
 const ImportsSection: React.FC<ImportsSectionProps> = ({
@@ -41,6 +42,7 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
   referencedImportDetails,
   currentFile = "",
   viewMode,
+  theme,
 }) => {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
@@ -155,13 +157,7 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
               <div className="p-4">
                 <SyntaxHighlighter
                   language="typescript"
-                  style={
-                    typeof window !== "undefined" &&
-                    window.matchMedia &&
-                    window.matchMedia("(prefers-color-scheme: dark)").matches
-                      ? atomOneDark
-                      : atomOneLight
-                  }
+                  style={theme === "dark" ? atomOneDark : atomOneLight}
                   customStyle={{
                     background: "transparent",
                     padding: "0.5rem",
@@ -211,18 +207,13 @@ const ImportsSection: React.FC<ImportsSectionProps> = ({
               <div className="whitespace-normal p-4">
                 <SyntaxHighlighter
                   language="typescript"
-                  style={
-                    typeof window !== "undefined" &&
-                    window.matchMedia &&
-                    window.matchMedia("(prefers-color-scheme: dark)").matches
-                      ? atomOneDark
-                      : atomOneLight
-                  }
+                  style={theme === "dark" ? atomOneDark : atomOneLight}
                   customStyle={{
                     background: "transparent",
                     padding: 0,
                     margin: 0,
                     whiteSpace: "normal",
+                    scrollbarWidth: "none",
                   }}
                 >
                   {imp}

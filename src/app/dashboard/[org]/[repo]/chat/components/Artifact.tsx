@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  Suspense,
-  useCallback,
-} from "react";
+import React, { useState, useEffect } from "react";
 import { Editor } from "@monaco-editor/react";
 import { DiffEditor } from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,92 +6,46 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
-import Markdown from "react-markdown";
-import gfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import MarkdownRenderer from "~/app/_components/MarkdownRenderer";
+import { type CodeFile } from "./Chat";
 
 interface ArtifactProps {
   content: string;
   fileName: string;
+  filePath: string;
   language: string;
+  codeFiles: CodeFile[];
 }
 
-export function Artifact({ content, fileName, language }: ArtifactProps) {
+export function Artifact({
+  content,
+  fileName,
+  filePath,
+  language,
+  codeFiles = [],
+}: ArtifactProps) {
   const [activeTab, setActiveTab] = useState<"view" | "edit" | "diff">("view");
   const [originalContent, setOriginalContent] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
 
-  useEffect(() => {
-    setOriginalContent(content.replace("import", "require"));
-  }, [fileName]);
-
-  const copyToClipboard = useCallback(async (textToCopy: string) => {
-    await navigator.clipboard.writeText(textToCopy);
+  const copyToClipboard = async (text: string) => {
+    await navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
-  }, []);
+  };
+
+  useEffect(() => {
+    if (codeFiles.length > 0) {
+      setOriginalContent(
+        codeFiles.find((file) => file.path === filePath)?.content ?? null,
+      );
+    }
+    console.log("codeFiles", codeFiles);
+    console.log("filePath", filePath);
+  }, [filePath, codeFiles]);
 
   const handleSave = () => {
     toast.info("Save functionality coming soon!");
   };
-
-  const CodeBlock = useMemo(() => {
-    const CodeBlockComponent = ({
-      inline,
-      className,
-      children,
-      ...props
-    }: any) => {
-      const match = /language-(\w+)/.exec((className as string) ?? "");
-
-      if (!inline && match) {
-        return (
-          <div className="relative w-full max-w-full overflow-hidden">
-            <Suspense fallback={<div>Loading...</div>}>
-              <SyntaxHighlighter
-                style={resolvedTheme === "dark" ? oneDark : oneLight}
-                language={match[1]}
-                PreTag="div"
-                customStyle={{
-                  margin: 0,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-all",
-                  overflowWrap: "break-word",
-                  maxWidth: "100%",
-                }}
-                wrapLines={true}
-                wrapLongLines={true}
-                {...props}
-              >
-                {children}
-              </SyntaxHighlighter>
-            </Suspense>
-          </div>
-        );
-      } else if (inline) {
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      } else {
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      }
-    };
-    CodeBlockComponent.displayName = "CodeBlock";
-    return CodeBlockComponent;
-  }, [resolvedTheme]);
-
-  const memoizedRenderers = useMemo(() => {
-    return {
-      code: CodeBlock,
-    };
-  }, [CodeBlock]);
 
   return (
     <motion.div
@@ -155,13 +103,9 @@ export function Artifact({ content, fileName, language }: ArtifactProps) {
               exit={{ opacity: 0 }}
               className="h-full overflow-auto bg-gray-50 dark:bg-[#282c34]"
             >
-              <Markdown
-                remarkPlugins={[gfm]}
-                className={`markdown-chat `}
-                components={memoizedRenderers}
-              >
+              <MarkdownRenderer className={`markdown-chat `}>
                 {`\`\`\`${language}\n${content ?? originalContent}\n\`\`\``}
-              </Markdown>
+              </MarkdownRenderer>
             </motion.div>
           ) : activeTab === "diff" ? (
             <motion.div

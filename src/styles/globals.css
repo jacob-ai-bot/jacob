@@ -351,6 +351,12 @@ body {
   @apply underline;
 }
 
+.markdown-details span {
+  @apply font-figtree;
+  @apply text-blue-600 dark:text-light-blue;
+  @apply underline;
+}
+
 @keyframes blink {
   50% {
     opacity: 0.5;

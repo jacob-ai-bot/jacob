@@ -12,11 +12,25 @@ const Chat = async ({ params }: { params: { org: string; repo: string } }) => {
   if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
     redirect("/");
   }
-  const project = await api.events.getProject({
-    org: params.org,
-    repo: params.repo,
-  });
-  return <ChatPage org={params.org} repo={params.repo} project={project} />;
+  const { org, repo } = params;
+  const [project, contextItems] = await Promise.all([
+    api.events.getProject({
+      org,
+      repo,
+    }),
+    api.codebaseContext.getAll({
+      org,
+      repo,
+    }),
+  ]);
+  return (
+    <ChatPage
+      project={project}
+      contextItems={contextItems}
+      org={org}
+      repo={repo}
+    />
+  );
 };
 
 export default Chat;

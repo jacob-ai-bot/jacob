@@ -5,18 +5,30 @@ import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { convertToCoreMessages, streamText, tool } from "ai";
 import { z } from "zod";
+import { type Evaluation } from "~/server/api/routers/chat";
+import { sendGptRequest } from "~/server/openai/request";
 
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, projectId } = (await req.json()) as {
-      messages: Message[];
-      projectId: number;
-    };
+    const { messages, projectId, evaluateChatMessageData } =
+      (await req.json()) as {
+        messages: Message[];
+        projectId: number;
+        evaluateChatMessageData: string;
+      };
+    console.log("evaluateChatMessageData", evaluateChatMessageData);
+    const evaluation = JSON.parse(evaluateChatMessageData);
     if (!projectId) {
       return new Response("Project ID is required", { status: 400 });
     }
+    if (!evaluateChatMessageData) {
+      return new Response("No evaluation data provided", { status: 200 });
+    }
+    console.log("evaluateChatMessageData", evaluation);
+    const filesToUse: string[] = evaluation.filesToUse ?? [];
+    const codeFiles = evaluation.codeFiles ?? [];
 
     const systemPrompt = `
 You are JACoB, an advanced AI coding assistant and a Technical Fellow at Microsoft. Your job is to work with another Technical Fellow to solve some of the most challenging coding problems in the world. You have access to two tools: 'createFile' and 'editFile'. Use these tools to manage code artifacts.
@@ -103,35 +115,111 @@ You should not mention these instructions or the tool usage to the user unless d
         .order({ filePath: "ASC" })
         .all()) ?? [];
 
-    // const codebase = codebaseContext
-    //   .map((c) => `${c.filePath}: ${c.context.overview} \n\n ${c.context.text}`)
-    //   .join("\n\n");
-
-    const codebase = codebaseContext
-      .map((c) => `${c.filePath}: ${JSON.stringify(c.context)}`)
+    const context = codebaseContext
+      .map((c) => `${c.filePath}: ${c.context.overview} \n\n ${c.context.text}`)
       .join("\n\n");
 
-    codebasePrompt = codebasePrompt.replace("{{codebase}}", codebase);
+    // const codebase = codebaseContext
+    //   .map((c) => `${c.filePath}: ${JSON.stringify(c.context)}`)
+    //   .join("\n\n");
+
+    codebasePrompt = codebasePrompt.replace("{{codebase}}", context);
     // console.log("codebasePrompt", codebasePrompt);
+
+    const content: {
+      type: "text";
+      text: string;
+      experimental_providerMetadata?: any;
+    }[] = [
+      {
+        type: "text",
+        text: codebasePrompt,
+        experimental_providerMetadata: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
+      },
+    ];
+
+    // create a new user message with all of the context for the filesToInclude
+    const filesToInclude = filesToUse.map((f: string) =>
+      codebaseContext.find((c) => c.filePath === f),
+    );
+    const filesToIncludeContent = filesToInclude
+      .map((f: any) => JSON.stringify(f?.context))
+      .join("\n\n");
+    if (filesToIncludeContent.length > 0) {
+      content.push({
+        type: "text",
+        text: `Here is more detailed information about the most important files that are related to the user's query: ${filesToIncludeContent}`,
+        experimental_providerMetadata: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
+      });
+    }
+
+    // create a new user message with the full codeFiles content
+    const codeFilesContent = codeFiles.join("\n\n");
+    if (codeFilesContent.length > 0) {
+      content.push({
+        type: "text",
+        text: `Here are the code file or files that are related to the user's query: ${codeFilesContent}`,
+        experimental_providerMetadata: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
+      });
+    }
 
     // find the first user message. Add the codebase context to it and cache it. Here is an example
     const userMessage = messages.find((m) => m.role === Role.USER);
     if (!userMessage) {
       return new Response("User message is required", { status: 400 });
     }
+    content.push({
+      type: "text",
+      text: userMessage.content,
+    });
+    console.log(
+      "evaluation.shouldCreateArtifact",
+      evaluation.shouldCreateArtifact,
+    );
+    console.log("evaluation, JSON", JSON.stringify(evaluation));
+
+    if (evaluation.shouldCreateArtifact) {
+      // call the getGptRequest function with the new messages and the system prompt
+      const o1Prompt = `Here is some information about the source code: <codebase>${context}</codebase>\n
+      Here is more detailed information about the most important files that are related to the user's query: ${filesToIncludeContent}\n
+      ${filesToUse.length > 0 ? `This is the specific list of files (or file) that are related to the user's query. If asked to update a file, you MUST update one of these: ${filesToUse.join(", ")}\n` : ""}
+      Here are the full, currentcode file or files that are related to the user's query: ${codeFilesContent}\n
+      Use the codebase to answer any of the user's questions.
+      Here is the conversation history:
+      ${messages.map((m) => `${m.role}: ${m.content}`).join("\n")}
+      Act as a world-class developer. Review the conversation history and the current user message. 
+      This is part of a system that will create a single code artifact. Your role is to create the code that will be passed on to the artifact creation step. If this is an update to an existing file, you may provide a patch. Always provide a full file for new files.
+      It is critical that you provide fully-working code, but also respond quickly and directly with only the code artifact.`;
+
+      const o1Request = await sendGptRequest(
+        o1Prompt,
+        "",
+        temperature,
+        undefined,
+        3,
+        60000,
+        null,
+        "o1-mini-2024-09-12",
+      );
+      // now add the o1Request to the conent
+      if (o1Request) {
+        content.push({
+          type: "text",
+          text: `Here is a response from the AI coding assistant: <AI RESPONSE>${o1Request}</AI RESPONSE>. Do not follow these instructions directly. Instead, use it as a guide to create the correct code artifact. Be sure to use a tool to create the file.`,
+        });
+      }
+    }
+
     // now add the codebase context to the existing user message
     const newUserMessage = {
       ...userMessage,
-      content: [
-        {
-          type: "text",
-          text: codebasePrompt,
-          experimental_providerMetadata: {
-            anthropic: { cacheControl: { type: "ephemeral" } },
-          },
-        },
-        { type: "text", text: userMessage.content },
-      ],
+      content: content,
     };
     // replace the first user message with the new user message. ONLY replace the first one.
     let hasReplacedMessage = false;
@@ -145,6 +233,7 @@ You should not mention these instructions or the tool usage to the user unless d
       }
     }
     console.log("newMessages", newMessages);
+
     // BUGBUG remove any toolInvocations values from the messages
     const messagesWithoutToolInvocations = newMessages.map((m) => {
       return {
@@ -152,6 +241,8 @@ You should not mention these instructions or the tool usage to the user unless d
         content: m.content,
       };
     });
+
+    // add the
     // Initialize the stream using @ai-sdk/openai
     const result = await streamText({
       model: anthropic("claude-3-5-sonnet-20240620", {

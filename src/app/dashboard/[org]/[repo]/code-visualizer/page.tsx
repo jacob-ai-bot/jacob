@@ -13,8 +13,7 @@ const DashboardPage = async ({
   });
   // convert the contextItems taxonomy to a folder structure
   const updatedContextItems = contextItems.map((item) => {
-    let taxonomy = (item.taxonomy as string) ?? "";
-    taxonomy = standardizePath(taxonomy.replaceAll(" ", "_") ?? "");
+    const taxonomy = standardizePath(item.taxonomy!.replaceAll(" ", "_"));
     return {
       ...item,
       taxonomy,

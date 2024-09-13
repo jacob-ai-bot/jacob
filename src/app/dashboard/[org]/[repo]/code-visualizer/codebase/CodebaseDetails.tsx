@@ -12,13 +12,19 @@ import {
   faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
-import Markdown from "react-markdown";
-import { renderers } from "~/app/dashboard/[org]/[repo]/otto/components/chat/ChatMessage";
+import Markdown, { type Components } from "react-markdown";
 import gfm from "remark-gfm";
 import path from "path";
 import CodeSection from "./CodeSection";
 import ImportsSection from "./ImportsSection";
 import ExportsSection from "./ExportsSection";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+  oneDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { faClipboard } from "@fortawesome/free-solid-svg-icons";
+import { toast } from "react-toastify";
 
 interface CodebaseDetailsProps {
   item: ContextItem;
@@ -30,6 +36,63 @@ interface CodebaseDetailsProps {
   viewMode: "folder" | "taxonomy";
   theme: "light" | "dark";
 }
+
+const copyToClipboard = async (text: string) => {
+  await navigator.clipboard.writeText(text);
+  toast.success("Copied to clipboard");
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
+export const renderers: Partial<Components | any> = {
+  code: ({
+    inline,
+    className,
+    theme,
+    children,
+    ...props
+  }: {
+    inline: boolean;
+    className: string;
+    theme: "light" | "dark";
+    children: React.ReactNode;
+  }) => {
+    const match = /language-(\w+)/.exec(className || "");
+    if (!inline && match) {
+      return (
+        <div className="relative">
+          <button
+            className="absolute right-2 top-0 rounded bg-gray-800 p-1 text-white"
+            onClick={() => copyToClipboard(String(children))}
+          >
+            <FontAwesomeIcon icon={faClipboard} />
+          </button>
+          <SyntaxHighlighter
+            style={theme === "dark" ? oneDark : oneLight}
+            language={match[1]}
+            PreTag="div"
+            {...props}
+          >
+            {String(children).replace(/\n$/, "")}
+          </SyntaxHighlighter>
+        </div>
+      );
+    } else if (inline) {
+      // Render inline code with `<code>` instead of `<div>`
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    } else {
+      // Fallback for non-highlighted code
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+  },
+};
 
 const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   item,
@@ -113,11 +176,16 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
           referencedImportDetails={item.referencedImportDetails ?? []}
           currentFile={item.file}
           viewMode={viewMode}
+          theme={theme}
         />
 
-        {item.exports?.length ? <ExportsSection contextItem={item} /> : null}
+        {item.exports?.length ? (
+          <ExportsSection contextItem={item} theme={theme} />
+        ) : null}
 
-        {item?.code?.length ? <CodeSection code={item.code} /> : null}
+        {item?.code?.length ? (
+          <CodeSection code={item.code} theme={theme} />
+        ) : null}
       </div>
     </div>
   );
