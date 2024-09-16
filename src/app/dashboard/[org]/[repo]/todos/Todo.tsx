@@ -147,6 +147,8 @@ const Todo: React.FC<TodoProps> = ({ org, repo, project }) => {
             selectedTodo={selectedTodo}
             selectedIssue={selectedIssue}
             isLoadingIssue={isLoadingIssue}
+            org={org}
+            repo={repo}
           />
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400">
