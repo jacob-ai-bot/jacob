@@ -6,4 +6,4 @@ ${allFiles}
 Based on the given query and the list of files provided, please select and rank the most relevant files that are likely to contain information related to the query. NEVER repeat a file name! Return your selection as ONLY a JSON array of strings, ordered by relevance (most relevant first). Include exactly ${numFiles} files. You MUST include the full path of the files, starting with / and including the extension. DO NOT include any other text in your response.
 
 Example output format:
-["/most/relevant/file.ts", "/second/most/relevant/file.js", "/third/relevant/file.tsx", ...]
+{"files": ["/most/relevant/file.ts", "/second/most/relevant/file.js", "/third/relevant/file.tsx", ...]}

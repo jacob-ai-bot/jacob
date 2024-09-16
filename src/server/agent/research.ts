@@ -13,7 +13,11 @@ import {
   getOrCreateCodebaseContext,
 } from "../utils/codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
-import { type StandardizedPath, standardizePath } from "../utils/files";
+import {
+  getFiles,
+  type StandardizedPath,
+  standardizePath,
+} from "../utils/files";
 import { z } from "zod";
 
 export enum ResearchAgentActionType {
@@ -151,8 +155,31 @@ export const researchIssue = async function (
 
   while (!allInfoGathered && loops < maxLoops) {
     loops++;
+    // first call the o1-mini model to get the initial research plan
+    const o1Plan = await sendGptRequest(
+      userPrompt,
+      `${systemPrompt}\n\n\n\nHere are the possible tools you can use: ${researchTools.map((t) => `${t.function.name} - ${t.function.description}`).join("\n")}`,
+      0,
+      undefined,
+      3,
+      60000,
+      undefined,
+      "o1-mini-2024-09-12",
+    );
+
+    const o1PlanMessages: OpenAI.ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content: `${systemPrompt}\n\nRemember - you MUST use the plan created by the advanced AI coding assistant. Your job is to translate that plan into the correct tool calls.`,
+      },
+      {
+        role: "user",
+        content: `Here is the plan: ${o1Plan ?? ""}. Your job is to convert this plan into a series of tool calls.`,
+      },
+    ];
+
     const response = await sendGptToolRequest(
-      messages,
+      o1PlanMessages,
       researchTools,
       0.3,
       undefined,
@@ -276,11 +303,13 @@ export async function researchCodebase(
     relevantFiles = await selectRelevantFiles(query, codebaseContext);
   }
   // get the context for all of the relevant files
-  const relevantContext = codebaseContext.filter((file) =>
-    relevantFiles.includes(file.file),
-  );
+  // const relevantContext = codebaseContext.filter((file) =>
+  //   relevantFiles.includes(file.file),
+  // );
 
-  const codebase = JSON.stringify(relevantContext, null, 2);
+  // get the full file content for all of the relevant files
+  const codebase = getFiles(rootDir, relevantFiles.map(standardizePath), false);
+  // const codebase = JSON.stringify(relevantContext, null, 2);
 
   const codeResearchTemplateParams = {
     codebase,
@@ -331,7 +360,9 @@ export async function researchCodebase(
   return result ?? "No response from the AI model.";
 }
 // Define the schema for the response
-const RelevantFilesSchema = z.string();
+const RelevantFilesSchema = z.object({
+  files: z.array(z.string()),
+});
 type RelevantFiles = z.infer<typeof RelevantFilesSchema>;
 
 export async function selectRelevantFiles(
@@ -384,10 +415,10 @@ export async function selectRelevantFiles(
       undefined,
       3,
       "gpt-4o-2024-08-06",
-    )) as RelevantFiles[];
+    )) as RelevantFiles;
 
     // convert relevant files to standard paths
-    const standardRelevantFiles = relevantFiles
+    const standardRelevantFiles = relevantFiles.files
       .map(standardizePath)
       .filter((p) => p?.length);
 
@@ -397,10 +428,7 @@ export async function selectRelevantFiles(
     );
 
     console.log("Top 10 relevant files:", filteredRelevantFiles.slice(0, 10));
-    console.log(
-      `Bottom ${numFiles - 10} relevant files:`,
-      filteredRelevantFiles.slice(-10),
-    );
+    console.log(`Bottom 10 relevant files:`, filteredRelevantFiles.slice(-10));
     // remove duplicates and return the top numFiles
     return Array.from(new Set(filteredRelevantFiles)).slice(0, numFiles);
   } catch (error) {

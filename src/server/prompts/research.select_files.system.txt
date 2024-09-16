@@ -6,4 +6,8 @@ Your goal is to identify ${numFiles} files that are most likely to contain infor
 3. File extensions that indicate code files (.ts, .tsx, .js, .jsx)
 4. Potential content based on common naming conventions and best practices
 
-Provide your selection as ONLY a JSON array of strings, ordered by relevance (most relevant first). Include exactly ${numFiles} files, starting with the files that you believe have a reasonable chance of being relevant to the query. DO NOT include any other text in your response or the system will crash.
+const RelevantFilesSchema = z.object({
+  files: z.array(z.string()),
+});
+
+Provide your selection as ONLY a JSON object with a files array of strings, ordered by relevance (most relevant first). Include exactly ${numFiles} files, starting with the files that you believe have a reasonable chance of being relevant to the query. Your response must EXACTLY adhere to the RelevantFilesSchema. DO NOT include any other text in your response or the system will crash.

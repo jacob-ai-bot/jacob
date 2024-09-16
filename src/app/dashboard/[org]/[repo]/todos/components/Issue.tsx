@@ -183,9 +183,6 @@ const Issue: React.FC<IssueProps> = ({
           ) : (
             <>
               <div className="mb-2 flex items-center">
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">
-                  {exitCriteria || "No exit criteria set."}
-                </h3>
                 <button
                   onClick={() => setIsEditingExit(true)}
                   className="ml-2 text-sm text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-500"
