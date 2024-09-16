@@ -48,26 +48,35 @@ export default function DashboardLayout({
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const debouncedSetIsExpandedRef = useRef<ReturnType<typeof debounce>>();
+  const debounceExpandRef = useRef<ReturnType<typeof debounce>>();
+  const debounceCollapseRef = useRef<ReturnType<typeof debounce>>();
 
   useEffect(() => {
-    debouncedSetIsExpandedRef.current = debounce((value: boolean) => {
+    debounceExpandRef.current = debounce((value: boolean) => {
       setIsExpanded(value);
-    }, 300);
+    }, 500); // 500ms delay for expansion
+
+    debounceCollapseRef.current = debounce((value: boolean) => {
+      setIsExpanded(value);
+    }, 0); // Immediate collapse
 
     return () => {
-      debouncedSetIsExpandedRef.current?.cancel();
+      debounceExpandRef.current?.cancel();
+      debounceCollapseRef.current?.cancel();
     };
   }, []);
 
   const handleMouseEnter = useCallback(() => {
-    debouncedSetIsExpandedRef.current?.cancel();
-    setIsExpanded(true);
+    debounceCollapseRef.current?.cancel(); // Cancel any pending collapse
+    debounceExpandRef.current?.(true); // Start expand debounce
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    debouncedSetIsExpandedRef.current?.(false);
-  }, []);
+    debounceExpandRef.current?.cancel(); // Cancel expansion if pending
+    if (isExpanded) {
+      debounceCollapseRef.current?.(false); // Collapse immediately if already expanded
+    }
+  }, [isExpanded]);
 
   useEffect(() => setMounted(true), []);
 

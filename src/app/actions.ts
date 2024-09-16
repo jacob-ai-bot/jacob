@@ -19,15 +19,30 @@ export async function setLastUsedRepoCookie(org: string, repo: string) {
 export async function setHasStartedCodebaseGenerationCookie(
   org: string,
   repo: string,
+  branch = "main",
+  commitHash = "",
+  value = true,
 ) {
-  cookies().set("hasStartedCodebaseGeneration", `${org}/${repo}`);
+  if (value) {
+    cookies().set(
+      `hasStartedCodebaseGeneration-${org}-${repo}-${branch}-${commitHash}  `,
+      "true",
+    );
+  } else {
+    cookies().delete(
+      `hasStartedCodebaseGeneration-${org}-${repo}-${branch}-${commitHash}`,
+    );
+  }
 }
 
 export async function getHasStartedCodebaseGenerationCookie(
   org: string,
   repo: string,
+  branch = "main",
+  commitHash = "",
 ) {
-  const hasStarted =
-    cookies().get("hasStartedCodebaseGeneration")?.value === `${org}/${repo}`;
-  return hasStarted;
+  const hasStarted = cookies().get(
+    `hasStartedCodebaseGeneration-${org}-${repo}-${branch}-${commitHash}`,
+  )?.value;
+  return hasStarted ? true : false;
 }

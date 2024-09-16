@@ -4,30 +4,21 @@ import { TodoStatus } from "~/server/db/enums";
 import { researchIssue } from "~/server/agent/research";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
-import { DEVELOPERS } from "~/data/developers";
-import { Mode } from "~/types";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
     .input(
       z.object({
         projectId: z.number(),
-        developerId: z.string(),
+        developerId: z.string().optional(), // deprecated
       }),
     )
-    .query(async ({ input: { projectId, developerId } }): Promise<Todo[]> => {
-      const mode = DEVELOPERS.find((dev) => dev.id === developerId)?.mode;
-      if (mode === Mode.EXISTING_ISSUES) {
-        const todos = await db.todos
-          .where({ projectId, isArchived: false })
-          .order({ position: "ASC" })
-          .all();
-        return todos;
-      } else {
-        return [];
-      }
+    .query(async ({ input: { projectId } }): Promise<Todo[]> => {
+      return await db.todos
+        .where({ projectId, isArchived: false })
+        .order({ position: "DESC" })
+        .all();
     }),
-
   getById: protectedProcedure
     .input(
       z.object({
