@@ -1,9 +1,5 @@
 import type OpenAI from "openai";
-import {
-  sendGptRequest,
-  sendGptToolRequest,
-  type Model,
-} from "~/server/openai/request";
+import { sendGptToolRequest, type Model } from "~/server/openai/request";
 import { evaluate } from "~/server/openai/utils";
 import { PlanningAgentActionType } from "~/server/db/enums";
 import { findFiles } from "~/server/agent/files";
@@ -127,38 +123,14 @@ export const createPlan = async function (
     "gpt-4o-2024-08-06",
     "gpt-4o-2024-08-06",
   ];
-
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
       ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue)
       : getPromptsForNewPlan(githubIssue, context, research, files);
 
-  // TODO: clean this up once we get o1-mini tool support
-  const o1Plan = await sendGptRequest(
-    userPrompt,
-    systemPrompt,
-    0,
-    undefined,
-    3,
-    60000,
-    undefined,
-    "o1-mini-2024-09-12",
-  );
-  console.log(
-    "\n\n\n\n\n\n~~~~~~~~~~ START o1 Plan ~~~~~~~~~~\n\n\n\n\n\n",
-    o1Plan,
-  );
-  console.log("\n\n\n\n\n\n~~~~~~~~~~ END o1 Plan ~~~~~~~~~~\n\n\n\n\n\n");
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    {
-      role: "system",
-      content: `${systemPrompt}\n\n Remember - you MUST use the plan created by the advanced AI coding assistant above to create a new plan. Your job is to translate that plan into the correct tool calls.`,
-    },
-    {
-      role: "user",
-      content: `Here is a plan created by an advanced AI coding assistant: <plan>${o1Plan}</plan>
-    You MUST use this plan to create a new plan. Here is how you should output the plan ${userPrompt} `,
-    },
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
   ];
   // console.log("\n\n\n\n\n\n\n\nCreating plans with prompts:");
   // console.log("User prompt:", userPrompt);
@@ -248,7 +220,7 @@ const getPromptsForNewPlan = (
           2. Comprehend the GitHub issue and its requirements, identifying the goal and what needs to be achieved.
           3. Assess the available information, including the codebase, external resources, and previous research.
           4. Break down the issue into smaller, manageable tasks that align with how a developer would approach the problem.
-          5. Review each of the files listed within the <files> tags and determine which changes need to be made to each file. You MUST attempt to make at least one change per file, and at least one file per step! If it determined that no changes are needed for a file, you can skip it. DO NOT output a step that does not modify an existing file or create a new file.
+          5. Review each of the files listed within the <files> tags and determine which changes need to be made to each file. You MUST provide at least one change per file, and at least one file per step!
           6. Create a detailed, step-by-step plan for making the necessary changes to the codebase:
               - Clearly specify the full path of the file to be edited or created.
               - Provide precise instructions on the changes to be made within each file. You MUST use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions!
@@ -262,7 +234,6 @@ const getPromptsForNewPlan = (
           - Approach the task from the perspective of an experienced developer working on the codebase.
           - Utilize the provided research and codebase information to make informed decisions.
           - Ensure that the plan is clear, concise, and easy to follow.
-          - Never include a step that does not modify an existing file or create a new file.
           - The instructions are extremely important to the success of the plan. Use the research data and/or GitHub issue to inform your instructions. DO NOT make up instructions! If you do not have specific instructions you can be very general, but you MUST use the research data and/or GitHub issue to inform your instructions. NEVER make up specific instructions that are not based on the research data and/or GitHub issue.
           - Use proper formatting and syntax when specifying the file path, code snippets, or commands.
           - Follow existing coding conventions and styles when making changes to the codebase. For example, if the system is using TypeScript, ensure that all new code is strictly typed correctly. Or if the codebase uses Tailwind CSS, do not introduce new CSS classes or frameworks.
@@ -272,7 +243,7 @@ const getPromptsForNewPlan = (
           - Break down complex changes into multiple, focused steps.
           - Double-check that all necessary files and changes are accounted for in the plan.
       
-      Remember, your goal is to create a concise,comprehensive, actionable plan that enables the efficient resolution of the GitHub issue. Your plan should be detailed enough for another developer to follow and implement successfully.`;
+      Remember, your goal is to create a comprehensive, actionable plan that enables the efficient resolution of the GitHub issue. Your plan should be detailed enough for another developer to follow and implement successfully.`;
 
   const userPrompt = `You are an AI coding assistant tasked with creating a detailed plan for addressing a specific GitHub issue within a codebase. Your goal is to analyze the provided information and develop a step-by-step guide for making the necessary changes to resolve the issue.
         
@@ -308,7 +279,6 @@ const getPromptsForNewPlan = (
           5. Finalize the Plan:
               - Review the plan to ensure all necessary changes are accounted for.
               - Ensure that no files in the <files> tags are missed or incorrectly included.
-              - Remove any steps that do not modify an existing file or create a new file.
               - Determine dependencies between files and use this information to specify the order of changes.
       
       ### Important:
@@ -316,7 +286,7 @@ const getPromptsForNewPlan = (
               - EditExistingCode: Modify one existing file in the codebase.
               - CreateNewCode: Create a new file in the codebase.
           - Each tool should be used with specific instructions and file paths.
-          - You should have at least one function call per file in the <files> tag, assuming the file needs to be modified or created. You can have more if needed.
+          - You should have at least one function call per file in the <files> tag. You can have more if needed.
           - Ensure that the plan is clear, detailed, and follows the guidelines provided.
           - Create the shortest plan possible that addresses all necessary changes. Avoid unnecessary steps or complexity.
       

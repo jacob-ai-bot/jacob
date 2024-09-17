@@ -71,7 +71,6 @@ export const createTodo = async (
     if (agentRepos.includes(repo)) {
       await researchIssue(
         issueText,
-        sourceMap,
         newTodo?.id,
         issueNumber,
         rootPath,

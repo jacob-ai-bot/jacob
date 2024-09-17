@@ -29,15 +29,15 @@ Instructions:
 1. Address all points in the 'Exit Criteria' if present in the <plan_step> step of this plan.
 2. Only fix issues directly related to the specific <plan_step> instructions.
 3. Provide your solution as a code patch in the specified LLM Diff Format.
-4. Output your entire code patch output as a JSON object with a "patch" key.
+4. Wrap your entire code patch output within <code_patch> tags.
 5. Use the GitHub Issue and other research provided for accuracy and to ensure the code correctly integrates into the existing codebase.
 6. Make only the minimum necessary changes to the code within the <code> tags to resolve the <plan_step> instructions and criteria.
 7. If <code> is present, do not add new files or comments, or remove existing comments.
 
 Important:
-- Respond ONLY with the code patch in the LLM Diff Format.
+- Respond ONLY with the code patch in the LLM Diff Format within <code_patch> tags.
 - Do not include any explanations, comments, or additional text outside the tags.
 - Ensure your code is production-quality, is strictly typed if necessary, and will build successfully.
 - Adhere strictly to the given instructions and format to avoid penalties.
 
-Please provide the JSON code patch to address the GitHub issue. Remember your response MUST adhere to the patchSchema.
+Please provide the code patch to address the GitHub issue.

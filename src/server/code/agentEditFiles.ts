@@ -9,11 +9,7 @@ import {
   generateJacobBranchName,
 } from "../utils";
 import { getFiles, standardizePath } from "../utils/files";
-import {
-  sendGptRequest,
-  sendGptRequestWithSchema,
-  sendGptVisionRequest,
-} from "../openai/request";
+import { sendGptVisionRequest } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveImages } from "../utils/images";
@@ -34,8 +30,7 @@ import { addCommitAndPush } from "../git/commit";
 import { runBuildCheck } from "../build/node/check";
 import { getOrCreateCodebaseContext } from "../utils/codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
-import { researchIssue, selectRelevantFiles } from "../agent/research";
-import { z } from "zod";
+import { selectRelevantFiles } from "../agent/research";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -95,7 +90,7 @@ export async function editFiles(params: EditFilesParams) {
     throw new Error("No plan context generated");
   }
   let codePatch = "";
-  const maxPlanIterations = 2; // TODO: experiment with other values
+  const maxPlanIterations = 1; // TODO: experiment with other values
   const maxSteps = 10;
   let isPlanComplete = false;
   let planIterations = 0;
@@ -187,36 +182,20 @@ export async function editFiles(params: EditFilesParams) {
         codeTemplateParams,
       );
 
-      // // Call sendGptRequest with the issue and concatenated code file
-      // const response = await sendGptVisionRequest(
-      //   codeUserPrompt,
-      //   codeSystemPrompt,
-      //   snapshotUrl,
-      //   0.2,
-      //   baseEventData,
-      // );
-
-      // Extract the patch from the response
-      // const patchMatch = response?.match(
-      //   /<code_patch>([\s\S]*?)<\/code_patch>/,
-      // );
-      // const patch = patchMatch?.[1] ? patchMatch[1].trim() : "";
-
-      const patchSchema = z.object({
-        patch: z.string().describe("The code patch to apply to the file"),
-      });
-      type PatchSchemaType = z.infer<typeof patchSchema>;
-      // try using o1-mini to create the code patch
-      const response = (await sendGptRequestWithSchema(
+      // Call sendGptRequest with the issue and concatenated code file
+      const response = await sendGptVisionRequest(
         codeUserPrompt,
         codeSystemPrompt,
-        patchSchema,
+        snapshotUrl,
         0.2,
         baseEventData,
-        3,
-        "o1-mini-2024-09-12",
-      )) as PatchSchemaType;
-      const patch = response.patch;
+      );
+
+      // Extract the patch from the response
+      const patchMatch = response?.match(
+        /<code_patch>([\s\S]*?)<\/code_patch>/,
+      );
+      const patch = patchMatch?.[1] ? patchMatch[1].trim() : "";
 
       if (patch) {
         // commit the file and push to the branch

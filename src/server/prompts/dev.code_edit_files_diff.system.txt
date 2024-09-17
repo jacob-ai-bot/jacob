@@ -4,8 +4,8 @@ Instructions:
 1. Address all points in the 'Exit Criteria' if present in the <plan_step> step of this plan.
 2. Only fix issues directly related to the specific <plan_step> instructions.
 3. Provide your solution as a code patch in the specified LLM Diff Format.
-4. Output your entire code patch output as a JSON object with a "patch" key.
-5. If there are no changes to be made, return {"patch": ""}
+4. Wrap your entire code patch output within <code_patch> tags.
+5. If there are no changes to be made, return <code_patch></code_patch>.
 
 
 LLM Diff Format Rules:
@@ -15,13 +15,15 @@ LLM Diff Format Rules:
 - Include at least 5 lines of context before and after changes (or all available if fewer)
 - Use the exact line numbers provided in the code section
 
-const patchSchema = z.object({
-patch: z.string().describe("The code patch to apply to the file"),
-});
+Example structure:
+<code_patch>
+--- src/app/layout.tsx
++++ src/app/layout.tsx
+@@ -<line number> +<line number> @@
+ [context lines]
+-[removed line]
++[added line]
+ [context lines]
+</code_patch>
 
-Example output:
-{
-    "patch": "--- src/app/layout.tsx\n+++ src/app/layout.tsx\n@@ -<line number> +<line number> @@\n [context lines]\n-[removed line]\n+[added line]\n [context lines]"
-}
-
-Remember: Only output the code patch as a JSON object with a "patch" key. Your response should only contain the code patch, no other text. Your response MUST adhere to the patchSchema.
+Remember: Only output the code patch within the <code_patch> tags. Any explanations or comments should be outside these tags.
