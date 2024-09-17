@@ -1,8 +1,16 @@
 import { z } from "zod";
 import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
+import {
+  type ExtractedIssueInfo,
+  ExtractedIssueInfoSchema,
+} from "~/server/code/extractedIssue";
 
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 import {
   cloneAndGetSourceMap,
@@ -11,7 +19,11 @@ import {
   validateRepo,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
-import { sendGptRequestWithSchema } from "~/server/openai/request";
+import {
+  sendGptRequestWithSchema,
+  sendGptRequest,
+} from "~/server/openai/request";
+import { db } from "~/server/db/db";
 
 export async function fetchGithubFileContents(
   accessToken: string,
@@ -74,7 +86,7 @@ export const githubRouter = createTRPCRouter({
   getGithubAppName: protectedProcedure.query(async () => {
     return process.env.GITHUB_APP_NAME;
   }),
-  getIssueTitleAndBody: protectedProcedure
+  getIssueTitleAndBody: protectedProcedure // TODO: deprecate this
     .input(z.object({ repo: z.string(), title: z.string(), body: z.string() }))
     .query(
       async ({
@@ -152,7 +164,7 @@ export const githubRouter = createTRPCRouter({
 
         // Creating a new GitHub issue
         const {
-          data: { id },
+          data: { id, number },
         } = await octokit.issues.create({
           owner: repoOwner,
           repo: repoName,
@@ -160,7 +172,7 @@ export const githubRouter = createTRPCRouter({
           body,
         });
 
-        return { id };
+        return { id, number };
       },
     ),
   updateIssue: protectedProcedure
@@ -340,4 +352,107 @@ export const githubRouter = createTRPCRouter({
         }
       },
     ),
+  evaluateIssue: protectedProcedure
+    .input(z.object({ repo: z.string(), title: z.string(), body: z.string() }))
+    .mutation(
+      async ({
+        input: { repo, title, body },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        const [repoOwner, repoName] = repo?.split("/") ?? [];
+        const issueText = `${title} ${body}`;
+        if (!repoOwner || !repoName || !issueText?.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid request",
+          });
+        }
+        await validateRepo(repoOwner, repoName, accessToken);
+
+        const project = await db.projects.findBy({
+          repoFullName: repo,
+        });
+        const codebaseContext = await db.codebaseContext
+          .where({ projectId: project?.id })
+          .order({ filePath: "ASC" })
+          .all();
+        if (codebaseContext.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Codebase context not found",
+          });
+        }
+        const extractedIssue = await getExtractedIssue(
+          `${codebaseContext.map((c) => `${c.filePath}: ${c.context.overview} ${c.context.diagram} `).join("\n")}`,
+          issueText,
+          "o1-mini-2024-09-12",
+        );
+        if (!extractedIssue) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Issue not found",
+          });
+        }
+
+        return { extractedIssue };
+      },
+    ),
+  rewriteIssue: publicProcedure
+    .input(
+      z.object({
+        title: z.string(),
+        body: z.string(),
+        extractedInfo: ExtractedIssueInfoSchema,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const prompt = `
+        You are an expert GitHub issue writer. Your task is to rewrite and improve the given issue draft to create a top 1% quality GitHub issue. Use the provided information to craft a detailed, well-structured, and informative issue body using markdown.
+
+        Original Title: ${input.title}
+        Original Body: ${input.body}
+
+        Additional Information:
+        - Steps to Address Issue: ${input.extractedInfo.stepsToAddressIssue ?? "N/A"}
+        - Issue Quality Score: ${input.extractedInfo.issueQualityScore ?? "N/A"}
+        - Commit Title: ${input.extractedInfo.commitTitle ?? "N/A"}
+        - Files to Create: ${input.extractedInfo.filesToCreate?.join(", ") ?? "N/A"}
+        - Files to Update: ${input.extractedInfo.filesToUpdate?.join(", ") ?? "N/A"}
+
+        Guidelines for creating an exceptional GitHub issue:
+        1. Start with a clear, concise title that summarizes the issue.
+        2. Provide a detailed description of the problem or feature request.
+        3. Include steps to reproduce the issue if applicable.
+        4. Mention the expected outcome and the actual outcome.
+        5. List any relevant error messages or logs.
+        6. Specify the environment (e.g., OS, browser, version) if relevant.
+        7. Add labels, milestones, or project boards if applicable.
+        8. Include screenshots or code snippets when helpful.
+        9. Mention related issues or pull requests if any.
+        10. Use proper formatting, including headings, lists, and code blocks.
+        11. Be courteous and professional in tone.
+
+        Ensure that all relevant information from the original draft and the extracted info is incorporated into the rewritten issue. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
+
+        Please provide the rewritten issue in markdown format, starting with the title as an H1 heading.
+      `;
+
+      // Call to OpenAI or your preferred AI service to generate the rewritten issue
+      const rewrittenIssue = await sendGptRequest(
+        prompt,
+        undefined,
+        0.1,
+        undefined,
+        3,
+        undefined,
+        undefined,
+        "o1-mini-2024-09-12",
+      );
+
+      return {
+        rewrittenIssue,
+      };
+    }),
 });

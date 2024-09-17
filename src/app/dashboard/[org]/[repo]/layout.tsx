@@ -27,8 +27,8 @@ const navItems = [
   { name: "Chat", icon: faComments },
   { name: "Live", icon: faCircleDot },
   { name: "Code Visualizer", icon: faCode },
-  { name: "Front end", icon: faPaintBrush },
-  { name: "Issue writer", icon: faPencil },
+  { name: "Design", icon: faPaintBrush },
+  { name: "Issue Writer", icon: faPencil },
 ];
 
 export default function DashboardLayout({
