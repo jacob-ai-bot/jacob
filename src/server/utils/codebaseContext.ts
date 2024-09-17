@@ -61,27 +61,45 @@ export const ContextItemSchema = z.object({
 
 export type ContextItem = z.infer<typeof ContextItemSchema>;
 
-let parser: Parser;
-let TypeScript: Parser.Language;
+let typescriptParser: Parser;
+let typescriptLanguage: Parser.Language;
+let pythonParser: Parser;
+let pythonLanguage: Parser.Language;
 
 async function initializeTreeSitter() {
-  await Parser.init({
-    locateFile(scriptName: string) {
-      return join(process.cwd(), "src", "server", "parsers", scriptName);
-    },
-  });
-
-  parser = new Parser();
-  TypeScript = await Parser.Language.load(
-    join(
-      process.cwd(),
-      "src",
-      "server",
-      "parsers",
-      "tree-sitter-typescript.wasm",
-    ),
-  );
-  parser.setLanguage(TypeScript);
+  if (!typescriptLanguage && !pythonLanguage) {
+    await Parser.init({
+      locateFile(scriptName: string) {
+        return join(process.cwd(), "src", "server", "parsers", scriptName);
+      },
+    });
+    typescriptLanguage = await Parser.Language.load(
+      join(
+        process.cwd(),
+        "src",
+        "server",
+        "parsers",
+        "tree-sitter-typescript.wasm",
+      ),
+    );
+    pythonLanguage = await Parser.Language.load(
+      join(
+        process.cwd(),
+        "src",
+        "server",
+        "parsers",
+        "tree-sitter-python.wasm",
+      ),
+    );
+  }
+  if (!typescriptParser) {
+    typescriptParser = new Parser();
+    typescriptParser.setLanguage(typescriptLanguage);
+  }
+  if (!pythonParser) {
+    pythonParser = new Parser();
+    pythonParser.setLanguage(pythonLanguage);
+  }
 }
 
 export async function getOrCreateCodebaseContext(
@@ -186,7 +204,7 @@ async function updateFileContext(
   }
 }
 
-const getCodebaseContext = async function (
+export const getCodebaseContext = async function (
   rootPath: string,
   files: StandardizedPath[] = [],
   model: Model = "gpt-4o-mini-2024-07-18", // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
@@ -312,9 +330,17 @@ function extractCodeInfo(content: string): Record<string, any> {
     others: [],
   };
 
-  const tree = parser.parse(content);
+  const typescriptTree = typescriptParser.parse(content);
+  const typescriptFile = !typescriptTree.rootNode.hasError;
+  const pythonTree = typescriptFile ? undefined : pythonParser.parse(content);
+  const pythonFile = !pythonTree?.rootNode.hasError;
 
-  const query = TypeScript.query(`
+  const tree = typescriptFile ? typescriptTree : pythonTree;
+  if (!tree || (!typescriptFile && !pythonFile)) {
+    return info;
+  }
+
+  const typescriptQuery = typescriptLanguage.query(`
     (function_declaration) @function
     (method_definition) @function
     (arrow_function) @function
@@ -328,7 +354,18 @@ function extractCodeInfo(content: string): Record<string, any> {
     (enum_declaration) @enum
   `);
 
-  const captures = query.captures(tree.rootNode);
+  // Consider handling __all__ exports in Python
+  const pythonQuery = pythonLanguage.query(`
+    (function_definition) @function
+    (class_definition) @class
+    (import_statement) @import
+    (import_from_statement) @import
+    (assignment) @variable
+  `);
+
+  const captures = typescriptFile
+    ? typescriptQuery.captures(tree.rootNode)
+    : pythonQuery.captures(tree.rootNode);
 
   for (const capture of captures) {
     const node = capture.node;
@@ -341,7 +378,7 @@ function extractCodeInfo(content: string): Record<string, any> {
       let name: string | undefined;
       const parentNode = node.parent;
 
-      if (node.type === "arrow_function") {
+      if (typescriptFile && node.type === "arrow_function") {
         if (
           parentNode &&
           (parentNode.type === "variable_declarator" ||
@@ -349,13 +386,25 @@ function extractCodeInfo(content: string): Record<string, any> {
         ) {
           name = parentNode.childForFieldName("name")?.text;
         }
-      } else if (node.type === "method_definition") {
+      } else if (typescriptFile && node.type === "method_definition") {
         name = node.childForFieldName("name")?.text;
+      } else if (pythonFile && node.type === "assignment") {
+        if (
+          parentNode?.type === "expression_statement" &&
+          parentNode.parent?.type === "module"
+        ) {
+          name = node.childForFieldName("left")?.text;
+        } else {
+          // Ignore assignments that are not at the top level
+          continue;
+        }
       } else {
         name = node.childForFieldName("name")?.text;
       }
 
-      const category = `${type}s` in info ? `${type}s` : "others";
+      const infoKey = type === "class" ? "classes" : `${type}s`;
+
+      const category = infoKey in info ? infoKey : "others";
 
       info[category].push({
         name,
