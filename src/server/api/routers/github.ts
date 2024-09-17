@@ -300,4 +300,44 @@ export const githubRouter = createTRPCRouter({
         filePaths,
       );
     }),
+  getIssue: protectedProcedure
+    .input(z.object({ issueId: z.number(), org: z.string(), repo: z.string() }))
+    .query(
+      async ({
+        input: { issueId, org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        try {
+          console.log("Getting issue", issueId);
+          const octokit = new Octokit({ auth: accessToken });
+
+          if (!org || !repo) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Invalid request",
+            });
+          }
+
+          console.log("Getting issue", issueId);
+          const { data: issue } = await octokit.issues.get({
+            owner: org,
+            repo,
+            issue_number: issueId,
+          });
+
+          return {
+            title: issue.title ?? "",
+            body: issue.body ?? "",
+          };
+        } catch (error) {
+          console.error("Error fetching issue:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Internal server error",
+          });
+        }
+      },
+    ),
 });

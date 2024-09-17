@@ -1,6 +1,6 @@
 import React from "react";
 import { useTheme } from "next-themes";
-import { LoadingIndicator } from "./LoadingIndicator";
+import { LoadingIndicator } from "../../components/LoadingIndicator";
 import { Meteors } from "~/app/_components/magicui/meteors";
 import { BorderBeam } from "~/app/_components/magicui/border-beam";
 import AnimatedShinyText from "~/app/_components/magicui/animated-shiny-text";

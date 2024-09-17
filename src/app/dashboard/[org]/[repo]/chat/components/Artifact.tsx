@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
-import MarkdownRenderer from "~/app/_components/MarkdownRenderer";
+import MarkdownRenderer from "../../components/MarkdownRenderer";
 import { type CodeFile } from "./Chat";
 
 interface ArtifactProps {

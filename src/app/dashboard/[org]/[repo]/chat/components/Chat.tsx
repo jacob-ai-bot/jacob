@@ -5,10 +5,12 @@ import { toast } from "react-toastify";
 import Artifact from "./Artifact"; // Import the new Artifact component
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { trpcClient } from "~/trpc/client";
-import LoadingIndicator from "./LoadingIndicator";
+import LoadingIndicator from "../../components/LoadingIndicator";
 import { LoadingCard } from "./LoadingCard";
 import { type Evaluation } from "~/server/api/routers/chat";
 import { api } from "~/trpc/react";
+import { motion, AnimatePresence } from "framer-motion";
+import MarkdownRenderer from "../../components/MarkdownRenderer";
 
 interface ChatProps {
   project: Project;
@@ -24,8 +26,6 @@ export interface CodeFile {
 
 const CHAT_INPUT_HEIGHT = "40px";
 
-import { motion, AnimatePresence } from "framer-motion";
-import MarkdownRenderer from "~/app/_components/MarkdownRenderer";
 export function Chat({ project, contextItems, org, repo }: ChatProps) {
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
   const [artifactFileName, setArtifactFileName] = useState<string>("");
@@ -253,7 +253,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
 
   return (
     <div className="flex h-full w-full flex-row space-x-4">
-      <div className="mx-auto flex  h-full w-full max-w-4xl  flex-row rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
+      <div className="mx-auto flex h-full  w-full max-w-4xl flex-row  overflow-clip rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
         <div className="mx-auto mr-4 flex flex-1 flex-col">
           <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
             {messages.map((m: Message, index: number) => (

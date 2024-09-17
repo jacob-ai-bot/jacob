@@ -102,7 +102,6 @@ const researchTools: OpenAI.ChatCompletionTool[] = [
 
 export const researchIssue = async function (
   githubIssue: string,
-  sourceMap: string,
   todoId: number,
   issueId: number,
   rootDir: string,
@@ -119,7 +118,7 @@ export const researchIssue = async function (
     allFiles?.map((file) => standardizePath(file)) ?? [],
   );
   // For now, change the sourcemap to be a list of all the files from the context and overview of each file
-  sourceMap = codebaseContext
+  const sourceMap = codebaseContext
     .map((file) => `${file.file} - ${file.overview}`)
     .join("\n");
 

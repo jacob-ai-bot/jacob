@@ -14,10 +14,13 @@ import {
   faCog,
   faPencil,
   faCircleDot,
+  faRefresh,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { debounce } from "lodash";
+import { api } from "~/trpc/react";
 
 const navItems = [
   { name: "Todos", icon: faListCheck },
@@ -26,7 +29,6 @@ const navItems = [
   { name: "Code Visualizer", icon: faCode },
   { name: "Front end", icon: faPaintBrush },
   { name: "Issue writer", icon: faPencil },
-  // { name: "Playbooks", icon: faBook },
 ];
 
 export default function DashboardLayout({
@@ -37,6 +39,7 @@ export default function DashboardLayout({
   params: { org: string; repo: string };
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [activeItem, setActiveItem] = useState(() => {
     const path = pathname?.split("/").pop() ?? "";
     return (
@@ -45,29 +48,57 @@ export default function DashboardLayout({
       )?.name ?? "Todos"
     );
   });
+
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const debouncedSetIsExpandedRef = useRef<ReturnType<typeof debounce>>();
+  const debounceExpandRef = useRef<ReturnType<typeof debounce>>();
+  const debounceCollapseRef = useRef<ReturnType<typeof debounce>>();
+
+  const {
+    data: repos,
+    isLoading: isLoadingRepos,
+    refetch,
+  } = api.github.getRepos.useQuery();
+
+  const refreshContextMutation =
+    api.codebaseContext.generateCodebaseContext.useMutation({
+      onSuccess: () => {
+        // You can add a success notification here if needed
+        console.log("Context refreshed successfully");
+      },
+      onError: (error) => {
+        console.error("Refresh context failed:", error);
+        // You can add an error notification here if needed
+      },
+    });
 
   useEffect(() => {
-    debouncedSetIsExpandedRef.current = debounce((value: boolean) => {
+    debounceExpandRef.current = debounce((value: boolean) => {
       setIsExpanded(value);
-    }, 300);
+    }, 500);
+
+    debounceCollapseRef.current = debounce((value: boolean) => {
+      setIsExpanded(value);
+    }, 0);
 
     return () => {
-      debouncedSetIsExpandedRef.current?.cancel();
+      debounceExpandRef.current?.cancel();
+      debounceCollapseRef.current?.cancel();
     };
   }, []);
 
   const handleMouseEnter = useCallback(() => {
-    debouncedSetIsExpandedRef.current?.cancel();
-    setIsExpanded(true);
+    debounceCollapseRef.current?.cancel();
+    debounceExpandRef.current?.(true);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    debouncedSetIsExpandedRef.current?.(false);
-  }, []);
+    debounceExpandRef.current?.cancel();
+    if (isExpanded) {
+      debounceCollapseRef.current?.(false);
+    }
+  }, [isExpanded]);
 
   useEffect(() => setMounted(true), []);
 
@@ -81,6 +112,21 @@ export default function DashboardLayout({
   }, [pathname]);
 
   if (!mounted) return null;
+
+  const handleRepoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedRepo = e.target.value;
+    if (selectedRepo) {
+      router.push(`/dashboard/${selectedRepo}`);
+    }
+  };
+
+  const handleRefresh = () => {
+    refreshContextMutation.mutate({
+      org: params.org,
+      repoName: params.repo,
+    });
+    void refetch();
+  };
 
   return (
     <div className="flex h-screen w-full border-r border-r-aurora-300 bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:border-r-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100">
@@ -146,10 +192,26 @@ export default function DashboardLayout({
             ))}
           </ul>
         </nav>
-        <motion.div className="mb-6 mt-auto px-2" whileHover={{ scale: 1.05 }}>
+        <motion.div className="mb-6 mt-auto space-y-2 px-2">
+          <Link
+            href={`/setup/${params.org}`}
+            className={`flex items-center justify-center rounded-lg bg-green-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 dark:bg-green-600/30 dark:hover:bg-green-500/30`}
+          >
+            <FontAwesomeIcon icon={faPlus} className="h-5 w-5" />
+            {isExpanded && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="ml-3"
+              >
+                Add New Repo
+              </motion.span>
+            )}
+          </Link>{" "}
           <Link
             href={`/dashboard/${params.org}/${params.repo}/settings`}
-            className={`flex items-center justify-center rounded-lg bg-sunset-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:text-white dark:bg-sky-500/30  dark:hover:text-sky-300`}
+            className={`flex items-center justify-center rounded-lg bg-sunset-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sunset-600 dark:bg-sky-600/30 dark:hover:bg-sky-500/30`}
           >
             <FontAwesomeIcon icon={faCog} className="h-5 w-5" />
             {isExpanded && (
@@ -169,14 +231,31 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white/90 pl-[64px] shadow-sm dark:bg-slate-800">
+        <header className="bg-white/90 pl-[96px] shadow-sm dark:bg-slate-800">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center space-x-4">
-              <select className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400">
-                <option>Select repository</option>
+              <select
+                value={`${params.org}/${params.repo}`}
+                onChange={handleRepoChange}
+                className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400"
+              >
+                <option value="">Select repository</option>
+                {isLoadingRepos ? (
+                  <option>Loading...</option>
+                ) : (
+                  repos?.map((repo) => (
+                    <option key={repo.id} value={repo.full_name}>
+                      {repo.full_name}
+                    </option>
+                  ))
+                )}
               </select>
-              <select className="rounded-full border-none  bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400">
-                <option>Select branch</option>
+              <select
+                className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400"
+                defaultValue="main"
+                disabled
+              >
+                <option value="main">main</option>
               </select>
             </div>
             <div className="flex items-center space-x-3">
@@ -193,6 +272,14 @@ export default function DashboardLayout({
                 className="rounded-full bg-blossom-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blossom-600 dark:bg-purple-600/30 dark:hover:bg-purple-500/30"
               >
                 New PR
+              </motion.button>
+              <motion.button
+                onClick={handleRefresh}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center rounded-full bg-slate-200 p-2 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+              >
+                <FontAwesomeIcon icon={faRefresh} className="h-5 w-5" />
               </motion.button>
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

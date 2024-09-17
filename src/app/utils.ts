@@ -1,6 +1,6 @@
 import { PLANS } from "~/data/plans";
 import { type Plan } from "~/server/api/routers/events";
-import { TaskSubType, TaskType } from "~/server/db/enums";
+import { TaskSubType, TaskType, TodoStatus } from "~/server/db/enums";
 import { type StandardizedPath } from "~/server/utils/files";
 import { type Message, Role, SpecialPhrases, SidebarIcon } from "~/types";
 import pathBrowserify from "path-browserify";
@@ -146,4 +146,17 @@ export function standardizePath(filePath: string): StandardizedPath {
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function getTodoLabel(status: TodoStatus) {
+  switch (status) {
+    case TodoStatus.TODO:
+      return "Todo";
+    case TodoStatus.IN_PROGRESS:
+      return "In Progress";
+    case TodoStatus.DONE:
+      return "Done";
+    case TodoStatus.ERROR:
+      return "Error";
+  }
 }

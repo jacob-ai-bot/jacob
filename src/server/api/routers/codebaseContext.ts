@@ -16,34 +16,49 @@ export const codebaseContextRouter = createTRPCRouter({
       z.object({
         org: z.string(),
         repo: z.string(),
+        branch: z.string().optional(),
+        commitHash: z.string().optional(),
       }),
     )
     .query(
       async ({
-        input: { org, repo },
+        input: { org, repo, branch, commitHash },
         ctx: {
           session: { accessToken },
         },
       }): Promise<ContextItem[]> => {
-        const project = await db.projects.findBy({
-          repoFullName: `${org}/${repo}`,
-        });
-        const codebaseContext = await db.codebaseContext
-          .where({ projectId: project?.id })
-          .order({ filePath: "ASC" })
-          .all();
-        // If there's no context, generate it
-        const hasStarted = await getHasStartedCodebaseGenerationCookie(
-          org,
-          repo,
-        );
-        if (codebaseContext.length === 0 && !hasStarted) {
-          await generateCodebaseContext(org, repo, accessToken);
+        // TODO: pass in the branch and commit hash, need to re-generate the context if they change
+        try {
+          const project = await db.projects.findBy({
+            repoFullName: `${org}/${repo}`,
+          });
+          const codebaseContext = await db.codebaseContext
+            .where({ projectId: project?.id })
+            .order({ filePath: "ASC" })
+            .all();
+          // If there's no context, generate it
+          const hasStarted = await getHasStartedCodebaseGenerationCookie(
+            org,
+            repo,
+            branch,
+            commitHash,
+          );
+          if (codebaseContext.length === 0 && !hasStarted) {
+            await generateCodebaseContext(org, repo, accessToken);
+          }
+          return (
+            codebaseContext?.map((context) => context.context as ContextItem) ??
+            []
+          );
+        } catch (error) {
+          console.log("Error generating codebase context:", error);
+          console.error("Error generating codebase context:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Internal server error",
+          });
+        } finally {
         }
-        return (
-          codebaseContext?.map((context) => context.context as ContextItem) ??
-          []
-        );
       },
     ),
 
