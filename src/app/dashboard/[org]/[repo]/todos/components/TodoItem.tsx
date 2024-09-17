@@ -7,6 +7,7 @@ import {
   ArrowRightCircleIcon,
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
+import { getTodoLabel } from "~/app/utils";
 
 interface TodoItemProps {
   org: string;
@@ -93,7 +94,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
             <span
               className={`overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium ${statusColors[todo.status as TodoStatus]}`}
             >
-              {todo.status}
+              {getTodoLabel(todo.status)}
             </span>
           )}
           <button

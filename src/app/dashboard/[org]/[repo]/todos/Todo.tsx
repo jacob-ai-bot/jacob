@@ -99,6 +99,11 @@ const Todo: React.FC<TodoProps> = ({ org, repo, project }) => {
     }
   };
 
+  const handleTodoUpdate = (todo: Todo) => {
+    console.log("Updating todo with id:", todo.id);
+    void refetchTodos();
+  };
+
   return (
     <div className="flex h-full w-full flex-col overflow-clip rounded-md  dark:bg-gray-900 lg:flex-row">
       {/* Left column: Todo list */}
@@ -147,6 +152,7 @@ const Todo: React.FC<TodoProps> = ({ org, repo, project }) => {
             selectedTodo={selectedTodo}
             selectedIssue={selectedIssue}
             isLoadingIssue={isLoadingIssue}
+            onTodoUpdate={handleTodoUpdate}
             org={org}
             repo={repo}
           />
