@@ -19,11 +19,8 @@ const TodoPage = async ({
   }
 
   const { org, repo } = params;
-  const project = await api.events.getProject({
-    org,
-    repo,
-  });
-  return <Todo org={org} repo={repo} project={project} />;
+
+  return <Todo org={org} repo={repo} />;
 };
 
 export default TodoPage;

@@ -404,54 +404,78 @@ export const githubRouter = createTRPCRouter({
       z.object({
         title: z.string(),
         body: z.string(),
-        extractedInfo: ExtractedIssueInfoSchema,
       }),
     )
     .mutation(async ({ input }) => {
       const prompt = `
-        You are an expert GitHub issue writer. Your task is to rewrite and improve the given issue draft to create a top 1% quality GitHub issue. Use the provided information to craft a detailed, well-structured, and informative issue body using markdown.
+  You are an expert GitHub issue reviewer and writer. Your task is to analyze the given issue draft, provide specific feedback on how to improve it, and then rewrite it to create a top 1% quality GitHub issue. Use the provided information to craft a detailed, well-structured, and informative issue body using markdown.
+  
+  **Original Title**: ${input.title}
+  **Original Body**:
+  ${input.body}
+  
+  **Guidelines for creating an exceptional GitHub issue**:
+  1. Start with a clear, concise title that summarizes the issue.
+  2. Provide a detailed description of the problem or feature request.
+  3. Include steps to reproduce the issue if applicable.
+  4. Mention the expected outcome and the actual outcome.
+  5. List any relevant error messages or logs.
+  6. Use proper formatting, including headings, lists, and code blocks.
+  7. Be courteous and professional in tone.
+  
+  **Instructions**:
+  - First, analyze the original issue and identify any missing key components or areas that need improvement based on the guidelines above. Focus specifically on any information that is missing or unclear.
+  - Provide your analysis in a very brief and actionable bullet-pointed list under the heading "**Feedback for Improvement**". DO NOT provide generic feedback, only very specific actionable feedback biased towards capturing any missing or unclear information. This section should have at most 5 bullet points.
+  - Then, rewrite the issue incorporating all the necessary improvements. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
+  - Provide the rewritten issue in markdown format, starting with the title as an H1 heading. It is critical that you follow this exact format as the output will be parsed programatically.
+  
+  ---
+  
+  **Feedback for Improvement**:
+  
+  - [Your feedback here]
+  
+  ---
+  
+  **Rewritten Issue**:
 
-        Original Title: ${input.title}
-        Original Body: ${input.body}
+  - [Your rewritten issue here]
 
-        Additional Information:
-        - Steps to Address Issue: ${input.extractedInfo.stepsToAddressIssue ?? "N/A"}
-        - Issue Quality Score: ${input.extractedInfo.issueQualityScore ?? "N/A"}
-        - Commit Title: ${input.extractedInfo.commitTitle ?? "N/A"}
-        - Files to Create: ${input.extractedInfo.filesToCreate?.join(", ") ?? "N/A"}
-        - Files to Update: ${input.extractedInfo.filesToUpdate?.join(", ") ?? "N/A"}
+  ---
 
-        Guidelines for creating an exceptional GitHub issue:
-        1. Start with a clear, concise title that summarizes the issue.
-        2. Provide a detailed description of the problem or feature request.
-        3. Include steps to reproduce the issue if applicable.
-        4. Mention the expected outcome and the actual outcome.
-        5. List any relevant error messages or logs.
-        6. Specify the environment (e.g., OS, browser, version) if relevant.
-        7. Add labels, milestones, or project boards if applicable.
-        8. Include screenshots or code snippets when helpful.
-        9. Mention related issues or pull requests if any.
-        10. Use proper formatting, including headings, lists, and code blocks.
-        11. Be courteous and professional in tone.
+  `;
 
-        Ensure that all relevant information from the original draft and the extracted info is incorporated into the rewritten issue. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
+      const aiResponse =
+        (await sendGptRequest(
+          prompt,
+          undefined,
+          0.7,
+          undefined,
+          3,
+          undefined,
+          undefined,
+          "o1-mini-2024-09-12",
+        )) ?? "";
 
-        Please provide the rewritten issue in markdown format, starting with the title as an H1 heading.
-      `;
-
-      // Call to OpenAI or your preferred AI service to generate the rewritten issue
-      const rewrittenIssue = await sendGptRequest(
-        prompt,
-        undefined,
-        0.1,
-        undefined,
-        3,
-        undefined,
-        undefined,
-        "o1-mini-2024-09-12",
+      // Parse the AI response to separate feedback and rewritten issue
+      const feedbackMatch = aiResponse.match(
+        /(?<=\*\*Feedback for Improvement\*\*:\n\n)([\s\S]*?)(?=\n---)/,
+      );
+      const rewrittenIssueMatch = aiResponse.match(
+        /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\S]*)/,
       );
 
+      const feedback = feedbackMatch ? feedbackMatch[0].trim() : "";
+      let rewrittenIssue = rewrittenIssueMatch
+        ? rewrittenIssueMatch[0].trim()
+        : "";
+
+      if (!rewrittenIssue?.length) {
+        rewrittenIssue = aiResponse ?? "";
+      }
+
       return {
+        feedback,
         rewrittenIssue,
       };
     }),

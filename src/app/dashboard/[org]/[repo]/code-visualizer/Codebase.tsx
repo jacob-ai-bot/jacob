@@ -9,15 +9,26 @@ import {
   getIsLastUsedRepoCookie,
 } from "~/app/actions";
 import { useEffect } from "react";
+import { api } from "~/trpc/react";
+import LoadingIndicator from "../components/LoadingIndicator";
 
 interface CodebaseParams {
-  contextItems: ContextItem[];
   org: string;
   repo: string;
 }
 
-const Codebase: React.FC<CodebaseParams> = ({ contextItems, org, repo }) => {
+const Codebase: React.FC<CodebaseParams> = ({ org, repo }) => {
   const { resolvedTheme } = useTheme();
+
+  const { data: contextItems, isLoading } = api.codebaseContext.getAll.useQuery(
+    {
+      org,
+      repo,
+    },
+    {
+      refetchOnWindowFocus: true,
+    },
+  );
 
   useEffect(() => {
     const fetchData = async (org: string, repo: string) => {
@@ -40,6 +51,13 @@ const Codebase: React.FC<CodebaseParams> = ({ contextItems, org, repo }) => {
     void fetchData(org, repo);
   }, [org, repo]);
 
+  if (isLoading || !contextItems) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <LoadingIndicator />
+      </div>
+    );
+  }
   if (contextItems.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4">

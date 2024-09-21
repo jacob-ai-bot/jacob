@@ -8,22 +8,21 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
   faSave,
-  faTimes,
   faExternalLinkAlt,
   faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import MarkdownRenderer from "../components/MarkdownRenderer";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { type ExtractedIssueInfo } from "~/server/code/extractedIssue";
+import ExtractedIssueDetails from "./components/ExtractedIssueDetails";
 
 interface IssueWriterProps {
   org: string;
   repo: string;
-  project: Project;
 }
 
 const TEXTAREA_MIN_HEIGHT = "600px";
-const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
+const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [issueTitle, setIssueTitle] = useState("");
   const [issueBody, setIssueBody] = useState("");
   const [isEditing, setIsEditing] = useState(true);
@@ -33,15 +32,19 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
     34,
   );
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [extractedIssueInfo, setExtractedIssueInfo] =
-    useState<ExtractedIssueInfo | null>(null);
+
   const [rewrittenIssue, setRewrittenIssue] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const { data: project, isLoading: isLoadingProject } =
+    api.events.getProject.useQuery({
+      org,
+      repo,
+    });
   const createIssueMutation = api.github.createIssue.useMutation();
-  const evaluateIssueMutation = api.github.evaluateIssue.useMutation();
   const rewriteIssueMutation = api.github.rewriteIssue.useMutation();
   const {
     data: createdIssue,
@@ -82,6 +85,8 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
       await getCreatedIssue();
       toast.success("Issue created successfully!");
       setIsEditing(false);
+      setRewrittenIssue(null);
+      setFeedback(null);
     } catch (error) {
       console.error("Error creating issue:", error);
       toast.error("Failed to create the issue.");
@@ -111,55 +116,6 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
     adjustTextareaHeight();
   };
 
-  const ExtractedIssueDetails: React.FC<{
-    info: ExtractedIssueInfo;
-    rewrittenIssue: string | null;
-  }> = ({ info, rewrittenIssue }) => (
-    <div className="rounded-md border bg-gray-100 p-4 dark:bg-gray-700">
-      <h3 className="mb-4 text-xl font-semibold">Issue Evaluation</h3>
-      <div className="space-y-2">
-        <p>
-          <strong>Steps to Address Issue:</strong>
-        </p>
-        <p className="text-sm">{info.stepsToAddressIssue ?? "N/A"}</p>
-        <p>
-          <strong>Issue Quality Score:</strong>{" "}
-          {info.issueQualityScore ?? "N/A"}
-        </p>
-        <p>
-          <strong>Commit Title:</strong> {info.commitTitle ?? "N/A"}
-        </p>
-        {info.filesToCreate && (
-          <p>
-            <strong>Files to Create:</strong>{" "}
-            {info.filesToCreate?.join(", ") ?? "N/A"}
-          </p>
-        )}
-        {info.filesToUpdate && (
-          <p>
-            <strong>Files to Update:</strong>{" "}
-            {info.filesToUpdate?.join(", ") ?? "N/A"}
-          </p>
-        )}
-        {rewrittenIssue && (
-          <p>
-            <strong>Rewritten Issue:</strong>
-            <MarkdownRenderer>{rewrittenIssue ?? "N/A"}</MarkdownRenderer>
-          </p>
-        )}
-      </div>
-      <button
-        onClick={() => {
-          setIssueTitle(info?.commitTitle ?? issueTitle);
-          setIssueBody(rewrittenIssue ?? issueBody);
-        }}
-        className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-      >
-        Update Issue
-      </button>
-    </div>
-  );
-
   const handleEvaluateIssue = async () => {
     if (!issueTitle.trim() || !issueBody.trim()) {
       toast.error("Please provide both a title and body for the issue.");
@@ -168,22 +124,14 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
 
     setIsEvaluating(true);
     try {
-      const evaluateResult = await evaluateIssueMutation.mutateAsync({
-        repo: `${org}/${repo}`,
-        title: issueTitle,
-        body: issueBody,
-      });
-      setExtractedIssueInfo(evaluateResult.extractedIssue);
-      toast.success("Issue evaluated successfully!");
-
       // Call rewriteIssue mutation
       const rewrittenIssueResult = await rewriteIssueMutation.mutateAsync({
         title: issueTitle,
         body: issueBody,
-        extractedInfo: evaluateResult.extractedIssue,
       });
 
       setRewrittenIssue(rewrittenIssueResult.rewrittenIssue);
+      setFeedback(rewrittenIssueResult.feedback);
     } catch (error) {
       console.error("Error evaluating issue:", error);
       toast.error("Failed to evaluate the issue.");
@@ -192,9 +140,33 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
     }
   };
 
+  const handleUpdateIssue = async (body: string) => {
+    if (!body.trim()) {
+      toast.error("Please provide a body for the issue.");
+      return;
+    }
+    // If the first line of the issue is a h1 title (starting with #), remove it and make it the title (remove the #)
+    if (body.startsWith("#") && body.split("\n")[0]?.trim().startsWith("#")) {
+      setIssueTitle(body.split("\n")[0]!.trim().replace("#", ""));
+      setIssueBody(body.slice(body.indexOf("\n") + 1).trim());
+    } else {
+      setIssueBody(body);
+    }
+  };
+
+  if (isLoadingProject || !project) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <LoadingIndicator />
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto flex h-full w-full max-w-6xl space-x-4 overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
+    <div
+      className={`hide-scrollbar mx-auto flex h-full w-full flex-row space-x-4 overflow-hidden ${rewrittenIssue ? "max-w-[100rem]" : "max-w-4xl"}`}
+    >
+      <div className="hide-scrollbar h-full flex-1 overflow-y-auto">
         <div className="rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-aurora-700 dark:text-aurora-300">
@@ -209,7 +181,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
             </button>
           </div>
           {isEditing ? (
-            <div className="flex flex-1 flex-col space-y-4">
+            <div className="flex w-full flex-1 flex-col space-y-4">
               <input
                 ref={titleInputRef}
                 type="text"
@@ -245,9 +217,9 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
                 </button>
                 <button
                   onClick={handleCreateIssue}
-                  disabled={isCreating || !extractedIssueInfo}
+                  disabled={isCreating || !rewrittenIssue}
                   className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
-                    isCreating || !extractedIssueInfo
+                    isCreating || !rewrittenIssue
                       ? "cursor-not-allowed bg-gray-400"
                       : "bg-aurora-400 hover:bg-aurora-500 dark:bg-aurora-600 dark:hover:bg-aurora-500"
                   }`}
@@ -260,10 +232,10 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
           ) : createdIssue ? (
             <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
               <div className="flex flex-col items-start justify-between space-y-2 sm:flex-row sm:items-center sm:space-y-0">
-                <div className="flex items-center space-x-2">
-                  <span className="rounded-full bg-aurora-100 px-2 py-1 text-sm font-medium text-aurora-800 dark:bg-aurora-900 dark:text-aurora-200">
+                <div className="flex items-center space-x-4">
+                  {/* <span className="rounded-full bg-aurora-100 px-2 py-1 text-sm font-medium text-aurora-800 dark:bg-aurora-900 dark:text-aurora-200">
                     #{createdIssueNumber}
-                  </span>
+                  </span> */}
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {createdIssue.title}
                   </h3>
@@ -272,7 +244,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
                   href={`https://github.com/${org}/${repo}/issues/${createdIssueNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center rounded-md bg-aurora-50 px-3 py-1 text-sm font-medium text-aurora-700 transition-colors hover:bg-aurora-100 dark:bg-aurora-900/30 dark:text-aurora-300 dark:hover:bg-aurora-800/50"
+                  className="inline-flex items-center whitespace-nowrap rounded-md bg-aurora-50 px-3 py-1 text-sm font-medium text-aurora-700 transition-colors hover:bg-aurora-100 dark:bg-aurora-900/30 dark:text-aurora-300 dark:hover:bg-aurora-800/50"
                 >
                   View on GitHub
                   <FontAwesomeIcon
@@ -301,11 +273,12 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo, project }) => {
           )}
         </div>
       </div>
-      {extractedIssueInfo && (
-        <div className="w-1/3 overflow-y-auto">
+      {rewrittenIssue && (
+        <div className="w-1/2 overflow-y-auto pb-8">
           <ExtractedIssueDetails
-            info={extractedIssueInfo}
+            feedback={feedback}
             rewrittenIssue={rewrittenIssue}
+            onUpdateIssue={handleUpdateIssue}
           />
         </div>
       )}

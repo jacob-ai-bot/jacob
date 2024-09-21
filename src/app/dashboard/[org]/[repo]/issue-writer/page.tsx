@@ -19,11 +19,8 @@ const IssueWriterPage = async ({
   }
 
   const { org, repo } = params;
-  const project = await api.events.getProject({
-    org,
-    repo,
-  });
-  return <IssueWriter org={org} repo={repo} project={project} />;
+
+  return <IssueWriter org={org} repo={repo} />;
 };
 
 export default IssueWriterPage;

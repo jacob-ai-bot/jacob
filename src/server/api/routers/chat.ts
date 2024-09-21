@@ -113,6 +113,7 @@ Respond only with the JSON object, no additional text.`;
           temperature,
           undefined,
           3,
+          // "llama3.1-70b",
           "gpt-4o-mini-2024-07-18", // TODO: change this to use cerebas model
         )) as unknown as Evaluation;
         const filesToUse = evaluationResult.filesToUse ?? [];

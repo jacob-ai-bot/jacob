@@ -2,7 +2,7 @@ import { type Message, useChat } from "ai/react";
 import { useState, useEffect, useRef } from "react";
 import { type Project } from "~/server/db/tables/projects.table";
 import { toast } from "react-toastify";
-import Artifact from "./Artifact"; // Import the new Artifact component
+import Artifact from "./Artifact";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { trpcClient } from "~/trpc/client";
 import LoadingIndicator from "../../components/LoadingIndicator";
@@ -11,6 +11,8 @@ import { type Evaluation } from "~/server/api/routers/chat";
 import { api } from "~/trpc/react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMicrophone, faStop } from "@fortawesome/free-solid-svg-icons";
 
 interface ChatProps {
   project: Project;
@@ -39,6 +41,8 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
   const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
   const [showLoadingCard, setShowLoadingCard] = useState(false);
   const [codeFiles, setCodeFiles] = useState<CodeFile[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [waveformActive, setWaveformActive] = useState(false);
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } =
     useChat({
@@ -88,18 +92,121 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
 
   const [textareaHeight, setTextareaHeight] = useState(CHAT_INPUT_HEIGHT);
   const [mounted, setMounted] = useState(false);
+  const [heights, setHeights] = useState(new Array(40).fill(20));
+  const [maxHeight, setMaxHeight] = useState(0);
+  const [sttTranscript, setSttTranscript] = useState("");
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const evaluateChatMessage = api.chat.evaluateChatMessage.useMutation();
 
+  // Speech Recognition Setup
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  useEffect(() => {
+    // Check for browser support
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      if (recognitionRef.current) {
+        recognitionRef.current.lang = "en-US";
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.maxAlternatives = 1;
+        recognitionRef.current.continuous = true;
+
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+          if (event.results?.length) {
+            let transcript = "";
+            for (const result of event.results) {
+              transcript += result[0]!.transcript;
+            }
+            if (transcript) {
+              setSttTranscript(transcript);
+            }
+          }
+        };
+
+        recognitionRef.current.onerror = (
+          event: SpeechRecognitionErrorEvent,
+        ) => {
+          console.error("Speech recognition error:", event.error);
+          toast.error(`Speech recognition error: ${event.error}`);
+          setIsRecording(false);
+          setWaveformActive(false);
+        };
+      }
+    } else {
+      console.warn("Speech Recognition API not supported in this browser.");
+      toast.warn("Speech Recognition API not supported in this browser.");
+    }
+
+    setMounted(true);
+  }, [setSttTranscript]);
+
+  useEffect(() => {
+    if (isRecording) {
+      // Setup audio context and analyser
+      const AudioContext =
+        window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContext();
+      let animationFrameId: number;
+      void navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 128; // Increased from 64 to 128 to accommodate 40 bars
+          source.connect(analyser);
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+          const updateHeights = () => {
+            analyser.getByteFrequencyData(dataArray);
+            const maxFrequency = Math.max(...Array.from(dataArray));
+            setMaxHeight(maxFrequency);
+            setHeights(Array.from(dataArray).slice(0, 40));
+            animationFrameId = requestAnimationFrame(updateHeights);
+          };
+          updateHeights();
+        });
+      // Cleanup function
+      return () => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        if (audioCtx) void audioCtx.close();
+      };
+    }
+  }, [isRecording]);
+
+  const startRecording = () => {
+    if (recognitionRef.current && !isRecording) {
+      setSttTranscript("");
+      recognitionRef.current.start();
+      setIsRecording(true);
+      setWaveformActive(true);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (recognitionRef.current && isRecording) {
+      setIsRecording(false); // Update state to stop recording
+      setWaveformActive(false);
+      recognitionRef.current.stop();
+      handleInputChange({
+        target: { value: sttTranscript },
+        nativeEvent: {
+          data: sttTranscript,
+        } as unknown as Event,
+      } as React.ChangeEvent<HTMLTextAreaElement>);
+    }
+  };
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
     setHasStartedStreaming(false);
     setIsEvaluating(true);
-    // get the text from the textarea
     const text = textareaRef.current?.value ?? "";
-    // clear the textarea and append the new message
     textareaRef.current!.disabled = true;
     textareaRef.current!.style.height = CHAT_INPUT_HEIGHT;
     textareaRef.current!.style.opacity = "0.5";
@@ -117,13 +224,11 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
     });
     if (evaluation.shouldCreateArtifact) {
       setCurrentEvaluation(evaluation);
-      // wait a second and then set is creating artifact to true
       setTimeout(() => {
         setIsCreatingArtifact(true);
       }, 1000);
     }
     if (evaluation.filesToUse) {
-      // call the github fetch files router
       const codeFileResponse =
         (await trpcClient.github.fetchFileContents.query({
           org,
@@ -142,11 +247,14 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
         })),
       );
     }
+
     handleSubmit(e, {
       body: {
         evaluateChatMessageData: JSON.stringify(evaluation),
       },
     });
+
+    setSttTranscript("");
     setIsEvaluating(false);
     setTextareaHeight(CHAT_INPUT_HEIGHT);
     textareaRef.current!.value = "";
@@ -157,6 +265,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log("handleTextareaChange", e);
     handleInputChange(e);
     adjustTextareaHeight();
   };
@@ -166,7 +275,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
       textareaRef.current.style.height = CHAT_INPUT_HEIGHT;
       const scrollHeight = textareaRef.current.scrollHeight;
       textareaRef.current.style.height = scrollHeight + "px";
-      setTextareaHeight(`${Math.min(scrollHeight, 200)}px`); // Max height of 200px
+      setTextareaHeight(`${Math.min(scrollHeight, 200)}px`);
     }
   };
 
@@ -184,68 +293,6 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
       setShowLoadingCard(false);
     }
   }, [isCreatingArtifact]);
-  //   const CodeBlockComponent = ({
-  //     inline,
-  //     className,
-  //     children,
-  //     ...props
-  //   }: any) => {
-  //     const match = /language-(\w+)/.exec((className as string) ?? "");
-
-  //     if (!inline && match) {
-  //       return (
-  //         <div className="relative w-full max-w-full overflow-hidden">
-  //           <button
-  //             className="absolute right-2 top-2 z-10 rounded bg-gray-300 px-2 py-1 text-blueGray-50 hover:bg-gray-400 dark:bg-gray-700/80 dark:text-white dark:hover:bg-gray-600/80"
-  //             onClick={() => copyToClipboard(String(children))}
-  //           >
-  //             <FontAwesomeIcon icon={faClipboard} />
-  //           </button>
-  //           <Suspense fallback={<div>Loading...</div>}>
-  //             <SyntaxHighlighter
-  //               style={resolvedTheme === "dark" ? oneDark : oneLight}
-  //               language={match[1]}
-  //               PreTag="div"
-  //               customStyle={{
-  //                 margin: 0,
-  //                 padding: "1rem 2.5rem 1rem 1rem",
-  //                 whiteSpace: "pre-wrap",
-  //                 wordBreak: "break-all",
-  //                 overflowWrap: "break-word",
-  //                 maxWidth: "100%",
-  //               }}
-  //               wrapLines={true}
-  //               wrapLongLines={true}
-  //               {...props}
-  //             >
-  //               {children}
-  //             </SyntaxHighlighter>
-  //           </Suspense>
-  //         </div>
-  //       );
-  //     } else if (inline) {
-  //       return (
-  //         <code className={className} {...props}>
-  //           {children}
-  //         </code>
-  //       );
-  //     } else {
-  //       return (
-  //         <code className={className} {...props}>
-  //           {children}
-  //         </code>
-  //       );
-  //     }
-  //   };
-  //   CodeBlockComponent.displayName = "CodeBlock";
-  //   return CodeBlockComponent;
-  // }, [resolvedTheme]);
-
-  // const memoizedRenderers = useMemo(() => {
-  //   return {
-  //     code: CodeBlock,
-  //   };
-  // }, [CodeBlock]);
 
   useEffect(() => setMounted(true), []);
 
@@ -253,7 +300,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
 
   return (
     <div className="flex h-full w-full flex-row space-x-4">
-      <div className="mx-auto flex h-full  w-full max-w-4xl flex-row  overflow-clip rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
+      <div className="mx-auto flex h-full w-full max-w-4xl flex-row overflow-clip rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
         <div className="mx-auto mr-4 flex flex-1 flex-col">
           <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
             {messages.map((m: Message, index: number) => (
@@ -304,18 +351,31 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
           </div>
           <form
             onSubmit={async (e) => {
-              e.preventDefault();
               await onSubmit(e);
             }}
-            className="flex flex-col"
+            className="relative flex flex-col"
           >
-            <div className="relative flex w-full items-center rounded-2xl border border-aurora-100 bg-aurora-50/30 p-1.5 dark:border-sky-600/30 dark:bg-slate-700">
+            <motion.div
+              className={`${
+                waveformActive
+                  ? "border-aurora-500/50 bg-gradient-to-r from-aurora-500/30 via-aurora-50/30 to-aurora-500/30 text-transparent"
+                  : ""
+              } flex w-full items-center rounded-2xl border border-aurora-100 bg-aurora-50/30 dark:border-sky-600/30 dark:bg-slate-700`}
+              animate={{
+                padding: waveformActive ? "1.5rem" : "0.375rem",
+              }}
+              transition={{ duration: 0.3 }}
+            >
               <textarea
                 ref={textareaRef}
-                className="hide-scrollbar m-0 flex-1 resize-none border-0 bg-transparent px-3 py-2 text-dark-blue focus:ring-0 focus-visible:ring-0 dark:text-slate-100"
+                className={`${
+                  waveformActive
+                    ? "text-red-500"
+                    : "text-dark-blue dark:text-slate-100"
+                } hide-scrollbar m-0 flex-1 resize-none border-0 bg-transparent px-3 py-2 transition-all focus:ring-0 focus-visible:ring-0 `}
                 value={input}
                 onChange={handleTextareaChange}
-                onKeyDown={(e) => {
+                onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                   if (e.key === "Enter" && !e.metaKey) {
                     e.preventDefault();
                     void onSubmit(
@@ -323,32 +383,98 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
                     );
                   }
                 }}
-                placeholder="Type your message..."
+                placeholder={waveformActive ? "" : "Type your message..."}
                 rows={1}
                 style={{ height: textareaHeight }}
+                disabled={waveformActive}
               />
-              <button
-                type="submit"
-                className="mb-1 me-1 flex h-8 w-8 items-center justify-center rounded-full bg-aurora-500 text-white transition-colors hover:bg-aurora-600 focus-visible:outline-none disabled:bg-gray-300 dark:bg-sky-600 dark:hover:bg-sky-700 dark:disabled:bg-gray-600"
-                disabled={!input.trim() || isLoading || isEvaluating}
-                aria-label="Send message - or use cmd + enter"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+              <div className="flex flex-row space-x-4">
+                <button
+                  type="button"
+                  className={`${
+                    waveformActive
+                      ? "mr-5 text-blossom-500 hover:text-blossom-700"
+                      : "text-aurora-500 hover:text-aurora-600"
+                  } transform text-xl   dark:text-gray-300 dark:hover:text-gray-500`}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  aria-label={
+                    isRecording ? "Stop recording" : "Start recording"
+                  }
                 >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M11.3939 6.67973C11.7286 6.34499 12.2714 6.34499 12.6061 6.67973L16.4633 10.537C16.798 10.8717 16.798 11.4145 16.4633 11.7492C16.1286 12.084 15.5857 12.084 15.251 11.7492L12.8571 9.35534V16.7143C12.8571 17.1877 12.4734 17.5714 12 17.5714C11.5266 17.5714 11.1429 17.1877 11.1429 16.7143V9.35534L8.74902 11.7492C8.41428 12.084 7.87144 12.084 7.53669 11.7492C7.20195 11.4145 7.20195 10.8717 7.53669 10.537L11.3939 6.67973Z"
-                    fill="currentColor"
+                  <FontAwesomeIcon
+                    icon={isRecording ? faStop : faMicrophone}
+                    size={isRecording ? "2x" : "1x"}
                   />
-                </svg>
-              </button>
-            </div>
+                </button>
+                <button
+                  type="submit"
+                  className={`${
+                    waveformActive ? "hidden" : ""
+                  } flex h-8 w-8 items-center justify-center rounded-full bg-aurora-500 text-white transition-colors hover:bg-aurora-600 focus-visible:outline-none disabled:bg-gray-300 dark:bg-sky-600 dark:hover:bg-sky-700 dark:disabled:bg-gray-600`}
+                  disabled={
+                    !input.trim() || isLoading || isEvaluating || waveformActive
+                  }
+                  aria-label="Send message - or use cmd + enter"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M11.3939 6.67973C11.7286 6.34499 12.2714 6.34499 12.6061 6.67973L16.4633 10.537C16.798 10.8717 16.798 11.4145 16.4633 11.7492C16.1286 12.084 15.5857 12.084 15.251 11.7492L12.8571 9.35534V16.7143C12.8571 17.1877 12.4734 17.5714 12 17.5714C11.5266 17.5714 11.1429 17.1877 11.1429 16.7143V9.35534L8.74902 11.7492C8.41428 12.084 7.87144 12.084 7.53669 11.7492C7.20195 11.4145 7.20195 10.8717 7.53669 10.537L11.3939 6.67973Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </div>
+              {waveformActive && (
+                <div className="absolute left-1/2 top-5 flex -translate-x-1/2 transform justify-center">
+                  <div className="flex">
+                    {heights.map((height, index) => {
+                      // Calculate a factor based on distance from the center
+                      const centerIndex = heights.length / 2;
+                      const distanceFromCenter = Math.abs(index - centerIndex);
+                      const maxDistance = heights.length / 2;
+                      const factor = 1 - distanceFromCenter / maxDistance;
+
+                      // Apply the factor to the height
+                      const adjustedHeight =
+                        index > 0 ? Math.round(height * factor * 1.3) : 0; // Increased multiplier for more pronounced effect
+
+                      return (
+                        <motion.div
+                          key={index}
+                          className={`w-1 rounded-full ${
+                            adjustedHeight > 100
+                              ? "bg-aurora-500"
+                              : adjustedHeight > 50
+                                ? "bg-aurora-500/80"
+                                : "bg-aurora-500/40"
+                          }`}
+                          style={{
+                            height: "50px",
+                            transformOrigin: "center",
+                            marginLeft: `${Math.max(Math.round(maxHeight / 30), 6)}px`, // Adjusted for more bars
+                          }}
+                          animate={{
+                            scaleY: Math.max(adjustedHeight, 20) / 128,
+                          }}
+                          transition={{
+                            duration: 0.01,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.div>
           </form>
         </div>
       </div>
