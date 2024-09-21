@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import { type CodeFile } from "./Chat";
+import { LiveProvider, LivePreview } from "react-live";
 
 interface ArtifactProps {
   content: string;
@@ -24,7 +25,9 @@ export function Artifact({
   language,
   codeFiles = [],
 }: ArtifactProps) {
-  const [activeTab, setActiveTab] = useState<"view" | "edit" | "diff">("view");
+  const [activeTab, setActiveTab] = useState<
+    "view" | "edit" | "diff" | "preview"
+  >("view");
   const [originalContent, setOriginalContent] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
 
@@ -46,6 +49,9 @@ export function Artifact({
   const handleSave = () => {
     toast.info("Save functionality coming soon!");
   };
+
+  console.log("content", content);
+  console.log("originalContent", originalContent);
 
   return (
     <motion.div
@@ -90,6 +96,16 @@ export function Artifact({
             >
               Diff
             </button>
+            <button
+              onClick={() => setActiveTab("preview")}
+              className={`px-3 py-2 text-sm font-medium ${
+                activeTab === "preview"
+                  ? "border-b-2 border-aurora-500 text-aurora-600"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              }`}
+            >
+              Preview
+            </button>
           </div>
         </div>
       </div>
@@ -133,6 +149,24 @@ export function Artifact({
                   },
                 }}
               />
+            </motion.div>
+          ) : activeTab === "preview" ? (
+            <motion.div
+              key="preview"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="h-full overflow-auto bg-gray-50 dark:bg-[#282c34]"
+            >
+              <LiveProvider
+                code={content ?? originalContent ?? ""}
+                noInline
+                theme={resolvedTheme === "dark" ? undefined : undefined}
+              >
+                <div className="p-4">
+                  <LivePreview />
+                </div>
+              </LiveProvider>
             </motion.div>
           ) : (
             <motion.div

@@ -98,6 +98,7 @@
     "react-cookie": "^6.1.1",
     "react-dom": "^18.2.0",
     "react-github-btn": "^1.4.0",
+    "react-live": "^4.1.7",
     "react-markdown": "^9.0.1",
     "react-modal": "^3.16.1",
     "react-router-dom": "^6.16.0",

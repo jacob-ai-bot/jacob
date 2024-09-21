@@ -194,16 +194,18 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
       setIsRecording(false); // Update state to stop recording
       setWaveformActive(false);
       recognitionRef.current.stop();
-      handleInputChange({
+      handleTextareaChange({
         target: { value: sttTranscript },
         nativeEvent: {
           data: sttTranscript,
         } as unknown as Event,
       } as React.ChangeEvent<HTMLTextAreaElement>);
+      adjustTextareaHeight();
     }
   };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setHasStartedStreaming(false);
     setIsEvaluating(true);
     const text = textareaRef.current?.value ?? "";
