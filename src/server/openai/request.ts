@@ -38,8 +38,8 @@ const CONTEXT_WINDOW = {
   "llama3-70b-8192": 8192, // Limited to 8K during preview, will be 128K in the future
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
-  "llama3.1-8b": 8192,
-  "llama3.1-70b": 8192,
+  "llama3.1-8b": 32768,
+  "llama3.1-70b": 32768,
   "o1-preview-2024-09-12": 128000,
   "o1-mini-2024-09-12": 128000,
 };
@@ -201,17 +201,26 @@ export const sendGptRequest = async (
       );
     }
 
-    const openai = new OpenAI({
-      apiKey: "using-virtual-portkey-key",
-      baseURL: PORTKEY_GATEWAY_URL,
-      defaultHeaders: {
-        "x-portkey-api-key": process.env.PORTKEY_API_KEY,
-        "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
-        "x-portkey-cache": "simple",
-        "x-portkey-retry-count": "3",
-        "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
-      },
-    });
+    let openai: OpenAI;
+    if (model.startsWith("llama3.1")) {
+      // This is a Cerebras API call
+      openai = new OpenAI({
+        apiKey: process.env.CEREBRAS_API_KEY,
+        baseURL: "https://api.cerebras.ai/v1",
+      });
+    } else {
+      openai = new OpenAI({
+        apiKey: "using-virtual-portkey-key",
+        baseURL: PORTKEY_GATEWAY_URL,
+        defaultHeaders: {
+          "x-portkey-api-key": process.env.PORTKEY_API_KEY,
+          "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
+          "x-portkey-cache": "simple",
+          "x-portkey-retry-count": "3",
+          "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
+        },
+      });
+    }
 
     const max_tokens = MAX_OUTPUT[model];
 

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { trpcClient } from "~/trpc/client";
 import { type Todo } from "~/server/api/routers/events";
-import { type Project } from "~/server/db/tables/projects.table";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import TodoItem from "./components/TodoItem";
@@ -18,22 +17,31 @@ export interface Issue {
 interface TodoProps {
   org: string;
   repo: string;
-  project: Project;
 }
 
-const Todo: React.FC<TodoProps> = ({ org, repo, project }) => {
+const Todo: React.FC<TodoProps> = ({ org, repo }) => {
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingIssue, setIsLoadingIssue] = useState(false);
   const [filteredTodos, setFilteredTodos] = useState<Todo[]>([]);
+  const { data: project, isLoading: isLoadingProject } =
+    api.events.getProject.useQuery({
+      org,
+      repo,
+    });
   const {
     data: todos,
     isLoading: isLoadingTodos,
     refetch: refetchTodos,
-  } = api.todos.getAll.useQuery({
-    projectId: project.id,
-  });
+  } = api.todos.getAll.useQuery(
+    {
+      projectId: project?.id ?? 0,
+    },
+    {
+      enabled: !!project,
+    },
+  );
 
   // const { data: codebaseContext, isLoading: isLoadingCodebaseContext } =
   //   api.codebaseContext.getAll.useQuery({
@@ -103,6 +111,14 @@ const Todo: React.FC<TodoProps> = ({ org, repo, project }) => {
     console.log("Updating todo with id:", todo.id);
     void refetchTodos();
   };
+
+  if (isLoadingProject || !project) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <LoadingIndicator />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full flex-col overflow-clip rounded-md  dark:bg-gray-900 lg:flex-row">

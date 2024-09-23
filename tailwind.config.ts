@@ -22,6 +22,8 @@ export default {
         meteor: "meteor 5s linear infinite",
         "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
         shimmer: "shimmer 4s infinite",
+        backgroundPositionSpin:
+          "background-position-spin 3000ms infinite alternate",
       },
       keyframes: {
         "accordion-down": {
@@ -44,6 +46,10 @@ export default {
           "100%": {
             "offset-distance": "100%",
           },
+        },
+        "background-position-spin": {
+          "0%": { backgroundPosition: "top center" },
+          "100%": { backgroundPosition: "bottom center" },
         },
         shimmer: {
           "0%, 90%, 100%": {

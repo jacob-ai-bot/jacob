@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { api } from "~/trpc/server";
-import Todo from "./Todo"; // Updated import
+import Todo from "./Todo";
 import { getServerAuthSession } from "~/server/auth";
 
 const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
@@ -19,11 +18,8 @@ const TodoPage = async ({
   }
 
   const { org, repo } = params;
-  const project = await api.events.getProject({
-    org,
-    repo,
-  });
-  return <Todo org={org} repo={repo} project={project} />;
+
+  return <Todo org={org} repo={repo} />;
 };
 
 export default TodoPage;

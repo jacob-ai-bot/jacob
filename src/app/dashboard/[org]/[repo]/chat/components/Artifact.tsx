@@ -35,17 +35,19 @@ export function Artifact({
 
   useEffect(() => {
     if (codeFiles.length > 0) {
+      const foundContent =
+        codeFiles.find((file) => file.path === filePath)?.content ?? null;
       setOriginalContent(
-        codeFiles.find((file) => file.path === filePath)?.content ?? null,
+        foundContent && foundContent.trim() !== "" ? foundContent : null,
       );
     }
-    console.log("codeFiles", codeFiles);
-    console.log("filePath", filePath);
   }, [filePath, codeFiles]);
 
   const handleSave = () => {
     toast.info("Save functionality coming soon!");
   };
+
+  const showDiffTab = originalContent !== null && originalContent.trim() !== "";
 
   return (
     <motion.div
@@ -80,16 +82,18 @@ export function Artifact({
             >
               Edit
             </button>
-            <button
-              onClick={() => setActiveTab("diff")}
-              className={`px-3 py-2 text-sm font-medium ${
-                activeTab === "diff"
-                  ? "border-b-2 border-aurora-500 text-aurora-600"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              Diff
-            </button>
+            {showDiffTab && (
+              <button
+                onClick={() => setActiveTab("diff")}
+                className={`px-3 py-2 text-sm font-medium ${
+                  activeTab === "diff"
+                    ? "border-b-2 border-aurora-500 text-aurora-600"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Diff
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -107,7 +111,7 @@ export function Artifact({
                 {`\`\`\`${language}\n${content ?? originalContent}\n\`\`\``}
               </MarkdownRenderer>
             </motion.div>
-          ) : activeTab === "diff" ? (
+          ) : activeTab === "diff" && showDiffTab ? (
             <motion.div
               key="diff"
               initial={{ opacity: 0 }}

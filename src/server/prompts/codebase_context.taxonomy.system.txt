@@ -8,6 +8,9 @@ Key points to remember:
 5. Ensure that the taxonomy is adaptable to various project sizes and types.
 6. Consider modern software development practices and emerging technologies.
 7. Focus on creating categories that are mutually exclusive and collectively exhaustive.
-8. Use clear, concise, and industry-standard terminology.
+8. Use clear, concise, and industry-standard terminology. Replace spaces with dashes in the taxonomy names.
+9. The taxonomy will be used as a folder structure so add dashes instead of spaces for the taxonomy names.
 
 Your goal is to produce a taxonomy that would be immediately useful for organizing and understanding the structure of the given codebase, as well as being adaptable for future development and expansion.
+
+Provide ONLY the resulting JSON object, DO NOT include code blocks or any other words.
