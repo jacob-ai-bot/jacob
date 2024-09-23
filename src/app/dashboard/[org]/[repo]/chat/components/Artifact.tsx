@@ -8,7 +8,6 @@ import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import { type CodeFile } from "./Chat";
-import { LiveProvider, LivePreview } from "react-live";
 
 interface ArtifactProps {
   content: string;
@@ -25,9 +24,7 @@ export function Artifact({
   language,
   codeFiles = [],
 }: ArtifactProps) {
-  const [activeTab, setActiveTab] = useState<
-    "view" | "edit" | "diff" | "preview"
-  >("view");
+  const [activeTab, setActiveTab] = useState<"view" | "edit" | "diff">("view");
   const [originalContent, setOriginalContent] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
 
@@ -38,20 +35,19 @@ export function Artifact({
 
   useEffect(() => {
     if (codeFiles.length > 0) {
+      const foundContent =
+        codeFiles.find((file) => file.path === filePath)?.content ?? null;
       setOriginalContent(
-        codeFiles.find((file) => file.path === filePath)?.content ?? null,
+        foundContent && foundContent.trim() !== "" ? foundContent : null,
       );
     }
-    console.log("codeFiles", codeFiles);
-    console.log("filePath", filePath);
   }, [filePath, codeFiles]);
 
   const handleSave = () => {
     toast.info("Save functionality coming soon!");
   };
 
-  console.log("content", content);
-  console.log("originalContent", originalContent);
+  const showDiffTab = originalContent !== null && originalContent.trim() !== "";
 
   return (
     <motion.div
@@ -86,26 +82,18 @@ export function Artifact({
             >
               Edit
             </button>
-            <button
-              onClick={() => setActiveTab("diff")}
-              className={`px-3 py-2 text-sm font-medium ${
-                activeTab === "diff"
-                  ? "border-b-2 border-aurora-500 text-aurora-600"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              Diff
-            </button>
-            <button
-              onClick={() => setActiveTab("preview")}
-              className={`px-3 py-2 text-sm font-medium ${
-                activeTab === "preview"
-                  ? "border-b-2 border-aurora-500 text-aurora-600"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              Preview
-            </button>
+            {showDiffTab && (
+              <button
+                onClick={() => setActiveTab("diff")}
+                className={`px-3 py-2 text-sm font-medium ${
+                  activeTab === "diff"
+                    ? "border-b-2 border-aurora-500 text-aurora-600"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Diff
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -123,7 +111,7 @@ export function Artifact({
                 {`\`\`\`${language}\n${content ?? originalContent}\n\`\`\``}
               </MarkdownRenderer>
             </motion.div>
-          ) : activeTab === "diff" ? (
+          ) : activeTab === "diff" && showDiffTab ? (
             <motion.div
               key="diff"
               initial={{ opacity: 0 }}
@@ -149,24 +137,6 @@ export function Artifact({
                   },
                 }}
               />
-            </motion.div>
-          ) : activeTab === "preview" ? (
-            <motion.div
-              key="preview"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full overflow-auto bg-gray-50 dark:bg-[#282c34]"
-            >
-              <LiveProvider
-                code={content ?? originalContent ?? ""}
-                noInline
-                theme={resolvedTheme === "dark" ? undefined : undefined}
-              >
-                <div className="p-4">
-                  <LivePreview />
-                </div>
-              </LiveProvider>
             </motion.div>
           ) : (
             <motion.div

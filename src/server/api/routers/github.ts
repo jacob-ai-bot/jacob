@@ -457,18 +457,23 @@ export const githubRouter = createTRPCRouter({
           "o1-mini-2024-09-12",
         )) ?? "";
 
+      console.log("aiResponse", aiResponse);
       // Parse the AI response to separate feedback and rewritten issue
       const feedbackMatch = aiResponse.match(
-        /(?<=\*\*Feedback for Improvement\*\*:\n\n)([\s\S]*?)(?=\n---)/,
+        /(?<=\*\*Feedback for Improvement\*\*:\n)([\s\S]*?)(?=\n---)/,
       );
+      console.log("feedbackMatch", feedbackMatch);
       const rewrittenIssueMatch = aiResponse.match(
         /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\S]*)/,
       );
-
+      console.log("rewrittenIssueMatch", rewrittenIssueMatch);
       const feedback = feedbackMatch ? feedbackMatch[0].trim() : "";
       let rewrittenIssue = rewrittenIssueMatch
         ? rewrittenIssueMatch[0].trim()
         : "";
+
+      console.log("feedback", feedback);
+      console.log("rewrittenIssue", rewrittenIssue);
 
       if (!rewrittenIssue?.length) {
         rewrittenIssue = aiResponse ?? "";

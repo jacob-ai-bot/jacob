@@ -1,7 +1,8 @@
+// IssueWriter.tsx
+
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { type Project } from "~/server/db/tables/projects.table";
 import { api } from "~/trpc/react";
 import { toast } from "react-toastify";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,8 +14,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import MarkdownRenderer from "../components/MarkdownRenderer";
 import LoadingIndicator from "../components/LoadingIndicator";
-import { type ExtractedIssueInfo } from "~/server/code/extractedIssue";
 import ExtractedIssueDetails from "./components/ExtractedIssueDetails";
+import SpeechToTextArea from "../components/SpeechToTextArea";
 
 interface IssueWriterProps {
   org: string;
@@ -22,14 +23,14 @@ interface IssueWriterProps {
 }
 
 const TEXTAREA_MIN_HEIGHT = "600px";
+
 const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [issueTitle, setIssueTitle] = useState("");
   const [issueBody, setIssueBody] = useState("");
   const [isEditing, setIsEditing] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [textareaHeight, setTextareaHeight] = useState(TEXTAREA_MIN_HEIGHT);
   const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(
-    34,
+    null,
   );
   const [isEvaluating, setIsEvaluating] = useState(false);
 
@@ -37,7 +38,6 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: project, isLoading: isLoadingProject } =
     api.events.getProject.useQuery({
@@ -68,8 +68,8 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   }, [isEditing]);
 
   const handleCreateIssue = async () => {
-    if (!issueTitle.trim() || !issueBody.trim()) {
-      toast.error("Please provide both a title and body for the issue.");
+    if (!issueTitle.trim() && !issueBody.trim()) {
+      toast.error("Please provide a title and body for the issue.");
       return;
     }
 
@@ -77,7 +77,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     try {
       const result = await createIssueMutation.mutateAsync({
         repo: `${org}/${repo}`,
-        title: issueTitle,
+        title: issueTitle ?? "",
         body: issueBody,
       });
 
@@ -102,29 +102,14 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     setIsEditing(true);
   };
 
-  const adjustTextareaHeight = () => {
-    if (bodyTextareaRef.current) {
-      bodyTextareaRef.current.style.height = TEXTAREA_MIN_HEIGHT;
-      const scrollHeight = bodyTextareaRef.current.scrollHeight;
-      bodyTextareaRef.current.style.height = scrollHeight + "px";
-      setTextareaHeight(`${Math.min(scrollHeight, 1200)}px`); // Max height of 1200px
-    }
-  };
-
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setIssueBody(e.target.value);
-    adjustTextareaHeight();
-  };
-
   const handleEvaluateIssue = async () => {
-    if (!issueTitle.trim() || !issueBody.trim()) {
-      toast.error("Please provide both a title and body for the issue.");
+    if (!issueBody.trim()) {
+      toast.error("Please provide a body for the issue.");
       return;
     }
 
     setIsEvaluating(true);
     try {
-      // Call rewriteIssue mutation
       const rewrittenIssueResult = await rewriteIssueMutation.mutateAsync({
         title: issueTitle,
         body: issueBody,
@@ -164,7 +149,9 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
 
   return (
     <div
-      className={`hide-scrollbar mx-auto flex h-full w-full flex-row space-x-4 overflow-hidden ${rewrittenIssue ? "max-w-[100rem]" : "max-w-4xl"}`}
+      className={`hide-scrollbar mx-auto flex h-full w-full flex-row space-x-4 overflow-hidden ${
+        rewrittenIssue ? "max-w-[100rem]" : "max-w-4xl"
+      }`}
     >
       <div className="hide-scrollbar h-full flex-1 overflow-y-auto">
         <div className="rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
@@ -191,16 +178,14 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
                 placeholder="Issue Title"
               />
               <div className="flex-1">
-                <div className="relative flex w-full items-center rounded-2xl border border-aurora-100 bg-aurora-50/30 p-1.5 dark:border-sky-600/30 dark:bg-slate-700">
-                  <textarea
-                    ref={bodyTextareaRef}
-                    value={issueBody}
-                    onChange={handleTextareaChange}
-                    className="hide-scrollbar m-0 h-full w-full resize-none border-0 bg-transparent px-3 py-2 text-dark-blue focus:ring-0 focus-visible:ring-0 dark:text-slate-100"
-                    placeholder="Describe the issue..."
-                    style={{ height: textareaHeight }}
-                  />
-                </div>
+                <SpeechToTextArea
+                  value={issueBody}
+                  onChange={(e) => setIssueBody(e.target.value)}
+                  onSubmit={handleCreateIssue}
+                  minHeight={TEXTAREA_MIN_HEIGHT}
+                  placeholder="Describe the issue..."
+                  isLoading={isCreating || isEvaluating}
+                />
               </div>
               <div className="flex justify-end space-x-2">
                 <button
@@ -233,9 +218,6 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
             <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
               <div className="flex flex-col items-start justify-between space-y-2 sm:flex-row sm:items-center sm:space-y-0">
                 <div className="flex items-center space-x-4">
-                  {/* <span className="rounded-full bg-aurora-100 px-2 py-1 text-sm font-medium text-aurora-800 dark:bg-aurora-900 dark:text-aurora-200">
-                    #{createdIssueNumber}
-                  </span> */}
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {createdIssue.title}
                   </h3>
