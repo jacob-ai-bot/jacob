@@ -2,8 +2,6 @@
 
 import React from "react";
 import { Chat } from "./components/Chat";
-import { type Project } from "~/server/db/tables/projects.table";
-import { type ContextItem } from "~/server/utils/codebaseContext";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
 

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { api } from "~/trpc/server";
-import IssueWriter from "./IssueWriter"; // Updated import
+import IssueWriter from "./IssueWriter";
 import { getServerAuthSession } from "~/server/auth";
 
 const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")

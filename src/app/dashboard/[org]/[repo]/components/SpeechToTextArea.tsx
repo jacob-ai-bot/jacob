@@ -28,7 +28,7 @@ export function SpeechToTextArea({
   const [sttTranscript, setSttTranscript] = useState("");
   const [heights, setHeights] = useState(new Array(40).fill(20));
   const [maxHeight, setMaxHeight] = useState(0);
-  const [textareaHeight, setTextareaHeight] = useState(CHAT_INPUT_HEIGHT);
+  const [textareaHeight, setTextareaHeight] = useState(minHeight);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -185,7 +185,7 @@ export function SpeechToTextArea({
           placeholder={waveformActive ? "" : placeholder}
           rows={1}
           style={{
-            minHeight: waveformActive ? CHAT_INPUT_HEIGHT : minHeight,
+            minHeight: waveformActive ? textareaHeight : minHeight,
           }}
           disabled={waveformActive}
         />

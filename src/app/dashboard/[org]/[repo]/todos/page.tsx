@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { api } from "~/trpc/server";
-import Todo from "./Todo"; // Updated import
+import Todo from "./Todo";
 import { getServerAuthSession } from "~/server/auth";
 
 const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")

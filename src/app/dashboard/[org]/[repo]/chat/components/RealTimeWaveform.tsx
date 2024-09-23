@@ -23,6 +23,7 @@ const RealTimeWaveform = () => {
 
       const updateHeights = () => {
         analyser.getByteFrequencyData(dataArray);
+        // @ts-ignore
         setHeights(dataArray.slice(0, 20));
         requestAnimationFrame(updateHeights);
       };

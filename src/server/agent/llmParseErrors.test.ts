@@ -4,7 +4,7 @@ import { describe, test, expect, afterEach, afterAll, vi } from "vitest";
 import { parseBuildErrors } from "./llmParseErrors";
 
 const mockedRequest = vi.hoisted(() => ({
-  sendGptRequestWithSchema: vi.fn().mockResolvedValue([]),
+  sendGptRequestWithSchema: vi.fn().mockResolvedValue({ errors: [] }),
 }));
 vi.mock("~/server/openai/request", () => mockedRequest);
 

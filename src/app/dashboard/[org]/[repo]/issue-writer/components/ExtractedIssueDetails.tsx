@@ -1,6 +1,3 @@
-import React from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheckCircle, faEdit } from "@fortawesome/free-solid-svg-icons";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 
 export const ExtractedIssueDetails: React.FC<{

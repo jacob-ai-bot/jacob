@@ -1,5 +1,4 @@
 "use client";
-import { type ContextItem } from "~/server/utils/codebaseContext";
 import CodebaseVisualizer from "./codebase/CodebaseVisualizer";
 import { useTheme } from "next-themes";
 import {

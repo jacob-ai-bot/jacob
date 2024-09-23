@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { trpcClient } from "~/trpc/client";
 import { type Todo } from "~/server/api/routers/events";
-import { type Project } from "~/server/db/tables/projects.table";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import TodoItem from "./components/TodoItem";
