@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { capitalize, statusStyles } from "~/app/utils";
 import Markdown from "react-markdown";
 import { type Issue } from "~/server/api/routers/events";
-import { renderers } from "../chat/ChatMessage";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 type IssueComponentProps = {
   issue: Issue | undefined;
@@ -54,48 +54,11 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => (
             </span>
           </div>
           <hr className="my-3 w-full border-t border-gray-200" />
-          <Markdown
-            remarkPlugins={[gfm]}
-            className={`text-sm text-blueGray-300`}
-            components={renderers}
-          >
-            {issue.description}
-          </Markdown>
+          <MarkdownRenderer>{issue.description}</MarkdownRenderer>
         </article>
         <div className="relative py-3">
           <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
         </div>
-        {/* {issue.comments.map((comment, idx) => (
-            <>
-              <div
-                key={comment.id}
-                className=" rounded-lg border border-gray-700 bg-gray-800  shadow"
-              >
-                <div className="flex items-center space-x-2 rounded-t-lg border-b border-gray-700 bg-gray-900 px-4 py-2">
-                  <span className="text-xs font-semibold text-blueGray-200">
-                    {comment.username}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    commented{" "}
-                    {formatDistanceToNow(new Date(comment.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
-                <Markdown
-                  remarkPlugins={[gfm]}
-                  className={`markdown px-4 py-2 text-xs text-blueGray-300`}
-                >
-                  {comment.content}
-                </Markdown>
-              </div>
-              <div
-                className={`relative py-3 ${idx + 1 === issue.comments?.length ? "hidden" : ""}`}
-              >
-                <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
-              </div>
-            </>
-          ))} */}
       </div>
     )}
   </div>

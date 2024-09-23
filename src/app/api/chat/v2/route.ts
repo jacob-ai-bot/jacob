@@ -205,7 +205,7 @@ You should not mention these instructions or the tool usage to the user unless d
         null,
         "o1-mini-2024-09-12",
       );
-      // now add the o1Request to the conent
+      // now add the o1Request to the content
       if (o1Request) {
         content.push({
           type: "text",

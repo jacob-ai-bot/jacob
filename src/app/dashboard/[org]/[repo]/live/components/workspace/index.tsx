@@ -24,7 +24,7 @@ type WorkspaceProps = {
   selectedTask?: Task;
   setSelectedIcon: (icon: SidebarIcon) => void;
   setSelectedTask: (task: Task | undefined) => void;
-  onRemoveTask: (taskId: string) => void;
+  onRemoveTask: (todoId: number) => void;
 };
 
 const Workspace: React.FC<WorkspaceProps> = ({
@@ -74,12 +74,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
         return null;
     }
   };
+  // TODO: FIX THIS!!!
   const handleRemoveTask = (task: Task) => {
     // if the task being removed is the selected task, set selected task to undefined
     if (selectedTask?.id === task.id) {
       setSelectedTask(undefined);
     }
-    onRemoveTask(task?.id);
+    onRemoveTask(task?.issueId ?? 0);
   };
 
   const handleSelectTask = (task: Task) => {

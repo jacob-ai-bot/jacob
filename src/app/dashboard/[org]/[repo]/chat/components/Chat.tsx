@@ -1,5 +1,3 @@
-// Chat.tsx
-
 import { useState, useEffect, useRef } from "react";
 import { type Message, useChat } from "ai/react";
 import { type Project } from "~/server/db/tables/projects.table";
@@ -114,6 +112,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
     });
     if (evaluation.shouldCreateArtifact) {
       setCurrentEvaluation(evaluation);
+
       setTimeout(() => {
         setIsCreatingArtifact(true);
       }, 1000);

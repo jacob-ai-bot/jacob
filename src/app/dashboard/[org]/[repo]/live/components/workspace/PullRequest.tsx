@@ -6,7 +6,7 @@ import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { capitalize, statusStyles } from "~/app/utils";
 import { type PullRequest } from "~/server/api/routers/events";
-import { renderers } from "../chat/ChatMessage";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 type PullRequestComponentProps = {
   pullRequest?: PullRequest;
@@ -57,48 +57,11 @@ export const PullRequestComponent: React.FC<PullRequestComponentProps> = ({
             </span>
           </div>
           <hr className="my-3 border-t border-gray-700" />
-          <Markdown
-            remarkPlugins={[gfm]}
-            className={`text-sm text-blueGray-300`}
-            components={renderers}
-          >
-            {pullRequest.description}
-          </Markdown>
+          <MarkdownRenderer>{pullRequest.description ?? ""}</MarkdownRenderer>
         </article>
         <div className="relative py-3">
           <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
         </div>
-        {/* {pullRequest.comments.map((comment, idx) => (
-            <>
-              <div
-                key={comment.id}
-                className=" rounded-lg border border-gray-700 bg-gray-800  shadow"
-              >
-                <div className="flex items-center space-x-2 rounded-t-lg border-b border-gray-700 bg-gray-900 px-4 py-2">
-                  <span className="text-xs font-semibold text-blueGray-200">
-                    {comment.username}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    commented{" "}
-                    {formatDistanceToNow(new Date(comment.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
-                <Markdown
-                  remarkPlugins={[gfm]}
-                  className={`px-4 py-2 text-xs text-blueGray-300`}
-                >
-                  {comment.content}
-                </Markdown>
-              </div>
-              <div
-                className={`relative py-3 ${idx + 1 === pullRequest.comments?.length ? "hidden" : ""}`}
-              >
-                <div className="absolute left-16 top-0 h-full w-0.5 bg-gray-600/50"></div>
-              </div>
-            </>
-          ))} */}
       </div>
     )}
   </div>
