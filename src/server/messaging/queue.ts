@@ -45,7 +45,10 @@ import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
 import { traverseCodebase } from "../analyze/traverse";
-import { getOrCreateCodebaseContext } from "../utils/codebaseContext";
+import {
+  getOrCreateCodebaseContext,
+  removeUnusedContextFiles,
+} from "../utils/codebaseContext";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -138,6 +141,7 @@ async function handleWebEvent(event: WebEvent) {
         rootPath,
         allFiles ?? [],
       );
+      await removeUnusedContextFiles(project.id, rootPath);
       return contextItems;
     } finally {
       // Ensure cleanup is called after processing

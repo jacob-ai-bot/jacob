@@ -706,3 +706,38 @@ export async function generateTaxonomy(rootPath: string): Promise<string> {
 
   return taxonomy ?? "";
 }
+
+export async function removeUnusedContextFiles(
+  projectId: number,
+  rootPath: string,
+): Promise<void> {
+  // Get all files in the codebase
+  const allFiles = traverseCodebase(rootPath).map(standardizePath);
+  const allFilesSet = new Set(allFiles);
+
+  // Fetch all context items for the given projectId
+  const allContextItems = await db.codebaseContext
+    .select("id", "filePath")
+    .where({
+      projectId,
+    });
+  if (!allContextItems?.length) {
+    return;
+  }
+
+  // Identify and delete context items for files that no longer exist
+  const deleteTasks = allContextItems.map(async (item) => {
+    const standardizedFilePath = standardizePath(item.filePath);
+    if (!allFilesSet.has(standardizedFilePath)) {
+      await db.codebaseContext.find(item.id).delete();
+      console.log(`Deleted context for removed file: ${standardizedFilePath}`);
+    }
+  });
+
+  // Wait for all delete operations to complete
+  await Promise.all(deleteTasks);
+
+  console.log(
+    `Finished removing unused context files for project ${projectId}`,
+  );
+}
