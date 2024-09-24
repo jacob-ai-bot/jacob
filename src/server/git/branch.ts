@@ -52,3 +52,20 @@ export async function setNewBranch({
     command: `git checkout -b ${branchName}`,
   });
 }
+
+export interface CheckoutCommitParams extends BaseEventData {
+  rootPath: string;
+  commit: string;
+}
+
+export function checkoutCommit({
+  rootPath,
+  commit,
+  ...baseEventData
+}: CheckoutCommitParams) {
+  return executeWithLogRequiringSuccess({
+    ...baseEventData,
+    directory: rootPath,
+    command: `git checkout ${commit}`,
+  });
+}
