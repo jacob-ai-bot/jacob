@@ -1,14 +1,13 @@
+import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCode,
   faPaintBrush,
   faTerminal,
-  faClipboardList,
   faCommentDots,
   faBug,
   faCodeBranch,
 } from "@fortawesome/free-solid-svg-icons";
-import { Tooltip } from "react-tooltip";
 import { SidebarIcon } from "~/types";
 
 interface SidebarProps {
@@ -18,34 +17,46 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ selectedIcon, onIconClick }) => {
   const icons = [
-    { icon: faClipboardList, name: SidebarIcon.Plan },
-    { icon: faCode, name: SidebarIcon.Code },
-    { icon: faTerminal, name: SidebarIcon.Terminal },
-    { icon: faBug, name: SidebarIcon.Issues },
-    { icon: faCodeBranch, name: SidebarIcon.PullRequests },
-    { icon: faPaintBrush, name: SidebarIcon.Design },
-    { icon: faCommentDots, name: SidebarIcon.Prompts },
+    { icon: faCode, name: SidebarIcon.Code, label: "Code" },
+    { icon: faTerminal, name: SidebarIcon.Terminal, label: "Terminal" },
+    { icon: faBug, name: SidebarIcon.Issues, label: "Issues" },
+    {
+      icon: faCodeBranch,
+      name: SidebarIcon.PullRequests,
+      label: "PR",
+    },
+    { icon: faPaintBrush, name: SidebarIcon.Design, label: "Design" },
+    { icon: faCommentDots, name: SidebarIcon.Prompts, label: "Prompts" },
   ];
 
   return (
-    <div className="flex h-full w-12 flex-col items-center space-y-1 bg-gray-800 text-white">
-      {icons.map(({ icon, name }) => (
+    <div className="flex h-full w-16 flex-col items-center space-y-2 bg-gradient-to-b from-aurora-50/30 to-aurora-50/50 p-2 text-white transition-all duration-300 ease-in-out dark:from-gray-900/95 dark:to-gray-900/80">
+      {icons.map(({ icon, name, label }) => (
+        //  bg-aurora-100 p-2 text-aurora-800 hover:bg-aurora-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600
         <div
-          className={`w-full ${selectedIcon === name ? "bg-gray-900/50" : ""} p-4 text-center`}
+          className={`group relative w-full rounded-lg transition-all duration-300 ease-in-out ${
+            selectedIcon === name
+              ? "bg-aurora-100 dark:bg-slate-700"
+              : "hover:bg-aurora-200 dark:hover:bg-slate-600"
+          }`}
           key={name}
         >
-          <div
-            className={`cursor-pointer transition-all duration-1000 ease-in-out ${selectedIcon === name ? "animate-pulse text-light-blue" : "text-beige/40 hover:text-white"}`}
+          <button
+            className={`flex w-full flex-col items-center justify-center px-3 py-2 transition-all duration-300 ease-in-out ${
+              selectedIcon === name
+                ? "text-aurora-800 dark:text-slate-300"
+                : "text-gray-400 group-hover:text-aurora-800 dark:text-gray-500 dark:group-hover:text-gray-300"
+            }`}
             onClick={() => onIconClick(name)}
             data-tooltip-id={name}
-            data-tooltip-content={name}
+            data-tooltip-content={label}
           >
-            <FontAwesomeIcon icon={icon} size={"lg"} />
-          </div>
+            <FontAwesomeIcon icon={icon} size="lg" />
+            <span className="mt-1 text-[10px] font-medium opacity-80">
+              {label}
+            </span>
+          </button>
         </div>
-      ))}
-      {icons.map(({ name }) => (
-        <Tooltip id={name} key={name} />
       ))}
     </div>
   );

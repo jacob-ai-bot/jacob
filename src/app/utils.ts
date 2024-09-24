@@ -1,6 +1,11 @@
 import { PLANS } from "~/data/plans";
 import { type Plan } from "~/server/api/routers/events";
-import { TaskSubType, TaskType, TodoStatus } from "~/server/db/enums";
+import {
+  TaskStatus,
+  TaskSubType,
+  TaskType,
+  TodoStatus,
+} from "~/server/db/enums";
 import { type StandardizedPath } from "~/server/utils/files";
 import { type Message, Role, SpecialPhrases, SidebarIcon } from "~/types";
 import pathBrowserify from "path-browserify";
@@ -80,8 +85,6 @@ export const capitalize = (s: string): string => {
 
 export const getSidebarIconForType = (type: TaskType) => {
   switch (type) {
-    case TaskType.task:
-      return SidebarIcon.Plan;
     case TaskType.command:
       return SidebarIcon.Terminal;
     case TaskType.issue:
@@ -94,7 +97,7 @@ export const getSidebarIconForType = (type: TaskType) => {
       return SidebarIcon.PullRequests;
     default:
       console.error("Unknown task type: ", type);
-      return SidebarIcon.Plan;
+      return SidebarIcon.Code;
   }
 };
 
@@ -158,5 +161,20 @@ export function getTodoLabel(status: TodoStatus) {
       return "Done";
     case TodoStatus.ERROR:
       return "Error";
+  }
+}
+
+export function getTaskStatusLabel(status: TaskStatus) {
+  switch (status) {
+    case TaskStatus.TODO:
+      return "Todo";
+    case TaskStatus.IN_PROGRESS:
+      return "In Progress";
+    case TaskStatus.DONE:
+      return "Done";
+    case TaskStatus.ERROR:
+      return "Error";
+    case TaskStatus.CLOSED:
+      return "Closed";
   }
 }

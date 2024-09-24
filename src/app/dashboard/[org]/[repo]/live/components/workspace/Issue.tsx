@@ -1,9 +1,7 @@
-import gfm from "remark-gfm";
 import { faCircleDot } from "@fortawesome/free-solid-svg-icons";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { capitalize, statusStyles } from "~/app/utils";
-import Markdown from "react-markdown";
 import { type Issue } from "~/server/api/routers/events";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 

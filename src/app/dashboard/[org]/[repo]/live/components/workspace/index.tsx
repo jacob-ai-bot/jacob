@@ -1,22 +1,15 @@
-import React, { useEffect } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faTimes,
-  faClock,
-  faCheckCircle,
-  faTimesCircle,
-} from "@fortawesome/free-solid-svg-icons";
+import React from "react";
 import { type Task } from "~/server/api/routers/events";
-import { TaskStatus } from "~/server/db/enums";
 import { SidebarIcon } from "~/types";
 import { CodeComponent } from "./Code";
 import { DesignComponent } from "./Design";
 import { IssueComponent } from "./Issue";
-import { PlanComponent } from "./Plan";
 import { PromptsComponent } from "./Prompts";
 import { PullRequestComponent } from "./PullRequest";
 import { TerminalComponent } from "./Terminal";
 import Sidebar from "../Sidebar";
+import { getTaskStatusLabel } from "~/app/utils";
+import { TaskStatus } from "~/server/db/enums";
 
 type WorkspaceProps = {
   tasks: Task[];
@@ -24,40 +17,22 @@ type WorkspaceProps = {
   selectedTask?: Task;
   setSelectedIcon: (icon: SidebarIcon) => void;
   setSelectedTask: (task: Task | undefined) => void;
-  onRemoveTask: (todoId: number) => void;
 };
 
 const Workspace: React.FC<WorkspaceProps> = ({
-  tasks = [],
   selectedIcon,
   selectedTask,
   setSelectedIcon,
-  setSelectedTask,
-  onRemoveTask,
 }) => {
-  // if new tasks are added, update selectedTask to the first task
-  useEffect(() => {
-    if (tasks && tasks.length > 0 && !selectedTask) {
-      setSelectedTask(tasks[0]);
-    }
-  }, [tasks, selectedTask, setSelectedTask]);
-
   const renderComponent = (selectedTask: Task | undefined) => {
     if (!selectedTask) {
-      return null;
+      return (
+        <p className="text-center text-gray-500 dark:text-gray-400">
+          Select a task to view details
+        </p>
+      );
     }
     switch (selectedIcon) {
-      case SidebarIcon.Plan: {
-        const planSteps = selectedTask.plan ?? [];
-        const currentPlanStep = selectedTask.currentPlanStep ?? 0; // TODO: Implement logic to determine current plan step
-        return (
-          <PlanComponent
-            planSteps={planSteps}
-            currentPlanStep={currentPlanStep}
-          />
-        );
-      }
-
       case SidebarIcon.Code:
         return <CodeComponent codeFiles={selectedTask?.codeFiles} />;
       case SidebarIcon.Terminal:
@@ -74,112 +49,58 @@ const Workspace: React.FC<WorkspaceProps> = ({
         return null;
     }
   };
-  // TODO: FIX THIS!!!
-  const handleRemoveTask = (task: Task) => {
-    // if the task being removed is the selected task, set selected task to undefined
-    if (selectedTask?.id === task.id) {
-      setSelectedTask(undefined);
-    }
-    onRemoveTask(task?.issueId ?? 0);
-  };
-
-  const handleSelectTask = (task: Task) => {
-    setSelectedTask(task);
-  };
 
   const onIconClick = (icon: SidebarIcon) => {
     setSelectedIcon(icon);
   };
 
   return (
-    <>
-      <div className="flex h-screen w-full flex-grow flex-col overflow-hidden">
-        <div className="mt-3 flex w-full overflow-x-auto border-b border-blueGray-600 px-2">
-          {tasks?.map((task) => (
-            <div
-              key={task.id}
-              className={`mr-2 flex flex-shrink-0 items-center rounded-t-md px-2 py-2 ${selectedTask?.id === task.id ? "bg-slate-700 text-orange" : "bg-blueGray-800 text-blueGray-500"} transition duration-300 ease-in-out hover:bg-slate-700 hover:text-orange`}
-            >
-              <button
-                className=" max-w-[30rem] truncate text-sm"
-                onClick={() => handleSelectTask(task)}
-              >
-                {task.name}
-              </button>
-              <button
-                className="ml-2 h-6 w-6 text-gray-300  hover:rounded-full hover:bg-gray-500"
-                onClick={() => handleRemoveTask(task)}
-              >
-                <FontAwesomeIcon icon={faTimes} />
-              </button>
-            </div>
-          ))}
-        </div>
-        <>
-          <div className="flex" style={{ height: "calc(100vh - 9rem)" }}>
-            <div className="hide-scrollbar h-full w-full overflow-y-auto">
-              <div className="flex h-full w-full flex-grow p-4">
-                {renderComponent(selectedTask)}
-              </div>
-            </div>
-          </div>
-          <div className="flex h-24  border-t-2 border-blueGray-600/50 bg-black p-2 text-sm text-blueGray-400">
-            {selectedTask && (
-              <>
-                <div className="mr-4">
-                  {selectedTask.status === TaskStatus.IN_PROGRESS && (
-                    <FontAwesomeIcon
-                      icon={faClock}
-                      className="text-yellow-500/50"
-                    />
-                  )}
-                  {selectedTask.status === TaskStatus.DONE && (
-                    <FontAwesomeIcon
-                      icon={faCheckCircle}
-                      className="text-green-700"
-                    />
-                  )}
-                  {selectedTask.status === TaskStatus.ERROR && (
-                    <FontAwesomeIcon
-                      icon={faTimesCircle}
-                      className="text-red-700"
-                    />
-                  )}
-                </div>
-                <div>
-                  <div className="text-blueGray-300">
-                    <span className="font-semibold">
-                      Step {(selectedTask.currentPlanStep ?? 0) + 1} of{" "}
-                      {selectedTask.plan?.length ?? 1}:{" "}
-                    </span>
-                    {selectedTask.plan
-                      ? selectedTask.plan[selectedTask.currentPlanStep ?? 0]
-                          ?.title ?? ""
-                      : ""}
+    <div className="flex h-full w-full flex-col overflow-hidden bg-white dark:bg-gray-800">
+      <div className="flex flex-grow flex-row overflow-hidden">
+        {/* Main Content Area */}
+        <div className="hide-scrollbar h-[calc(100vh-116px)] w-full overflow-y-auto">
+          <div className="p-6">
+            <div className="mb-6 flex items-center justify-between overflow-clip">
+              <div className="flex flex-row space-x-2">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                  {selectedTask?.name ?? "Task Details"}
+                </h2>
+                {selectedTask && (
+                  <div
+                    className={`text-center text-sm font-medium ${
+                      selectedTask.status === TaskStatus.DONE
+                        ? "bg-aurora-100 text-aurora-800 dark:bg-aurora-800 dark:text-aurora-100"
+                        : selectedTask.status === TaskStatus.IN_PROGRESS
+                          ? "bg-meadow-100 text-meadow-800 dark:bg-meadow-800 dark:text-meadow-100"
+                          : selectedTask.status === TaskStatus.ERROR
+                            ? "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100"
+                            : "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100"
+                    } rounded-full px-2 py-1`}
+                  >
+                    {getTaskStatusLabel(selectedTask.status)}
                   </div>
-                  <p className="text-blueGray-400">
-                    {selectedTask.statusDescription}{" "}
-                    {selectedTask.pullRequest && (
-                      <a
-                        href={selectedTask.pullRequest.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 underline"
-                      >
-                        Click Here to Review Pull Request
-                      </a>
-                    )}
-                  </p>
-                </div>
-              </>
-            )}
+                )}
+              </div>
+              {selectedTask?.pullRequest && (
+                <a
+                  href={selectedTask.pullRequest.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full bg-aurora-500 px-4 py-2 text-white transition-colors hover:bg-aurora-600 dark:bg-aurora-800/80 dark:hover:bg-aurora-700/80"
+                >
+                  View Pull Request
+                </a>
+              )}
+            </div>
+            {renderComponent(selectedTask)}
           </div>
-        </>
+        </div>
+        {/* Sidebar */}
+        <div className="border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <Sidebar selectedIcon={selectedIcon} onIconClick={onIconClick} />
+        </div>
       </div>
-      <div className="h-screen border-l border-blueGray-700 ">
-        <Sidebar selectedIcon={selectedIcon} onIconClick={onIconClick} />
-      </div>
-    </>
+    </div>
   );
 };
 
