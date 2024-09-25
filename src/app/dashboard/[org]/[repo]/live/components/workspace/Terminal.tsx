@@ -44,27 +44,30 @@ export const TerminalComponent: React.FC<ComponentProps> = ({ commands }) => {
   }, [commands]);
 
   return (
-    <div className="flex h-full min-h-full w-full flex-grow flex-col p-2 pt-0">
-      <div className="w-full py-2">
-        <h2 className="text-lg font-semibold text-white">Terminal</h2>
-        <hr className="my-2 border-t border-gray-700" />
+    <div className="flex flex-col rounded-lg bg-gradient-to-b from-aurora-50/70 to-30% px-6 pb-6 pt-2 shadow-md transition-all dark:from-aurora-800/80 dark:to-aurora-800/20 dark:shadow-blueGray-800/80">
+      <div className="mb-3 flex w-full items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+          Terminal
+        </h2>
       </div>
-      <div className="hide-scrollbar h-full overflow-auto rounded-lg border border-blueGray-700 bg-black p-4 font-mono text-sm text-white">
+      <div className="hide-scrollbar h-[calc(100vh-326px)] overflow-auto rounded-lg border border-aurora-500/30 bg-neutral-50 p-4 font-mono text-sm text-black dark:border-aurora-600/30 dark:bg-black dark:text-white">
         {commands && commands.length > 0 ? (
           commands.map(({ command, response }, index) => (
             <div key={index}>
-              <div className="items-top my-2 flex items-start space-x-1 whitespace-nowrap font-semibold ">
-                <span className="text-green-400">$</span>
-                <span className="text-gray-300">{command}</span>
+              <div className="items-top my-2 flex items-start space-x-1 whitespace-nowrap font-semibold">
+                <span className="text-green-400 dark:text-green-800">$</span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  {command}
+                </span>
               </div>
               <div
-                className="text-blueGray-400"
+                className="text-blueGray-500"
                 dangerouslySetInnerHTML={renderResponse(response)}
               />
             </div>
           ))
         ) : (
-          <div className="text-center text-gray-500">
+          <div className="text-center text-gray-500 dark:text-gray-400">
             No commands present for this task.
           </div>
         )}

@@ -9,6 +9,8 @@ import {
   publishWebEventToQueue,
 } from "~/server/messaging/queue";
 import { getHasStartedCodebaseGenerationCookie } from "~/app/actions";
+import { sendGptRequestWithSchema } from "~/server/openai/request";
+import { standardizePath } from "~/server/utils/files";
 
 export const codebaseContextRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -99,7 +101,103 @@ export const codebaseContextRouter = createTRPCRouter({
         await generateCodebaseContext(org, repoName, accessToken);
       },
     ),
+  searchCodebase: protectedProcedure
+    .input(
+      z.object({
+        codebaseContext: z.array(z.any()),
+        query: z.string(),
+      }),
+    )
+    .mutation(
+      async ({ input: { codebaseContext, query } }): Promise<ContextItem[]> => {
+        return await searchCodebase(codebaseContext as ContextItem[], query);
+      },
+    ),
 });
+
+const searchCodebase = async (
+  contextItems: ContextItem[],
+  query: string,
+): Promise<ContextItem[]> => {
+  const SearchSchema = z.object({
+    files: z.array(z.string()),
+  });
+
+  type SearchResult = z.infer<typeof SearchSchema>;
+
+  const userPrompt = `<searchQuery>
+  ${query}
+  </searchQuery>
+  
+  Instructions:
+  Please review the search query inside the <searchQuery> tag and code information. Use the file path and overview information to determine the most relevant files and return at least one and at most ten files that best match the search query starting with the most relevant as the first file (position 0) in the "files" array. Return a JSON object that adheres to the SearchSchema provided. The response must strictly follow the schema and only include the requested data. Do not include any additional text or explanations.`;
+
+  const fileLengthSort = (a: ContextItem, b: ContextItem) => {
+    return a.file.length - b.file.length;
+  };
+
+  const fileSort = (a: ContextItem, b: ContextItem) => {
+    return a.file.localeCompare(b.file);
+  };
+
+  const fileOverviewData = contextItems
+    .sort(fileLengthSort)
+    .sort(fileSort)
+    .map((item) => `${item.file}: ${item.overview}. ${item.text}\n`)
+    .join("\n\n");
+
+  const systemPrompt = `You are an AI code search engine. You will receive a search query and a list of code files with overviews. Your task is to analyze the search query and return the most relevant files from the list, ordered from most relevant to least relevant.
+  
+  Data:
+  Here is a list of code files with a brief overview of their purpose:
+  
+  ${fileOverviewData}
+  
+  Instructions:
+  - Return a JSON object that adheres to the following Zod schema:
+  const SearchSchema = z.object({
+    files: z.array(z.string()),
+  });
+  - The "files" array should contain the most likely files that match the search query, ordered from most to least likely.
+  - Always return a maximum of ten files. Even if there isn't an exact match, you must return at least one file.
+  - The files in the list must be from the original list of files provided; do not include any files that are not in the list.
+  - Prioritize file names (minus the file extension) that are matches or very similar to the search query. Then prioritize files based on the relevance of the overview to the search query. The lowest priority files are where the search query is found in the file path.
+  - Respond only with the JSON object, no additional text.`;
+
+  const temperature = 0.1;
+
+  const searchResult = (await sendGptRequestWithSchema(
+    userPrompt,
+    systemPrompt,
+    SearchSchema,
+    temperature,
+    undefined,
+    3,
+    "gpt-4o-mini-2024-07-18",
+  )) as unknown as SearchResult;
+
+  console.log("searchResult", searchResult);
+  // filter the context items to only include the files in the search result
+  // the context items MUST be ordered to match the search result
+
+  const filteredContextItems = searchResult.files
+    .map((file) => {
+      return contextItems.find((item) =>
+        standardizePath(item.file).includes(file),
+      );
+    })
+    .filter((item) => item !== undefined)
+    .filter(
+      // remove duplicates
+      (item, index, self) =>
+        index ===
+        self.findIndex(
+          (t) => t?.file === item?.file && t?.overview === item?.overview,
+        ),
+    );
+
+  return filteredContextItems;
+};
 
 const generateCodebaseContext = async (
   org: string,

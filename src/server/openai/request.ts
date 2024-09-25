@@ -39,8 +39,8 @@ const CONTEXT_WINDOW = {
   "llama3-70b-8192": 8192, // Limited to 8K during preview, will be 128K in the future
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
-  "llama3.1-8b": 32768,
-  "llama3.1-70b": 32768,
+  "llama3.1-8b": 8207,
+  "llama3.1-70b": 8207,
   "o1-preview-2024-09-12": 128000,
   "o1-mini-2024-09-12": 128000,
 };

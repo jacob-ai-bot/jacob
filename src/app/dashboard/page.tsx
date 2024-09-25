@@ -1,46 +1,53 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+"use client";
 
-import { getServerAuthSession } from "~/server/auth";
-import { api } from "~/trpc/server";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import FlickeringGrid from "../_components/magicui/flickering-grid";
+import LoadingPage from "./loading";
 
-const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
-  .toLowerCase()
-  .split(",");
+const DashboardPage = () => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-const DashboardPage = async () => {
-  const { user } = (await getServerAuthSession()) ?? {};
+  useEffect(() => {
+    const performRedirect = async () => {
+      try {
+        const response = await fetch("/api/dashboard/redirect", {
+          method: "GET",
+          credentials: "include", // Include cookies in the request
+        });
 
-  const cookieStore = cookies();
-  const lastUsedRepo = cookieStore.get("lastUsedRepo");
+        if (!response.ok) {
+          // Handle error response
+          console.error("Failed to fetch redirect URL");
+          setLoading(false);
+          return;
+        }
 
-  // Redirect to the last used repo if available
-  if (lastUsedRepo?.value) {
-    redirect(`/dashboard/${lastUsedRepo.value}`);
+        const data = await response.json();
+
+        if (data.redirectTo) {
+          const decodedUrl = decodeURIComponent(data.redirectTo as string);
+          router.replace(decodedUrl);
+        } else {
+          console.error("No redirect URL provided");
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error fetching redirect URL", error);
+        setLoading(false);
+      }
+    };
+
+    void performRedirect();
+  }, [router]);
+
+  if (loading) {
+    return <LoadingPage />;
   }
 
-  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
-    redirect("/finished");
-  }
-
-  // Fetch the list of repositories
-  const data = await api.github.getRepos();
-  if (!data?.length) {
-    console.log("No repos found");
-    // Redirect to home if no repos are available
-    redirect("/setup");
-  }
-
-  const repos = data.map((d) => d.full_name);
-
-  if (!repos[0]) {
-    console.error("No repos found after mapping");
-    throw new Error("No repos found");
-  }
-
-  // Redirect to the first repository
-  const dashboardUrl = `/dashboard/${repos[0]}`;
-  redirect(dashboardUrl);
+  // Optionally, display an error message or fallback UI if not loading
+  return null;
 };
 
 export default DashboardPage;
