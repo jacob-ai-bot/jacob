@@ -106,7 +106,8 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       </div>
 
       {/* Right column: Workspace */}
-      <div className="w-2/3">
+
+      <div className=" hide-scrollbar h-[calc(100vh-116px)] w-2/3 overflow-y-scroll bg-white dark:bg-gray-800 ">
         <Workspace
           tasks={tasks.filter(
             (t) =>
@@ -117,6 +118,8 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           selectedTask={selectedTask}
           setSelectedIcon={setSelectedIcon}
           setSelectedTask={setSelectedTask}
+          org={org}
+          repo={repo}
         />
       </div>
     </div>

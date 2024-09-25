@@ -26,6 +26,7 @@ export async function fetchGithubFileContents(
   repo: string,
   branch: string,
   filePaths: string[],
+  shouldThrow = true,
 ) {
   try {
     const octokit = new Octokit({ auth: accessToken });
@@ -41,7 +42,10 @@ export async function fetchGithubFileContents(
           });
 
           if (!("content" in response.data)) {
-            throw new Error(`File not found: ${path}`);
+            if (shouldThrow) {
+              throw new Error(`File not found: ${path}`);
+            }
+            return { path, content: undefined };
           }
 
           const content = Buffer.from(response.data.content, "base64").toString(
@@ -50,7 +54,10 @@ export async function fetchGithubFileContents(
           return { path, content };
         } catch (error) {
           console.error(`Error fetching file: ${path}`, error);
-          return { path, error: `Failed to fetch file: ${path}` };
+          if (shouldThrow) {
+            throw new Error(`Failed to fetch file: ${path}`);
+          }
+          return { path, content: undefined };
         }
       }),
     );
@@ -293,19 +300,29 @@ export const githubRouter = createTRPCRouter({
         repo: z.string(),
         branch: z.string().optional().default("main"),
         filePaths: z.array(z.string()),
+        shouldThrow: z.boolean().optional().default(true),
       }),
     )
     .query(async ({ input, ctx }) => {
-      const { org, repo, branch, filePaths } = input;
+      const { org, repo, branch, filePaths, shouldThrow } = input;
       const { accessToken } = ctx.session;
 
-      return await fetchGithubFileContents(
-        accessToken,
-        org,
-        repo,
-        branch,
-        filePaths,
-      );
+      try {
+        return await fetchGithubFileContents(
+          accessToken,
+          org,
+          repo,
+          branch,
+          filePaths,
+          shouldThrow,
+        );
+      } catch (error) {
+        console.error("Error fetching file contents:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Internal server error",
+        });
+      }
     }),
   getIssue: protectedProcedure
     .input(z.object({ issueId: z.number(), org: z.string(), repo: z.string() }))
