@@ -48,32 +48,32 @@ body {
   scrollbar-width: none;
 }
 .markdown {
-  @apply rounded-lg bg-white p-4 font-sans text-base leading-relaxed text-gray-900 dark:bg-gray-900 dark:text-gray-200;
+  @apply rounded-md bg-neutral-50 p-4 font-sans text-base leading-relaxed text-gray-900 dark:bg-[#0d1117] dark:text-[#c9d1d9];
 }
 
 .markdown h1 {
-  @apply mb-4 mt-6 border-b border-gray-200 pb-1 text-2xl text-rose-600 dark:border-gray-700 dark:text-rose-400;
+  @apply mb-4 mt-6 border-b border-[#30363d] pb-1 text-2xl text-[rgb(224,108,117)] dark:border-[#30363d] dark:text-[rgb(224,108,117)];
 }
 
 .markdown h2 {
-  @apply mb-4 mt-6 border-b border-gray-200 pb-1 text-xl text-rose-600 dark:border-gray-700 dark:text-rose-400;
+  @apply mb-4 mt-6 border-b border-[#30363d] pb-1 text-xl text-[rgb(224,108,117)] dark:border-[#30363d] dark:text-[rgb(224,108,117)];
 }
 
 .markdown h3 {
-  @apply mb-3 mt-4 text-lg text-green-600 dark:text-green-400;
+  @apply mb-3 mt-4 text-lg text-[rgb(152,195,121)] dark:text-[rgb(152,195,121)];
 }
 
 .markdown h4,
 .markdown h5 {
-  @apply mb-3 mt-4 text-base text-purple-600 dark:text-purple-400;
+  @apply mb-3 mt-4 text-base text-[rgb(198,120,221)] dark:text-[rgb(198,120,221)];
 }
 
 .markdown hr {
-  @apply my-6 border-gray-300 dark:border-gray-600;
+  @apply my-6 border-gray-300 dark:border-[#666];
 }
 
 .markdown p {
-  @apply my-4 text-base text-gray-700 dark:text-gray-300;
+  @apply my-4 text-base text-gray-700 dark:text-[#ddd];
 }
 
 .markdown ul {
@@ -81,19 +81,19 @@ body {
 }
 
 .markdown li {
-  @apply mb-2 text-gray-700 dark:text-gray-300;
+  @apply mb-2 text-gray-700 dark:text-[#ddd];
 }
 
 .markdown strong {
-  @apply font-semibold text-blue-600 dark:text-blue-400;
+  @apply font-semibold text-[rgb(58,146,225)] dark:text-[rgb(58,146,225)];
 }
 
 .markdown code {
-  @apply rounded bg-gray-100 px-1 py-0.5 font-mono text-sm text-gray-800 dark:bg-gray-800 dark:text-gray-200;
+  @apply rounded bg-gray-100 px-1 font-mono text-sm text-gray-800 dark:bg-[rgba(56,59,66,0.8)] dark:text-[#c9d1d9];
 }
 
 .markdown pre {
-  @apply mb-4 mt-2 w-full overflow-auto whitespace-pre-wrap rounded-lg bg-gray-100 p-1 dark:bg-gray-800;
+  @apply mb-4 mt-2 w-full overflow-auto whitespace-pre-wrap rounded bg-gray-100 p-0 px-1 dark:bg-[rgb(40,44,51)];
 }
 
 .markdown pre code {
@@ -101,7 +101,7 @@ body {
 }
 
 .markdown a {
-  @apply text-blue-600 no-underline dark:text-blue-400;
+  @apply text-black no-underline hover:text-gray-900 dark:text-white;
 }
 
 .markdown a:hover {
@@ -109,7 +109,7 @@ body {
 }
 
 .markdown blockquote {
-  @apply my-2 border-l-4 border-gray-300 pl-4 text-gray-600 dark:border-gray-600 dark:text-gray-400;
+  @apply my-2 border-l-4 border-gray-300 pl-4 text-gray-600 dark:border-[#30363d] dark:text-[#8b949e];
 }
 
 .task-list-item {
