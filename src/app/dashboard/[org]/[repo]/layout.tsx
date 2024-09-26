@@ -168,7 +168,7 @@ export default function DashboardLayout({
                   href={`/dashboard/${params.org}/${params.repo}/${item.name.toLowerCase().replace(" ", "-")}`}
                   className={`flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                     activeItem === item.name
-                      ? "bg-aurora-50 text-aurora-500 dark:bg-sky-900 dark:text-sky-300"
+                      ? "hover:bg-aurora-white bg-aurora-50 text-aurora-500 hover:text-aurora-500 dark:bg-sky-900 dark:text-sky-300"
                       : "text-dark-blue hover:bg-aurora-50 hover:text-aurora-500 dark:text-slate-300 dark:hover:bg-sky-900/50 dark:hover:text-sky-300"
                   }`}
                   onClick={() => setActiveItem(item.name)}

@@ -1,5 +1,5 @@
 // components/SearchBar.tsx
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faSpinner } from "@fortawesome/free-solid-svg-icons";
@@ -23,12 +23,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<ContextItem[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-
-  useEffect(() => {
-    if (isDetailsExpanded) {
-      setIsExpanded(false);
-    }
-  }, [isDetailsExpanded]);
 
   const searchCodebase = api.codebaseContext.searchCodebase.useMutation();
 
@@ -73,13 +67,15 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, []);
 
   return (
-    <div className="absolute -top-4 right-0">
+    <div
+      className={`absolute  right-0 ${searchResults?.length ? "-top-6 rounded-t-md bg-white p-2 shadow-sm" : "-top-4"}`}
+    >
       <form onSubmit={handleSubmit} className="flex items-center">
         <motion.input
           className="w-full rounded-l-lg border-0 bg-[#e9f8ff] px-4 py-1 text-black ring-0 focus:outline-none focus:ring-0"
           animate={{
             width: isExpanded
-              ? isDetailsExpanded
+              ? isDetailsExpanded && !searchResults?.length
                 ? "300px"
                 : "500px"
               : "200px",

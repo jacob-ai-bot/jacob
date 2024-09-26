@@ -16,13 +16,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onClose,
 }) => {
   return (
-    <div className="my-1 w-[650px] max-w-full">
+    <div className="my-1 w-full">
       {results.length > 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="hide-scrollbar relative h-full overflow-hidden overflow-y-scroll rounded-md bg-white/90 shadow-md dark:bg-gray-800"
+          className="hide-scrollbar relative h-full overflow-hidden overflow-y-scroll rounded-b-md bg-white/90 shadow-sm backdrop-blur-sm dark:bg-gray-800"
         >
           <button
             onClick={onClose}
