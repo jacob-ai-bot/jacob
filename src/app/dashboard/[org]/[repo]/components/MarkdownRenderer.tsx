@@ -25,7 +25,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   className,
   children,
 }) => {
-  console.log("children", children);
   const { resolvedTheme } = useTheme();
 
   const copyToClipboard = async (text: string) => {
