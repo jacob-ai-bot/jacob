@@ -546,7 +546,9 @@ const processChild = (
   let children = child?.children?.map((c, i) =>
     processChild(c, getColor, cachedOrders, i, fileColors, viewMode),
   );
-  if (children?.length === 1) {
+
+  // Modify this condition to prevent collapsing when the only child is a file
+  if (children?.length === 1 && children[0].children?.length > 0) {
     name = `${name}/${children[0].name}`;
     path = children[0].path;
     children = children[0].children;
