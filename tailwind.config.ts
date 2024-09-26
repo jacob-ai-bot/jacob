@@ -1,7 +1,12 @@
 import { type Config } from "tailwindcss";
 import flattenColorPalette from "tailwindcss/lib/util/flattenColorPalette";
 
-const usedColors = ["green", "red", "purple"];
+const safelist = [
+  "bg-green-700",
+  "bg-red-700",
+  "bg-purple-700",
+  "bg-github-green",
+]; // colors that dynamically generated, need to be whitelisted
 
 export default {
   content: ["./src/**/*.tsx"],
@@ -66,6 +71,12 @@ export default {
         "dark-blue": "#1D265D",
         "light-blue": "#00ACFF",
         "navy-blue": "#0044FF",
+        "github-blue": "#4078c0",
+        "github-green": "#1F883D",
+        "github-light-green": "#2dba4e",
+        "github-red": "#bd2c00",
+        "github-orange": "#c9510c",
+        "github-purple": "#6e5494",
         pink: "#ff7bff",
         orange: "#FFBA00",
         "base-black": "#191818",
@@ -229,7 +240,7 @@ export default {
     require("tailwindcss-animate"),
     addVariablesForColors,
   ],
-  safelist: usedColors.map((c) => `bg-${c}-700`),
+  safelist,
 } satisfies Config;
 
 // This plugin adds each Tailwind color as a global CSS variable, e.g. var(--gray-200).

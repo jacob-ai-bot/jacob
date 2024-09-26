@@ -86,7 +86,7 @@ Guidelines for artifact creation:
 2. Focus on content intended for eventual use outside the conversation (e.g., components, pages).
 3. Don't create artifacts for simple code snippets, explanations, or content dependent on conversational context.
 4. Error on the side of giving an explanation of the codebase and context, rather than creating an artifact, if the user's message is not clear.
-5. Always create an artifact if the user is asking for a new file or if the user is asking to modify or add to a file.
+5. Always create an artifact if the user is asking for a new file or if the user is asking to modify or add to a file or existing artifact.
 
 Provide your evaluation as a JSON object with the following fields:
 1. filesEvaluation: A 1-2 sentence evaluation to determine if the system should use any existing files from the codebase to answer the most recent user message.
@@ -113,8 +113,8 @@ Respond only with the JSON object, no additional text.`;
           temperature,
           undefined,
           3,
-          // "llama3.1-70b",
-          "gpt-4o-mini-2024-07-18", // TODO: change this to use cerebas model
+          "llama3.1-70b",
+          // "gpt-4o-mini-2024-07-18", // TODO: change this to use cerebas model
         )) as unknown as Evaluation;
         const filesToUse = evaluationResult.filesToUse ?? [];
         evaluationResult.filesToUse = filesToUse.map((p) => standardizePath(p));

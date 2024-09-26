@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tree } from "./Tree";
 import CodebaseDetails from "./CodebaseDetails";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { type FileType } from "./types";
+import SearchBar from "./SearchBar";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
@@ -14,6 +15,7 @@ interface CodebaseVisualizerProps {
 
 const HEADER_HEIGHT = 100;
 const SIDEBAR_WIDTH = 64;
+const DETAILS_WIDTH = 30;
 
 export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   contextItems,
@@ -23,7 +25,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   const [currentPath, setCurrentPath] = useState<string[]>(["root"]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isMounted, setIsMounted] = useState(false);
-  const [detailsWidth, setDetailsWidth] = useState(30);
+  const [detailsWidth, setDetailsWidth] = useState(DETAILS_WIDTH);
   const [allFiles, setAllFiles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"folder" | "taxonomy">("folder");
 
@@ -60,6 +62,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     return processContextItems(filteredContextItems, currentPath, viewMode);
   }, [filteredContextItems, currentPath, viewMode]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleNodeClick = (path: string) => {
     if (viewMode === "folder") {
       const folder = path
@@ -129,6 +132,13 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     setDetailsWidth(detailsWidth === 30 ? 50 : 30);
   };
 
+  const handleSearchResultSelect = useCallback(
+    (filePath: string) => {
+      handleNodeClick(filePath);
+    },
+    [handleNodeClick],
+  );
+
   if (!isMounted) {
     return null;
   }
@@ -138,7 +148,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
       <div className="flex w-full flex-1 flex-row overflow-hidden">
         <div className="flex w-full flex-col">
           <div className="flex h-12 w-full flex-row items-center justify-between bg-aurora-100/50 p-2 text-left dark:bg-blueGray-900/30">
-            <div>
+            <div className="flex flex-grow items-center">
               {currentPath.map((part, index) => (
                 <React.Fragment key={index}>
                   <span className="text-gray-500 dark:text-blueGray-400">
@@ -153,12 +163,20 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 </React.Fragment>
               ))}
             </div>
+
+            <div className="relative mr-6 flex items-center justify-end">
+              <SearchBar
+                codebaseContext={contextItems}
+                onSelectResult={handleSearchResultSelect}
+                isDetailsExpanded={detailsWidth !== DETAILS_WIDTH}
+              />
+            </div>
             <div className="flex space-x-2">
               <button
                 className={`rounded px-3 py-1 text-sm ${
                   viewMode === "folder"
-                    ? "bg-sunset-100 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
-                    : "text-gray-600 hover:bg-sunset-50 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                    ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
                 }`}
                 onClick={() => handleViewModeChange("folder")}
               >
@@ -167,8 +185,8 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               <button
                 className={`rounded px-3 py-1 text-sm ${
                   viewMode === "taxonomy"
-                    ? "bg-sunset-100 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
-                    : "text-gray-600 hover:bg-sunset-50 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                    ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
                 }`}
                 onClick={() => handleViewModeChange("taxonomy")}
               >

@@ -13,7 +13,7 @@ import {
   faPaintBrush,
   faCog,
   faPencil,
-  faCircleDot,
+  faRobot,
   faRefresh,
   faPlus,
 } from "@fortawesome/free-solid-svg-icons";
@@ -24,11 +24,11 @@ import { api } from "~/trpc/react";
 
 const navItems = [
   { name: "Todos", icon: faListCheck },
+  { name: "Assigned Tasks", icon: faRobot },
   { name: "Chat", icon: faComments },
-  { name: "Live", icon: faCircleDot },
+  { name: "Issue Writer", icon: faPencil },
   { name: "Code Visualizer", icon: faCode },
   { name: "Design", icon: faPaintBrush },
-  { name: "Issue Writer", icon: faPencil },
 ];
 
 export default function DashboardLayout({

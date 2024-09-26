@@ -17,6 +17,7 @@ import { type Stream } from "openai/streaming";
 import { sendAnthropicRequest } from "../anthropic/request";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 import { encode } from "gpt-tokenizer";
+import Cerebras from "@cerebras/cerebras_cloud_sdk";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -38,8 +39,8 @@ const CONTEXT_WINDOW = {
   "llama3-70b-8192": 8192, // Limited to 8K during preview, will be 128K in the future
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
-  "llama3.1-8b": 32768,
-  "llama3.1-70b": 32768,
+  "llama3.1-8b": 8207,
+  "llama3.1-70b": 8207,
   "o1-preview-2024-09-12": 128000,
   "o1-mini-2024-09-12": 128000,
 };
@@ -147,6 +148,10 @@ export type Model = keyof typeof CONTEXT_WINDOW;
 export function countTokens(text: string): number {
   return encode(text).length;
 }
+
+const cerebrasClient = new Cerebras({
+  apiKey: process.env.CEREBRAS_API_KEY ?? "",
+});
 
 // Function to check if the prompt fits within the model's context window
 export function isPromptWithinContextWindow(
@@ -270,8 +275,20 @@ export const sendGptRequest = async (
         model,
       };
     }
-
-    const response = await openai.chat.completions.create(options);
+    let response;
+    if (model.startsWith("llama3.1")) {
+      response = await cerebrasClient.chat.completions.create({
+        messages: options.messages.map((message) => ({
+          role: message.role as "system" | "user" | "assistant",
+          content: message.content,
+        })) as { role: "system" | "user" | "assistant"; content: string }[],
+        model: options.model,
+        max_tokens: options.max_tokens,
+        temperature: options.temperature,
+      });
+    } else {
+      response = await openai.chat.completions.create(options);
+    }
     const endTime = Date.now();
     const duration = endTime - startTime;
     console.log(`\n +++ ${model} Response time ${duration} ms`);
