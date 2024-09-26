@@ -1,4 +1,4 @@
-import React from "react";
+import { useRef } from "react";
 import { type Task } from "~/server/api/routers/events";
 import { SidebarIcon } from "~/types";
 import { CodeComponent } from "./Code";
@@ -29,6 +29,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   org,
   repo,
 }) => {
+  const topRef = useRef<HTMLDivElement>(null);
   const renderComponent = (selectedTask: Task | undefined) => {
     if (!selectedTask) {
       return (
@@ -64,12 +65,14 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   const onIconClick = (icon: SidebarIcon) => {
     setSelectedIcon(icon);
+    topRef.current?.scrollIntoView({ behavior: "instant" });
   };
 
   return (
     <div className="flex flex-grow flex-row overflow-hidden">
       {/* Main Content Area */}
-      <div className="hide-scrollbar h-[calc(100vh-116px)] w-full overflow-y-auto ">
+      <div className="hide-scrollbar relative h-[calc(100vh-116px)] w-full overflow-y-scroll">
+        <div ref={topRef} />
         <div className=" sticky top-0 z-50 flex items-center justify-between bg-white/80 p-6 pb-2 backdrop-blur-lg dark:bg-gray-800">
           <div className="flex flex-row space-x-2">
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">

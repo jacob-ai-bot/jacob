@@ -13,7 +13,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export const statusStyles = {
-  open: "bg-green-700 text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
+  open: "bg-github-green text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
   closed:
     "bg-red-700 text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
   merged:

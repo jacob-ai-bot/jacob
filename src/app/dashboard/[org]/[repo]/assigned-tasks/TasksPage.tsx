@@ -77,7 +77,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       <div className="w-1/3 border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800">
         <div className="border-b border-r border-gray-200 p-4 dark:border-gray-700">
           <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
-            Task List
+            Assigned Tasks
           </h1>
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />

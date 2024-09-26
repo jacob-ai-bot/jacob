@@ -150,7 +150,7 @@ export function countTokens(text: string): number {
 }
 
 const cerebrasClient = new Cerebras({
-  apiKey: process.env.CEREBRAS_API_KEY,
+  apiKey: process.env.CEREBRAS_API_KEY ?? "",
 });
 
 // Function to check if the prompt fits within the model's context window

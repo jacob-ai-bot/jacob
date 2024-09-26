@@ -21,7 +21,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => (
           href={issue.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center rounded-full bg-gray-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 dark:bg-aurora-600 dark:hover:bg-aurora-700"
+          className="inline-flex items-center rounded-full bg-gray-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 hover:text-gray-100 dark:bg-black dark:hover:bg-blueGray-800"
         >
           <FontAwesomeIcon icon={faGithub} className="mr-2" />
           Open in GitHub
@@ -33,7 +33,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => (
         Waiting on GitHub Issue creation...
       </div>
     ) : (
-      <div className="hide-scrollbar h-[calc(100vh-326px)] overflow-auto rounded-lg border border-aurora-500/30 bg-neutral-50 p-6 dark:border-aurora-600/30 dark:bg-gray-800">
+      <div className="rounded-lg border border-aurora-500/30 bg-neutral-50 p-6 dark:border-aurora-600/30 dark:bg-gray-800">
         <article className="markdown bg-neutral-50 dark:bg-gray-800">
           <a
             href={issue.link}

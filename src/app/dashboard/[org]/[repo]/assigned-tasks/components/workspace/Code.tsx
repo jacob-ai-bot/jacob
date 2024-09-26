@@ -114,7 +114,7 @@ export const CodeComponent: React.FC<CodeComponentProps> = ({
                   : "bg-aurora-800/10 text-gray-500 hover:text-gray-700 dark:bg-gray-800/80 dark:text-gray-400 dark:hover:text-gray-200"
               }`}
             >
-              View
+              Code
             </button>
             {shouldShowDiff && (
               <button

@@ -52,20 +52,20 @@ body {
 }
 
 .markdown h1 {
-  @apply mb-4 mt-6 border-b border-[#30363d] pb-1 text-2xl text-[rgb(224,108,117)] dark:border-[#30363d] dark:text-[rgb(224,108,117)];
+  @apply text-github-red mb-4 mt-6 border-b border-[#30363d] pb-1 text-2xl dark:border-[#30363d] dark:text-[rgb(224,108,117)];
 }
 
 .markdown h2 {
-  @apply mb-4 mt-6 border-b border-[#30363d] pb-1 text-xl text-[rgb(224,108,117)] dark:border-[#30363d] dark:text-[rgb(224,108,117)];
+  @apply text-github-red mb-4 mt-6 border-b border-[#30363d] pb-1 text-xl dark:border-[#30363d] dark:text-[rgb(224,108,117)];
 }
 
 .markdown h3 {
-  @apply mb-3 mt-4 text-lg text-[rgb(152,195,121)] dark:text-[rgb(152,195,121)];
+  @apply text-github-green dark:text-github-green mb-3 mt-4 text-lg;
 }
 
 .markdown h4,
 .markdown h5 {
-  @apply mb-3 mt-4 text-base text-[rgb(198,120,221)] dark:text-[rgb(198,120,221)];
+  @apply text-github-blue mb-3 mt-4 text-base dark:text-[rgb(198,120,221)];
 }
 
 .markdown hr {
@@ -85,7 +85,7 @@ body {
 }
 
 .markdown strong {
-  @apply font-semibold text-[rgb(58,146,225)] dark:text-[rgb(58,146,225)];
+  @apply text-github-blue font-semibold dark:text-[rgb(58,146,225)];
 }
 
 .markdown code {

@@ -176,7 +176,10 @@ const searchCodebase = async (
     "gpt-4o-mini-2024-07-18",
   )) as unknown as SearchResult;
 
-  console.log("searchResult", searchResult);
+  if (!searchResult.files) {
+    return [];
+  }
+
   // filter the context items to only include the files in the search result
   // the context items MUST be ordered to match the search result
 
@@ -186,17 +189,18 @@ const searchCodebase = async (
         standardizePath(item.file).includes(file),
       );
     })
-    .filter((item) => item !== undefined)
-    .filter(
-      // remove duplicates
-      (item, index, self) =>
-        index ===
-        self.findIndex(
-          (t) => t?.file === item?.file && t?.overview === item?.overview,
-        ),
-    );
+    .filter((item): item is ContextItem => item !== undefined);
 
-  return filteredContextItems;
+  const deDupedContextItems = filteredContextItems.filter(
+    // remove duplicates
+    (item, index, self) =>
+      index ===
+      self.findIndex(
+        (t) => t.file === item.file && t.overview === item.overview,
+      ),
+  );
+
+  return deDupedContextItems;
 };
 
 const generateCodebaseContext = async (

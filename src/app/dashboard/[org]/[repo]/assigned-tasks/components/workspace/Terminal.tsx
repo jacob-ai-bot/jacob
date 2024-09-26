@@ -50,7 +50,7 @@ export const TerminalComponent: React.FC<ComponentProps> = ({ commands }) => {
           Terminal
         </h2>
       </div>
-      <div className="hide-scrollbar h-[calc(100vh-326px)] overflow-auto rounded-lg border border-aurora-500/30 bg-neutral-50 p-4 font-mono text-sm text-black dark:border-aurora-600/30 dark:bg-black dark:text-white">
+      <div className="h-full rounded-lg border border-aurora-500/30 bg-neutral-50 p-4 font-mono text-sm text-black dark:border-aurora-600/30 dark:bg-black dark:text-white">
         {commands && commands.length > 0 ? (
           commands.map(({ command, response }, index) => (
             <div key={index}>

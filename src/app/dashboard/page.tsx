@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import FlickeringGrid from "../_components/magicui/flickering-grid";
 import LoadingPage from "./loading";
 
 const DashboardPage = () => {
@@ -45,8 +44,7 @@ const DashboardPage = () => {
   if (loading) {
     return <LoadingPage />;
   }
-
-  // Optionally, display an error message or fallback UI if not loading
+  // TODO: display an error message or fallback UI if not loading
   return null;
 };
 
