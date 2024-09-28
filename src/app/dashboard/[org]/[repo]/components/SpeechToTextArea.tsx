@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMicrophone, faStop } from "@fortawesome/free-solid-svg-icons";
+import {
+  faMicrophone,
+  faStop,
+  faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 
@@ -9,7 +13,7 @@ const CHAT_INPUT_HEIGHT = "40px";
 interface SpeechToTextInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  onSubmit: (message: string) => Promise<void> | void;
   isLoading: boolean;
   minHeight?: string;
   placeholder?: string;
@@ -25,106 +29,166 @@ export function SpeechToTextArea({
 }: SpeechToTextInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [waveformActive, setWaveformActive] = useState(false);
-  const [sttTranscript, setSttTranscript] = useState("");
-  const [heights, setHeights] = useState(new Array(40).fill(20));
+  const [heights, setHeights] = useState<number[]>(new Array(40).fill(20));
   const [maxHeight, setMaxHeight] = useState(0);
   const [textareaHeight, setTextareaHeight] = useState(minHeight);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   useEffect(() => {
-    // Check for browser support
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      if (recognitionRef.current) {
-        recognitionRef.current.lang = "en-US";
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.maxAlternatives = 1;
-        recognitionRef.current.continuous = true;
-
-        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-          if (event.results?.length) {
-            let transcript = "";
-            for (const result of event.results) {
-              transcript += result[0]!.transcript;
-            }
-            if (transcript) {
-              setSttTranscript(transcript);
-            }
-          }
-        };
-
-        recognitionRef.current.onerror = (
-          event: SpeechRecognitionErrorEvent,
-        ) => {
-          console.error("Speech recognition error:", event.error);
-          //   toast.error(`Speech recognition error: ${event.error}`);
-          setIsRecording(false);
-          setWaveformActive(false);
-        };
-      }
-    } else {
-      console.warn("Speech Recognition API not supported in this browser.");
-      toast.warn("Speech Recognition API not supported in this browser.");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isRecording) {
-      // Setup audio context and analyser
-      const AudioContext =
-        window.AudioContext || (window as any).webkitAudioContext;
-      const audioCtx = new AudioContext();
-      let animationFrameId: number;
-      void navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          const source = audioCtx.createMediaStreamSource(stream);
-          const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 128;
-          source.connect(analyser);
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-          const updateHeights = () => {
-            analyser.getByteFrequencyData(dataArray);
-            const maxFrequency = Math.max(...Array.from(dataArray));
-            setMaxHeight(maxFrequency);
-            setHeights(Array.from(dataArray).slice(0, 40));
-            animationFrameId = requestAnimationFrame(updateHeights);
-          };
-          updateHeights();
+    const prepareMicrophone = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
         });
-      // Cleanup function
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        if (audioCtx) void audioCtx.close();
-      };
-    }
-  }, [isRecording]);
+        setMediaStream(stream);
+      } catch (error) {
+        console.error("Microphone access denied:", error);
+        toast.error("Microphone access is required to use voice recording.");
+      }
+    };
 
-  const startRecording = () => {
-    if (recognitionRef.current && !isRecording) {
-      setSttTranscript("");
-      recognitionRef.current.start();
-      setIsRecording(true);
-      setWaveformActive(true);
+    void prepareMicrophone();
+
+    // Cleanup when component unmounts
+    return () => {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []); // Empty dependency array to run once on mount
+
+  const startRecording = async () => {
+    let stream = mediaStream;
+
+    if (!stream || stream.getAudioTracks().length === 0) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMediaStream(stream);
+      } catch (error) {
+        console.error("Microphone access denied:", error);
+        toast.error("Microphone access is required to use voice recording.");
+        return;
+      }
     }
+
+    setIsRecording(true);
+    setWaveformActive(true);
+
+    const mimeTypes = [
+      "audio/webm;codecs=opus",
+      "audio/ogg;codecs=opus",
+      "audio/mp4",
+    ];
+
+    let mimeType = "";
+    for (const type of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        mimeType = type;
+        break;
+      }
+    }
+
+    if (!mimeType) {
+      console.error("No supported MIME type found for MediaRecorder.");
+      toast.error("Recording is not supported in this browser.");
+      setIsRecording(false);
+      setWaveformActive(false);
+      return;
+    }
+
+    audioCtxRef.current = new AudioContext();
+    const source = audioCtxRef.current.createMediaStreamSource(stream);
+    const analyser = audioCtxRef.current.createAnalyser();
+    analyser.fftSize = 128;
+    source.connect(analyser);
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const updateHeights = () => {
+      analyser.getByteFrequencyData(dataArray);
+      const maxFrequency = Math.max(...dataArray);
+      setMaxHeight(maxFrequency);
+      setHeights(Array.from(dataArray.slice(0, 40)));
+      animationFrameIdRef.current = requestAnimationFrame(updateHeights);
+    };
+    updateHeights();
+
+    audioChunksRef.current = [];
+    mediaRecorderRef.current = new MediaRecorder(stream, { mimeType });
+
+    mediaRecorderRef.current.ondataavailable = (event: BlobEvent) => {
+      console.log("Data available:", event.data.size);
+      audioChunksRef.current.push(event.data);
+    };
+
+    mediaRecorderRef.current.onstop = async () => {
+      console.log("Recorder stopped");
+      if (audioCtxRef.current) {
+        await audioCtxRef.current.close();
+        audioCtxRef.current = null;
+      }
+      if (animationFrameIdRef.current)
+        cancelAnimationFrame(animationFrameIdRef.current);
+      setIsRecording(false);
+      setWaveformActive(false);
+
+      const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      console.log("Audio Blob size:", audioBlob.size);
+
+      if (audioBlob.size === 0) {
+        console.error("Audio Blob is empty.");
+        toast.error("Recording failed. Please try again.");
+        return;
+      }
+
+      const transcription = await fetchTranscription(audioBlob);
+      if (transcription) {
+        await submitTranscription(transcription);
+      }
+    };
+
+    mediaRecorderRef.current.start();
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current && isRecording) {
-      setIsRecording(false);
-      setWaveformActive(false);
-      recognitionRef.current.stop();
-      // Update the parent component's input value
-      const event = {
-        target: { value: sttTranscript },
-      } as React.ChangeEvent<HTMLTextAreaElement>;
-      onChange(event);
-      adjustTextareaHeight();
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const fetchTranscription = async (
+    audioBlob: Blob,
+  ): Promise<string | null> => {
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", audioBlob, "audio.webm");
+      console.log("FormData file size:", audioBlob.size);
+
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        toast.error("Transcription failed.");
+        return null;
+      }
+
+      const data = await response.json();
+      return data.text.trim();
+    } catch (error) {
+      console.error("Transcription error:", error);
+      toast.error("An error occurred during transcription.");
+      return null;
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
@@ -142,15 +206,31 @@ export function SpeechToTextArea({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    await onSubmit(e);
-    adjustTextareaHeight();
+  const handleSubmit = async (transcription?: string) => {
+    const messageToSubmit = transcription ?? value;
+    if (messageToSubmit.trim()) {
+      await onSubmit(messageToSubmit);
+      // Clear the text area
+      onChange({
+        target: { value: "" },
+      } as React.ChangeEvent<HTMLTextAreaElement>);
+      if (textareaRef.current) {
+        textareaRef.current.value = "";
+      }
+      adjustTextareaHeight();
+    }
+  };
+
+  const submitTranscription = async (transcription: string) => {
+    await handleSubmit(transcription);
   };
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit();
+      }}
       className="relative flex flex-col"
       style={{
         minHeight: minHeight,
@@ -173,13 +253,15 @@ export function SpeechToTextArea({
             waveformActive
               ? "text-transparent"
               : "text-dark-blue dark:text-slate-100"
-          } ${isLoading ? "opacity-50" : ""} hide-scrollbar transition-height m-0 flex-1 resize-none border-0 bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0`}
+          } ${
+            isLoading ? "opacity-50" : ""
+          } hide-scrollbar transition-height m-0 flex-1 resize-none border-0 bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0`}
           value={value}
           onChange={handleTextareaChange}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.metaKey) {
+            if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.altKey) {
               e.preventDefault();
-              void onSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+              void handleSubmit();
             }
           }}
           placeholder={waveformActive ? "" : placeholder}
@@ -194,16 +276,21 @@ export function SpeechToTextArea({
             type="button"
             className={`${
               waveformActive
-                ? "mr-5 text-blossom-500 hover:text-blossom-700"
-                : "text-aurora-500 hover:text-aurora-600"
+                ? "z-20 mr-5 text-blossom-500 hover:text-blossom-700"
+                : " text-aurora-500 hover:text-aurora-600"
             } transform text-xl dark:text-gray-300 dark:hover:text-gray-500`}
             onClick={isRecording ? stopRecording : startRecording}
             aria-label={isRecording ? "Stop recording" : "Start recording"}
+            disabled={isTranscribing}
           >
-            <FontAwesomeIcon
-              icon={isRecording ? faStop : faMicrophone}
-              size={isRecording ? "2x" : "1x"}
-            />
+            {isTranscribing ? (
+              <FontAwesomeIcon icon={faSpinner} spin />
+            ) : (
+              <FontAwesomeIcon
+                icon={isRecording ? faStop : faMicrophone}
+                size={isRecording ? "2x" : "1x"}
+              />
+            )}
           </button>
           <button
             type="submit"
@@ -235,16 +322,12 @@ export function SpeechToTextArea({
           <div className="absolute left-1/2 top-5 flex -translate-x-1/2 transform justify-center">
             <div className="flex">
               {heights.map((height, index) => {
-                // Calculate a factor based on distance from the center
                 const centerIndex = heights.length / 2;
                 const distanceFromCenter = Math.abs(index - centerIndex);
                 const maxDistance = heights.length / 2;
                 const factor = 1 - distanceFromCenter / maxDistance;
-
-                // Apply the factor to the height
                 const adjustedHeight =
                   index > 0 ? Math.round(height * factor * 1.3) : 0;
-
                 return (
                   <motion.div
                     key={index}

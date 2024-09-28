@@ -11,13 +11,13 @@ interface SearchBarProps {
   codebaseContext: ContextItem[];
 
   onSelectResult: (filePath: string) => void;
-  isDetailsExpanded: boolean;
+  isDetailsExpanded?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
   codebaseContext,
   onSelectResult,
-  isDetailsExpanded,
+  isDetailsExpanded = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);

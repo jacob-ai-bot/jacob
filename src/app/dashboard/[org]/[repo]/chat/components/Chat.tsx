@@ -1,17 +1,19 @@
+// components/Chat.tsx
 import { useState, useEffect, useRef } from "react";
 import { type Message, useChat } from "ai/react";
 import { type Project } from "~/server/db/tables/projects.table";
 import { toast } from "react-toastify";
 import Artifact from "./Artifact";
 import { type ContextItem } from "~/server/utils/codebaseContext";
-import { trpcClient } from "~/trpc/client";
 import LoadingIndicator from "../../components/LoadingIndicator";
 import { LoadingCard } from "./LoadingCard";
 import { type Evaluation } from "~/server/api/routers/chat";
-import { api } from "~/trpc/react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import { SpeechToTextArea } from "../../components/SpeechToTextArea";
+import { type ChatModel, ChatModels, ModelSelector } from "./ModelSelector";
+import SearchBar from "../../code-visualizer/codebase/SearchBar";
+import { api } from "~/trpc/react";
 
 interface ChatProps {
   project: Project;
@@ -30,7 +32,6 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
   const [artifactFileName, setArtifactFileName] = useState<string>("");
   const [artifactLanguage, setArtifactLanguage] = useState<string>("");
   const [hasStartedStreaming, setHasStartedStreaming] = useState(false);
-  const [isEvaluating, setIsEvaluating] = useState(false);
   const [currentEvaluation, setCurrentEvaluation] = useState<Evaluation | null>(
     null,
   );
@@ -38,113 +39,72 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
   const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
   const [showLoadingCard, setShowLoadingCard] = useState(false);
   const [codeFiles, setCodeFiles] = useState<CodeFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [model, setModel] = useState<ChatModel>(ChatModels[0]!);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } =
-    useChat({
-      api: "/api/chat/v2",
-      body: {
-        projectId: project.id,
-        org,
-        repo,
-      },
-      initialMessages: [
-        {
-          id: "1",
-          role: "system",
-          content:
-            "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
-        },
-      ],
-      onResponse: async () => {
-        setHasStartedStreaming(true);
-      },
-      onError: (error) => {
-        console.error("Error in chat", error);
-        toast.error(`Error in chat: ${error.message}`);
-      },
-      onToolCall: async ({ toolCall }) => {
-        console.log("toolCall", toolCall);
-        setHasStartedStreaming(false);
-        const toolCallArgs = toolCall.args as {
-          fileName: string;
-          content: string;
-          language: string;
-          filePath: string;
-        };
-        const { fileName, content, language, filePath } = toolCallArgs;
-        setArtifactContent(content);
-        setArtifactFileName(fileName);
-        setArtifactLanguage(language);
-        setArtifactFilePath(filePath);
-      },
-      onFinish: () => {
-        setHasStartedStreaming(false);
-        setIsCreatingArtifact(false);
-        setCurrentEvaluation(null);
-      },
-      keepLastMessageOnError: true,
+  const { data: codeContent, refetch: refetchCodeContent } =
+    api.github.fetchFileContents.useQuery({
+      org,
+      repo,
+      filePaths: selectedFiles,
     });
+
+  console.log("codeContent", codeContent);
+  const { messages, input, handleInputChange, append, isLoading } = useChat({
+    streamProtocol: model.modelName.startsWith("o1") ? "text" : "data",
+    api: `/api/chat/${model.provider}`,
+    body: {
+      model,
+      contextItems,
+      org,
+      repo,
+      codeContent,
+    },
+    initialMessages: [
+      {
+        id: "1",
+        role: "system",
+        content:
+          "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
+      },
+    ],
+    onResponse: async () => {
+      setHasStartedStreaming(true);
+    },
+    onError: (error) => {
+      console.error("Error in chat", error);
+      toast.error(`Error in chat: ${error.message}`);
+    },
+    onToolCall: async ({ toolCall }) => {
+      console.log("toolCall", toolCall);
+      setHasStartedStreaming(false);
+      const toolCallArgs = toolCall.args as {
+        fileName: string;
+        content: string;
+        language: string;
+        filePath: string;
+      };
+      const { fileName, content, language, filePath } = toolCallArgs;
+      setArtifactContent(content);
+      setArtifactFileName(fileName);
+      setArtifactLanguage(language);
+      setArtifactFilePath(filePath);
+    },
+    onFinish: () => {
+      setHasStartedStreaming(false);
+      setIsCreatingArtifact(false);
+      setCurrentEvaluation(null);
+    },
+  });
+
+  const handleSubmit = async (message: string) => {
+    await append({ role: "user", content: message });
+  };
 
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const evaluateChatMessage = api.chat.evaluateChatMessage.useMutation();
-
   useEffect(() => setMounted(true), []);
-
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setHasStartedStreaming(false);
-    setIsEvaluating(true);
-    const text = input.trim();
-    if (!text) return;
-
-    const newMessage = {
-      role: "user",
-      content: text,
-    };
-    const newMessages = [...messages, newMessage];
-    const evaluation = await evaluateChatMessage.mutateAsync({
-      codeFileStructureContext: contextItems
-        .map((item) => `${item.file} - ${item.overview}`)
-        .join("\n"),
-      messages: newMessages,
-    });
-    if (evaluation.shouldCreateArtifact) {
-      setCurrentEvaluation(evaluation);
-
-      setTimeout(() => {
-        setIsCreatingArtifact(true);
-      }, 1000);
-    }
-    if (evaluation.filesToUse) {
-      const codeFileResponse =
-        (await trpcClient.github.fetchFileContents.query({
-          org,
-          repo,
-          branch: "main",
-          filePaths: evaluation.filesToUse,
-        })) ?? [];
-      evaluation.codeFiles = codeFileResponse.map(
-        (file) => `\`\`\` ${file.path}\n\n${file.content}\n\`\`\``,
-      );
-
-      setCodeFiles(
-        codeFileResponse.map((file) => ({
-          path: file.path ?? "",
-          content: file.content ?? "",
-        })),
-      );
-    }
-
-    handleSubmit(e, {
-      body: {
-        evaluateChatMessageData: JSON.stringify(evaluation),
-      },
-    });
-
-    setIsEvaluating(false);
-  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -161,14 +121,36 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
     }
   }, [isCreatingArtifact]);
 
+  const handleSearchResultSelect = (filePath: string) => {
+    setArtifactFilePath(filePath);
+    setSelectedFiles([filePath]);
+    void refetchCodeContent();
+  };
+
   if (!mounted) return null;
 
   return (
     <div className="flex h-full w-full flex-row space-x-4">
-      <div className="mx-auto flex h-full w-full max-w-4xl flex-row overflow-clip rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
-        <div className="mx-auto mr-4 flex flex-1 flex-col">
-          <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
-            {messages.map((m: Message, index: number) => (
+      <SearchBar
+        codebaseContext={contextItems}
+        onSelectResult={handleSearchResultSelect}
+      />
+      <div className="mx-auto flex max-w-5xl flex-1 flex-col overflow-clip rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
+        <div className="mb-1  w-[200px] self-end p-1 text-right dark:bg-gray-800">
+          <div className="relative mr-6 flex items-center justify-end">
+            <SearchBar
+              codebaseContext={contextItems}
+              onSelectResult={handleSearchResultSelect}
+            />
+          </div>{" "}
+          <ModelSelector selectedModel={model} onModelChange={setModel} />
+          {/* Add more sidebar components here if needed */}
+        </div>
+        <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
+          {messages
+            .filter((m) => m.role !== "tool")
+            .filter((m) => m.content.length > 0)
+            .map((m: Message, index: number) => (
               <div
                 key={m.id}
                 className={`mb-4 flex ${
@@ -187,7 +169,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
                   </MarkdownRenderer>
                   {isCreatingArtifact &&
                     index === messages.length - 1 &&
-                    m.role === "assistant" && (
+                    (m.role === "assistant" || m.role === "system") && (
                       <AnimatePresence>
                         {showLoadingCard && (
                           <motion.div
@@ -205,22 +187,21 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
                 </div>
               </div>
             ))}
-            {(isLoading || isEvaluating) && !hasStartedStreaming && (
-              <div className="flex justify-start">
-                <div className="inline-block max-w-[80%] rounded-lg bg-white/20 p-2 text-dark-blue dark:bg-slate-700 dark:text-slate-100">
-                  <LoadingIndicator />
-                </div>
+          {isLoading && !hasStartedStreaming && (
+            <div className="flex justify-start">
+              <div className="inline-block max-w-[80%] rounded-lg bg-white/20 p-2 text-dark-blue dark:bg-slate-700 dark:text-slate-100">
+                <LoadingIndicator />
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-          <SpeechToTextArea
-            value={input}
-            onChange={handleInputChange}
-            onSubmit={onSubmit}
-            isLoading={isLoading || isEvaluating}
-          />
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
+        <SpeechToTextArea
+          value={input}
+          onChange={handleInputChange}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+        />
       </div>
       {artifactContent && (
         <Artifact

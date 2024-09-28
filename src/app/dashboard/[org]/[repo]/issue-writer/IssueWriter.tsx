@@ -153,7 +153,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
         rewrittenIssue ? "max-w-[100rem]" : "max-w-4xl"
       }`}
     >
-      <div className="hide-scrollbar b h-[calc(100vh-119px)] flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
+      <div className="hide-scrollbar h-[calc(100vh-119px)] flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-aurora-700 dark:text-aurora-300">
             Issue Creator
