@@ -43,6 +43,10 @@ const mockedRequest = vi.hoisted(() => ({
   sendGptRequest: vi
     .fn()
     .mockResolvedValue("__FILEPATH__file.txt__\nfixed-file-content"),
+  countTokens: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(100))),
+  MAX_OUTPUT: ["model", 100],
 }));
 vi.mock("../openai/request", () => mockedRequest);
 
@@ -104,11 +108,14 @@ describe("editFiles", () => {
   test("editFiles success path", async () => {
     await editFiles(editFilesParams);
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledOnce();
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(2);
     expect(mockedRequest.sendGptRequest.mock.calls[0]![0]).toContain(
+      "Here is a Github Issue:",
+    );
+    expect(mockedRequest.sendGptRequest.mock.calls[1]![0]).toContain(
       "Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[0]![1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.calls[1]![1]).toContain(
       "You are the top, most distinguished Technical Fellow at Microsoft.",
     );
 

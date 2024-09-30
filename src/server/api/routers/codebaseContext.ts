@@ -11,6 +11,7 @@ import {
 import { getHasStartedCodebaseGenerationCookie } from "~/app/actions";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { standardizePath } from "~/server/utils/files";
+import path from "path";
 
 export const codebaseContextRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -106,11 +107,18 @@ export const codebaseContextRouter = createTRPCRouter({
       z.object({
         codebaseContext: z.array(z.any()),
         query: z.string(),
+        fileSearchOnly: z.boolean().optional(),
       }),
     )
     .mutation(
-      async ({ input: { codebaseContext, query } }): Promise<ContextItem[]> => {
-        return await searchCodebase(codebaseContext as ContextItem[], query);
+      async ({
+        input: { codebaseContext, query, fileSearchOnly },
+      }): Promise<ContextItem[]> => {
+        return await searchCodebase(
+          codebaseContext as ContextItem[],
+          query,
+          fileSearchOnly,
+        );
       },
     ),
 });
@@ -118,7 +126,37 @@ export const codebaseContextRouter = createTRPCRouter({
 const searchCodebase = async (
   contextItems: ContextItem[],
   query: string,
+  fileSearchOnly = false,
 ): Promise<ContextItem[]> => {
+  // Fast file search
+  const fastFileSearch = (
+    items: ContextItem[],
+    searchQuery: string,
+  ): ContextItem[] => {
+    const normalizedQuery = searchQuery.toLowerCase();
+    return items
+      .filter((item) => {
+        const fileName = path.basename(item.file).toLowerCase();
+        return fileName.startsWith(normalizedQuery);
+      })
+      .sort((a, b) => {
+        const fileNameA = path.basename(a.file).toLowerCase();
+        const fileNameB = path.basename(b.file).toLowerCase();
+        return fileNameA.localeCompare(fileNameB);
+      });
+  };
+
+  const fastSearchResults = fastFileSearch(contextItems, query);
+
+  if (fileSearchOnly) {
+    return fastSearchResults;
+  }
+
+  if (fastSearchResults.length > 0) {
+    return fastSearchResults;
+  }
+
+  // If no file matches and it's not a file search only, proceed with AI-based search
   const SearchSchema = z.object({
     files: z.array(z.string()),
   });

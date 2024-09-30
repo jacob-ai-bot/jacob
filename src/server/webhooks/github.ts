@@ -32,6 +32,7 @@ ghApp.webhooks.onError(errorHandler);
 ghApp.webhooks.on("issues.opened", async (event) => {
   const { payload } = event;
   const { repository, installation } = payload;
+
   // Only add a new issue to the queue if the issue body contains the @jacob-ai-bot mention
   console.log(
     `[${repository.full_name}] Received issue #${payload.issue.number} opened event`,

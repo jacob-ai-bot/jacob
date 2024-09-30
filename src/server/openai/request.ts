@@ -29,7 +29,6 @@ const CONTEXT_WINDOW = {
   "gpt-4o-64k-output-alpha": 128000,
   "gpt-4o-2024-08-06": 128000,
   "gemini-1.5-pro-latest": 2097152,
-  "gemini-1.5-pro-exp-0801": 2097152,
   "gemini-1.5-flash-latest": 2097152,
   "claude-3-opus-20240229": 200000,
   "claude-3-haiku-20240307": 200000,
@@ -45,7 +44,6 @@ const CONTEXT_WINDOW = {
   "o1-mini-2024-09-12": 128000,
 };
 
-// Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
 export const MAX_OUTPUT = {
   "gpt-4-turbo-2024-04-09": 4096,
   "gpt-4-0125-preview": 4096,
@@ -54,11 +52,10 @@ export const MAX_OUTPUT = {
   "gpt-4o-64k-output-alpha": 64000,
   "gpt-4o-2024-08-06": 16384,
   "gemini-1.5-pro-latest": 8192,
-  "gemini-1.5-pro-exp-0801": 8192,
   "gemini-1.5-flash-latest": 8192,
   "claude-3-opus-20240229": 4096,
   "claude-3-haiku-20240307": 4096,
-  "claude-3-5-sonnet-20240620": 4096,
+  "claude-3-5-sonnet-20240620": 8192,
   "llama-3.1-sonar-large-128k-online": 4096,
   "llama-3.1-sonar-small-128k-online": 4096,
   "llama3-70b-8192": 4096,
@@ -79,7 +76,6 @@ const INPUT_TOKEN_COSTS = {
   "gpt-4o-64k-output-alpha": 10 / ONE_MILLION,
   "gpt-4o-2024-08-06": 2.5 / ONE_MILLION,
   "gemini-1.5-pro-latest": 3.5 / ONE_MILLION,
-  "gemini-1.5-pro-exp-0801": 3.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
   "claude-3-opus-20240229": 15 / ONE_MILLION,
   "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
@@ -102,7 +98,6 @@ const OUTPUT_TOKEN_COSTS = {
   "gpt-4o-64k-output-alpha": 30 / ONE_MILLION,
   "gpt-4o-2024-08-06": 10 / ONE_MILLION,
   "gemini-1.5-pro-latest": 10.5 / ONE_MILLION,
-  "gemini-1.5-pro-exp-0801": 10.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
   "claude-3-opus-20240229": 75 / ONE_MILLION,
   "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
@@ -125,7 +120,6 @@ const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4o-64k-output-alpha": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4o-2024-08-06": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gemini-1.5-pro-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
-  "gemini-1.5-pro-exp-0801": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "claude-3-opus-20240229": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-haiku-20240307": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
@@ -183,7 +177,7 @@ export const sendGptRequest = async (
     // Check if the prompt fits within the context window
     if (!isPromptWithinContextWindow(userPrompt, systemPrompt, model)) {
       // If it doesn't fit, try with the largest model
-      const largestModel: Model = "gemini-1.5-pro-exp-0801";
+      const largestModel: Model = "gemini-1.5-pro-latest";
       if (isPromptWithinContextWindow(userPrompt, systemPrompt, largestModel)) {
         console.log(
           `Prompt too large for ${model}. Switching to ${largestModel}.`,

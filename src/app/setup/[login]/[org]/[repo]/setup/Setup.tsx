@@ -422,6 +422,12 @@ const Setup: React.FC<SetupProps> = ({
                   Please update the configuration or fix the code and push the
                   changes to the main branch, then try again.
                 </p>
+                <a
+                  className="text-xs text-blueGray-500"
+                  href={`/dashboard/${org}/${repo}`}
+                >
+                  Skip this for now
+                </a>
               </div>
             )}
           </div>

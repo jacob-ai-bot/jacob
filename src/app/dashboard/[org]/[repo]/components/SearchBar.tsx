@@ -11,13 +11,13 @@ interface SearchBarProps {
   codebaseContext: ContextItem[];
 
   onSelectResult: (filePath: string) => void;
-  isDetailsExpanded: boolean;
+  isDetailsExpanded?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
   codebaseContext,
   onSelectResult,
-  isDetailsExpanded,
+  isDetailsExpanded = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -44,8 +44,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const handleSelectResult = (filePath: string) => {
     onSelectResult(filePath);
-    setSearchResults([]);
-    setSearchTerm("");
+    // setSearchResults([]);
+    // setSearchTerm("");
     setIsExpanded(false);
   };
 
@@ -68,7 +68,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <div
-      className={`absolute  right-0 ${searchResults?.length ? "-top-6 rounded-t-md bg-white p-2 shadow-sm" : "-top-4"}`}
+      className={`absolute right-0 ${searchResults?.length && isExpanded ? "-top-6 rounded-t-md bg-white p-2 shadow-sm" : "-top-4"}`}
     >
       <form onSubmit={handleSubmit} className="flex items-center">
         <motion.input
@@ -102,8 +102,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
           )}
         </motion.button>
       </form>
-      {searchResults.length > 0 && (
-        <div className="absolute right-0 z-10 mt-1">
+      {searchResults.length > 0 && isExpanded && (
+        <div className="absolute right-0 z-10 mt-1 w-full">
           <SearchResults
             results={searchResults}
             onSelect={handleSelectResult}
