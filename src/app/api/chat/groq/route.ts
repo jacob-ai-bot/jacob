@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
     const groq = createOpenAI({
       baseURL: "https://api.groq.com/openai/v1",
-      apiKey: process.env.GROQ_API_KEY,
+      apiKey: process.env.GROQ_API_KEY ?? "",
     });
 
     // Initialize the stream using @ai-sdk/anthropic
