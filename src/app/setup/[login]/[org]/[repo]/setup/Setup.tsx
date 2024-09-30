@@ -78,6 +78,7 @@ const InputGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 import { useEffect, useRef } from "react";
+import { setHasStartedCodebaseGenerationCookie } from "~/app/actions";
 
 const Setup: React.FC<SetupProps> = ({
   org,
@@ -100,6 +101,8 @@ const Setup: React.FC<SetupProps> = ({
     "Installing Dependencies...",
     "Building...",
     "Validating Settings...",
+    "Reviewing Build Status...",
+    "Creating Project...",
   ];
   const stepIndexRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -116,12 +119,20 @@ const Setup: React.FC<SetupProps> = ({
   );
 
   useEffect(() => {
+    void setHasStartedCodebaseGenerationCookie(org, repo);
+  }, [org, repo]);
+
+  useEffect(() => {
     if (isLoading) {
+      const maxTimeout = 20000;
+      const minTimeout = 10000;
+      const timeout =
+        Math.floor(Math.random() * minTimeout) + (maxTimeout - minTimeout);
       intervalRef.current = setInterval(() => {
         stepIndexRef.current =
           (stepIndexRef.current + 1) % (loadingSteps.length - 1);
         setLoadingMessage(loadingSteps[stepIndexRef.current] ?? "");
-      }, 8000);
+      }, timeout);
 
       // Set a timeout to switch to the final message after cycling through the others
       setTimeout(
@@ -129,7 +140,7 @@ const Setup: React.FC<SetupProps> = ({
           if (intervalRef.current) clearInterval(intervalRef.current);
           setLoadingMessage(loadingSteps[loadingSteps.length - 1] ?? "");
         },
-        5000 * (loadingSteps.length - 1),
+        maxTimeout * (loadingSteps.length - 1),
       );
     }
 
@@ -162,7 +173,7 @@ const Setup: React.FC<SetupProps> = ({
         console.log("result.data", result.data);
         setErrorMessage(result.data);
       } else {
-        router.push(`/dashboard/${org}/${repo}/otto`);
+        router.push(`/dashboard/${org}/${repo}`);
       }
     } catch (error) {
       setErrorMessage("An error occurred while validating settings.");
@@ -304,14 +315,14 @@ const Setup: React.FC<SetupProps> = ({
                 placeholder="npm run build"
                 tooltip="Command used to build the project"
               />
-              <FormField
+              {/* <FormField
                 label="Test Command"
                 name="testCommand"
                 value={settings.testCommand}
                 onChange={handleChange}
                 placeholder="npm run test"
                 tooltip="Command used to run tests"
-              />
+              /> */}
             </>,
           )}
 
@@ -411,6 +422,12 @@ const Setup: React.FC<SetupProps> = ({
                   Please update the configuration or fix the code and push the
                   changes to the main branch, then try again.
                 </p>
+                <a
+                  className="text-xs text-blueGray-500"
+                  href={`/dashboard/${org}/${repo}`}
+                >
+                  Skip this for now
+                </a>
               </div>
             )}
           </div>

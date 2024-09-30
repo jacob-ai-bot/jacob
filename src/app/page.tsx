@@ -6,9 +6,19 @@ import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { getServerAuthSession } from "~/server/auth";
 import { SignInButton } from "~/app/_components/SignInButton";
 import { SignOutButton } from "~/app/_components/SignOutButton";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
   const session = await getServerAuthSession();
+
+  const cookieStore = cookies();
+  const lastUsedRepo = cookieStore.get("lastUsedRepo");
+
+  // Redirect to the last used repo if available
+  if (session?.user?.login && lastUsedRepo?.value) {
+    redirect(`/dashboard/${lastUsedRepo.value}`);
+  }
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-aurora-50 to-blossom-50 p-4">
@@ -72,6 +82,7 @@ export default async function Home() {
                     Logged in as{" "}
                     <span className="font-semibold">{session.user?.name}</span>
                   </p>
+
                   <SignOutButton />
                 </>
               ) : (

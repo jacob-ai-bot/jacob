@@ -1,13 +1,69 @@
 import { type Config } from "tailwindcss";
-import { fontFamily } from "tailwindcss/defaultTheme";
-const usedColors = ["green", "red", "purple"];
+import flattenColorPalette from "tailwindcss/lib/util/flattenColorPalette";
+
+const safelist = [
+  "bg-green-700",
+  "bg-red-700",
+  "bg-purple-700",
+  "bg-github-green",
+]; // colors that dynamically generated, need to be whitelisted
 
 export default {
   content: ["./src/**/*.tsx"],
+  darkMode: "class",
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       animation: {
         "bounce-fast": "bounce 0.5s infinite",
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        meteor: "meteor 5s linear infinite",
+        "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
+        shimmer: "shimmer 4s infinite",
+        backgroundPositionSpin:
+          "background-position-spin 3000ms infinite alternate",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        meteor: {
+          "0%": { transform: "rotate(215deg) translateX(0)", opacity: "1" },
+          "70%": { opacity: "1" },
+          "100%": {
+            transform: "rotate(215deg) translateX(-500px)",
+            opacity: "0",
+          },
+        },
+        "border-beam": {
+          "100%": {
+            "offset-distance": "100%",
+          },
+        },
+        "background-position-spin": {
+          "0%": { backgroundPosition: "top center" },
+          "100%": { backgroundPosition: "bottom center" },
+        },
+        shimmer: {
+          "0%, 90%, 100%": {
+            "background-position": "calc(-100% - var(--shimmer-width)) 0",
+          },
+          "30%, 60%": {
+            "background-position": "calc(100% + var(--shimmer-width)) 0",
+          },
+        },
       },
       colors: {
         beige: "#f8e8e0",
@@ -15,6 +71,12 @@ export default {
         "dark-blue": "#1D265D",
         "light-blue": "#00ACFF",
         "navy-blue": "#0044FF",
+        "github-blue": "#4078c0",
+        "github-green": "#1F883D",
+        "github-light-green": "#2dba4e",
+        "github-red": "#bd2c00",
+        "github-orange": "#c9510c",
+        "github-purple": "#6e5494",
         pink: "#ff7bff",
         orange: "#FFBA00",
         "base-black": "#191818",
@@ -172,6 +234,24 @@ export default {
       },
     },
   },
-  plugins: [require("@tailwindcss/forms"), require("@tailwindcss/typography")],
-  safelist: usedColors.map((c) => `bg-${c}-700`),
+  plugins: [
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/typography"),
+    require("tailwindcss-animate"),
+    addVariablesForColors,
+  ],
+  safelist,
 } satisfies Config;
+
+// This plugin adds each Tailwind color as a global CSS variable, e.g. var(--gray-200).
+function addVariablesForColors({ addBase, theme }: any) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  const allColors = flattenColorPalette(theme("colors"));
+  const newVars = Object.fromEntries(
+    Object.entries(allColors).map(([key, val]) => [`--${key}`, val]),
+  );
+
+  addBase({
+    ":root": newVars,
+  });
+}

@@ -4,30 +4,22 @@ import { TodoStatus } from "~/server/db/enums";
 import { researchIssue } from "~/server/agent/research";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
-import { DEVELOPERS } from "~/data/developers";
-import { Mode } from "~/types";
+import { cloneRepo } from "~/server/git/clone";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
     .input(
       z.object({
         projectId: z.number(),
-        developerId: z.string(),
+        developerId: z.string().optional(), // deprecated
       }),
     )
-    .query(async ({ input: { projectId, developerId } }): Promise<Todo[]> => {
-      const mode = DEVELOPERS.find((dev) => dev.id === developerId)?.mode;
-      if (mode === Mode.EXISTING_ISSUES) {
-        const todos = await db.todos
-          .where({ projectId, isArchived: false })
-          .order({ position: "ASC" })
-          .all();
-        return todos;
-      } else {
-        return [];
-      }
+    .query(async ({ input: { projectId } }): Promise<Todo[]> => {
+      return await db.todos
+        .where({ projectId, isArchived: false })
+        .order({ position: "DESC" })
+        .all();
     }),
-
   getById: protectedProcedure
     .input(
       z.object({
@@ -59,7 +51,7 @@ export const todoRouter = createTRPCRouter({
           .where({ issueId });
         if (!existingResearch) {
           const createdTodo = await db.todos.selectAll().insert(input);
-          await researchIssue(description, "", createdTodo.id, issueId, "", 3);
+          await researchIssue(description, createdTodo.id, issueId, "", 3);
           return createdTodo;
         }
       }
@@ -130,4 +122,53 @@ export const todoRouter = createTRPCRouter({
       await db.todos.find(id).delete();
       return { id };
     }),
+
+  researchIssue: protectedProcedure
+    .input(
+      z.object({
+        issueId: z.number(),
+        todoId: z.number(),
+        githubIssue: z.string(),
+        repo: z.string(),
+        org: z.string(),
+      }),
+    )
+    .mutation(
+      async ({
+        input: { issueId, todoId, githubIssue, repo, org },
+        ctx: {
+          session: { accessToken },
+        },
+      }): Promise<void> => {
+        if (issueId) {
+          const [existingResearch] = await db.research
+            .selectAll()
+            .where({ issueId });
+          if (!existingResearch) {
+            const createdTodo = await db.todos.findOptional(todoId);
+            if (createdTodo) {
+              let cleanupClone: (() => Promise<void>) | undefined;
+              try {
+                const { path: rootPath, cleanup } = await cloneRepo({
+                  repoName: `${org}/${repo}`,
+                  token: accessToken,
+                });
+                cleanupClone = cleanup;
+                await researchIssue(
+                  githubIssue,
+                  createdTodo.id,
+                  issueId,
+                  rootPath,
+                  3,
+                );
+              } catch (error) {
+                console.error(error);
+              } finally {
+                await cleanupClone?.();
+              }
+            }
+          }
+        }
+      },
+    ),
 });

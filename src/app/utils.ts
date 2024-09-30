@@ -1,10 +1,19 @@
 import { PLANS } from "~/data/plans";
 import { type Plan } from "~/server/api/routers/events";
-import { TaskSubType, TaskType } from "~/server/db/enums";
+import {
+  TaskStatus,
+  TaskSubType,
+  TaskType,
+  TodoStatus,
+} from "~/server/db/enums";
+import { type StandardizedPath } from "~/server/utils/files";
 import { type Message, Role, SpecialPhrases, SidebarIcon } from "~/types";
+import pathBrowserify from "path-browserify";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export const statusStyles = {
-  open: "bg-green-700 text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
+  open: "bg-github-green text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
   closed:
     "bg-red-700 text-white px-2 py-1 rounded-full text-xs whitespace-nowrap ml-2",
   merged:
@@ -76,8 +85,6 @@ export const capitalize = (s: string): string => {
 
 export const getSidebarIconForType = (type: TaskType) => {
   switch (type) {
-    case TaskType.task:
-      return SidebarIcon.Plan;
     case TaskType.command:
       return SidebarIcon.Terminal;
     case TaskType.issue:
@@ -90,7 +97,7 @@ export const getSidebarIconForType = (type: TaskType) => {
       return SidebarIcon.PullRequests;
     default:
       console.error("Unknown task type: ", type);
-      return SidebarIcon.Plan;
+      return SidebarIcon.Code;
   }
 };
 
@@ -113,3 +120,91 @@ export const getPlanForTaskSubType = (taskSubType: TaskSubType) => {
   }
   return plan;
 };
+
+function isValidPath(path: string): boolean {
+  return /^\/[a-zA-Z0-9_\-./[\]...]+$/.test(path);
+}
+
+export function standardizePath(filePath: string): StandardizedPath {
+  if (!filePath) {
+    return "" as StandardizedPath;
+  }
+  let cleanPath = filePath.replace(/^\.\//, "");
+
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+
+  cleanPath = pathBrowserify.posix.normalize(cleanPath);
+  cleanPath = cleanPath.replace(/\\/g, "/");
+
+  if (!isValidPath(cleanPath)) {
+    console.log("Invalid file path:", filePath);
+    console.log("Standardized path:", cleanPath);
+    return "" as StandardizedPath;
+  }
+
+  return cleanPath as StandardizedPath;
+}
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function getTodoLabel(status: TodoStatus) {
+  switch (status) {
+    case TodoStatus.TODO:
+      return "Todo";
+    case TodoStatus.IN_PROGRESS:
+      return "In Progress";
+    case TodoStatus.DONE:
+      return "Done";
+    case TodoStatus.ERROR:
+      return "Error";
+  }
+}
+
+export function getTaskStatusLabel(status: TaskStatus) {
+  switch (status) {
+    case TaskStatus.TODO:
+      return "Todo";
+    case TaskStatus.IN_PROGRESS:
+      return "In Progress";
+    case TaskStatus.DONE:
+      return "Done";
+    case TaskStatus.ERROR:
+      return "Error";
+    case TaskStatus.CLOSED:
+      return "Closed";
+  }
+}
+
+export function getLanguageFromFile(fileName: string): string {
+  if (!fileName) return "";
+  const extension = fileName.split(".").pop();
+  let language = "";
+  if (extension === "ts" || extension === "tsx") {
+    language = "typescript";
+  } else if (extension === "js" || extension === "jsx") {
+    language = "javascript";
+  } else if (extension === "py") {
+    language = "python";
+  } else if (extension === "md" || extension === "mdx") {
+    language = "markdown";
+  } else if (extension === "json") {
+    language = "json";
+  } else if (extension === "txt") {
+    language = "text";
+  } else if (extension === "java") {
+    language = "java";
+  } else if (extension === "go") {
+    language = "go";
+  } else if (extension === "rs") {
+    language = "rust";
+  } else if (extension === "sh") {
+    language = "bash";
+  } else if (extension === "yml" || extension === "yaml") {
+    language = "yaml";
+  }
+  return language;
+}

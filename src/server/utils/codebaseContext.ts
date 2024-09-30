@@ -3,7 +3,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
-import { type Model, sendGptRequestWithSchema } from "~/server/openai/request";
+import {
+  type Model,
+  sendGptRequest,
+  sendGptRequestWithSchema,
+} from "~/server/openai/request";
 import { parseTemplate } from "../utils";
 import { traverseCodebase } from "../analyze/traverse";
 import Parser from "web-tree-sitter";
@@ -35,6 +39,7 @@ export const ContextItemSchema = z.object({
   diagram: z.string(),
   overview: z.string(),
   importedFiles: z.array(z.custom<StandardizedPath>()),
+  taxonomy: z.string().optional(),
   exports: z.array(
     z.object({
       type: z.string().nullable().optional(),
@@ -146,10 +151,13 @@ export async function getOrCreateCodebaseContext(
   // Second pass: Process remaining files in bulk
   if (filesToProcess.length > 0) {
     console.log("processing files for context", filesToProcess);
+
+    const taxonomy = await generateTaxonomy(rootPath);
     const newContextItems = await getCodebaseContext(
       rootPath,
       filesToProcess,
       model,
+      taxonomy,
     );
 
     for (let i = 0; i < newContextItems.length; i++) {
@@ -208,6 +216,7 @@ export const getCodebaseContext = async function (
   rootPath: string,
   files: StandardizedPath[] = [],
   model: Model = "gpt-4o-mini-2024-07-18", // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
+  taxonomy: string,
 ): Promise<ContextItem[]> {
   if (!rootPath) {
     throw new Error("No rootPath provided");
@@ -238,6 +247,7 @@ export const getCodebaseContext = async function (
       rootPath,
       model,
       allFiles,
+      taxonomy,
     );
     contextSections = [...contextSections, ...newContextSections];
     analyzedFiles = new Set([...analyzedFiles, ...relevantFiles]);
@@ -282,10 +292,11 @@ async function analyzeFiles(
   rootPath: string,
   model: Model,
   allFiles: StandardizedPath[],
+  taxonomy: string,
 ): Promise<ContextItem[]> {
   const codeStructure = await analyzeCodeStructure(rootPath, files);
   const contextSections = await createContextSections(codeStructure);
-  await enhanceWithLLM(contextSections, model, allFiles);
+  await enhanceWithLLM(contextSections, model, allFiles, taxonomy);
   return contextSections;
 }
 
@@ -508,6 +519,7 @@ async function enhanceWithLLM(
   sections: ContextItem[],
   model: Model,
   allFiles: StandardizedPath[],
+  taxonomy: string,
 ): Promise<void> {
   const maxConcurrentRequests = 20;
   for (let i = 0; i < sections.length; i += maxConcurrentRequests) {
@@ -518,6 +530,7 @@ async function enhanceWithLLM(
           section,
           model,
           allFiles,
+          taxonomy,
         );
         section.text = enhancedContent.description;
         section.overview = enhancedContent.overview;
@@ -527,6 +540,7 @@ async function enhanceWithLLM(
         );
         section.importedFiles = enhancedContent.importedFiles;
         section.diagram = enhancedContent.diagram;
+        section.taxonomy = standardizePath(enhancedContent.taxonomy);
       } catch (error) {
         console.error(`Error enhancing section ${section.file}:`, error);
       }
@@ -541,6 +555,7 @@ const EnhancedDescriptionSchema = z.object({
   overview: z.string(),
   importedFiles: z.array(z.custom<StandardizedPath>()),
   diagram: z.string(),
+  taxonomy: z.string(),
 });
 
 type EnhancedDescription = z.infer<typeof EnhancedDescriptionSchema>;
@@ -549,15 +564,18 @@ async function generateDescription(
   section: ContextItem,
   model: Model,
   allFiles: StandardizedPath[],
+  taxonomy: string,
 ): Promise<EnhancedDescription> {
   const templateParams = {
     section: JSON.stringify(section, null, 2),
     allFiles: allFiles.join("\n"),
+    taxonomy: taxonomy,
     enhancedDescriptionSchema: `const EnhancedDescriptionSchema = z.object({
   description: z.string(),
   overview: z.string(),
   importedFiles: z.array(z.string()),
   diagram: z.string(),
+  taxonomy: z.string(),
 })`,
   };
 
@@ -593,6 +611,7 @@ async function generateDescription(
       overview: "Error generating overview",
       importedFiles: [],
       diagram: "Error generating diagram",
+      taxonomy: "Error generating taxonomy",
     };
   }
 }
@@ -654,4 +673,71 @@ function filterImportedContext(
   }
 
   return relevantImports;
+}
+
+export async function generateTaxonomy(rootPath: string): Promise<string> {
+  const allFiles = traverseCodebase(rootPath);
+  const fileList = allFiles.join("\n");
+  const templateParams = {
+    files: fileList,
+  };
+
+  const systemPrompt = parseTemplate(
+    "codebase_context",
+    "taxonomy",
+    "system",
+    templateParams,
+  );
+  const userPrompt = parseTemplate(
+    "codebase_context",
+    "taxonomy",
+    "user",
+    templateParams,
+  );
+
+  const taxonomy = await sendGptRequest(
+    userPrompt,
+    systemPrompt,
+    0.3,
+    undefined,
+    2,
+    60000,
+  );
+
+  return taxonomy ?? "";
+}
+
+export async function removeUnusedContextFiles(
+  projectId: number,
+  rootPath: string,
+): Promise<void> {
+  // Get all files in the codebase
+  const allFiles = traverseCodebase(rootPath).map(standardizePath);
+  const allFilesSet = new Set(allFiles);
+
+  // Fetch all context items for the given projectId
+  const allContextItems = await db.codebaseContext
+    .select("id", "filePath")
+    .where({
+      projectId,
+    });
+  if (!allContextItems?.length) {
+    return;
+  }
+
+  // Identify and delete context items for files that no longer exist
+  const deleteTasks = allContextItems.map(async (item) => {
+    const standardizedFilePath = standardizePath(item.filePath);
+    if (!allFilesSet.has(standardizedFilePath)) {
+      await db.codebaseContext.find(item.id).delete();
+      console.log(`Deleted context for removed file: ${standardizedFilePath}`);
+    }
+  });
+
+  // Wait for all delete operations to complete
+  await Promise.all(deleteTasks);
+
+  console.log(
+    `Finished removing unused context files for project ${projectId}`,
+  );
 }

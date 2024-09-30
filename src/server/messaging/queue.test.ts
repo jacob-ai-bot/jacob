@@ -329,9 +329,9 @@ describe("onGitHubEvent", () => {
       skipBuild: false,
     });
     expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
-    expect(mockedAgentEditFiles.editFiles).toHaveBeenCalledTimes(1);
+    expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
 
-    expect(mockedEditFiles.editFiles).not.toHaveBeenCalled();
+    expect(mockedAgentEditFiles.editFiles).not.toHaveBeenCalled();
   });
 
   test("PR comment created - code review command", async () => {
@@ -384,9 +384,9 @@ describe("onGitHubEvent", () => {
 
     expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
     expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
-    expect(mockedAgentFixError.fixError).toHaveBeenCalledTimes(1);
+    expect(mockedFixError.fixError).toHaveBeenCalledTimes(1);
 
-    expect(mockedFixError.fixError).not.toHaveBeenCalled();
+    expect(mockedAgentFixError.fixError).not.toHaveBeenCalled();
   });
 
   test("PR review submitted", async () => {

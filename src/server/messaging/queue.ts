@@ -12,9 +12,9 @@ import { cloneRepo } from "../git/clone";
 import { runBuildCheck } from "../build/node/check";
 import { getSourceMap } from "../analyze/sourceMap";
 import { createNewFile } from "../code/newFile";
-import { editFiles as agentEditFiles } from "../code/agentEditFiles";
+// import { editFiles as agentEditFiles } from "../code/agentEditFiles";
 import { editFiles } from "../code/editFiles";
-import { fixError as agentFixError } from "../code/agentFixError";
+// import { fixError as agentFixError } from "../code/agentFixError";
 import { fixError } from "../code/fixError";
 import { getPR } from "../github/pr";
 import { addCommentToIssue, getIssue } from "../github/issue";
@@ -45,7 +45,10 @@ import { posthogClient } from "../analytics/posthog";
 import { emitTaskEvent } from "../utils/events";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
 import { traverseCodebase } from "../analyze/traverse";
-import { getOrCreateCodebaseContext } from "../utils/codebaseContext";
+import {
+  getOrCreateCodebaseContext,
+  removeUnusedContextFiles,
+} from "../utils/codebaseContext";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -138,6 +141,7 @@ async function handleWebEvent(event: WebEvent) {
         rootPath,
         allFiles ?? [],
       );
+      await removeUnusedContextFiles(project.id, rootPath);
       return contextItems;
     } finally {
       // Ensure cleanup is called after processing
@@ -583,12 +587,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             },
           });
         } else {
-          const editFunction = (process.env.AGENT_REPOS ?? "")
-            .split(",")
-            .includes(repository.full_name)
-            ? agentEditFiles
-            : editFiles;
-          await editFunction({
+          // const editFunction = (process.env.AGENT_REPOS ?? "")
+          //   .split(",")
+          //   .includes(repository.full_name)
+          //   ? agentEditFiles
+          //   : editFiles;
+          // For now use the non-agent version
+          await editFiles({
             ...baseEventData,
             repository,
             token: installationAuthentication.token,
@@ -700,12 +705,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               );
               break;
             }
-            const fixFunction = (process.env.AGENT_REPOS ?? "")
-              .split(",")
-              .includes(repository.full_name)
-              ? agentFixError
-              : fixError;
-            await fixFunction({
+            // const fixFunction = (process.env.AGENT_REPOS ?? "")
+            //   .split(",")
+            //   .includes(repository.full_name)
+            //   ? agentFixError
+            //   : fixError;
+            // For now use the non-agent version
+            await fixError({
               ...baseEventData,
               repository,
               token: installationAuthentication.token,

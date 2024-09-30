@@ -25,7 +25,7 @@ export type PullRequest =
 export type RetrievedIssue =
   Endpoints["GET /repos/{owner}/{repo}/issues/{issue_number}"]["response"]["data"];
 
-export const MAX_ATTEMPTS_TO_FIX_BUILD_ERROR = 8;
+export const MAX_ATTEMPTS_TO_FIX_BUILD_ERROR = 5;
 
 export interface CheckAndCommitOptions extends BaseEventData {
   repository: Repository;

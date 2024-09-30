@@ -9,11 +9,17 @@ export type ErrorInfo = {
 };
 
 const ErrorInfoSchema = z.object({
-  filePath: z.string().nullable(),
-  lineNumber: z.number().nullable(),
-  errorType: z.string().nullable(),
-  errorMessage: z.string().nullable(),
+  errors: z.array(
+    z.object({
+      filePath: z.string().nullable(),
+      lineNumber: z.number().nullable(),
+      errorType: z.string().nullable(),
+      errorMessage: z.string().nullable(),
+    }),
+  ),
 });
+
+export type ParsedErrors = z.infer<typeof ErrorInfoSchema>;
 
 /**
  * Parses the build output to extract structured error information.
@@ -40,20 +46,25 @@ export async function parseBuildErrors(
     Build Output:
     ${buildOutput}
 
-    Respond with a JSON array of objects, each containing the above fields.
-    Your response MUST be an array of objects that adhere to the following zod schema:
+    Respond with a JSON array of error objects, each containing the above fields.
+    Your response MUST be a JSON object of errors that adhere to the following zod schema:
     {
-      filePath: z.ZodString;
-      lineNumber: z.ZodNumber;
-      errorType: z.ZodString;
-      errorMessage: z.ZodString;
+     errors: z.array(
+      z.object({
+        filePath: z.string(),
+        lineNumber: z.number(),
+        errorType: z.string(),
+        errorMessage: z.string(),
+      }),
+     )
     }
     
     Here is an example response:
-    [
-      {
-        "filePath": "src/index.ts",
-        "lineNumber": 10,
+    {
+      "errors": [
+        {
+          "filePath": "src/index.ts",
+          "lineNumber": 10,
         "errorType": "SyntaxError",
         "errorMessage": "Unexpected token 'const'"
       },
@@ -64,6 +75,7 @@ export async function parseBuildErrors(
         "errorMessage": "Cannot read property 'map' of undefined"
       }
     ]
+    }
 
     If you can't determine a value, use an empty string for string fields or 0 for lineNumber.
   `;
@@ -77,10 +89,11 @@ export async function parseBuildErrors(
       undefined,
       5,
       "gpt-4-turbo-2024-04-09",
-    )) as ErrorInfo[];
+    )) as ParsedErrors;
+    const errors = parsedErrors.errors;
 
-    console.log("Parsed errors:", parsedErrors);
-    return parsedErrors;
+    console.log("Parsed errors:", errors);
+    return errors as ErrorInfo[];
   } catch (error) {
     console.error("Error parsing build errors:", error);
     return [];

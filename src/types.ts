@@ -1,5 +1,6 @@
 export enum Role {
   ASSISTANT = "assistant",
+  SYSTEM = "system",
   USER = "user",
 }
 
@@ -38,7 +39,6 @@ export enum SidebarIcon {
   Code = "Code",
   Design = "Design",
   Terminal = "Terminal",
-  Plan = "Plan",
   Prompts = "Prompts",
   Issues = "Issues",
   PullRequests = "Pull Requests",
