@@ -51,38 +51,6 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    // TODO: add this back in
-    // create a new user message with all of the context for the filesToInclude
-    // const filesToInclude = filesToUse.map((f: string) =>
-    //   codebaseContext.find((c) => c.filePath === f),
-    // );
-    // const filesToIncludeContent = filesToInclude
-    //   .map((f: any) => JSON.stringify(f?.context))
-    //   .join("\n\n");
-    // if (filesToIncludeContent.length > 0) {
-    //   content.push({
-    //     type: "text",
-    //     text: `Here is more detailed information about the most important files that are related to the user's query: ${filesToIncludeContent}`,
-    //     experimental_providerMetadata: {
-    //       anthropic: { cacheControl: { type: "ephemeral" } },
-    //     },
-    //   });
-    // }
-
-    // const prompts: {
-    //   type: "text";
-    //   text: string;
-    // }[] = [];
-    // if (codeContent) {
-    //   codeContent.map((c) => {
-    //     const codebasePrompt = getCodebasePrompt(`${c.path}: ${c.content}`);
-    //     prompts.push({
-    //       type: "text",
-    //       text: codebasePrompt,
-    //     });
-    //   });
-    // }
-
     // create a new user message with the full codeFiles content
 
     if (codeContent && codeContent.length > 0) {
