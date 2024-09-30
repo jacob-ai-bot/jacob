@@ -1,6 +1,7 @@
+// components/ChatPage.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Chat } from "./components/Chat";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
@@ -19,6 +20,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ org, repo }) => {
     org,
     repo,
   });
+
+  const memoizedContextItems = useMemo(
+    () => contextItems ?? [],
+    [contextItems],
+  );
+
   if (!project || !contextItems) {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -30,7 +37,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ org, repo }) => {
     <div className="h-full w-full text-left">
       <Chat
         project={project}
-        contextItems={contextItems}
+        contextItems={memoizedContextItems}
         org={org}
         repo={repo}
       />

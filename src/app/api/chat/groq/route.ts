@@ -1,7 +1,7 @@
 import { Role, type Message } from "~/types";
 import { type NextRequest } from "next/server";
-import { createOpenAI, openai } from "@ai-sdk/openai";
-import { convertToCoreMessages, streamText, tool } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { convertToCoreMessages, streamText } from "ai";
 import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/ModelSelector";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { getCodebasePrompt, systemPrompt } from "../prompts";

@@ -45,8 +45,43 @@ export function Artifact({
     }
   }, [filePath, codeFiles]);
 
-  const handleSave = () => {
-    toast.info("Save functionality coming soon!");
+  const handleSave = async () => {
+    try {
+      // Check if the File System Access API is supported
+      if ("showSaveFilePicker" in window) {
+        // @ts-ignore
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [
+            {
+              description: "Text Files",
+              accept: {
+                "text/plain": [".txt", ".js", ".ts", ".jsx", ".tsx", ".md"],
+              },
+            },
+          ],
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        toast.success("File saved successfully!");
+      } else {
+        // Fallback for browsers that don't support the File System Access API
+        const blob = new Blob([content], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success("File download started!");
+      }
+    } catch (error) {
+      console.error("Error saving file:", error);
+      toast.error("Failed to save file. Please try again.");
+    }
   };
 
   const showDiffTab = originalContent !== null && originalContent.trim() !== "";

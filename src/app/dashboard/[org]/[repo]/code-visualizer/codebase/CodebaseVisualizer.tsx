@@ -6,7 +6,7 @@ import { Tree } from "./Tree";
 import CodebaseDetails from "./CodebaseDetails";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { type FileType } from "./types";
-import SearchBar from "./SearchBar";
+import SearchBar from "../../components/SearchBar";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];

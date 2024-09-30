@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import { SpeechToTextArea } from "../../components/SpeechToTextArea";
 import { type ChatModel, ChatModels, ModelSelector } from "./ModelSelector";
-import SearchBar from "../../code-visualizer/codebase/SearchBar";
+import SearchBar from "../../components/SearchBar";
 import { api } from "~/trpc/react";
 import { getLanguageFromFile } from "~/app/utils";
 
@@ -43,7 +43,7 @@ const STARTING_MESSAGE = {
     "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
 };
 
-export function Chat({ project, contextItems, org, repo }: ChatProps) {
+export function Chat({ contextItems, org, repo }: ChatProps) {
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
   const [artifactFileName, setArtifactFileName] = useState<string>("");
   const [artifactLanguage, setArtifactLanguage] = useState<string>("");
@@ -117,7 +117,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
       // when the model changes, move the messages from the previous model to the new model
       setSavedMessages(messages);
     }
-  }, [model]);
+  }, [model, messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

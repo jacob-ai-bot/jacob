@@ -103,7 +103,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </motion.button>
       </form>
       {searchResults.length > 0 && isExpanded && (
-        <div className="absolute right-0 z-10 mt-1">
+        <div className="absolute right-0 z-10 mt-1 w-full">
           <SearchResults
             results={searchResults}
             onSelect={handleSelectResult}

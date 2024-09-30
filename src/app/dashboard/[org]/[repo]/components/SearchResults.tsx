@@ -15,6 +15,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onSelect,
   onClose,
 }) => {
+  const handleOnClose = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onClose(e);
+  };
   return (
     <div className="my-1 w-full">
       {results.length > 0 ? (
@@ -25,8 +30,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           className="hide-scrollbar relative h-full overflow-hidden overflow-y-scroll rounded-b-md bg-white/90 shadow-sm backdrop-blur-sm dark:bg-gray-800"
         >
           <button
-            onClick={onClose}
-            className="absolute right-2 top-2 rounded-full bg-gray-200 px-2 text-gray-600 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
+            onClick={handleOnClose}
+            className="absolute right-2 top-2 z-20 rounded-full bg-gray-200 px-2 text-gray-600 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
           >
             <FontAwesomeIcon icon={faTimes} className="" />
           </button>
@@ -34,7 +39,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             {results.slice(0, 10).map((result, index) => (
               <motion.li
                 key={index}
-                className={`flex cursor-pointer flex-col p-3 pb-2 hover:bg-aurora-100/50 dark:hover:bg-gray-700
+                className={`flex w-full flex-1 cursor-pointer flex-col p-3 pb-2 hover:bg-aurora-100/50 dark:hover:bg-gray-700
                     ${index === 0 ? "rounded-t-md pt-5" : ""}
                     ${index === results.length - 1 ? "rounded-b-md" : ""}
                     ${index % 2 === 0 ? "bg-aurora-50/30" : ""}`}

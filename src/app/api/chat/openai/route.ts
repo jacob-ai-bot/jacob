@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
       maxTokens: 8000,
       experimental_toolCallStreaming: true,
       toolChoice: "auto" as any,
+      temperature,
     };
 
     const o1Options = {

@@ -62,7 +62,8 @@ export function SpeechToTextArea({
         mediaStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []); // Empty dependency array to run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startRecording = async () => {
     let stream = mediaStream;
@@ -209,7 +210,6 @@ export function SpeechToTextArea({
   const handleSubmit = async (transcription?: string) => {
     const messageToSubmit = transcription ?? value;
     if (messageToSubmit.trim()) {
-      await onSubmit(messageToSubmit);
       // Clear the text area
       onChange({
         target: { value: "" },
@@ -218,6 +218,7 @@ export function SpeechToTextArea({
         textareaRef.current.value = "";
       }
       adjustTextareaHeight();
+      await onSubmit(messageToSubmit);
     }
   };
 
@@ -241,7 +242,7 @@ export function SpeechToTextArea({
           waveformActive
             ? "border-aurora-500/50 bg-gradient-to-r from-aurora-500/30 via-aurora-50/30 to-aurora-500/30 text-transparent"
             : ""
-        } flex h-full w-full items-center rounded-2xl border border-aurora-100 bg-aurora-50/30 dark:border-sky-600/30 dark:bg-slate-700`}
+        } hide-scrollbar flex h-full w-full items-center overflow-hidden overflow-y-scroll rounded-2xl border border-aurora-100 bg-aurora-50/30 dark:border-sky-600/30 dark:bg-slate-700`}
         animate={{
           padding: waveformActive ? "1.5rem" : "0.375rem",
         }}
@@ -255,7 +256,7 @@ export function SpeechToTextArea({
               : "text-dark-blue dark:text-slate-100"
           } ${
             isLoading ? "opacity-50" : ""
-          } hide-scrollbar transition-height m-0 flex-1 resize-none border-0 bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0`}
+          } transition-height m-0 flex-1 resize-none  border-0 bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0`}
           value={value}
           onChange={handleTextareaChange}
           onKeyDown={(e) => {
