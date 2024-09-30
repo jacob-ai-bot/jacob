@@ -14,6 +14,7 @@ import { SpeechToTextArea } from "../../components/SpeechToTextArea";
 import { type ChatModel, ChatModels, ModelSelector } from "./ModelSelector";
 import SearchBar from "../../code-visualizer/codebase/SearchBar";
 import { api } from "~/trpc/react";
+import { getLanguageFromFile } from "~/app/utils";
 
 interface ChatProps {
   project: Project;
@@ -24,8 +25,23 @@ interface ChatProps {
 
 export interface CodeFile {
   path: string;
-  content: string;
+  content?: string;
 }
+
+type MessageRole =
+  | "system"
+  | "user"
+  | "assistant"
+  | "function"
+  | "data"
+  | "tool";
+
+const STARTING_MESSAGE = {
+  id: "1",
+  role: "system" as MessageRole,
+  content:
+    "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
+};
 
 export function Chat({ project, contextItems, org, repo }: ChatProps) {
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
@@ -38,9 +54,13 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
   const [artifactFilePath, setArtifactFilePath] = useState<string>("");
   const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
   const [showLoadingCard, setShowLoadingCard] = useState(false);
-  const [codeFiles, setCodeFiles] = useState<CodeFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [model, setModel] = useState<ChatModel>(ChatModels[0]!);
+  const [savedMessages, setSavedMessages] = useState<Message[]>([
+    STARTING_MESSAGE,
+  ]);
+  const [mounted, setMounted] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: codeContent, refetch: refetchCodeContent } =
     api.github.fetchFileContents.useQuery({
@@ -49,7 +69,6 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
       filePaths: selectedFiles,
     });
 
-  console.log("codeContent", codeContent);
   const { messages, input, handleInputChange, append, isLoading } = useChat({
     streamProtocol: model.modelName.startsWith("o1") ? "text" : "data",
     api: `/api/chat/${model.provider}`,
@@ -60,16 +79,10 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
       repo,
       codeContent,
     },
-    initialMessages: [
-      {
-        id: "1",
-        role: "system",
-        content:
-          "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
-      },
-    ],
+    initialMessages: savedMessages,
     onResponse: async () => {
       setHasStartedStreaming(true);
+      setIsCreatingArtifact(true);
     },
     onError: (error) => {
       console.error("Error in chat", error);
@@ -97,14 +110,14 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
     },
   });
 
-  const handleSubmit = async (message: string) => {
-    await append({ role: "user", content: message });
-  };
-
-  const [mounted, setMounted] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (model) {
+      // when the model changes, move the messages from the previous model to the new model
+      setSavedMessages(messages);
+    }
+  }, [model]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,37 +127,50 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
     if (isCreatingArtifact) {
       const timer = setTimeout(() => {
         setShowLoadingCard(true);
-      }, 3000);
+      }, 1000);
       return () => clearTimeout(timer);
     } else {
       setShowLoadingCard(false);
     }
   }, [isCreatingArtifact]);
 
+  useEffect(() => {
+    if (codeContent) {
+      setArtifactFilePath(codeContent[0]?.path ?? "");
+      setArtifactContent(codeContent[0]?.content ?? "");
+      const fileName = codeContent[0]?.path?.split("/").pop() ?? "";
+      const language = getLanguageFromFile(fileName);
+      setArtifactFileName(fileName);
+      setArtifactLanguage(language);
+    }
+  }, [codeContent]);
+
   const handleSearchResultSelect = (filePath: string) => {
-    setArtifactFilePath(filePath);
     setSelectedFiles([filePath]);
     void refetchCodeContent();
+  };
+
+  const handleSubmit = async (message: string) => {
+    await append({ role: "user", content: message });
   };
 
   if (!mounted) return null;
 
   return (
     <div className="flex h-full w-full flex-row space-x-4">
-      <SearchBar
-        codebaseContext={contextItems}
-        onSelectResult={handleSearchResultSelect}
-      />
       <div className="mx-auto flex max-w-5xl flex-1 flex-col overflow-clip rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
-        <div className="mb-1  w-[200px] self-end p-1 text-right dark:bg-gray-800">
-          <div className="relative mr-6 flex items-center justify-end">
-            <SearchBar
-              codebaseContext={contextItems}
-              onSelectResult={handleSearchResultSelect}
-            />
-          </div>{" "}
-          <ModelSelector selectedModel={model} onModelChange={setModel} />
-          {/* Add more sidebar components here if needed */}
+        <div className="mb-1 w-full self-end p-1 text-right dark:bg-gray-800">
+          <div className="relative flex items-center justify-end">
+            <div className="relative z-10 -mt-2 mr-6 text-left">
+              <SearchBar
+                codebaseContext={contextItems}
+                onSelectResult={handleSearchResultSelect}
+              />
+            </div>
+            <div className="z-0">
+              <ModelSelector selectedModel={model} onModelChange={setModel} />
+            </div>
+          </div>
         </div>
         <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
           {messages
@@ -208,7 +234,7 @@ export function Chat({ project, contextItems, org, repo }: ChatProps) {
           content={artifactContent}
           fileName={artifactFileName}
           language={artifactLanguage}
-          codeFiles={codeFiles}
+          codeFiles={codeContent}
           filePath={artifactFilePath}
         />
       )}

@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       maxTokens: 8000,
       experimental_toolCallStreaming: true,
     });
-
+    console.log("result", result);
     return result.toDataStreamResponse();
   } catch (error) {
     console.error("Error with chat endpoint", error);

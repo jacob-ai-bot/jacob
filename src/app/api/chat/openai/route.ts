@@ -1,16 +1,16 @@
 import { Role, type Message } from "~/types";
 import { type NextRequest } from "next/server";
 import { openai } from "@ai-sdk/openai";
-import {
-  convertToCoreMessages,
-  type ToolChoice,
-  streamText,
-  generateText,
-} from "ai";
+import { convertToCoreMessages, streamText, generateText } from "ai";
 import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/ModelSelector";
 import { type ContextItem } from "~/server/utils/codebaseContext";
-import { getCodebasePrompt, systemPrompt } from "../prompts";
-import { tools } from "../tools";
+import {
+  getCodebasePrompt,
+  getFilesToIncludeContextPrompt,
+  getO1Prompt,
+  systemPrompt,
+} from "../prompts";
+import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
 
 export const maxDuration = 120;
 
@@ -21,11 +21,13 @@ export async function POST(req: NextRequest) {
       model,
       contextItems,
       temperature = 0.3,
+      codeContent,
     } = (await req.json()) as {
       messages: Message[];
       model: ChatModel;
       contextItems: ContextItem[];
       temperature: number;
+      codeContent: CodeFile[] | undefined;
     };
     if (!model) {
       return new Response("Model is required", { status: 400 });
@@ -40,8 +42,6 @@ export async function POST(req: NextRequest) {
       .map((c) => `${c.file}: ${c.overview} \n\n ${c.text}`)
       .join("\n");
 
-    const codebasePrompt = getCodebasePrompt(context);
-
     const prompts: {
       type: "text";
       text: string;
@@ -50,16 +50,30 @@ export async function POST(req: NextRequest) {
     if (isO1) {
       prompts.push({
         type: "text",
-        text: systemPrompt,
+        text: getO1Prompt(),
       });
     }
+
+    if (codeContent) {
+      codeContent.map((c) => {
+        const codeFilePrompt = getFilesToIncludeContextPrompt(
+          `${c.path}: ${c.content}`,
+        );
+        prompts.push({
+          type: "text",
+          text: codeFilePrompt,
+        });
+      });
+    }
+
+    const codebasePrompt = getCodebasePrompt(context);
 
     prompts.push({
       type: "text",
       text: codebasePrompt,
     });
 
-    // find the first user message. Add the codebase context to it and cache it. Here is an example
+    // find the first user message. Add the code context and file details to it.
     const userMessage = messages.find((m) => m.role === Role.USER);
     if (!userMessage) {
       return new Response("User message is required", { status: 400 });
@@ -107,7 +121,7 @@ export async function POST(req: NextRequest) {
     };
 
     const o1Options = {
-      model: openai("o1-mini"),
+      model: openai(model.modelName),
       messages: convertToCoreMessages(
         messagesWithoutToolInvocations as Message[],
       ),
@@ -116,9 +130,6 @@ export async function POST(req: NextRequest) {
         openai: { maxCompletionTokens: 8000 },
       },
     };
-
-    console.log("options", gptOptions);
-    console.log("o1Options", o1Options);
 
     if (isO1) {
       const result = await generateText(o1Options);

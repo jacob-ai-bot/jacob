@@ -6,7 +6,7 @@ import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/Mod
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { getCodebasePrompt, systemPrompt } from "../prompts";
 import { tools } from "../tools";
-
+import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
@@ -16,11 +16,13 @@ export async function POST(req: NextRequest) {
       model,
       contextItems,
       temperature = 0.3,
+      codeContent,
     } = (await req.json()) as {
       messages: Message[];
       model: ChatModel;
       contextItems: ContextItem[];
       temperature: number;
+      codeContent: CodeFile[] | undefined;
     };
     if (!model) {
       return new Response("Model is required", { status: 400 });
@@ -28,10 +30,6 @@ export async function POST(req: NextRequest) {
     if (!contextItems) {
       return new Response("No context items provided", { status: 200 });
     }
-
-    // TODO: pass in the files to use directly, along with the code from those files
-    // const filesToUse: string[] = evaluation.filesToUse ?? [];
-    // const codeFiles = evaluation.codeFiles ?? [];
 
     const context = contextItems
       .map((c) => `${c.file}: ${c.overview} \n\n ${c.text}`)
@@ -71,17 +69,34 @@ export async function POST(req: NextRequest) {
     //   });
     // }
 
-    // create a new user message with the full codeFiles content
-    // const codeFilesContent = codeFiles.join("\n\n");
-    // if (codeFilesContent.length > 0) {
-    //   content.push({
-    //     type: "text",
-    //     text: `Here are the code file or files that are related to the user's query: ${codeFilesContent}`,
-    //     experimental_providerMetadata: {
-    //       anthropic: { cacheControl: { type: "ephemeral" } },
-    //     },
+    // const prompts: {
+    //   type: "text";
+    //   text: string;
+    // }[] = [];
+    // if (codeContent) {
+    //   codeContent.map((c) => {
+    //     const codebasePrompt = getCodebasePrompt(`${c.path}: ${c.content}`);
+    //     prompts.push({
+    //       type: "text",
+    //       text: codebasePrompt,
+    //     });
     //   });
     // }
+
+    // create a new user message with the full codeFiles content
+
+    if (codeContent && codeContent.length > 0) {
+      const codeFilesContent = codeContent
+        .map((c) => `${c.path}: ${c.content}`)
+        .join("\n\n");
+      cachedPrompts.push({
+        type: "text",
+        text: `Here are the code file or files that are related to the user's query: ${codeFilesContent}`,
+        experimental_providerMetadata: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
+      });
+    }
 
     // find the first user message. Add the codebase context to it and cache it. Here is an example
     const userMessage = messages.find((m) => m.role === Role.USER);

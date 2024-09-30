@@ -14,7 +14,7 @@ interface ArtifactProps {
   fileName: string;
   filePath: string;
   language: string;
-  codeFiles: CodeFile[];
+  codeFiles?: CodeFile[];
 }
 
 export function Artifact({
@@ -35,8 +35,10 @@ export function Artifact({
 
   useEffect(() => {
     if (codeFiles.length > 0) {
+      console.log("looking for found content...");
       const foundContent =
         codeFiles.find((file) => file.path === filePath)?.content ?? null;
+      console.log("foundContent", foundContent);
       setOriginalContent(
         foundContent && foundContent.trim() !== "" ? foundContent : null,
       );

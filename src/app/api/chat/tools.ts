@@ -13,12 +13,13 @@ export const tools = {
       filePath: z
         .string()
         .describe(
-          "The full relative path (starting with / and ending with the filename + extension) of the file to create. You MUST use your knowledge of the codebase to suggest the best possible path. Only create new folders if absolutely necessary.",
+          "The full relative path (starting with '/' and ending with the filename and extension) of the file to create. You MUST use your knowledge of the codebase to suggest the best possible path. Only create new folders if absolutely necessary.",
         ),
-      content: z.string().describe("The content of the file"),
-      type: z
-        .enum(["application/vnd.jacob.react", "application/vnd.jacob.code"])
-        .describe("The type of content"),
+      content: z
+        .string()
+        .describe(
+          "The content of the file. This MUST be the full content of the file, not a truncated version.",
+        ),
       language: z
         .string()
         .optional()
@@ -36,12 +37,13 @@ export const tools = {
       filePath: z
         .string()
         .describe(
-          "The full relative path (starting with / and ending with the filename + extension) of the existingfile to edit. You MUST use your knowledge of the codebase to choose an existing file. A major error will occur if you choose a file that does not exist!",
+          "The full relative path (starting with '/' and ending with the filename and extension) of the existing file to edit. You MUST use your knowledge of the codebase to choose an existing file. A major error will occur if you choose a file that does not exist!",
         ),
-      content: z.string().describe("The new content of the file"),
-      type: z
-        .enum(["application/vnd.jacob.react", "application/vnd.jacob.code"])
-        .describe("The type of content"),
+      content: z
+        .string()
+        .describe(
+          "The new content of the file. This MUST be the full content of the file, not a truncated version.",
+        ),
       language: z
         .string()
         .optional()

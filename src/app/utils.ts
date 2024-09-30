@@ -178,3 +178,33 @@ export function getTaskStatusLabel(status: TaskStatus) {
       return "Closed";
   }
 }
+
+export function getLanguageFromFile(fileName: string): string {
+  if (!fileName) return "";
+  const extension = fileName.split(".").pop();
+  let language = "";
+  if (extension === "ts" || extension === "tsx") {
+    language = "typescript";
+  } else if (extension === "js" || extension === "jsx") {
+    language = "javascript";
+  } else if (extension === "py") {
+    language = "python";
+  } else if (extension === "md" || extension === "mdx") {
+    language = "markdown";
+  } else if (extension === "json") {
+    language = "json";
+  } else if (extension === "txt") {
+    language = "text";
+  } else if (extension === "java") {
+    language = "java";
+  } else if (extension === "go") {
+    language = "go";
+  } else if (extension === "rs") {
+    language = "rust";
+  } else if (extension === "sh") {
+    language = "bash";
+  } else if (extension === "yml" || extension === "yaml") {
+    language = "yaml";
+  }
+  return language;
+}
