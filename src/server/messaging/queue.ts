@@ -587,12 +587,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             },
           });
         } else {
-          const editFunction = (process.env.AGENT_REPOS ?? "")
-            .split(",")
-            .includes(repository.full_name)
-            ? agentEditFiles
-            : editFiles;
-          await editFunction({
+          // const editFunction = (process.env.AGENT_REPOS ?? "")
+          //   .split(",")
+          //   .includes(repository.full_name)
+          //   ? agentEditFiles
+          //   : editFiles;
+          // For now use the non-agent version
+          await editFiles({
             ...baseEventData,
             repository,
             token: installationAuthentication.token,
@@ -704,12 +705,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               );
               break;
             }
-            const fixFunction = (process.env.AGENT_REPOS ?? "")
-              .split(",")
-              .includes(repository.full_name)
-              ? agentFixError
-              : fixError;
-            await fixFunction({
+            // const fixFunction = (process.env.AGENT_REPOS ?? "")
+            //   .split(",")
+            //   .includes(repository.full_name)
+            //   ? agentFixError
+            //   : fixError;
+            // For now use the non-agent version
+            await fixError({
               ...baseEventData,
               repository,
               token: installationAuthentication.token,

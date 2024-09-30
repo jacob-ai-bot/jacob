@@ -44,7 +44,6 @@ const CONTEXT_WINDOW = {
   "o1-mini-2024-09-12": 128000,
 };
 
-// Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
 export const MAX_OUTPUT = {
   "gpt-4-turbo-2024-04-09": 4096,
   "gpt-4-0125-preview": 4096,
@@ -56,7 +55,7 @@ export const MAX_OUTPUT = {
   "gemini-1.5-flash-latest": 8192,
   "claude-3-opus-20240229": 4096,
   "claude-3-haiku-20240307": 4096,
-  "claude-3-5-sonnet-20240620": 4096,
+  "claude-3-5-sonnet-20240620": 8192,
   "llama-3.1-sonar-large-128k-online": 4096,
   "llama-3.1-sonar-small-128k-online": 4096,
   "llama3-70b-8192": 4096,

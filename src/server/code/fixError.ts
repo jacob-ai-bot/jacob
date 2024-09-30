@@ -16,7 +16,12 @@ import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
-import { sendGptRequest } from "../openai/request";
+import {
+  countTokens,
+  MAX_OUTPUT,
+  type Model,
+  sendGptRequest,
+} from "../openai/request";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -68,10 +73,10 @@ export async function fixError(params: FixErrorParams) {
     afterHeadingIndex === -1
       ? ""
       : buildErrorSection?.slice(0, afterHeadingIndex) ?? "";
-  const attemptNumber = parseInt(
-    restOfHeading.match(/Attempt\s+Number\s+(\d+)/)?.[1] ?? "",
-    10,
-  );
+  const attemptMatch = restOfHeading.match(/Attempt\s+Number\s+(\d+)/);
+  const attemptNumber = attemptMatch
+    ? parseInt(attemptMatch[1] ?? "1", 10)
+    : NaN;
   const endOfErrorSectionMarker = "```";
   const errors =
     afterHeadingIndex === -1
@@ -148,12 +153,39 @@ export async function fixError(params: FixErrorParams) {
         )
         .join("\n");
 
+      // use o1-mini to generate a plan
+      const o1Prompt = `Here is some code that has a build error:\n
+  <code>${code}</code>\n
+  Here is the build error message:\n
+  <error>${errorMessages}</error>\n
+  Generate a very short explanation of the error or errors in the message. Then provide a very short, specific, and concise plan for how to fix it. Only address the errors provided, do not attempt to identify other potential issues in the provided code.`;
+
+      const o1BugFixPlan = await sendGptRequest(
+        o1Prompt,
+        "",
+        1,
+        undefined,
+        3,
+        60000,
+        null,
+        "o1-mini-2024-09-12",
+      );
+
+      const issueBody = `${issue?.body ?? ""}\n\nPlan:\n${o1BugFixPlan}`;
+
       const types = getTypes(rootPath, repoSettings);
       const images = await getImages(rootPath, repoSettings);
 
+      // Start with Claude, but if there is a lot of code, we need to use a model with a large output token limit
+      let model: Model = "claude-3-5-sonnet-20240620";
+      const codeTokenCount = countTokens(code) * 1.05; // Leave a little room for bug fixes
+      if (codeTokenCount > MAX_OUTPUT[model]) {
+        model = "gpt-4o-64k-output-alpha";
+      }
+
       const codeTemplateParams = {
         code,
-        issueBody: issue?.body ?? "",
+        issueBody,
         errorMessages,
         sourceMap,
         types,
@@ -180,7 +212,7 @@ export async function fixError(params: FixErrorParams) {
         3,
         60000,
         undefined,
-        "gpt-4o-64k-output-alpha",
+        model,
       ))!;
 
       if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
