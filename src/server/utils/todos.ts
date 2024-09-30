@@ -68,6 +68,7 @@ export const createTodo = async (
     });
 
     // Only research issues for agent repos for now
+    // TODO: only research issues for premium accounts
     if (agentRepos.includes(repo)) {
       await researchIssue(
         issueText,
