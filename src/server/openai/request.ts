@@ -4,7 +4,7 @@ import type { SafeParseSuccess, ZodSchema } from "zod";
 import { parse } from "jsonc-parser";
 import { type Message } from "~/types";
 
-import { removeMarkdownCodeblocks } from "~/app/utils";
+import { removeMarkdownCodeblocks } from "~/server/utils";
 import { parseTemplate, type BaseEventData } from "../utils";
 import { emitPromptEvent } from "../utils/events";
 import {

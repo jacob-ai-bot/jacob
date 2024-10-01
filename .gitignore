@@ -71,3 +71,5 @@ Thumbs.db
 
 # local files
 scripts/
+
+src/_app/

@@ -11,10 +11,11 @@ import { type Evaluation } from "~/server/api/routers/chat";
 import { motion, AnimatePresence } from "framer-motion";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import { SpeechToTextArea } from "../../components/SpeechToTextArea";
-import { type ChatModel, ChatModels, ModelSelector } from "./ModelSelector";
+import { ChatModels, ModelSelector } from "./ModelSelector";
 import SearchBar from "../../components/SearchBar";
 import { api } from "~/trpc/react";
 import { getLanguageFromFile } from "~/app/utils";
+import { type CodeFile, type ChatModel, type MessageRole } from "~/types";
 
 interface ChatProps {
   project: Project;
@@ -22,19 +23,6 @@ interface ChatProps {
   org: string;
   repo: string;
 }
-
-export interface CodeFile {
-  path: string;
-  content?: string;
-}
-
-type MessageRole =
-  | "system"
-  | "user"
-  | "assistant"
-  | "function"
-  | "data"
-  | "tool";
 
 const STARTING_MESSAGE = {
   id: "1",
@@ -136,9 +124,9 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
 
   useEffect(() => {
     if (codeContent) {
-      setArtifactFilePath(codeContent[0]?.path ?? "");
-      setArtifactContent(codeContent[0]?.content ?? "");
-      const fileName = codeContent[0]?.path?.split("/").pop() ?? "";
+      setArtifactFilePath(codeContent[0]?.filePath ?? "");
+      setArtifactContent(codeContent[0]?.codeBlock ?? "");
+      const fileName = codeContent[0]?.filePath?.split("/").pop() ?? "";
       const language = getLanguageFromFile(fileName);
       setArtifactFileName(fileName);
       setArtifactLanguage(language);
@@ -234,7 +222,7 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
           content={artifactContent}
           fileName={artifactFileName}
           language={artifactLanguage}
-          codeFiles={codeContent}
+          codeFiles={codeContent as CodeFile[]}
           filePath={artifactFilePath}
         />
       )}

@@ -1,10 +1,6 @@
 "use client";
 
-export type ChatModel = {
-  description: string;
-  modelName: string;
-  provider: "openai" | "anthropic" | "google" | "groq";
-};
+import { type ChatModel } from "~/types";
 
 export const ChatModels: ChatModel[] = [
   {

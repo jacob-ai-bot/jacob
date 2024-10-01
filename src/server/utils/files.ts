@@ -3,7 +3,7 @@ import path from "path";
 import ignore, { type Ignore } from "ignore";
 import parseDiff from "parse-diff";
 import { applyPatches } from "diff";
-import { removeMarkdownCodeblocks } from "~/app/utils";
+import { removeMarkdownCodeblocks } from "~/server/utils";
 import { promisify } from "util";
 import { exec as execCallback } from "child_process";
 

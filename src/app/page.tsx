@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
@@ -40,7 +39,7 @@ export default async function Home() {
             </p>
 
             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Link
+              <a
                 className="flex flex-col gap-2 rounded-xl bg-dark-beige p-4 transition-colors hover:bg-dark-beige/70"
                 href="https://jacb.ai"
                 target="_blank"
@@ -55,8 +54,8 @@ export default async function Home() {
                   />
                 </div>
                 <div className="text-aurora-600">An overview of JACoB.</div>
-              </Link>
-              <Link
+              </a>
+              <a
                 className="flex flex-col gap-2 rounded-xl bg-dark-beige p-4 transition-colors hover:bg-dark-beige/70"
                 href="/setup"
               >
@@ -72,7 +71,7 @@ export default async function Home() {
                 <div className="text-aurora-600">
                   Set up your first project.
                 </div>
-              </Link>
+              </a>
             </div>
 
             <div className="flex flex-col items-start gap-4">

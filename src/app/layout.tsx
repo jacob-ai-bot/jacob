@@ -1,12 +1,3 @@
-import { ThemeProvider } from "next-themes";
-
-import "~/styles/globals.css";
-import "~/index.css";
-
-import { TRPCReactProvider } from "~/trpc/react";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
 export const metadata = {
   title: "JACoB",
   description: "JACoB: Just Another Coding Bot",
@@ -32,10 +23,7 @@ export default function RootLayout({
       <body
         className={`h-screen w-screen bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-          <ToastContainer />
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

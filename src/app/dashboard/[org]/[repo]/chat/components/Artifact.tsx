@@ -7,7 +7,7 @@ import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
-import { type CodeFile } from "./Chat";
+import { type CodeFile } from "~/types";
 
 interface ArtifactProps {
   content: string;
@@ -37,7 +37,7 @@ export function Artifact({
     if (codeFiles.length > 0) {
       console.log("looking for found content...");
       const foundContent =
-        codeFiles.find((file) => file.path === filePath)?.content ?? null;
+        codeFiles.find((file) => file.filePath === filePath)?.codeBlock ?? null;
       console.log("foundContent", foundContent);
       setOriginalContent(
         foundContent && foundContent.trim() !== "" ? foundContent : null,

@@ -2,11 +2,11 @@ import { Role, type Message } from "~/types";
 import { type NextRequest } from "next/server";
 import { anthropic } from "@ai-sdk/anthropic";
 import { convertToCoreMessages, streamText } from "ai";
-import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/ModelSelector";
+import { type ChatModel } from "~/types";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { getCodebasePrompt, systemPrompt } from "../prompts";
 import { tools } from "../tools";
-import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { type CodeFile } from "~/types";
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (codeContent && codeContent.length > 0) {
       const codeFilesContent = codeContent
-        .map((c) => `${c.path}: ${c.content}`)
+        .map((c) => `${c.filePath}: ${c.codeBlock}`)
         .join("\n\n");
       cachedPrompts.push({
         type: "text",

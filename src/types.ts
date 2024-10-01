@@ -20,9 +20,9 @@ export enum Language {
 }
 
 export type CodeFile = {
-  fileName: string;
+  fileName?: string;
   filePath: string;
-  language: Language;
+  language?: Language;
   codeBlock: string;
 };
 
@@ -147,3 +147,17 @@ export interface Research {
   answer: string;
   issueId: number;
 }
+
+export type MessageRole =
+  | "system"
+  | "user"
+  | "assistant"
+  | "function"
+  | "data"
+  | "tool";
+
+export type ChatModel = {
+  description: string;
+  modelName: string;
+  provider: "openai" | "anthropic" | "google" | "groq";
+};

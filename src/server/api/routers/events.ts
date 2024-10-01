@@ -6,7 +6,7 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TaskStatus, TaskSubType } from "~/server/db/enums";
 import { type Language } from "~/types";
 import { getIssue, validateRepo } from "../utils";
-import { getSnapshotUrl } from "~/app/utils";
+import { getSnapshotUrl } from "~/server/utils";
 import { extractFilePathWithArrow } from "~/server/utils";
 
 import { observable } from "@trpc/server/observable";

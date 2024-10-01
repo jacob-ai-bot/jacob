@@ -8,7 +8,7 @@ import PostgresAdapter from "@auth/pg-adapter";
 import { Pool } from "pg";
 
 import { env } from "~/env";
-import { db } from "./db/db";
+// import { db } from "./db/db";
 
 export enum UserRole {
   user = "user",
@@ -65,61 +65,61 @@ const pool = new Pool({
  */
 export const authOptions: NextAuthOptions = {
   adapter: PostgresAdapter(pool) as NextAuthOptions["adapter"],
-  events: {
-    signIn: async (params) => {
-      const { user, profile } = params;
-      const userId = parseInt(user.id, 10);
-      await db.users.find(userId).update({ login: profile?.login });
-    },
-  },
-  callbacks: {
-    signIn: async ({ user, account }) => {
-      // Update the account row with the latest access token
-      if (account) {
-        const dbAccount = await db.accounts
-          .findByOptional({
-            userId: parseInt(user.id, 10),
-          })
-          .select("id");
-        if (dbAccount) {
-          const {
-            access_token,
-            expires_at,
-            refresh_token,
-            token_type,
-            id_token,
-            scope,
-            session_state,
-          } = account;
-          await db.accounts.find(dbAccount.id).update({
-            access_token,
-            expires_at: `${expires_at}`,
-            refresh_token,
-            token_type,
-            id_token,
-            scope,
-            session_state,
-          });
-        }
-      }
-      return true;
-    },
-    session: async (params) => {
-      const { session, user } = params;
-      const userId = parseInt(user.id, 10);
-      const account = await db.accounts.findBy({ userId });
-      return {
-        ...session,
-        accessToken: account.access_token,
-        user: {
-          ...session.user,
-          id: userId,
-          role: user.role,
-          login: user.login,
-        },
-      };
-    },
-  },
+  // events: {
+  //   signIn: async (params) => {
+  //     const { user, profile } = params;
+  //     const userId = parseInt(user.id, 10);
+  //     await db.users.find(userId).update({ login: profile?.login });
+  //   },
+  // },
+  // callbacks: {
+  //   signIn: async ({ user, account }) => {
+  //     // Update the account row with the latest access token
+  //     if (account) {
+  //       const dbAccount = await db.accounts
+  //         .findByOptional({
+  //           userId: parseInt(user.id, 10),
+  //         })
+  //         .select("id");
+  //       if (dbAccount) {
+  //         const {
+  //           access_token,
+  //           expires_at,
+  //           refresh_token,
+  //           token_type,
+  //           id_token,
+  //           scope,
+  //           session_state,
+  //         } = account;
+  //         await db.accounts.find(dbAccount.id).update({
+  //           access_token,
+  //           expires_at: `${expires_at}`,
+  //           refresh_token,
+  //           token_type,
+  //           id_token,
+  //           scope,
+  //           session_state,
+  //         });
+  //       }
+  //     }
+  //     return true;
+  //   },
+  //   session: async (params) => {
+  //     const { session, user } = params;
+  //     const userId = parseInt(user.id, 10);
+  //     const account = await db.accounts.findBy({ userId });
+  //     return {
+  //       ...session,
+  //       accessToken: account.access_token,
+  //       user: {
+  //         ...session.user,
+  //         id: userId,
+  //         role: user.role,
+  //         login: user.login,
+  //       },
+  //     };
+  //   },
+  // },
   pages: {
     signIn: "/auth/signin",
   },

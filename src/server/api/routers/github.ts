@@ -19,7 +19,7 @@ import {
   sendGptRequest,
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
-import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { type CodeFile } from "~/types";
 
 export async function fetchGithubFileContents(
   accessToken: string,
@@ -46,19 +46,19 @@ export async function fetchGithubFileContents(
             if (shouldThrow) {
               throw new Error(`File not found: ${path}`);
             }
-            return { path, content: undefined };
+            return { filePath: path, codeBlock: undefined };
           }
 
           const content = Buffer.from(response.data.content, "base64").toString(
             "utf-8",
           );
-          return { path, content } as CodeFile;
+          return { filePath: path, codeBlock: content } as CodeFile;
         } catch (error) {
           console.error(`Error fetching file: ${path}`, error);
           if (shouldThrow) {
             throw new Error(`Failed to fetch file: ${path}`);
           }
-          return { path, content: undefined } as CodeFile;
+          return { filePath: path, codeBlock: undefined };
         }
       }),
     );

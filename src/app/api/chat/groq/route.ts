@@ -2,11 +2,11 @@ import { Role, type Message } from "~/types";
 import { type NextRequest } from "next/server";
 import { createOpenAI } from "@ai-sdk/openai";
 import { convertToCoreMessages, streamText } from "ai";
-import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/ModelSelector";
+import { type ChatModel } from "~/types";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { getCodebasePrompt, systemPrompt } from "../prompts";
 import { tools } from "../tools";
-import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { type CodeFile } from "~/types";
 
 export const maxDuration = 120;
 
@@ -43,7 +43,9 @@ export async function POST(req: NextRequest) {
     }[] = [];
     if (codeContent) {
       codeContent.map((c) => {
-        const codebasePrompt = getCodebasePrompt(`${c.path}: ${c.content}`);
+        const codebasePrompt = getCodebasePrompt(
+          `${c.filePath}: ${c.codeBlock}`,
+        );
         prompts.push({
           type: "text",
           text: codebasePrompt,

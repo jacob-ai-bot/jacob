@@ -21,7 +21,7 @@ import {
   emitPlanEvent,
   emitPlanStepEvent,
 } from "../utils/events";
-import { getSnapshotUrl } from "~/app/utils";
+import { getSnapshotUrl } from "~/server/utils";
 import { createPlan } from "~/server/agent/plan";
 import { applyCodePatchViaLLM } from "~/server/agent/patch";
 import { PlanningAgentActionType } from "~/server/db/enums";

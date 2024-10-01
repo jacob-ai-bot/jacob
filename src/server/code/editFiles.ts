@@ -25,7 +25,7 @@ import {
   type ExtractedIssueInfo,
 } from "./extractedIssue";
 import { emitCodeEvent } from "../utils/events";
-import { getSnapshotUrl } from "~/app/utils";
+import { getSnapshotUrl } from "~/server/utils";
 import { db } from "../db/db";
 
 export interface EditFilesParams extends BaseEventData {

@@ -18,7 +18,7 @@ import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { saveNewFile } from "../utils/files";
 import { saveImages } from "../utils/images";
-import { getSnapshotUrl } from "~/app/utils";
+import { getSnapshotUrl } from "~/server/utils";
 
 export interface CreateNewFileParams extends BaseEventData {
   newFileName: string;

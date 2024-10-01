@@ -4,13 +4,13 @@ import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import { removeMarkdownCodeblocks } from "~/app/utils";
-import { type Code } from "~/server/api/routers/events";
+import { type CodeFile } from "~/types";
 import { useTheme } from "next-themes";
 import { DiffEditor } from "@monaco-editor/react";
 import { api } from "~/trpc/react";
 
 type CodeComponentProps = {
-  codeFiles?: Code[];
+  codeFiles?: CodeFile[];
   org: string;
   repo: string;
   branch?: string;
@@ -39,7 +39,7 @@ export const CodeComponent: React.FC<CodeComponentProps> = ({
   useEffect(() => {
     if (fileContents && fileContents.length > 0) {
       if (fileContents.length > activeTab) {
-        if (fileContents[activeTab]?.content) {
+        if (fileContents[activeTab]?.codeBlock) {
           setShouldShowDiff(true);
         } else {
           setShouldShowDiff(false);
@@ -48,12 +48,6 @@ export const CodeComponent: React.FC<CodeComponentProps> = ({
       }
     }
   }, [fileContents, activeTab]);
-
-  console.log("fileContents", fileContents);
-  console.log(
-    "filePaths",
-    codeFiles?.map((file) => file.filePath),
-  );
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
@@ -154,7 +148,7 @@ export const CodeComponent: React.FC<CodeComponentProps> = ({
           <DiffEditor
             original={
               fileContents && fileContents.length > activeTab && !isLoading
-                ? fileContents[activeTab]?.content
+                ? fileContents[activeTab]?.codeBlock
                 : ""
             }
             modified={removeMarkdownCodeblocks(

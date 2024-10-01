@@ -277,6 +277,18 @@ export const extractFilePathWithArrow = (title?: string) => {
 
 export const AT_MENTION = "@jacob-ai-bot";
 
+// The snapshot url of a Figma design might be found in the issue body. If so, we want to extract it.
+// Here is the specific format that a snapshot url will be in:  \`\`\`![snapshot](${snapshotUrl})\`\`\``
+// This function will extract the snapshotUrl from the issue body
+export const getSnapshotUrl = (
+  issueBody: string | null | undefined,
+): string | undefined => {
+  if (!issueBody) return undefined;
+  const regex = /\[snapshot\]\((.+)\)/;
+  const match = issueBody.match(regex);
+  return match ? match[1]?.trim() : undefined;
+};
+
 export enum PRCommand {
   Build = `${AT_MENTION} build`,
   FixError = `${AT_MENTION} fix error`,
@@ -383,4 +395,18 @@ export function rethrowErrorWithTokenRedacted(error: unknown, token: string) {
     "<redacted>",
   );
   throw newError;
+}
+
+export function removeMarkdownCodeblocks(text: string) {
+  return (
+    text
+      .split("\n")
+      // Filter out lines that start with optional whitespace followed by ```
+      // Explanation of the regex:
+      // ^ - Matches the start of a line
+      // \s* - Matches zero or more whitespace characters
+      // ``` - Matches the literal string ```
+      .filter((line) => !line.match(/^\s*```/))
+      .join("\n")
+  );
 }
