@@ -8,6 +8,7 @@ import { db } from "../db/db";
 export enum Language {
   TypeScript = "TypeScript",
   JavaScript = "JavaScript",
+  Python = "Python",
 }
 
 export enum Style {
