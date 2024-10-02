@@ -8,10 +8,10 @@ import {
   createWebEvent,
   publishWebEventToQueue,
 } from "~/server/messaging/queue";
-import {
-  getHasStartedCodebaseGenerationCookie,
-  setHasStartedCodebaseGenerationCookie,
-} from "~/app/actions";
+// import {
+//   getHasStartedCodebaseGenerationCookie,
+//   setHasStartedCodebaseGenerationCookie,
+// } from "~/app/actions";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { standardizePath } from "~/server/utils/files";
 import path from "path";
@@ -28,7 +28,7 @@ export const codebaseContextRouter = createTRPCRouter({
     )
     .query(
       async ({
-        input: { org, repo, branch, commitHash },
+        input: { org, repo },
         ctx: {
           session: { accessToken },
         },
@@ -43,19 +43,20 @@ export const codebaseContextRouter = createTRPCRouter({
             .order({ filePath: "ASC" })
             .all();
           // If there's no context, generate it
-          const hasStarted = await getHasStartedCodebaseGenerationCookie(
-            org,
-            repo,
-            branch,
-            commitHash,
-          );
+          // const hasStarted = await getHasStartedCodebaseGenerationCookie(
+          //   org,
+          //   repo,
+          //   branch,
+          //   commitHash,
+          // );
+          const hasStarted = false;
           if (codebaseContext.length === 0 && !hasStarted) {
-            await setHasStartedCodebaseGenerationCookie(
-              org,
-              repo,
-              branch,
-              commitHash,
-            );
+            // await setHasStartedCodebaseGenerationCookie(
+            //   org,
+            //   repo,
+            //   branch,
+            //   commitHash,
+            // );
             await generateCodebaseContext(org, repo, accessToken);
           }
           return (
