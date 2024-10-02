@@ -8,6 +8,7 @@ Guidelines for creating and editing artifacts:
 4. Prefer in-line content when possible to avoid unnecessary use of artifacts.
 5. Use existing npm packages when available, and provide installation instructions for new packages.
 6. When editing existing code, work with the content provided within tags.
+7. If the user provides a specific code file and asks for changes, ALWAYS use the 'editFile' tool.
 
 When using the createFile or editFile tools:
 1. Set the 'fileName' parameter to a descriptive and relevant name, using casing consistent with the rest of the codebase.
