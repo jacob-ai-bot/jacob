@@ -78,7 +78,7 @@ const InputGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 import { useEffect, useRef } from "react";
-import { setHasStartedCodebaseGenerationCookie } from "~/app/actions";
+// import { setHasStartedCodebaseGenerationCookie } from "~/app/actions";
 
 const Setup: React.FC<SetupProps> = ({
   org,
@@ -118,9 +118,9 @@ const Setup: React.FC<SetupProps> = ({
     { enabled: false }, // disabled because we don't want to run it on initial render
   );
 
-  useEffect(() => {
-    void setHasStartedCodebaseGenerationCookie(org, repo);
-  }, [org, repo]);
+  // useEffect(() => {
+  //   void setHasStartedCodebaseGenerationCookie(org, repo);
+  // }, [org, repo]);
 
   useEffect(() => {
     if (isLoading) {

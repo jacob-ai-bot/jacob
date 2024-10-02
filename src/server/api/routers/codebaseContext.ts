@@ -8,7 +8,10 @@ import {
   createWebEvent,
   publishWebEventToQueue,
 } from "~/server/messaging/queue";
-import { getHasStartedCodebaseGenerationCookie } from "~/app/actions";
+import {
+  getHasStartedCodebaseGenerationCookie,
+  setHasStartedCodebaseGenerationCookie,
+} from "~/app/actions";
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { standardizePath } from "~/server/utils/files";
 import path from "path";
@@ -47,6 +50,12 @@ export const codebaseContextRouter = createTRPCRouter({
             commitHash,
           );
           if (codebaseContext.length === 0 && !hasStarted) {
+            await setHasStartedCodebaseGenerationCookie(
+              org,
+              repo,
+              branch,
+              commitHash,
+            );
             await generateCodebaseContext(org, repo, accessToken);
           }
           return (
@@ -60,7 +69,6 @@ export const codebaseContextRouter = createTRPCRouter({
             code: "INTERNAL_SERVER_ERROR",
             message: "Internal server error",
           });
-        } finally {
         }
       },
     ),

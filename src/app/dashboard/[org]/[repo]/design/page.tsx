@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "~/server/auth";
 import Design from "./Design";
+import { Suspense } from "react";
 
 const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
   .toLowerCase()
@@ -17,7 +18,11 @@ const DesignPage = async ({
   }
 
   const { org, repo } = params;
-  return <Design org={org} repo={repo} />;
+  return (
+    <Suspense>
+      <Design org={org} repo={repo} />
+    </Suspense>
+  );
 };
 
 export default DesignPage;
