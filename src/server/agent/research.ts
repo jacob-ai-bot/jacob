@@ -102,7 +102,6 @@ const researchTools: OpenAI.ChatCompletionTool[] = [
 
 export const researchIssue = async function (
   githubIssue: string,
-  sourceMap: string,
   todoId: number,
   issueId: number,
   rootDir: string,
@@ -129,7 +128,7 @@ export const researchIssue = async function (
     relevantFiles.map((file) => standardizePath(file)) ?? [],
   );
   // For now, change the sourcemap to be a list of all the files from the context and overview of each file
-  sourceMap = codebaseContext
+  const sourceMap = codebaseContext
     .map((file) => `${file.file} - ${file.overview}`)
     .join("\n");
 
@@ -341,7 +340,9 @@ export async function researchCodebase(
   return result ?? "No response from the AI model.";
 }
 // Define the schema for the response
-const RelevantFilesSchema = z.string();
+const RelevantFilesSchema = z.object({
+  files: z.array(z.string()),
+});
 type RelevantFiles = z.infer<typeof RelevantFilesSchema>;
 
 export async function selectRelevantFiles(
@@ -386,7 +387,7 @@ export async function selectRelevantFiles(
   );
 
   try {
-    const relevantFiles = (await sendGptRequestWithSchema(
+    const response = (await sendGptRequestWithSchema(
       selectFilesUserPrompt,
       selectFilesSystemPrompt,
       RelevantFilesSchema,
@@ -394,15 +395,19 @@ export async function selectRelevantFiles(
       undefined,
       3,
       "gpt-4o-2024-08-06",
-    )) as RelevantFiles[];
+    )) as RelevantFiles;
+
+    if (!response.files) {
+      throw new Error("No files found in response");
+    }
 
     // convert relevant files to standard paths
-    const standardRelevantFiles = relevantFiles
+    const relevantFiles = response.files
       .map(standardizePath)
       .filter((p) => p?.length);
 
     // Filter the relevant files to ensure they exist in allFiles
-    const filteredRelevantFiles = standardRelevantFiles.filter((file) =>
+    const filteredRelevantFiles = relevantFiles.filter((file) =>
       allFiles?.some((setFile) => setFile === file),
     );
 

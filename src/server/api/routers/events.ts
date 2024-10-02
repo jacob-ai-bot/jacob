@@ -136,6 +136,8 @@ export interface Todo extends ExtractedIssueInfo {
   issueId?: number | null;
   branch?: string | null;
   isArchived: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export const eventsRouter = createTRPCRouter({
@@ -296,6 +298,20 @@ export const eventsRouter = createTRPCRouter({
       await redisPub.publish("events", JSON.stringify(event));
       await redisPub.quit();
       return event;
+    }),
+  getResearch: protectedProcedure
+    .input(
+      z.object({
+        todoId: z.number(),
+        issueId: z.number(),
+      }),
+    )
+    .query(async ({ input: { todoId, issueId } }) => {
+      const research = await db.research
+        .where({ todoId })
+        .where({ issueId })
+        .select("*");
+      return research;
     }),
 });
 

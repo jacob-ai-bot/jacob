@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
-export default function Error({ error }: { error: Error }) {
+export default function Error({ error }: { error: Error & { code: string } }) {
   useEffect(() => {
     console.error(error);
+    if (error.message === "Session or user information is missing") {
+      redirect("/");
+    }
   }, [error]);
 
   const handleRefresh = () => {

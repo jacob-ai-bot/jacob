@@ -431,6 +431,9 @@ function isValidPath(path: string): boolean {
 }
 
 export function standardizePath(filePath: string): StandardizedPath {
+  if (!filePath) {
+    return "" as StandardizedPath;
+  }
   let cleanPath = filePath.replace(/^\.\//, "");
 
   if (!cleanPath.startsWith("/")) {

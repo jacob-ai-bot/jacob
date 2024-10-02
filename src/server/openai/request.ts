@@ -17,6 +17,7 @@ import { type Stream } from "openai/streaming";
 import { sendAnthropicRequest } from "../anthropic/request";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 import { encode } from "gpt-tokenizer";
+import Cerebras from "@cerebras/cerebras_cloud_sdk";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -28,21 +29,21 @@ const CONTEXT_WINDOW = {
   "gpt-4o-64k-output-alpha": 128000,
   "gpt-4o-2024-08-06": 128000,
   "gemini-1.5-pro-latest": 2097152,
-  "gemini-1.5-pro-exp-0801": 2097152,
   "gemini-1.5-flash-latest": 2097152,
   "claude-3-opus-20240229": 200000,
   "claude-3-haiku-20240307": 200000,
   "claude-3-5-sonnet-20240620": 200000,
   "llama-3.1-sonar-large-128k-online": 127072,
   "llama-3.1-sonar-small-128k-online": 127072,
-  "llama-3.1-70b-versatile": 8192, // Limited to 8K during preview, will be 128K in the future
+  "llama3-70b-8192": 8192, // Limited to 8K during preview, will be 128K in the future
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
-  "llama3.1-8b": 8192,
-  "llama3.1-70b": 8192,
+  "llama3.1-8b": 8207,
+  "llama3.1-70b": 8207,
+  "o1-preview-2024-09-12": 128000,
+  "o1-mini-2024-09-12": 128000,
 };
 
-// Note that gpt-4-turbo-2024-04-09 has a max_tokens limit of 4K, despite having a context window of 128K
 export const MAX_OUTPUT = {
   "gpt-4-turbo-2024-04-09": 4096,
   "gpt-4-0125-preview": 4096,
@@ -51,18 +52,19 @@ export const MAX_OUTPUT = {
   "gpt-4o-64k-output-alpha": 64000,
   "gpt-4o-2024-08-06": 16384,
   "gemini-1.5-pro-latest": 8192,
-  "gemini-1.5-pro-exp-0801": 8192,
   "gemini-1.5-flash-latest": 8192,
   "claude-3-opus-20240229": 4096,
   "claude-3-haiku-20240307": 4096,
-  "claude-3-5-sonnet-20240620": 4096,
+  "claude-3-5-sonnet-20240620": 8192,
   "llama-3.1-sonar-large-128k-online": 4096,
   "llama-3.1-sonar-small-128k-online": 4096,
-  "llama-3.1-70b-versatile": 4096,
+  "llama3-70b-8192": 4096,
   "llama-3-sonar-large-32k-online": 4096,
   "llama-3-sonar-small-32k-online": 4096,
   "llama3.1-8b": 4096,
   "llama3.1-70b": 4096,
+  "o1-preview-2024-09-12": 16384,
+  "o1-mini-2024-09-12": 16384,
 };
 
 const ONE_MILLION = 1000000;
@@ -74,18 +76,19 @@ const INPUT_TOKEN_COSTS = {
   "gpt-4o-64k-output-alpha": 10 / ONE_MILLION,
   "gpt-4o-2024-08-06": 2.5 / ONE_MILLION,
   "gemini-1.5-pro-latest": 3.5 / ONE_MILLION,
-  "gemini-1.5-pro-exp-0801": 3.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 0.35 / ONE_MILLION,
   "claude-3-opus-20240229": 15 / ONE_MILLION,
   "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 3 / ONE_MILLION,
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
-  "llama-3.1-70b-versatile": 0.59 / ONE_MILLION,
+  "llama3-70b-8192": 0.59 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
   "llama3.1-8b": 0.1 / ONE_MILLION,
   "llama3.1-70b": 0.6 / ONE_MILLION,
+  "o1-preview-2024-09-12": 15 / ONE_MILLION,
+  "o1-mini-2024-09-12": 3 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
@@ -95,18 +98,19 @@ const OUTPUT_TOKEN_COSTS = {
   "gpt-4o-64k-output-alpha": 30 / ONE_MILLION,
   "gpt-4o-2024-08-06": 10 / ONE_MILLION,
   "gemini-1.5-pro-latest": 10.5 / ONE_MILLION,
-  "gemini-1.5-pro-exp-0801": 10.5 / ONE_MILLION,
   "gemini-1.5-flash-latest": 1.05 / ONE_MILLION,
   "claude-3-opus-20240229": 75 / ONE_MILLION,
   "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 15 / ONE_MILLION,
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
-  "llama-3.1-70b-versatile": 0.79 / ONE_MILLION,
+  "llama3-70b-8192": 0.79 / ONE_MILLION,
   "llama-3-sonar-large-32k-online": 1 / ONE_MILLION,
   "llama-3-sonar-small-32k-online": 1 / ONE_MILLION,
   "llama3.1-8b": 0.1 / ONE_MILLION,
   "llama3.1-70b": 0.6 / ONE_MILLION,
+  "o1-preview-2024-09-12": 60 / ONE_MILLION,
+  "o1-mini-2024-09-12": 12 / ONE_MILLION,
 };
 const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
@@ -116,7 +120,6 @@ const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4o-64k-output-alpha": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4o-2024-08-06": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gemini-1.5-pro-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
-  "gemini-1.5-pro-exp-0801": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "gemini-1.5-flash-latest": process.env.PORTKEY_VIRTUAL_KEY_GOOGLE,
   "claude-3-opus-20240229": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-haiku-20240307": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
@@ -125,11 +128,13 @@ const PORTKEY_VIRTUAL_KEYS = {
     process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3.1-sonar-small-128k-online":
     process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
-  "llama-3.1-70b-versatile": process.env.PORTKEY_VIRTUAL_KEY_GROK,
+  "llama3-70b-8192": process.env.PORTKEY_VIRTUAL_KEY_GROQ,
   "llama-3-sonar-large-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3-sonar-small-32k-online": process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
-  "llama3.1-8b": process.env.CEREBRAS_API_KEY,
-  "llama3.1-70b": process.env.CEREBRAS_API_KEY,
+  "llama3.1-8b": process.env.PORTKEY_VIRTUAL_KEY_CEREBRAS,
+  "llama3.1-70b": process.env.PORTKEY_VIRTUAL_KEY_CEREBRAS,
+  "o1-preview-2024-09-12": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "o1-mini-2024-09-12": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
@@ -137,6 +142,10 @@ export type Model = keyof typeof CONTEXT_WINDOW;
 export function countTokens(text: string): number {
   return encode(text).length;
 }
+
+const cerebrasClient = new Cerebras({
+  apiKey: process.env.CEREBRAS_API_KEY ?? "",
+});
 
 // Function to check if the prompt fits within the model's context window
 export function isPromptWithinContextWindow(
@@ -159,14 +168,16 @@ export const sendGptRequest = async (
   model: Model = "claude-3-5-sonnet-20240620",
   isJSONMode = false,
 ): Promise<string | null> => {
-  // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
-  // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
+  console.log("\n\n --- User Prompt --- \n\n", userPrompt);
+  console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
+    const isO1Model =
+      model === "o1-mini-2024-09-12" || model === "o1-preview-2024-09-12";
     // Check if the prompt fits within the context window
     if (!isPromptWithinContextWindow(userPrompt, systemPrompt, model)) {
       // If it doesn't fit, try with the largest model
-      const largestModel: Model = "gemini-1.5-pro-exp-0801";
+      const largestModel: Model = "gemini-1.5-pro-latest";
       if (isPromptWithinContextWindow(userPrompt, systemPrompt, largestModel)) {
         console.log(
           `Prompt too large for ${model}. Switching to ${largestModel}.`,
@@ -188,9 +199,10 @@ export const sendGptRequest = async (
         delay,
       );
     }
+
     let openai: OpenAI;
-    if (model === "llama3.1-70b" || model === "llama3.1-8b") {
-      // This is a Cerebras API call, this is a temporary fix until portkey supports cerebras via virtual keys
+    if (model.startsWith("llama3.1")) {
+      // This is a Cerebras API call
       openai = new OpenAI({
         apiKey: process.env.CEREBRAS_API_KEY,
         baseURL: "https://api.cerebras.ai/v1",
@@ -208,10 +220,7 @@ export const sendGptRequest = async (
         },
       });
     }
-    const cerebrasClient = new OpenAI({
-      apiKey: process.env.CEREBRAS_API_KEY,
-      baseURL: "https://api.cerebras.ai/v1",
-    });
+
     const max_tokens = MAX_OUTPUT[model];
 
     const messages = [
@@ -222,6 +231,7 @@ export const sendGptRequest = async (
     if (imagePrompt) {
       messages.unshift(imagePrompt);
     }
+
     // Temp fix, portkey doesn't currently support json mode for claude
     const needsJsonHelper = isJSONMode && model.includes("claude");
 
@@ -233,14 +243,46 @@ export const sendGptRequest = async (
       });
     }
 
+    // if it's JSON mode, we need to ensure the word JSON is in the system prompt
+    if (isJSONMode && !systemPrompt.includes("JSON")) {
+      // append a request to only respond in JSON
+      systemPrompt +=
+        "\n You must only respond in JSON with no other text. If you do not respond ONLY in JSON, the user will be unable to parse your response.";
+    }
+
     console.log(`\n +++ Calling ${model} with max_tokens: ${max_tokens} `);
     const startTime = Date.now();
-    const response = await openai.chat.completions.create({
+    let options = {
       model,
       messages,
       max_tokens,
       temperature,
-    });
+      response_format: isJSONMode ? { type: "json_object" } : undefined,
+    } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
+
+    // since o1-mini and o1-preview don't support system prompts, we need to add the system prompt to the user message and remove the system message
+    if (isO1Model) {
+      options = {
+        messages: [
+          { role: "user", content: `${systemPrompt}\n\n${userPrompt}` },
+        ],
+        model,
+      };
+    }
+    let response;
+    if (model.startsWith("llama3.1")) {
+      response = await cerebrasClient.chat.completions.create({
+        messages: options.messages.map((message) => ({
+          role: message.role as "system" | "user" | "assistant",
+          content: message.content,
+        })) as { role: "system" | "user" | "assistant"; content: string }[],
+        model: options.model,
+        max_tokens: options.max_tokens,
+        temperature: options.temperature,
+      });
+    } else {
+      response = await openai.chat.completions.create(options);
+    }
     const endTime = Date.now();
     const duration = endTime - startTime;
     console.log(`\n +++ ${model} Response time ${duration} ms`);
