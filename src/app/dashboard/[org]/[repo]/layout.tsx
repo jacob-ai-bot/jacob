@@ -21,6 +21,7 @@ import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { usePathname, useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { api } from "~/trpc/react";
+import { toast } from "react-toastify";
 
 const navItems = [
   { name: "Todos", icon: faListCheck },
@@ -52,6 +53,7 @@ export default function DashboardLayout({
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const debounceExpandRef = useRef<ReturnType<typeof debounce>>();
   const debounceCollapseRef = useRef<ReturnType<typeof debounce>>();
 
@@ -121,11 +123,18 @@ export default function DashboardLayout({
   };
 
   const handleRefresh = () => {
+    setIsRefreshing(true);
     refreshContextMutation.mutate({
       org: params.org,
       repoName: params.repo,
     });
     void refetch();
+
+    // Stop the spinning after 10 seconds
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success("Codebase context refreshed successfully");
+    }, 10000);
   };
 
   return (
@@ -277,9 +286,19 @@ export default function DashboardLayout({
                 onClick={handleRefresh}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center rounded-full bg-slate-200 p-2 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                disabled={isRefreshing}
               >
-                <FontAwesomeIcon icon={faRefresh} className="h-5 w-5" />
+                <motion.div
+                  animate={{ rotate: isRefreshing ? 360 : 0 }}
+                  transition={{
+                    duration: 1,
+                    repeat: isRefreshing ? Infinity : 0,
+                    ease: "linear",
+                  }}
+                >
+                  <FontAwesomeIcon icon={faRefresh} className="w-full" />
+                </motion.div>
               </motion.button>
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

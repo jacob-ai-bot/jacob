@@ -7,11 +7,6 @@ export async function getLastUsedRepoCookie() {
   return lastUsedRepo;
 }
 
-export async function getIsLastUsedRepoCookie(org: string, repo: string) {
-  const lastUsedRepo = await getLastUsedRepoCookie();
-  return lastUsedRepo === `${org}/${repo}`;
-}
-
 export async function setLastUsedRepoCookie(org: string, repo: string) {
   cookies().set("lastUsedRepo", `${org}/${repo}`);
 }

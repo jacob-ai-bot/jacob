@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerAuthSession } from "~/server/auth";
 
 import TasksPage from "./TasksPage";
+import { Suspense } from "react";
 interface PageProps {
   params: {
     org: string;
@@ -20,5 +21,9 @@ export default async function LivePageRoute({ params }: PageProps) {
 
   const { org, repo } = params;
 
-  return <TasksPage org={org} repo={repo} />;
+  return (
+    <Suspense>
+      <TasksPage org={org} repo={repo} />
+    </Suspense>
+  );
 }
