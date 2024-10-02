@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 import LoadingPage from "./loading";
 import { useEffect } from "react";
 
-const DashbordPage = () => {
+const DashboardPage = () => {
   useEffect(() => {
     redirect(`/api/dashboard`);
   }, []);
   return <LoadingPage />;
 };
 
-export default DashbordPage;
+export default DashboardPage;
