@@ -15,7 +15,9 @@ import {
 import MarkdownRenderer from "../components/MarkdownRenderer";
 import LoadingIndicator from "../components/LoadingIndicator";
 import ExtractedIssueDetails from "./components/ExtractedIssueDetails";
-import SpeechToTextArea from "../components/SpeechToTextArea";
+import SpeechToTextArea, {
+  type SpeechToTextAreaRef,
+} from "../components/SpeechToTextArea";
 
 interface IssueWriterProps {
   org: string;
@@ -38,6 +40,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const speechToTextRef = useRef<SpeechToTextAreaRef>(null);
 
   const { data: project, isLoading: isLoadingProject } =
     api.events.getProject.useQuery({
@@ -63,7 +66,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (isEditing) {
-      titleInputRef.current?.focus();
+      speechToTextRef.current?.focus();
     }
   }, [isEditing]);
 
@@ -102,8 +105,23 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     setIsEditing(true);
   };
 
-  const handleEvaluateIssue = async () => {
-    if (!issueBody.trim()) {
+  const handleTextAreaSubmit = async (message?: string) => {
+    if (message) {
+      setIssueBody(message);
+    } else if (!issueBody.trim()) {
+      toast.error("Please provide a body for the issue.");
+      return;
+    }
+    await handleEvaluateIssue(message);
+  };
+
+  const handleMouseClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    await handleEvaluateIssue(issueBody);
+  };
+
+  const handleEvaluateIssue = async (body?: string) => {
+    if (!body) {
       toast.error("Please provide a body for the issue.");
       return;
     }
@@ -112,7 +130,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     try {
       const rewrittenIssueResult = await rewriteIssueMutation.mutateAsync({
         title: issueTitle,
-        body: issueBody,
+        body,
       });
 
       setRewrittenIssue(rewrittenIssueResult.rewrittenIssue);
@@ -178,11 +196,12 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
             />
             <div className="flex-1">
               <SpeechToTextArea
+                ref={speechToTextRef}
                 value={issueBody}
                 onChange={(e) => setIssueBody(e.target.value)}
-                onSubmit={
-                  rewrittenIssue ? handleCreateIssue : handleEvaluateIssue
-                }
+                // onSubmit={
+                //   rewrittenIssue ? handleCreateIssue : handleTextAreaSubmit
+                // }
                 minHeight={TEXTAREA_MIN_HEIGHT}
                 placeholder="Describe the issue..."
                 isLoading={isCreating || isEvaluating}
@@ -190,7 +209,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
             </div>
             <div className="flex justify-end space-x-2">
               <button
-                onClick={handleEvaluateIssue}
+                onClick={handleMouseClick}
                 disabled={isEvaluating}
                 className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
                   isEvaluating
