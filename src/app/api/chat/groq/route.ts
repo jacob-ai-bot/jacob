@@ -100,10 +100,6 @@ export async function POST(req: NextRequest) {
     const coreMessages = convertToCoreMessages(
       messagesWithoutToolInvocations as Message[],
     );
-    console.log(
-      "all messages",
-      coreMessages.map((m) => JSON.stringify(m)),
-    );
     // Initialize the stream using @ai-sdk/anthropic
     const result = await streamText({
       model: groq(model.modelName),

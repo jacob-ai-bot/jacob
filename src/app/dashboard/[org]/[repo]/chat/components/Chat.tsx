@@ -68,48 +68,47 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
       filePaths: selectedFiles,
     });
 
-  const { data, messages, input, handleInputChange, append, isLoading } =
-    useChat({
-      streamProtocol: model.modelName.startsWith("o1") ? "text" : "data",
-      api: `/api/chat/${model.provider}`,
-      body: {
-        model,
-        contextItems,
-        org,
-        repo,
-        codeContent,
-      },
-      initialMessages: savedMessages,
-      onResponse: async (response) => {
-        console.log("onResponse", response);
-        // turn off the loading indicator
-        setHasStartedStreaming(true);
-      },
-      onError: (error) => {
-        console.error("Error in chat", error);
-        toast.error(`Error in chat: ${error.message}`);
-      },
-      onToolCall: async ({ toolCall }) => {
-        const toolCallArgs = toolCall.args as {
-          fileName: string;
-          content: string;
-          language: string;
-          filePath: string;
-        };
-        const { content } = toolCallArgs;
-        const filePath = toolCallArgs.filePath ?? codeContent?.[0]?.path ?? "";
-        const fileName = toolCallArgs.fileName ?? filePath.split("/").pop();
-        const language = toolCallArgs.language ?? getLanguageFromFile(fileName);
-        setArtifactContent(content);
-        setArtifactFileName(fileName);
-        setArtifactLanguage(language);
-        setArtifactFilePath(filePath);
-      },
-      onFinish: () => {
-        setHasStartedStreaming(false);
-        setIsCreatingArtifact(false);
-      },
-    });
+  const { messages, input, handleInputChange, append, isLoading } = useChat({
+    streamProtocol: model.modelName.startsWith("o1") ? "text" : "data",
+    api: `/api/chat/${model.provider}`,
+    body: {
+      model,
+      contextItems,
+      org,
+      repo,
+      codeContent,
+    },
+    initialMessages: savedMessages,
+    onResponse: async (response) => {
+      console.log("onResponse", response);
+      // turn off the loading indicator
+      setHasStartedStreaming(true);
+    },
+    onError: (error) => {
+      console.error("Error in chat", error);
+      toast.error(`Error in chat: ${error.message}`);
+    },
+    onToolCall: async ({ toolCall }) => {
+      const toolCallArgs = toolCall.args as {
+        fileName: string;
+        content: string;
+        language: string;
+        filePath: string;
+      };
+      const { content } = toolCallArgs;
+      const filePath = toolCallArgs.filePath ?? codeContent?.[0]?.path ?? "";
+      const fileName = toolCallArgs.fileName ?? filePath.split("/").pop();
+      const language = toolCallArgs.language ?? getLanguageFromFile(fileName);
+      setArtifactContent(content);
+      setArtifactFileName(fileName);
+      setArtifactLanguage(language);
+      setArtifactFilePath(filePath);
+    },
+    onFinish: () => {
+      setHasStartedStreaming(false);
+      setIsCreatingArtifact(false);
+    },
+  });
 
   useEffect(() => {
     if (messages.length === 0) return;
