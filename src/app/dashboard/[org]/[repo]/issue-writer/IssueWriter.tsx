@@ -15,7 +15,9 @@ import {
 import MarkdownRenderer from "../components/MarkdownRenderer";
 import LoadingIndicator from "../components/LoadingIndicator";
 import ExtractedIssueDetails from "./components/ExtractedIssueDetails";
-import SpeechToTextArea from "../components/SpeechToTextArea";
+import SpeechToTextArea, {
+  type SpeechToTextAreaRef,
+} from "../components/SpeechToTextArea";
 
 interface IssueWriterProps {
   org: string;
@@ -38,6 +40,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const speechToTextRef = useRef<SpeechToTextAreaRef>(null);
 
   const { data: project, isLoading: isLoadingProject } =
     api.events.getProject.useQuery({
@@ -63,7 +66,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (isEditing) {
-      titleInputRef.current?.focus();
+      speechToTextRef.current?.focus();
     }
   }, [isEditing]);
 
@@ -102,8 +105,11 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     setIsEditing(true);
   };
 
-  const handleEvaluateIssue = async () => {
-    if (!issueBody.trim()) {
+  const handleEvaluateIssue = async (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    e.preventDefault();
+    if (!issueBody) {
       toast.error("Please provide a body for the issue.");
       return;
     }
@@ -178,11 +184,9 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
             />
             <div className="flex-1">
               <SpeechToTextArea
+                ref={speechToTextRef}
                 value={issueBody}
                 onChange={(e) => setIssueBody(e.target.value)}
-                onSubmit={
-                  rewrittenIssue ? handleCreateIssue : handleEvaluateIssue
-                }
                 minHeight={TEXTAREA_MIN_HEIGHT}
                 placeholder="Describe the issue..."
                 isLoading={isCreating || isEvaluating}
