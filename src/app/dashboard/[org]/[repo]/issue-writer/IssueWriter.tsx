@@ -105,23 +105,11 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     setIsEditing(true);
   };
 
-  const handleTextAreaSubmit = async (message?: string) => {
-    if (message) {
-      setIssueBody(message);
-    } else if (!issueBody.trim()) {
-      toast.error("Please provide a body for the issue.");
-      return;
-    }
-    await handleEvaluateIssue(message);
-  };
-
-  const handleMouseClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleEvaluateIssue = async (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     e.preventDefault();
-    await handleEvaluateIssue(issueBody);
-  };
-
-  const handleEvaluateIssue = async (body?: string) => {
-    if (!body) {
+    if (!issueBody) {
       toast.error("Please provide a body for the issue.");
       return;
     }
@@ -130,7 +118,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     try {
       const rewrittenIssueResult = await rewriteIssueMutation.mutateAsync({
         title: issueTitle,
-        body,
+        body: issueBody,
       });
 
       setRewrittenIssue(rewrittenIssueResult.rewrittenIssue);
@@ -199,9 +187,6 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
                 ref={speechToTextRef}
                 value={issueBody}
                 onChange={(e) => setIssueBody(e.target.value)}
-                // onSubmit={
-                //   rewrittenIssue ? handleCreateIssue : handleTextAreaSubmit
-                // }
                 minHeight={TEXTAREA_MIN_HEIGHT}
                 placeholder="Describe the issue..."
                 isLoading={isCreating || isEvaluating}
@@ -209,7 +194,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
             </div>
             <div className="flex justify-end space-x-2">
               <button
-                onClick={handleMouseClick}
+                onClick={handleEvaluateIssue}
                 disabled={isEvaluating}
                 className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
                   isEvaluating

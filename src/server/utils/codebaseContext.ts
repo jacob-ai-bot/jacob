@@ -226,8 +226,6 @@ export const getCodebaseContext = async function (
   const allFiles = traverseCodebase(rootPath)?.map((file) =>
     standardizePath(file),
   );
-  // console log all files with the .schema extension
-  console.log(allFiles.filter((file) => file.endsWith(".schema")));
   let relevantFiles: StandardizedPath[] = files ?? [];
   if (!files.length) {
     // If no files are provided, analyze the entire codebase
