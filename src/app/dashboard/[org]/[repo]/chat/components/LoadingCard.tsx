@@ -5,16 +5,8 @@ import { Meteors } from "~/app/_components/magicui/meteors";
 import { BorderBeam } from "~/app/_components/magicui/border-beam";
 import AnimatedShinyText from "~/app/_components/magicui/animated-shiny-text";
 
-interface EvaluationProps {
-  filesEvaluation: string;
-  artifactEvaluation: string;
-  shouldCreateArtifact: boolean;
-  filesToUse?: string[] | null | undefined;
-  codeFiles?: string[] | null | undefined;
-}
-
 interface LoadingCardProps {
-  evaluation: EvaluationProps | null | undefined;
+  fileName?: string | null | undefined;
 }
 
 const COLOR_FROM_LIGHT = "#BBDEFB";
@@ -22,7 +14,7 @@ const COLOR_TO_LIGHT = "#B2EBF2";
 const COLOR_FROM_DARK = "#D1C4E9";
 const COLOR_TO_DARK = "#E0E7FF";
 
-export const LoadingCard: React.FC<LoadingCardProps> = ({ evaluation }) => {
+export const LoadingCard: React.FC<LoadingCardProps> = ({ fileName }) => {
   const { theme } = useTheme();
 
   return (
@@ -42,17 +34,10 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({ evaluation }) => {
       <div className="flex items-center justify-center">
         <LoadingIndicator />
       </div>
-      {evaluation?.filesToUse && evaluation?.filesToUse.length > 0 && (
-        <>
-          {evaluation?.filesToUse.map((file) => (
-            <div
-              className="flex items-center justify-center overflow-hidden text-xs text-gray-600 dark:text-gray-300"
-              key={file}
-            >
-              File Name: {file}
-            </div>
-          ))}
-        </>
+      {fileName && (
+        <div className="flex items-center justify-center overflow-hidden text-xs text-gray-600 dark:text-gray-300">
+          File Name: {fileName}
+        </div>
       )}
     </div>
   );

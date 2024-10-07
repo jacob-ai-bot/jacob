@@ -5,7 +5,7 @@ import { convertToCoreMessages, streamText } from "ai";
 import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/ModelSelector";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { getCodebasePrompt, systemPrompt } from "../prompts";
-import { tools } from "../tools";
+import { simplifiedTools } from "../tools";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
 
 export const maxDuration = 120;
@@ -43,7 +43,9 @@ export async function POST(req: NextRequest) {
     }[] = [];
     if (codeContent) {
       codeContent.map((c) => {
-        const codebasePrompt = getCodebasePrompt(`${c.path}: ${c.content}`);
+        const codebasePrompt = getCodebasePrompt(
+          `The user is specifically asking for information related to this file. If the user is asking for changes, it is critically important to ALWAYS use the "editFile" tool. ${c.path}: ${c.content}`,
+        );
         prompts.push({
           type: "text",
           text: codebasePrompt,
@@ -83,7 +85,10 @@ export async function POST(req: NextRequest) {
     const messagesWithoutToolInvocations = newMessages.map((m) => {
       return {
         role: m.role,
-        content: m.content,
+        content:
+          m.content?.length > 0
+            ? m.content
+            : JSON.stringify(m) ?? "empty message",
       };
     });
 
@@ -92,23 +97,26 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.GROQ_API_KEY ?? "",
     });
 
+    const coreMessages = convertToCoreMessages(
+      messagesWithoutToolInvocations as Message[],
+    );
+    console.log(
+      "all messages",
+      coreMessages.map((m) => JSON.stringify(m)),
+    );
     // Initialize the stream using @ai-sdk/anthropic
     const result = await streamText({
       model: groq(model.modelName),
-      messages: convertToCoreMessages(
-        messagesWithoutToolInvocations as Message[],
-      ),
+      messages: coreMessages,
       system: systemPrompt,
-      temperature,
-      tools,
-      toolChoice: "auto",
+      temperature: codeContent ? 0.0 : temperature,
+      tools: simplifiedTools,
+      toolChoice: codeContent ? "required" : "auto",
       maxTokens: 8000,
-      experimental_toolCallStreaming: true,
     });
-    console.log("result", result);
     return result.toDataStreamResponse();
   } catch (error) {
-    console.error("Error with chat endpoint", error);
+    console.error("Error with chat endpoint");
     // console.log(JSON.stringify(error));
     return new Response("Error with chat endpoint", { status: 500 });
   }

@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     if (codeContent) {
       codeContent.map((c) => {
         const codeFilePrompt = getFilesToIncludeContextPrompt(
-          `${c.path}: ${c.content}`,
+          `The user is specifically asking for information related to this file. If the user is asking for changes, it is critically important to ALWAYS use the "editFile" tool.${c.path}: ${c.content}`,
         );
         prompts.push({
           type: "text",
@@ -104,8 +104,11 @@ export async function POST(req: NextRequest) {
     // BUGBUG remove any toolInvocations values from the messages
     const messagesWithoutToolInvocations = newMessages.map((m) => {
       return {
-        role: isO1 && m.role === Role.SYSTEM ? Role.ASSISTANT : m.role,
-        content: m.content,
+        role: m.role,
+        content:
+          m.content?.length > 0
+            ? m.content
+            : JSON.stringify(m) ?? "empty message",
       };
     });
 
@@ -116,7 +119,7 @@ export async function POST(req: NextRequest) {
       ),
       system: systemPrompt,
       maxTokens: 8000,
-      experimental_toolCallStreaming: true,
+      experimental_toolCallStreaming: false,
       toolChoice: "auto" as any,
       temperature,
     };

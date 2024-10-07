@@ -22,13 +22,13 @@ export const codebaseContextRouter = createTRPCRouter({
       z.object({
         org: z.string(),
         repo: z.string(),
-        branch: z.string().optional(),
+        branch: z.string().optional().default("main"),
         commitHash: z.string().optional(),
       }),
     )
     .query(
       async ({
-        input: { org, repo },
+        input: { org, repo, branch },
         ctx: {
           session: { accessToken },
         },
@@ -57,7 +57,7 @@ export const codebaseContextRouter = createTRPCRouter({
             //   branch,
             //   commitHash,
             // );
-            await generateCodebaseContext(org, repo, accessToken);
+            await generateCodebaseContext(org, repo, branch, accessToken);
           }
           return (
             codebaseContext?.map((context) => context.context as ContextItem) ??
@@ -99,16 +99,17 @@ export const codebaseContextRouter = createTRPCRouter({
       z.object({
         org: z.string(),
         repoName: z.string(),
+        branch: z.string().optional().default("main"),
       }),
     )
     .mutation(
       async ({
-        input: { org, repoName },
+        input: { org, repoName, branch },
         ctx: {
           session: { accessToken },
         },
       }): Promise<void> => {
-        await generateCodebaseContext(org, repoName, accessToken);
+        await generateCodebaseContext(org, repoName, branch, accessToken);
       },
     ),
   searchCodebase: protectedProcedure
@@ -253,9 +254,10 @@ const searchCodebase = async (
 const generateCodebaseContext = async (
   org: string,
   repoName: string,
-  accessToken: string,
+  branch: string,
+  token: string,
 ): Promise<void> => {
-  const octokit = new Octokit({ auth: accessToken });
+  const octokit = new Octokit({ auth: token });
 
   if (!org || !repoName) {
     throw new TRPCError({
@@ -270,14 +272,17 @@ const generateCodebaseContext = async (
     repo: repoName,
   });
   const repoFullName = repository.full_name;
+  const action = "generate_context";
 
   const webEvent = createWebEvent({
     repoId: repository.id,
     repoFullName,
-    action: "generate_context",
-    token: accessToken,
+    action,
+    token,
     params: {
       repository,
+      branch,
+      messageId: `${org}-${repoName}-${branch}-${action}`,
     },
   });
 

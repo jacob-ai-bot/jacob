@@ -55,11 +55,14 @@ export async function POST(req: NextRequest) {
 
     if (codeContent && codeContent.length > 0) {
       const codeFilesContent = codeContent
-        .map((c) => `${c.path}: ${c.content}`)
+        .map(
+          (c) =>
+            `The user is specifically asking for information related to this file. If the user is asking for changes, it is critically important to ALWAYS use the "editFile" tool. Here are the code file or files that are related to the user's query: ${c.path}: ${c.content}`,
+        )
         .join("\n\n");
       cachedPrompts.push({
         type: "text",
-        text: `Here are the code file or files that are related to the user's query: ${codeFilesContent}`,
+        text: codeFilesContent,
         experimental_providerMetadata: {
           anthropic: { cacheControl: { type: "ephemeral" } },
         },
@@ -98,7 +101,10 @@ export async function POST(req: NextRequest) {
     const messagesWithoutToolInvocations = newMessages.map((m) => {
       return {
         role: m.role,
-        content: m.content,
+        content:
+          m.content?.length > 0
+            ? m.content
+            : JSON.stringify(m) ?? "empty message",
       };
     });
 
@@ -115,7 +121,7 @@ export async function POST(req: NextRequest) {
       tools,
       toolChoice: "auto",
       maxTokens: 8000,
-      experimental_toolCallStreaming: true,
+      experimental_toolCallStreaming: false,
     });
 
     return result.toDataStreamResponse();
