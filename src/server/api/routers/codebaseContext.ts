@@ -173,12 +173,13 @@ const searchCodebase = async (
 
   type SearchResult = z.infer<typeof SearchSchema>;
 
-  const userPrompt = `<searchQuery>
+  const userPrompt = `You are an AI code search engine. Here is your search query: 
+  <searchQuery>
   ${query}
   </searchQuery>
   
   Instructions:
-  Please review the search query inside the <searchQuery> tag and code information. Use the file path and overview information to determine the most relevant files and return at least one and at most ten files that best match the search query starting with the most relevant as the first file (position 0) in the "files" array. Return a JSON object that adheres to the SearchSchema provided. The response must strictly follow the schema and only include the requested data. Do not include any additional text or explanations.`;
+  Please review the search query (${query}) inside the <searchQuery> tag and code information. Use the file path and overview information to determine the most relevant files and return at least one and at most ten files that best match the search query (${query}) starting with the most relevant as the first file (position 0) in the "files" array. Return a JSON object that adheres to the SearchSchema provided. The response must strictly follow the schema and only include the requested data. Do not include any additional text or explanations.`;
 
   const fileLengthSort = (a: ContextItem, b: ContextItem) => {
     return a.file.length - b.file.length;
@@ -204,12 +205,12 @@ const searchCodebase = async (
   Instructions:
   - Return a JSON object that adheres to the following Zod schema:
   const SearchSchema = z.object({
-    files: z.array(z.string()),
+    files: z.array(z.string()), // the file names that are the best matches for the search query: ${query}
   });
-  - The "files" array should contain the most likely files that match the search query, ordered from most to least likely.
+  - The "files" array should contain the most likely files that match the search query (${query}), ordered from most to least likely.
   - Always return a maximum of ten files. Even if there isn't an exact match, you must return at least one file.
   - The files in the list must be from the original list of files provided; do not include any files that are not in the list.
-  - Prioritize file names (minus the file extension) that are matches or very similar to the search query. Then prioritize files based on the relevance of the overview to the search query. The lowest priority files are where the search query is found in the file path.
+  - Prioritize file names (minus the file extension) that are matches or very similar to the search query (${query}). Then prioritize files based on the relevance of the overview to the search query. Deprioritize test or config files unless specifically asked for in the search query.
   - Respond only with the JSON object, no additional text.`;
 
   const temperature = 0.1;
@@ -221,7 +222,7 @@ const searchCodebase = async (
     temperature,
     undefined,
     3,
-    "gpt-4o-mini-2024-07-18",
+    "gemini-1.5-flash-latest",
   )) as unknown as SearchResult;
 
   if (!searchResult.files) {
