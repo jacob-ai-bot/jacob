@@ -69,7 +69,7 @@ export const createTodo = async (
 
     // Only research issues for agent repos for now
     // TODO: only research issues for premium accounts
-    if (agentRepos.includes(repo)) {
+    if (agentRepos.includes(repo?.trim())) {
       await researchIssue({
         githubIssue: issueText,
         todoId: newTodo.id,
