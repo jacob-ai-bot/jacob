@@ -47,7 +47,7 @@ export async function sendTransactionalEmail(
         Data: "Your New Todo Item has been Created",
       },
     },
-    Source: process.env.SES_EMAIL_SOURCE,
+    Source: process.env.SES_EMAIL_SOURCE || "",
   };
 
   await ses.sendEmail(params).promise();

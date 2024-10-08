@@ -76,7 +76,7 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         const user = await db.users.findBy({ login: payload.issue.user.login });
         const userEmail = user?.email;
 
-        if (userEmail) {
+        if (userEmail && todo) {
           try {
             await sendTransactionalEmail(
               userEmail,
