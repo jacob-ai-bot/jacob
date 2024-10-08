@@ -196,11 +196,11 @@ async function updateFileContext(
   });
 
   if (existingFile) {
-    const updateData: CodebaseFileUpdate = {
+    const updateData: Partial<NewCodebaseFile> = {
       lastCommitHash: currentHash,
       context: newContext as unknown as Record<string, unknown>,
       updatedAt: new Date(),
-    } as CodebaseFileUpdate;
+    };
     await db.codebaseContext.find(existingFile.id).update(updateData);
   } else {
     const newData: NewCodebaseFile = {
