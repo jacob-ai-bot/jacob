@@ -169,7 +169,6 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
   };
 
   const handleSubmit = async (message: string) => {
-    console.log("calling handleSubmit", message);
     await append({ role: "user", content: message });
   };
 

@@ -43,29 +43,13 @@ export const todoRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }): Promise<Todo> => {
-      const { projectId, description, name, status, issueId, branch } = input;
+      const { issueId } = input;
 
-      if (issueId) {
-        const [existingResearch] = await db.research
-          .selectAll()
-          .where({ issueId });
-        if (!existingResearch) {
-          const createdTodo = await db.todos.selectAll().insert(input);
-          await researchIssue(description, createdTodo.id, issueId, "", 3);
-          return createdTodo;
-        }
+      if (!issueId) {
+        throw new Error("Issue ID is required");
       }
 
-      const newTodo = {
-        projectId,
-        description,
-        name,
-        status,
-        issueId,
-        branch,
-      };
-      const createdTodo = await db.todos.selectAll().insert(newTodo);
-      return createdTodo;
+      return await db.todos.selectAll().insert(input);
     }),
 
   update: protectedProcedure
@@ -143,6 +127,7 @@ export const todoRouter = createTRPCRouter({
         if (issueId) {
           const [existingResearch] = await db.research
             .selectAll()
+            .where({ todoId })
             .where({ issueId });
           if (!existingResearch) {
             const createdTodo = await db.todos.findOptional(todoId);
@@ -154,13 +139,14 @@ export const todoRouter = createTRPCRouter({
                   token: accessToken,
                 });
                 cleanupClone = cleanup;
-                await researchIssue(
+                await researchIssue({
                   githubIssue,
-                  createdTodo.id,
+                  todoId,
                   issueId,
-                  rootPath,
-                  3,
-                );
+                  rootDir: rootPath,
+                  projectId: createdTodo.projectId,
+                  maxLoops: 3,
+                });
               } catch (error) {
                 console.error(error);
               } finally {

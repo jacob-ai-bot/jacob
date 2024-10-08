@@ -62,8 +62,6 @@ export async function fixError(params: AgentFixErrorParams) {
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
 
-  //   const research = await researchIssue(issueText, sourceMap, rootPath);
-
   const types = getTypes(rootPath, repoSettings);
   const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
     "\n",

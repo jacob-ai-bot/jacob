@@ -111,7 +111,7 @@ export async function getOrCreateCodebaseContext(
   projectId: number,
   rootPath: string,
   filePaths: StandardizedPath[],
-  model: Model = "gpt-4o-mini-2024-07-18",
+  models: Model[] = ["gpt-4o-mini-2024-07-18", "gemini-1.5-flash-latest"],
 ): Promise<ContextItem[]> {
   const contextItems: ContextItem[] = [];
   const filesToProcess: StandardizedPath[] = [];
@@ -156,8 +156,9 @@ export async function getOrCreateCodebaseContext(
     const newContextItems = await getCodebaseContext(
       rootPath,
       filesToProcess,
-      model,
+      models,
       taxonomy,
+      projectId,
     );
 
     for (let i = 0; i < newContextItems.length; i++) {
@@ -215,8 +216,9 @@ async function updateFileContext(
 export const getCodebaseContext = async function (
   rootPath: string,
   files: StandardizedPath[] = [],
-  model: Model = "gpt-4o-mini-2024-07-18", // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
+  models: Model[] = ["gpt-4o-mini-2024-07-18", "gemini-1.5-flash-latest"], // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
   taxonomy: string,
+  projectId: number,
 ): Promise<ContextItem[]> {
   if (!rootPath) {
     throw new Error("No rootPath provided");
@@ -245,9 +247,10 @@ export const getCodebaseContext = async function (
     const newContextSections = await analyzeFiles(
       relevantFiles,
       rootPath,
-      model,
+      models,
       allFiles,
       taxonomy,
+      projectId,
     );
     contextSections = [...contextSections, ...newContextSections];
     analyzedFiles = new Set([...analyzedFiles, ...relevantFiles]);
@@ -290,13 +293,21 @@ async function removeExtraFiles(
 async function analyzeFiles(
   files: StandardizedPath[],
   rootPath: string,
-  model: Model,
+  models: Model[],
   allFiles: StandardizedPath[],
   taxonomy: string,
+  projectId: number,
 ): Promise<ContextItem[]> {
   const codeStructure = await analyzeCodeStructure(rootPath, files);
   const contextSections = await createContextSections(codeStructure);
-  await enhanceWithLLM(contextSections, model, allFiles, taxonomy);
+  await enhanceWithLLM(
+    contextSections,
+    models,
+    allFiles,
+    taxonomy,
+    rootPath,
+    projectId,
+  );
   return contextSections;
 }
 
@@ -517,12 +528,16 @@ async function createContextSections(
 
 async function enhanceWithLLM(
   sections: ContextItem[],
-  model: Model,
+  models: Model[],
   allFiles: StandardizedPath[],
   taxonomy: string,
+  rootPath: string,
+  projectId: number,
 ): Promise<void> {
   const maxConcurrentRequests = 20;
   for (let i = 0; i < sections.length; i += maxConcurrentRequests) {
+    // alternate between models to avoid rate limits
+    const model = models[i % models.length]!;
     const chunk = sections.slice(i, i + maxConcurrentRequests);
     const enhanceTasks = chunk.map(async (section) => {
       try {
@@ -541,6 +556,8 @@ async function enhanceWithLLM(
         section.importedFiles = enhancedContent.importedFiles;
         section.diagram = enhancedContent.diagram;
         section.taxonomy = standardizePath(enhancedContent.taxonomy);
+        // temporarily save the section to the database to let the user see the context being created in real time
+        await updateFileContext(projectId, section.file, rootPath, section);
       } catch (error) {
         console.error(`Error enhancing section ${section.file}:`, error);
       }
