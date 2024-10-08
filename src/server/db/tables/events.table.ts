@@ -42,11 +42,11 @@ const defineComment = (t: JSONTypes) =>
 
 const definePrompt = (t: JSONTypes) =>
   t.object({
-    promptType: t.union(
+    promptType: t.union([
       t.literal("User"),
       t.literal("System"),
       t.literal("Assistant"),
-    ),
+    ]),
     prompt: t.string(),
     timestamp: t.string(),
   });
@@ -128,7 +128,7 @@ export class EventsTable extends BaseTable {
           comments: t.array(defineComment(t)),
           author: t.string(),
           assignee: t.string(),
-          status: t.union(t.literal("open"), t.literal("closed")),
+          status: t.union([t.literal("open"), t.literal("closed")]),
           link: t.string(),
           stepsToAddressIssue: t.string().nullish(),
           issueQualityScore: t.number().nullish(),
@@ -142,11 +142,11 @@ export class EventsTable extends BaseTable {
           title: t.string(),
           description: t.string().nullable(),
           link: t.string(),
-          status: t.union(
+          status: t.union([
             t.literal("open"),
             t.literal("closed"),
             t.literal("merged"),
-          ),
+          ]),
           createdAt: t.string(),
           author: t.string(),
         }),

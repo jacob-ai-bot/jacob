@@ -1,4 +1,4 @@
-import { sql } from "orchid-orm";
+import { sql } from "orchid-orm-schema-to-zod";
 
 export const up = sql`
   CREATE TABLE plan_steps (
