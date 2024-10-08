@@ -80,7 +80,7 @@ ghApp.webhooks.on("issues.opened", async (event) => {
           try {
             await sendTransactionalEmail(
               userEmail,
-              { id: todo.id, name: todo.name, description: todo.description },
+              todo,
               githubOrg,
               githubRepo,
             );
