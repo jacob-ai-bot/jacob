@@ -198,7 +198,7 @@ async function updateFileContext(
   if (existingFile) {
     const updateData: CodebaseFileUpdate = {
       lastCommitHash: currentHash,
-      context: newContext,
+      context: newContext as unknown as Record<string, unknown>,
       updatedAt: new Date(),
     } as CodebaseFileUpdate;
     await db.codebaseContext.find(existingFile.id).update(updateData);
@@ -207,7 +207,7 @@ async function updateFileContext(
       projectId,
       filePath,
       lastCommitHash: currentHash,
-      context: newContext,
+      context: newContext as unknown as Record<string, unknown>,
     };
     await db.codebaseContext.create(newData);
   }

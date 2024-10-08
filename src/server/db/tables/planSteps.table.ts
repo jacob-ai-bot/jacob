@@ -1,5 +1,5 @@
 import { BaseTable } from "../baseTable";
-import { sql } from "orchid-orm-schema-to-zod";
+import { sql } from "orchid-orm";
 
 export class PlanStepsTable extends BaseTable {
   readonly table = "plan_steps";
