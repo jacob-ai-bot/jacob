@@ -947,13 +947,9 @@ export const publishWebEventToQueue = async (event: WebEvent) => {
     console.error(`publishWebEventToQueue: NO CHANNEL`);
     return;
   }
-  const messageId = event.payload.params
-    ? (event.payload.params.messageId as string | undefined)
-    : undefined;
   console.log(`publishWebEventToQueue: ${event.payload.action}`);
   channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(event)), {
     persistent: true,
-    messageId,
   });
   console.log(
     `[${event.payload.repoFullName}] Web Event queued: ${event.payload.action}`,
