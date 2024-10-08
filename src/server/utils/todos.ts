@@ -7,7 +7,7 @@ import { getRepoSettings } from "./settings";
 import { cloneRepo } from "../git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
 
-const agentRepos = (process.env.AGENT_REPOS ?? "").split(",");
+const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
 export const createTodo = async (
   repo: string,
@@ -70,15 +70,19 @@ export const createTodo = async (
     // Only research issues for agent repos for now
     // TODO: only research issues for premium accounts
     if (agentRepos.includes(repo)) {
-      await researchIssue(
-        issueText,
-        newTodo?.id,
-        issueNumber,
-        rootPath,
+      await researchIssue({
+        githubIssue: issueText,
+        todoId: newTodo.id,
+        issueId: issue.number,
+        rootDir: rootPath,
         projectId,
-      );
+      });
     } else {
-      console.log(`Skipping research for issue #${issue.number}`);
+      console.log(
+        `Skipping research for repo ${repo} issue #${issue.number}. Agent repos are ${agentRepos.join(
+          ", ",
+        )}`,
+      );
     }
 
     console.log(`Created new todo for issue #${issue.number}`);
