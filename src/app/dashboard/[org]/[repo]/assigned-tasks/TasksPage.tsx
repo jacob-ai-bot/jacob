@@ -35,7 +35,6 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (tasks && tasks.length > 0) {
-      console.log("tasks", tasks);
       setSelectedTask(tasks[0]);
     }
   }, [tasks]);
