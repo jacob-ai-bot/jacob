@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import IssueWriter from "./IssueWriter";
 import { getServerAuthSession } from "~/server/auth";
+import { Suspense } from "react";
 
 const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
   .toLowerCase()
@@ -19,7 +20,11 @@ const IssueWriterPage = async ({
 
   const { org, repo } = params;
 
-  return <IssueWriter org={org} repo={repo} />;
+  return (
+    <Suspense>
+      <IssueWriter org={org} repo={repo} />
+    </Suspense>
+  );
 };
 
 export default IssueWriterPage;

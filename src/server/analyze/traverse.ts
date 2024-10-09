@@ -39,7 +39,8 @@ export function traverseCodebase(rootPath: string): StandardizedPath[] {
 
 function isRelevantFile(fileName: string): boolean {
   return (
-    /\.(ts|tsx|js|jsx|py|example)$/.test(fileName) || isSpecialFile(fileName)
+    /\.(ts|tsx|js|jsx|py|example|prisma)$/.test(fileName) ||
+    isSpecialFile(fileName)
   );
 }
 

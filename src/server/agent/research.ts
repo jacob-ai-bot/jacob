@@ -100,15 +100,25 @@ const researchTools: OpenAI.ChatCompletionTool[] = [
   },
 ];
 
-export const researchIssue = async function (
-  githubIssue: string,
-  todoId: number,
-  issueId: number,
-  rootDir: string,
-  projectId: number,
+interface ResearchIssueParams {
+  githubIssue: string;
+  todoId: number;
+  issueId: number;
+  rootDir: string;
+  projectId: number;
+  maxLoops?: number;
+  model?: Model;
+}
+
+export const researchIssue = async function ({
+  githubIssue,
+  todoId,
+  issueId,
+  rootDir,
+  projectId,
   maxLoops = 10,
-  model: Model = "gpt-4o-2024-08-06",
-): Promise<Research[]> {
+  model = "gpt-4o-2024-08-06",
+}: ResearchIssueParams): Promise<Research[]> {
   console.log("Researching issue...");
   // First get the context for the full codebase
   const allFiles = traverseCodebase(rootDir);

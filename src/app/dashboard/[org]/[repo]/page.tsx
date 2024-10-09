@@ -1,21 +1,15 @@
+"use client";
+
 import { redirect } from "next/navigation";
-import { getServerAuthSession } from "~/server/auth";
+import LoadingPage from "../../loading";
+import { useEffect } from "react";
 
-const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
-  .toLowerCase()
-  .split(",");
-
-const RepoPage = async ({
-  params,
-}: {
-  params: { org: string; repo: string };
-}) => {
-  const { user } = (await getServerAuthSession()) ?? {};
-  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
-    redirect("/");
-  }
-  console.log("redirecting to code-visualizer");
-  redirect(`/dashboard/${params.org}/${params.repo}/code-visualizer`);
+const RepoPage = ({ params }: { params: { org: string; repo: string } }) => {
+  const { org, repo } = params;
+  useEffect(() => {
+    redirect(`/api/dashboard?org=${org}&repo=${repo}`);
+  }, [org, repo]);
+  return <LoadingPage />;
 };
 
 export default RepoPage;

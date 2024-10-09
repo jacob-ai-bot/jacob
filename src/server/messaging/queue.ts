@@ -61,6 +61,7 @@ let channel: ampq.Channel | undefined;
 const LOCALHOST_RABBITMQ_PORT = process.env.RABBITMQ_PORT ?? 5672;
 const RABBITMQ_URL =
   process.env.RABBITMQ_URL ?? `amqp://localhost:${LOCALHOST_RABBITMQ_PORT}`;
+const processedMessageIds = new Set(); // in-memory queue to prevent duplicate messages from being processed multiple times
 
 export async function initRabbitMQ({ listener }: { listener: boolean }) {
   if (channel) {
@@ -87,11 +88,24 @@ export async function initRabbitMQ({ listener }: { listener: boolean }) {
         console.error(`null message received from channel.consume()!`);
         return;
       }
-      console.log(`Received queue message: ${message.properties.messageId}`);
+      const messageId = message.properties.messageId;
+      console.log(`Received queue message: ${messageId}`);
       try {
         const event = JSON.parse(message.content.toString()) as QueuedEvent;
         if (event.name === "web_event") {
-          await handleWebEvent(event);
+          if (messageId && !processedMessageIds.has(messageId)) {
+            await handleWebEvent(event);
+          } else {
+            console.log("Duplicate message detected, skipping: ", messageId);
+          }
+          if (messageId) {
+            processedMessageIds.add(messageId);
+          }
+          // Remove messageId after 10 minutes
+          setTimeout(
+            () => processedMessageIds.delete(messageId),
+            10 * 60 * 1000,
+          );
         } else {
           await onGitHubEvent(event);
         }

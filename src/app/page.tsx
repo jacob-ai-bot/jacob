@@ -1,23 +1,27 @@
+"use server";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
 import { getServerAuthSession } from "~/server/auth";
 import { SignInButton } from "~/app/_components/SignInButton";
 import { SignOutButton } from "~/app/_components/SignOutButton";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { getLastUsedRepoCookie } from "./actions";
 
 export default async function Home() {
   const session = await getServerAuthSession();
 
-  const cookieStore = cookies();
-  const lastUsedRepo = cookieStore.get("lastUsedRepo");
+  const lastUsedRepo = await getLastUsedRepoCookie();
 
   // Redirect to the last used repo if available
-  if (session?.user?.login && lastUsedRepo?.value) {
-    redirect(`/dashboard/${lastUsedRepo.value}`);
+  if (session?.user?.login) {
+    if (lastUsedRepo) {
+      redirect(`/dashboard/${lastUsedRepo}/code-visualizer`);
+    } else {
+      redirect(`/dashboard`);
+    }
   }
 
   return (

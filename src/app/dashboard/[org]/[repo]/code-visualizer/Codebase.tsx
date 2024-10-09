@@ -1,15 +1,9 @@
 "use client";
 import CodebaseVisualizer from "./codebase/CodebaseVisualizer";
 import { useTheme } from "next-themes";
-import {
-  setLastUsedRepoCookie,
-  setHasStartedCodebaseGenerationCookie,
-  getHasStartedCodebaseGenerationCookie,
-  getIsLastUsedRepoCookie,
-} from "~/app/actions";
-import { useEffect } from "react";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
+import { Suspense } from "react";
 
 interface CodebaseParams {
   org: string;
@@ -28,27 +22,6 @@ const Codebase: React.FC<CodebaseParams> = ({ org, repo }) => {
       refetchOnWindowFocus: true,
     },
   );
-
-  useEffect(() => {
-    const fetchData = async (org: string, repo: string) => {
-      if (org && repo) {
-        for (let i = 0; i < 10; i++) {
-          const hasStarted = await getHasStartedCodebaseGenerationCookie(
-            org,
-            repo,
-          );
-          if (!hasStarted) {
-            void setHasStartedCodebaseGenerationCookie(org, repo);
-          }
-          const isLastUsedRepo = await getIsLastUsedRepoCookie(org, repo);
-          if (!isLastUsedRepo) {
-            void setLastUsedRepoCookie(org, repo);
-          }
-        }
-      }
-    };
-    void fetchData(org, repo);
-  }, [org, repo]);
 
   if (isLoading || !contextItems) {
     return (
@@ -74,10 +47,18 @@ const Codebase: React.FC<CodebaseParams> = ({ org, repo }) => {
   }
 
   return (
-    <CodebaseVisualizer
-      contextItems={contextItems}
-      theme={resolvedTheme === "dark" ? "dark" : "light"}
-    />
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center p-4">
+          <LoadingIndicator />
+        </div>
+      }
+    >
+      <CodebaseVisualizer
+        contextItems={contextItems}
+        theme={resolvedTheme === "dark" ? "dark" : "light"}
+      />
+    </Suspense>
   );
 };
 

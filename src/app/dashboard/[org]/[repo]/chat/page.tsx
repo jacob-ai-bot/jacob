@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "~/server/auth";
 import ChatPage from "./ChatPage";
+import { Suspense } from "react";
 
 const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
   .toLowerCase()
@@ -13,7 +14,11 @@ const Chat = async ({ params }: { params: { org: string; repo: string } }) => {
   }
   const { org, repo } = params;
 
-  return <ChatPage org={org} repo={repo} />;
+  return (
+    <Suspense>
+      <ChatPage org={org} repo={repo} />
+    </Suspense>
+  );
 };
 
 export default Chat;

@@ -14,6 +14,12 @@ export interface AddCommitAndPushParams extends BaseEventData {
   commitMessage: string;
   token: string;
 }
+
+function sanitizeCommitMessage(message: string): string {
+  // Escape all special characters
+  return message.replace(/([`"$\\!'&|;<>])/g, "\\$1");
+}
+
 export async function addCommitAndPush({
   rootPath,
   branchName,
@@ -51,10 +57,11 @@ export async function addCommitAndPush({
     const hasChanges = statusOutput.toString().trim() !== "";
 
     if (hasChanges) {
+      const sanitizedMessage = sanitizeCommitMessage(commitMessage);
       await executeWithLogRequiringSuccess({
         ...baseEventData,
         directory: rootPath,
-        command: `git commit -m "${commitMessage.replace(/`/g, "\\`")}"`,
+        command: `git commit -m "${sanitizedMessage}"`,
       });
       console.log("Changes committed successfully");
     } else {

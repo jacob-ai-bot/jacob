@@ -6,15 +6,16 @@ import { toast } from "react-toastify";
 import Artifact from "./Artifact";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import LoadingIndicator from "../../components/LoadingIndicator";
-import { LoadingCard } from "./LoadingCard";
-import { type Evaluation } from "~/server/api/routers/chat";
-import { motion, AnimatePresence } from "framer-motion";
-import MarkdownRenderer from "../../components/MarkdownRenderer";
-import { SpeechToTextArea } from "../../components/SpeechToTextArea";
+
+import {
+  SpeechToTextArea,
+  type SpeechToTextAreaRef,
+} from "../../components/SpeechToTextArea";
 import { type ChatModel, ChatModels, ModelSelector } from "./ModelSelector";
 import SearchBar from "../../components/SearchBar";
 import { api } from "~/trpc/react";
 import { getLanguageFromFile } from "~/app/utils";
+import ChatMessage from "./ChatMessage";
 
 interface ChatProps {
   project: Project;
@@ -48,9 +49,6 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
   const [artifactFileName, setArtifactFileName] = useState<string>("");
   const [artifactLanguage, setArtifactLanguage] = useState<string>("");
   const [hasStartedStreaming, setHasStartedStreaming] = useState(false);
-  const [currentEvaluation, setCurrentEvaluation] = useState<Evaluation | null>(
-    null,
-  );
   const [artifactFilePath, setArtifactFilePath] = useState<string>("");
   const [isCreatingArtifact, setIsCreatingArtifact] = useState(false);
   const [showLoadingCard, setShowLoadingCard] = useState(false);
@@ -61,6 +59,7 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
   ]);
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textAreaRef = useRef<SpeechToTextAreaRef>(null);
 
   const { data: codeContent, refetch: refetchCodeContent } =
     api.github.fetchFileContents.useQuery({
@@ -80,24 +79,26 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
       codeContent,
     },
     initialMessages: savedMessages,
-    onResponse: async () => {
+    onResponse: async (response) => {
+      console.log("onResponse", response);
+      // turn off the loading indicator
       setHasStartedStreaming(true);
-      setIsCreatingArtifact(true);
     },
     onError: (error) => {
       console.error("Error in chat", error);
       toast.error(`Error in chat: ${error.message}`);
     },
     onToolCall: async ({ toolCall }) => {
-      console.log("toolCall", toolCall);
-      setHasStartedStreaming(false);
       const toolCallArgs = toolCall.args as {
         fileName: string;
         content: string;
         language: string;
         filePath: string;
       };
-      const { fileName, content, language, filePath } = toolCallArgs;
+      const { content } = toolCallArgs;
+      const filePath = toolCallArgs.filePath ?? codeContent?.[0]?.path ?? "";
+      const fileName = toolCallArgs.fileName ?? filePath.split("/").pop();
+      const language = toolCallArgs.language ?? getLanguageFromFile(fileName);
       setArtifactContent(content);
       setArtifactFileName(fileName);
       setArtifactLanguage(language);
@@ -106,9 +107,20 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
     onFinish: () => {
       setHasStartedStreaming(false);
       setIsCreatingArtifact(false);
-      setCurrentEvaluation(null);
     },
   });
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage) return;
+    if (lastMessage.role === "assistant" && lastMessage.content.length > 0) {
+      // this is a workaround, but if the last message is an assistant message and there is
+      // more than a 1000ms gap between the last message and the onFinished call, then we know
+      // that the system is creating an artifact and we should show the loading card
+      setIsCreatingArtifact(true);
+    }
+  }, [messages]);
 
   useEffect(() => setMounted(true), []);
 
@@ -118,6 +130,12 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
       setSavedMessages(messages);
     }
   }, [model, messages]);
+
+  useEffect(() => {
+    if (textAreaRef.current) {
+      textAreaRef.current.focus();
+    }
+  }, [model]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -177,41 +195,16 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
             .filter((m) => m.role !== "tool")
             .filter((m) => m.content.length > 0)
             .map((m: Message, index: number) => (
-              <div
+              <ChatMessage
                 key={m.id}
-                className={`mb-4 flex ${
-                  m.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`inline-block max-w-[80%] rounded-lg p-2 ${
-                    m.role === "user"
-                      ? "bg-aurora-50 text-dark-blue dark:bg-sky-500/40"
-                      : "bg-white text-dark-blue dark:bg-slate-700 dark:text-slate-100"
-                  }`}
-                >
-                  <MarkdownRenderer className={`markdown-chat px-1`}>
-                    {m.content}
-                  </MarkdownRenderer>
-                  {isCreatingArtifact &&
-                    index === messages.length - 1 &&
-                    (m.role === "assistant" || m.role === "system") && (
-                      <AnimatePresence>
-                        {showLoadingCard && (
-                          <motion.div
-                            className="m-2"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <LoadingCard evaluation={currentEvaluation} />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    )}
-                </div>
-              </div>
+                isLast={index === messages.length - 1}
+                isCreatingArtifact={isCreatingArtifact}
+                showLoadingCard={showLoadingCard}
+                fileName={
+                  codeContent ? codeContent[0]?.path.split("/").pop() : null
+                }
+                message={m}
+              />
             ))}
           {isLoading && !hasStartedStreaming && (
             <div className="flex justify-start">
@@ -227,6 +220,7 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
           onChange={handleInputChange}
           onSubmit={handleSubmit}
           isLoading={isLoading}
+          ref={textAreaRef}
         />
       </div>
       {artifactContent && (
