@@ -3,8 +3,8 @@ import fs, { promises as fsPromises, type Dirent } from "fs";
 import path from "path";
 
 import { type RepoSettings } from "../utils";
-import { Language } from "../utils/settings";
 import { traverseCodebase } from "./traverse";
+import { Language } from "~/types";
 
 const FILES_TO_IGNORE = [
   "types.ts",

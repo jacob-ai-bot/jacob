@@ -8,7 +8,8 @@ import semver from "semver";
 import path from "path";
 
 import { type RepoSettings, parseTemplate } from "~/server/utils";
-import { IconSet, Style, Language } from "~/server/utils/settings";
+import { Language } from "~/types";
+import { IconSet, Style } from "~/server/utils/settings";
 import { sendGptVisionRequest } from "~/server/openai/request";
 import { getFile } from "~/server/github/repo";
 

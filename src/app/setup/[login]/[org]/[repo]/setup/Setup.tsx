@@ -7,11 +7,7 @@ import { faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import FormField from "~/app/setup/[login]/components/FormField";
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
-
-export enum Language {
-  TypeScript = "TypeScript",
-  JavaScript = "JavaScript",
-}
+import { Language } from "~/types";
 
 export enum Style {
   CSS = "CSS",

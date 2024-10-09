@@ -2,7 +2,7 @@ import { saveImages } from "../utils/images";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import fs from "fs";
 
-import { Language } from "../utils/settings";
+import { Language } from "~/types";
 
 vi.mock("fs", async () => {
   const actual = await vi.importActual("fs");

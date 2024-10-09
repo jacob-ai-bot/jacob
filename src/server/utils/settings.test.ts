@@ -2,7 +2,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
 
-import { Language, getRepoSettings } from "./settings";
+import { Language } from "~/types";
+import { getRepoSettings } from "./settings";
 
 describe("getRepoSettings", async () => {
   const rootPath = "./";

@@ -14,7 +14,7 @@ import fs from "fs";
 import issuesOpenedNewFilePayload from "../../data/test/webhooks/issues.opened.newFile.json";
 import { createStory, type PullRequest } from "./createStory";
 import { type CheckAndCommitOptions } from "./checkAndCommit";
-import { Language } from "../utils/settings";
+import { Language } from "~/types";
 
 const mockedRequest = vi.hoisted(() => ({
   sendGptVisionRequest: vi.fn().mockResolvedValue("storybook-story-code"),

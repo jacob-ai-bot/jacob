@@ -39,7 +39,7 @@ import {
   type WebhookInstallationCreatedEvent,
 } from "./queue";
 import { TaskStatus, TaskSubType } from "../db/enums";
-import { Language } from "../utils/settings";
+import { Language } from "~/types";
 
 const mockedCheckForChanges = vi.hoisted(() => ({
   checkForChanges: vi.fn().mockResolvedValue(true),
