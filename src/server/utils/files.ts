@@ -172,9 +172,10 @@ export const reconstructFiles = (
     // if the code is wrapped in a code block, remove the code block
     fileContent = removeMarkdownCodeblocks(fileContent);
     fs.writeFileSync(targetPath, fileContent);
+    const fileName = path.basename(filePath);
     result.push({
-      fileName: filePath,
-      filePath: outputPath,
+      fileName,
+      filePath,
       codeBlock: fileContent,
     });
   }
