@@ -19,7 +19,8 @@ import {
   rethrowErrorWithTokenRedacted,
   type ExecAsyncException,
 } from "../utils";
-import { Language, Style } from "../utils/settings";
+import { Language } from "~/types";
+import { Style } from "../utils/settings";
 import { TestExecAsyncException } from "~/server/utils/testHelpers";
 
 dotenv.config();

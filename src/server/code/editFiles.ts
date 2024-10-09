@@ -34,6 +34,7 @@ export interface EditFilesParams extends BaseEventData {
   issue: Issue;
   rootPath: string;
   sourceMap: string;
+  dryRun?: boolean;
   repoSettings?: RepoSettings;
 }
 
@@ -44,6 +45,7 @@ export async function editFiles(params: EditFilesParams) {
     issue,
     rootPath,
     sourceMap,
+    dryRun,
     repoSettings,
     ...baseEventData
   } = params;
@@ -185,30 +187,36 @@ export async function editFiles(params: EditFilesParams) {
   }
   const newBranch = generateJacobBranchName(issue.number);
 
-  await setNewBranch({
-    ...baseEventData,
-    rootPath,
-    branchName: newBranch,
-  });
+  if (dryRun) {
+    console.log("\n***** DRY RUN: UPDATED CODE *****\n\n");
+    console.log(updatedCode);
+    console.log("\n\n***** END DRY RUN *****\n");
+  } else {
+    await setNewBranch({
+      ...baseEventData,
+      rootPath,
+      branchName: newBranch,
+    });
 
-  const files = reconstructFiles(updatedCode, rootPath);
-  await Promise.all(
-    files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
-  );
+    const files = reconstructFiles(updatedCode, rootPath);
+    await Promise.all(
+      files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
+    );
 
-  await checkAndCommit({
-    ...baseEventData,
-    repository,
-    token,
-    rootPath,
-    branch: newBranch,
-    repoSettings,
-    commitMessage: `JACoB PR for Issue ${issue.title}`,
-    issue,
-    newPrTitle: `JACoB PR for Issue ${issue.title}`,
-    newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
-      extractedIssue.stepsToAddressIssue ?? ""
-    }`,
-    newPrReviewers: issue.assignees?.map((assignee) => assignee.login) ?? [],
-  });
+    await checkAndCommit({
+      ...baseEventData,
+      repository,
+      token,
+      rootPath,
+      branch: newBranch,
+      repoSettings,
+      commitMessage: `JACoB PR for Issue ${issue.title}`,
+      issue,
+      newPrTitle: `JACoB PR for Issue ${issue.title}`,
+      newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
+        extractedIssue.stepsToAddressIssue ?? ""
+      }`,
+      newPrReviewers: issue.assignees?.map((assignee) => assignee.login) ?? [],
+    });
+  }
 }

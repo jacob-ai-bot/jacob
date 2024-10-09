@@ -187,7 +187,12 @@ export function getLanguageFromFile(fileName: string): string {
     language = "typescript";
   } else if (extension === "js" || extension === "jsx") {
     language = "javascript";
-  } else if (extension === "py") {
+  } else if (
+    extension === "py" ||
+    extension === "py3" ||
+    extension === "pyw" ||
+    extension === "pyi"
+  ) {
     language = "python";
   } else if (extension === "md" || extension === "mdx") {
     language = "markdown";

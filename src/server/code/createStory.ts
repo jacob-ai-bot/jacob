@@ -17,7 +17,7 @@ import {
 import { sendGptVisionRequest } from "../openai/request";
 import { saveNewFile } from "../utils/files";
 import { emitCodeEvent } from "~/server/utils/events";
-import { Language } from "../utils/settings";
+import { Language } from "~/types";
 import { getSnapshotUrl } from "~/app/utils";
 
 export type PullRequest =

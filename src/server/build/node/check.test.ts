@@ -9,8 +9,8 @@ import {
   NEXT_JS_ENV,
   getEnv,
 } from "./check";
-import { Language } from "../../utils/settings";
 import { TestExecAsyncException } from "~/server/utils/testHelpers";
+import { Language } from "~/types";
 
 const mockedDynamicImport = vi.hoisted(() => ({
   dynamicImport: vi

@@ -17,6 +17,7 @@ export enum SpecialPhrases {
 export enum Language {
   TypeScript = "TypeScript",
   JavaScript = "JavaScript",
+  Python = "Python",
 }
 
 export type CodeFile = {

@@ -1,5 +1,5 @@
 import type OpenAI from "openai";
-import dedent from "ts-dedent";
+import { dedent } from "ts-dedent";
 import {
   type Model,
   sendGptRequest,
@@ -122,10 +122,20 @@ export const researchIssue = async function ({
   console.log("Researching issue...");
   // First get the context for the full codebase
   const allFiles = traverseCodebase(rootDir);
+  const query = `Based on the GitHub issue, your job is to find the most important files in this codebase.\n
+  Here is the issue <issue>${githubIssue}</issue> \n
+  Based on the GitHub issue, what are the 25 most relevant files to resolving this GitHub issue in this codebase?`;
+  const relevantFiles = await selectRelevantFiles(
+    query,
+    undefined,
+    allFiles,
+    25,
+  );
+
   const codebaseContext = await getOrCreateCodebaseContext(
     projectId,
     rootDir,
-    allFiles?.map((file) => standardizePath(file)) ?? [],
+    relevantFiles.map((file) => standardizePath(file)) ?? [],
   );
   // For now, change the sourcemap to be a list of all the files from the context and overview of each file
   const sourceMap = codebaseContext
@@ -319,7 +329,7 @@ export async function researchCodebase(
       codeResearchSystemPrompt,
       0.3,
       undefined,
-      2,
+      0, // no retries, so we can quickly failover to gemini
       60000,
       null,
       "claude-3-5-sonnet-20240620",

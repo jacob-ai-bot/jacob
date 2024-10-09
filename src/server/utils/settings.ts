@@ -4,11 +4,7 @@ import { traverseCodebase } from "../analyze/traverse";
 import { z } from "zod";
 import { sendGptRequestWithSchema } from "../openai/request";
 import { db } from "../db/db";
-
-export enum Language {
-  TypeScript = "TypeScript",
-  JavaScript = "JavaScript",
-}
+import { Language } from "~/types";
 
 export enum Style {
   CSS = "CSS",

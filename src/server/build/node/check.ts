@@ -7,7 +7,7 @@ import {
   type ExecAsyncException,
   type BaseEventData,
 } from "../../utils";
-import { Language } from "../../utils/settings";
+import { Language } from "~/types";
 import { dynamicImport } from "../../utils/dynamicImport";
 
 // From package-name-regexp 3.0.0 (without importing the ESM module)

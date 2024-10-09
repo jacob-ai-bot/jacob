@@ -7,11 +7,7 @@ import {
   TaskSubType,
   PlanningAgentActionType,
 } from "../enums";
-
-enum Language {
-  TypeScript = "TypeScript",
-  JavaScript = "JavaScript",
-}
+import { Language } from "~/types";
 
 export type Event = Selectable<EventsTable>;
 export type NewEvent = Insertable<EventsTable>;

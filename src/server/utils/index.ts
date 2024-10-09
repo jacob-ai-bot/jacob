@@ -4,7 +4,8 @@ import path from "path";
 
 import { exec, type ExecException, type PromiseWithChild } from "child_process";
 import { promisify } from "util";
-import { type RepoSettings, Language, Style } from "./settings";
+import { Language } from "~/types";
+import { type RepoSettings, Style } from "./settings";
 import { emitCommandEvent } from "./events";
 
 export { type RepoSettings, getRepoSettings } from "./settings";
@@ -339,6 +340,11 @@ export function getLanguageFromFileName(filePath: string) {
     case ".js":
     case ".jsx":
       return Language.JavaScript;
+    case ".py":
+    case ".py3":
+    case ".pyw":
+    case ".pyi":
+      return Language.Python;
     default:
       return;
   }

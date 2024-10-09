@@ -162,7 +162,7 @@ export async function getOrCreateCodebaseContext(
     );
 
     for (let i = 0; i < newContextItems.length; i++) {
-      const filePath = filesToProcess[i];
+      const filePath = filesToProcess[i] ?? newContextItems[i]?.file;
       const newContext = newContextItems[i];
       if (filePath && newContext) {
         const standardizedFilePath = standardizePath(filePath);

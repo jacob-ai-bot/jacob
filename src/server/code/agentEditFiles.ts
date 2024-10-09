@@ -39,6 +39,7 @@ export interface EditFilesParams extends BaseEventData {
   rootPath: string;
   sourceMap: string;
   repoSettings?: RepoSettings;
+  dryRun?: boolean;
 }
 
 export async function editFiles(params: EditFilesParams) {
@@ -49,6 +50,7 @@ export async function editFiles(params: EditFilesParams) {
     rootPath,
     sourceMap,
     repoSettings,
+    dryRun,
     ...baseEventData
   } = params;
   const newBranch = generateJacobBranchName(issue.number);
@@ -70,7 +72,7 @@ export async function editFiles(params: EditFilesParams) {
   // get the plan context
   const allFiles = traverseCodebase(rootPath);
   const query = `Based on the GitHub issue and the research, your job is to find the most important files in this codebase.\n
-  Here is the issue <issue>${issueBody}</issue> \n
+  Here is the issue <issue>${issueText}</issue> \n
   Here is the research <research>${research}</research> \n
   Based on the GitHub issue and the research, what are the 25 most relevant files to resolving this GitHub issue in this codebase?`;
   const relevantPlanFiles = await selectRelevantFiles(
@@ -197,7 +199,7 @@ export async function editFiles(params: EditFilesParams) {
       );
       const patch = patchMatch?.[1] ? patchMatch[1].trim() : "";
 
-      if (patch) {
+      if (patch && !dryRun) {
         // commit the file and push to the branch
         await setNewBranch({
           ...baseEventData,
@@ -256,12 +258,14 @@ export async function editFiles(params: EditFilesParams) {
     // After all the code patches have been applied, run the build check
     // Save the build errors and pass them back to the next iteration
     try {
-      await runBuildCheck({
-        ...baseEventData,
-        path: rootPath,
-        afterModifications: true,
-        repoSettings,
-      });
+      if (!dryRun) {
+        await runBuildCheck({
+          ...baseEventData,
+          path: rootPath,
+          afterModifications: true,
+          repoSettings,
+        });
+      }
       isPlanComplete = true;
     } catch (error) {
       const { message } = error as Error;
@@ -269,6 +273,10 @@ export async function editFiles(params: EditFilesParams) {
     }
   }
 
+  if (dryRun) {
+    console.log(`\n\n\n\n***** Dry Run (no PR created)`, newPrBody);
+    return;
+  }
   await checkAndCommit({
     ...baseEventData,
     repository,
