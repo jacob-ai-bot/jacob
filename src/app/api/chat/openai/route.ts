@@ -112,11 +112,17 @@ export async function POST(req: NextRequest) {
       };
     });
 
+    // For O1 models, change any role that's not 'user' or 'assistant' to 'user'
+    const adjustedMessages = isO1
+      ? messagesWithoutToolInvocations.map((m) => ({
+          ...m,
+          role: m.role === Role.ASSISTANT ? Role.ASSISTANT : Role.USER,
+        }))
+      : messagesWithoutToolInvocations;
+
     const gptOptions = {
       model: openai(model.modelName),
-      messages: convertToCoreMessages(
-        messagesWithoutToolInvocations as Message[],
-      ),
+      messages: convertToCoreMessages(adjustedMessages as Message[]),
       system: systemPrompt,
       maxTokens: 8000,
       experimental_toolCallStreaming: false,
@@ -126,9 +132,7 @@ export async function POST(req: NextRequest) {
 
     const o1Options = {
       model: openai(model.modelName),
-      messages: convertToCoreMessages(
-        messagesWithoutToolInvocations as Message[],
-      ),
+      messages: convertToCoreMessages(adjustedMessages as Message[]),
       temperature: 1,
       experimental_providerMetadata: {
         openai: { maxCompletionTokens: 8000 },
