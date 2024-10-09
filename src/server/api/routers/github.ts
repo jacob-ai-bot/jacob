@@ -20,6 +20,7 @@ import {
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { setNewBranch } from "../../git/branch";
 
 export async function fetchGithubFileContents(
   accessToken: string,
@@ -430,65 +431,4 @@ export const githubRouter = createTRPCRouter({
   **Guidelines for creating an exceptional GitHub issue**:
   1. Start with a clear, concise title that summarizes the issue.
   2. Provide a detailed description of the problem or feature request.
-  3. Include steps to reproduce the issue if applicable.
-  4. Mention the expected outcome and the actual outcome.
-  5. List any relevant error messages or logs.
-  6. Use proper formatting, including headings, lists, and code blocks.
-  7. Be courteous and professional in tone.
-  
-  **Instructions**:
-  - First, analyze the original issue and identify any missing key components or areas that need improvement based on the guidelines above. Focus specifically on any information that is missing or unclear.
-  - Provide your analysis in a very brief and actionable bullet-pointed list under the heading "**Feedback for Improvement**". DO NOT provide generic feedback, only very specific actionable feedback biased towards capturing any missing or unclear information. This section should have at most 5 bullet points.
-  - Then, rewrite the issue incorporating all the necessary improvements. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
-  - Provide the rewritten issue in markdown format, starting with the title as an H1 heading. It is critical that you follow this exact format as the output will be parsed programatically.
-  
-  ---
-  
-  **Feedback for Improvement**:
-  
-  - [Your feedback here]
-  
-  ---
-  
-  **Rewritten Issue**:
-
-  - [Your rewritten issue here]
-
-  ---
-
-  `;
-
-      const aiResponse =
-        (await sendGptRequest(
-          prompt,
-          undefined,
-          0.7,
-          undefined,
-          3,
-          undefined,
-          undefined,
-          "o1-mini-2024-09-12",
-        )) ?? "";
-
-      // Parse the AI response to separate feedback and rewritten issue
-      const feedbackMatch = aiResponse.match(
-        /(?<=\*\*Feedback for Improvement\*\*:\n)([\s\S]*?)(?=\n---)/,
-      );
-      const rewrittenIssueMatch = aiResponse.match(
-        /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\S]*)/,
-      );
-      const feedback = feedbackMatch ? feedbackMatch[0].trim() : "";
-      let rewrittenIssue = rewrittenIssueMatch
-        ? rewrittenIssueMatch[0].trim()
-        : "";
-
-      if (!rewrittenIssue?.length) {
-        rewrittenIssue = aiResponse ?? "";
-      }
-
-      return {
-        feedback,
-        rewrittenIssue,
-      };
-    }),
-});
+  3. Include steps to
