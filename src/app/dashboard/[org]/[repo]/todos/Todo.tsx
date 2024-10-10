@@ -179,8 +179,6 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
                 onArchive={handleArchive}
                 onSelect={handleSelect}
                 selected={selectedTodo?.id === todo.id}
-                isGenerating={generatingStates[todo.id] || false}
-                onGenerateResearch={() => handleGenerateResearch(todo.id)}
               />
             ))
           )}
@@ -196,8 +194,6 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
             onTodoUpdate={handleTodoUpdate}
             org={org}
             repo={repo}
-            isGenerating={generatingStates[selectedTodo.id] || false}
-            onGenerateResearch={() => handleGenerateResearch(selectedTodo.id)}
           />
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400">
