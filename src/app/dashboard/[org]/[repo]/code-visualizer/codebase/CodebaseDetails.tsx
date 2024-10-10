@@ -10,6 +10,7 @@ import {
   faChevronDown,
   faCopy,
   faCheck,
+  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
 import Markdown, { type Components } from "react-markdown";
@@ -25,6 +26,7 @@ import {
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
+import ChatModal from "../../chat/components/ChatModal";
 
 interface CodebaseDetailsProps {
   item: ContextItem;
@@ -42,7 +44,6 @@ const copyToClipboard = async (text: string) => {
   toast.success("Copied to clipboard");
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
 export const renderers: Partial<Components | any> = {
   code: ({
     inline,
@@ -77,14 +78,12 @@ export const renderers: Partial<Components | any> = {
         </div>
       );
     } else if (inline) {
-      // Render inline code with `<code>` instead of `<div>`
       return (
         <code className={className} {...props}>
           {children}
         </code>
       );
     } else {
-      // Fallback for non-highlighted code
       return (
         <code className={className} {...props}>
           {children}
@@ -105,6 +104,7 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   theme,
 }) => {
   const [copyStatus, setCopyStatus] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard
@@ -136,6 +136,12 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
           </h2>
         </div>
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
+          >
+            <FontAwesomeIcon icon={faComments} size="lg" />
+          </button>
           <button
             onClick={handleCopy}
             className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
@@ -187,6 +193,10 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
           <CodeSection code={item.code} theme={theme} />
         ) : null}
       </div>
+
+      {isChatOpen && (
+        <ChatModal file={item} onClose={() => setIsChatOpen(false)} />
+      )}
     </div>
   );
 };
