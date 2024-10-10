@@ -17,6 +17,8 @@ interface TodoItemProps {
   onSelect: (todoId: number) => void;
   selected: boolean;
   index: number;
+  isGeneratingResearch: boolean;
+  onGenerateResearch: (todoId: number) => void;
 }
 
 export const TodoItem: React.FC<TodoItemProps> = ({
@@ -27,6 +29,8 @@ export const TodoItem: React.FC<TodoItemProps> = ({
   onSelect,
   selected,
   index,
+  isGeneratingResearch,
+  onGenerateResearch,
 }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const statusColors = {
@@ -68,6 +72,11 @@ export const TodoItem: React.FC<TodoItemProps> = ({
   const handleCancelArchive = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setShowConfirmation(false);
+  };
+
+  const handleGenerateResearch = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    onGenerateResearch(todo.id);
   };
 
   const getBackgroundColor = (index: number, selected: boolean) => {
@@ -127,6 +136,17 @@ export const TodoItem: React.FC<TodoItemProps> = ({
           </a>
         )}
       </div>
+      <button
+        onClick={handleGenerateResearch}
+        disabled={isGeneratingResearch}
+        className={`mt-2 rounded-md px-3 py-1 text-xs ${
+          isGeneratingResearch
+            ? "cursor-not-allowed bg-gray-300 text-gray-500"
+            : "bg-blue-500 text-white hover:bg-blue-600"
+        }`}
+      >
+        {isGeneratingResearch ? "Generating..." : "Generate Research"}
+      </button>
 
       {showConfirmation && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
