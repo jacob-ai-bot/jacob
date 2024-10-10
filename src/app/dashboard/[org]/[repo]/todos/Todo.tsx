@@ -114,9 +114,8 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
       [todoId]: true,
     }));
     try {
-      // Remove the generateResearch call as it doesn't exist in the API
-      console.log("Generate research for todo:", todoId);
       // Implement the actual research generation logic here
+      console.log("Generate research for todo:", todoId);
     } catch (error) {
       console.error("Error generating research:", error);
     } finally {
