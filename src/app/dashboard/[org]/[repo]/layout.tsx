@@ -78,7 +78,7 @@ export default function DashboardLayout({
     });
 
   const commitChangesMutation = api.github.commitChanges.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: { commitUrl?: string }) => {
       toast.success("Commit successful!");
       if (data.commitUrl) {
         toast.info(
@@ -89,7 +89,7 @@ export default function DashboardLayout({
       }
       setChangedFiles([]);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Commit failed: ${error.message}`);
     },
   });
