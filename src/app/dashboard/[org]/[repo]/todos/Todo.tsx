@@ -158,7 +158,7 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
                 onArchive={handleArchive}
                 onSelect={handleSelect}
                 selected={selectedTodo?.id === todo.id}
-                isGeneratingResearch={generatingResearch[todo.id] || false}
+                isGeneratingResearch={generatingResearch[todo.id] ?? false}
                 onGenerateResearch={handleGenerateResearch}
               />
             ))
