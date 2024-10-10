@@ -52,13 +52,12 @@ export const renderers: Partial<
     className,
     children,
     ...props
-  }: {
+  }: React.ComponentPropsWithoutRef<"code"> & {
     inline: boolean;
     className: string;
-    children: React.ReactNode;
-  } & React.ComponentPropsWithoutRef<"code">) => {
+  }) => {
     const match = /language-(\w+)/.exec(className || "");
-    const theme = props.theme as "light" | "dark";
+    const theme = (props as { theme?: "light" | "dark" }).theme || "light";
     if (!inline && match) {
       return (
         <div className="relative">
