@@ -22,7 +22,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { api } from "~/trpc/react";
 import { toast } from "react-toastify";
-import ChangedFilesModal from "./components/ChangedFilesModal";
 
 const navItems = [
   { name: "Todos", icon: faListCheck },
@@ -368,15 +367,6 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
-
-      <ChangedFilesModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        changedFiles={changedFiles.map((file) => ({
-          path: file.path,
-          content: file.content,
-        }))}
-      />
     </div>
   );
 }
