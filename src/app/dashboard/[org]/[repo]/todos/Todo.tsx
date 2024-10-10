@@ -25,6 +25,9 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingIssue, setIsLoadingIssue] = useState(false);
   const [filteredTodos, setFilteredTodos] = useState<Todo[]>([]);
+  const [generatingStates, setGeneratingStates] = useState<
+    Record<number, boolean>
+  >({});
   const { data: project, isLoading: isLoadingProject } =
     api.events.getProject.useQuery({
       org,
@@ -42,12 +45,6 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
       enabled: !!project,
     },
   );
-
-  // const { data: codebaseContext, isLoading: isLoadingCodebaseContext } =
-  //   api.codebaseContext.getAll.useQuery({
-  //     org,
-  //     repo,
-  //   });
 
   useEffect(() => {
     if (todos && todos.length > 0) {
@@ -81,7 +78,6 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
   }, [selectedTodo, org, repo]);
 
   useEffect(() => {
-    // Filter todos based on searchQuery
     const _filteredTodos =
       todos?.filter((todo) =>
         [todo.name, todo.description]
@@ -112,6 +108,23 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
     void refetchTodos();
   };
 
+  const handleGenerateResearch = async (todoId: number) => {
+    setGeneratingStates((prevStates) => ({
+      ...prevStates,
+      [todoId]: true,
+    }));
+    try {
+      await trpcClient.todos.generateResearch.mutate({ todoId });
+    } catch (error) {
+      console.error("Error generating research:", error);
+    } finally {
+      setGeneratingStates((prevStates) => ({
+        ...prevStates,
+        [todoId]: false,
+      }));
+    }
+  };
+
   if (isLoadingProject || !project) {
     return (
       <div className="flex h-full items-center justify-center p-4">
@@ -122,7 +135,6 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
 
   return (
     <div className="flex h-full w-full flex-col overflow-clip rounded-md  dark:bg-gray-900 lg:flex-row">
-      {/* Left column: Todo list */}
       <div className="w-1/3 border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800 ">
         <div className="border-b border-r border-gray-200 p-4 dark:border-gray-700">
           <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
@@ -155,13 +167,14 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
                 onArchive={handleArchive}
                 onSelect={handleSelect}
                 selected={selectedTodo?.id === todo.id}
+                isGeneratingResearch={generatingStates[todo.id] || false}
+                onGenerateResearch={() => handleGenerateResearch(todo.id)}
               />
             ))
           )}
         </div>
       </div>
 
-      {/* Details column: Selected todo details */}
       <div className=" hide-scrollbar h-[calc(100vh-116px)] w-2/3 overflow-y-scroll bg-white p-6 dark:bg-gray-800 ">
         {selectedTodo ? (
           <IssueDetails
@@ -171,6 +184,8 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
             onTodoUpdate={handleTodoUpdate}
             org={org}
             repo={repo}
+            isGeneratingResearch={generatingStates[selectedTodo.id] || false}
+            onGenerateResearch={() => handleGenerateResearch(selectedTodo.id)}
           />
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400">
