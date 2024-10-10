@@ -191,8 +191,6 @@ export function getSanitizedEnv() {
     GITHUB_WEBHOOK_SECRET, // eslint-disable-line @typescript-eslint/no-unused-vars
     OPENAI_API_KEY, // eslint-disable-line @typescript-eslint/no-unused-vars
     DATABASE_URL, // eslint-disable-line @typescript-eslint/no-unused-vars
-    VITE_GITHUB_CLIENT_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
-    VITE_FIGMA_PLUGIN_ID, // eslint-disable-line @typescript-eslint/no-unused-vars
     ...baseEnv
   } = process.env;
   return baseEnv;
