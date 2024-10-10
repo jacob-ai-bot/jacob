@@ -1,5 +1,5 @@
 import React from "react";
-import Chat from "./Chat";
+import { Chat } from "./Chat";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
