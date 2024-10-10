@@ -44,7 +44,7 @@ const copyToClipboard = async (text: string) => {
   toast.success("Copied to clipboard");
 };
 
-export const renderers: Partial<Components | any> = {
+export const renderers: Partial<Components> = {
   code: ({
     inline,
     className,
