@@ -91,7 +91,7 @@ const researchTools: OpenAI.ChatCompletionTool[] = [
     function: {
       name: ResearchAgentActionType.ResearchComplete,
       description:
-        "Confirm that the most important information has been gathered to address the issue.",
+        "The system will continue in a loop until this tool is called. Call this tool to confirm that either all of the most important information has been gathered to address the issue, or if the system attemped to gather key missing information but was unable to do so.",
       parameters: {
         type: "object",
         properties: {},
@@ -229,13 +229,14 @@ export const researchIssue = async function ({
         const updatedPrompt = dedent`
             ### Gathered Information:
             ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
-            ### Questions for Project Owner:
+            ### Questions for Project Owner (Note that the user has not seen these questions yet and did not yet provide an answer):
             ${questionsForProjectOwner.join("\n")}
             ### Missing Information:
             Reflect on the gathered information and specify what is still needed to fully address the issue and why it is needed.
             ### Plan Information Gathering:
             Decide on the best action to obtain each missing piece of information (ResearchCodebase, ResearchInternet, AskProjectOwner, ResearchComplete).
             Choose the correct tools and formulate very specific, detailed queries to gather all of the missing information effectively. If you need to ask follow-up questions, only ask up to 5 additional questions. Each question should be a full sentence and clearly state what information you are looking for.
+            NEVER repeat the same question, even if the system did not answer the question. It better to call the ResearchComplete tool if you have asked all of the questions, even if the system did not answer them, than to repeat the same question.
             ### Important:
                 If you have all the necessary information to proceed with the task, return a single tool call to confirm that the research is complete. If you need more information, ask up to 5 additional questions to gather it.
         `;
