@@ -86,6 +86,7 @@ export const createTodo = async (
     }
 
     console.log(`Created new todo for issue #${issue.number}`);
+    return newTodo;
   } catch (error) {
     console.error(
       `Error while creating todo for issue #${issue.number}: ${String(error)}`,

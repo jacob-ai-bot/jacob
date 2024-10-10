@@ -11,6 +11,7 @@ import { AT_MENTION } from "../utils";
 import { codeReviewCommandSuggestion } from "../github/issue";
 import { db } from "../db/db";
 import { createTodo } from "../utils/todos";
+import { sendTransactionalEmail } from "../utils/email";
 
 dotenv.config();
 
@@ -64,7 +65,7 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         const installationAuthentication = await authInstallation(
           installation?.id,
         );
-        await createTodo(
+        const todo = await createTodo(
           repository.full_name,
           project.id,
           payload?.issue.number,
@@ -74,6 +75,27 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         console.log(
           `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
         );
+        const [githubOrg, githubRepo] = repository.full_name.split("/");
+        const user = await db.users.findBy({ login: payload.issue.user.login });
+        const userEmail = user?.email;
+
+        if (userEmail && todo) {
+          try {
+            await sendTransactionalEmail(
+              userEmail,
+              todo,
+              githubOrg ?? "",
+              githubRepo ?? "",
+            );
+            console.log(
+              `[${repository.full_name}] Sent transactional email for issue #${payload.issue.number}`,
+            );
+          } catch (error) {
+            console.error(
+              `[${repository.full_name}] Error sending transactional email for issue #${payload.issue.number}: ${String(error)}`,
+            );
+          }
+        }
       }
     } catch (error) {
       console.error(
