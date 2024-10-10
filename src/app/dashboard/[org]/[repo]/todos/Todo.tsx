@@ -175,8 +175,6 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
             onTodoUpdate={handleTodoUpdate}
             org={org}
             repo={repo}
-            isGeneratingResearch={generatingResearch[selectedTodo.id] || false}
-            onGenerateResearch={handleGenerateResearch}
           />
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400">
