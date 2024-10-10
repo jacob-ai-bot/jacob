@@ -431,4 +431,4 @@ export const githubRouter = createTRPCRouter({
   **Guidelines for creating an exceptional GitHub issue**:
   1. Start with a clear, concise title that summarizes the issue.
   2. Provide a detailed description of the problem or feature request.
-  3. Include steps to
+  3.
