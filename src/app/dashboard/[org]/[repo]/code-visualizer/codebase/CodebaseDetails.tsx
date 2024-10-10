@@ -13,7 +13,7 @@ import {
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
-import Markdown, { type Components } from "react-markdown";
+import Markdown from "react-markdown";
 import gfm from "remark-gfm";
 import path from "path";
 import CodeSection from "./CodeSection";
@@ -44,20 +44,21 @@ const copyToClipboard = async (text: string) => {
   toast.success("Copied to clipboard");
 };
 
-export const renderers: Partial<Components> = {
+export const renderers: Partial<
+  React.ComponentProps<typeof Markdown>["components"]
+> = {
   code: ({
     inline,
     className,
-    theme,
     children,
     ...props
   }: {
     inline: boolean;
     className: string;
-    theme: "light" | "dark";
     children: React.ReactNode;
-  }) => {
+  } & React.ComponentPropsWithoutRef<"code">) => {
     const match = /language-(\w+)/.exec(className || "");
+    const theme = props.theme as "light" | "dark";
     if (!inline && match) {
       return (
         <div className="relative">
@@ -195,7 +196,12 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
       </div>
 
       {isChatOpen && (
-        <ChatModal file={item} onClose={() => setIsChatOpen(false)} />
+        <ChatModal
+          file={item}
+          onClose={() => setIsChatOpen(false)}
+          org=""
+          repo=""
+        />
       )}
     </div>
   );

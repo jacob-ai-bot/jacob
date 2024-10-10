@@ -7,9 +7,11 @@ import { faTimes } from "@fortawesome/free-solid-svg-icons";
 interface ChatModalProps {
   file: ContextItem;
   onClose: () => void;
+  org: string;
+  repo: string;
 }
 
-const ChatModal: React.FC<ChatModalProps> = ({ file, onClose }) => {
+const ChatModal: React.FC<ChatModalProps> = ({ file, onClose, org, repo }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
@@ -24,7 +26,13 @@ const ChatModal: React.FC<ChatModalProps> = ({ file, onClose }) => {
             <FontAwesomeIcon icon={faTimes} size="lg" />
           </button>
         </div>
-        <Chat focusedFile={file} />
+        <Chat
+          project={{} as any}
+          contextItems={[file]}
+          org={org}
+          repo={repo}
+          focusedFile={file}
+        />
       </div>
     </div>
   );
