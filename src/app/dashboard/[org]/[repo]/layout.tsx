@@ -54,6 +54,10 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [changedFiles, setChangedFiles] = useState<
+    { path: string; content: string }[]
+  >([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const debounceExpandRef = useRef<ReturnType<typeof debounce>>();
   const debounceCollapseRef = useRef<ReturnType<typeof debounce>>();
 
@@ -66,14 +70,29 @@ export default function DashboardLayout({
   const refreshContextMutation =
     api.codebaseContext.generateCodebaseContext.useMutation({
       onSuccess: () => {
-        // You can add a success notification here if needed
         console.log("Context refreshed successfully");
       },
       onError: (error) => {
         console.error("Refresh context failed:", error);
-        // You can add an error notification here if needed
       },
     });
+
+  const commitChangesMutation = api.github.commitChanges.useMutation({
+    onSuccess: (data: { commitUrl?: string }) => {
+      toast.success("Commit successful!");
+      if (data.commitUrl) {
+        toast.info(
+          <a href={data.commitUrl} target="_blank" rel="noopener noreferrer">
+            View Commit on GitHub
+          </a>,
+        );
+      }
+      setChangedFiles([]);
+    },
+    onError: (error: Error) => {
+      toast.error(`Commit failed: ${error.message}`);
+    },
+  });
 
   useEffect(() => {
     debounceExpandRef.current = debounce((value: boolean) => {
@@ -130,12 +149,31 @@ export default function DashboardLayout({
     });
     void refetch();
 
-    // Stop the spinning after 10 seconds
     setTimeout(() => {
       setIsRefreshing(false);
       toast.success("Codebase context refreshed successfully");
     }, 10000);
   };
+
+  const handleCommit = () => {
+    if (changedFiles.length === 0) {
+      toast.warn("No changes to commit");
+      return;
+    }
+
+    const commitMessage = "Commit changes from dashboard"; // You might want to prompt the user for a commit message
+
+    commitChangesMutation.mutate({
+      org: params.org,
+      repo: params.repo,
+      branch: "main", // You might want to make this dynamic
+      commitMessage,
+      files: changedFiles,
+    });
+  };
+
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
 
   return (
     <div className="flex h-screen w-full border-r border-r-aurora-300 bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:border-r-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100">
@@ -271,9 +309,11 @@ export default function DashboardLayout({
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={handleCommit}
                 className="rounded-full bg-aurora-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 dark:bg-sky-600/30 dark:hover:bg-sky-500/30"
+                disabled={commitChangesMutation.isLoading}
               >
-                Commit
+                {commitChangesMutation.isLoading ? "Committing..." : "Commit"}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -310,6 +350,14 @@ export default function DashboardLayout({
                   <MoonIcon className="h-5 w-5" />
                 )}
               </button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleOpenModal}
+                className="rounded-full bg-aurora-300 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-400 dark:bg-sky-700/30 dark:hover:bg-sky-600/30"
+              >
+                Changed Files ({changedFiles.length})
+              </motion.button>
             </div>
           </div>
         </header>
@@ -322,3 +370,11 @@ export default function DashboardLayout({
     </div>
   );
 }
+__FILEPATH__ /
+  src /
+  app /
+  dashboard /
+  [org] /
+  [repo] /
+  components /
+  ChangedFilesModal.tsx__;
