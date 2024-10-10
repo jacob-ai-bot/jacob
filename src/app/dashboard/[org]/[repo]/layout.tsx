@@ -32,6 +32,52 @@ const navItems = [
   { name: "Design", icon: faPaintBrush },
 ];
 
+const BranchesDropdown = ({ org, repo }: { org: string; repo: string }) => {
+  const [selectedBranch, setSelectedBranch] = useState("main");
+  const { data: branches, isLoading: isLoadingBranches } =
+    api.github.getBranches.useQuery({ org, repo });
+  const setBranchMutation = api.github.setBranch.useMutation({
+    onSuccess: () => {
+      toast.success("Branch changed successfully");
+      window.location.reload();
+    },
+    onError: (error) => {
+      toast.error(`Failed to change branch: ${error.message}`);
+    },
+  });
+
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const branch = e.target.value;
+    setSelectedBranch(branch);
+    setBranchMutation.mutate({ org, repo, branch });
+  };
+
+  if (isLoadingBranches) {
+    return (
+      <select
+        disabled
+        className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400"
+      >
+        <option>Loading branches...</option>
+      </select>
+    );
+  }
+
+  return (
+    <select
+      value={selectedBranch}
+      onChange={handleBranchChange}
+      className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400"
+    >
+      {branches?.map((branch) => (
+        <option key={branch} value={branch}>
+          {branch}
+        </option>
+      ))}
+    </select>
+  );
+};
+
 export default function DashboardLayout({
   children,
   params,
@@ -66,12 +112,10 @@ export default function DashboardLayout({
   const refreshContextMutation =
     api.codebaseContext.generateCodebaseContext.useMutation({
       onSuccess: () => {
-        // You can add a success notification here if needed
         console.log("Context refreshed successfully");
       },
       onError: (error) => {
         console.error("Refresh context failed:", error);
-        // You can add an error notification here if needed
       },
     });
 
@@ -130,7 +174,6 @@ export default function DashboardLayout({
     });
     void refetch();
 
-    // Stop the spinning after 10 seconds
     setTimeout(() => {
       setIsRefreshing(false);
       toast.success("Codebase context refreshed successfully");
@@ -139,7 +182,6 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen w-full border-r border-r-aurora-300 bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:border-r-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100">
-      {/* Left Sidebar */}
       <motion.aside
         initial={{ width: "72px" }}
         animate={{ width: isExpanded ? "250px" : "72px" }}
@@ -237,9 +279,7 @@ export default function DashboardLayout({
         </motion.div>
       </motion.aside>
 
-      {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header */}
         <header className="bg-white/90 pl-[96px] shadow-sm dark:bg-slate-800">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center space-x-4">
@@ -259,13 +299,7 @@ export default function DashboardLayout({
                   ))
                 )}
               </select>
-              <select
-                className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400"
-                defaultValue="main"
-                disabled
-              >
-                <option value="main">main</option>
-              </select>
+              <BranchesDropdown org={params.org} repo={params.repo} />
             </div>
             <div className="flex items-center space-x-3">
               <motion.button
@@ -314,7 +348,6 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-6 pl-[96px] dark:from-slate-900 dark:to-slate-800">
           {children}
         </main>
