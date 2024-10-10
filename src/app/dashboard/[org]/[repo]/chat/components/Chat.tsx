@@ -1,4 +1,3 @@
-// components/Chat.tsx
 import { useState, useEffect, useRef } from "react";
 import { type Message, useChat } from "ai/react";
 import { type Project } from "~/server/db/tables/projects.table";
@@ -16,12 +15,14 @@ import SearchBar from "../../components/SearchBar";
 import { api } from "~/trpc/react";
 import { getLanguageFromFile } from "~/app/utils";
 import ChatMessage from "./ChatMessage";
+import { useRouter } from "next/router";
 
 interface ChatProps {
   project: Project;
   contextItems: ContextItem[];
   org: string;
   repo: string;
+  focusedFile?: ContextItem;
 }
 
 export interface CodeFile {
@@ -44,7 +45,7 @@ const STARTING_MESSAGE = {
     "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
 };
 
-export function Chat({ contextItems, org, repo }: ChatProps) {
+export function Chat({ contextItems, org, repo, focusedFile }: ChatProps) {
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
   const [artifactFileName, setArtifactFileName] = useState<string>("");
   const [artifactLanguage, setArtifactLanguage] = useState<string>("");
@@ -60,6 +61,7 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<SpeechToTextAreaRef>(null);
+  const router = useRouter();
 
   const { data: codeContent, refetch: refetchCodeContent } =
     api.github.fetchFileContents.useQuery({
@@ -77,11 +79,11 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
       org,
       repo,
       codeContent,
+      focusedFile,
     },
     initialMessages: savedMessages,
     onResponse: async (response) => {
       console.log("onResponse", response);
-      // turn off the loading indicator
       setHasStartedStreaming(true);
     },
     onError: (error) => {
@@ -115,9 +117,6 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage) return;
     if (lastMessage.role === "assistant" && lastMessage.content.length > 0) {
-      // this is a workaround, but if the last message is an assistant message and there is
-      // more than a 1000ms gap between the last message and the onFinished call, then we know
-      // that the system is creating an artifact and we should show the loading card
       setIsCreatingArtifact(true);
     }
   }, [messages]);
@@ -126,7 +125,6 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
 
   useEffect(() => {
     if (model) {
-      // when the model changes, move the messages from the previous model to the new model
       setSavedMessages(messages);
     }
   }, [model, messages]);
@@ -172,6 +170,24 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
     await append({ role: "user", content: message });
   };
 
+  const navigateToFile = () => {
+    if (focusedFile) {
+      void router.push(
+        `/dashboard/${org}/${repo}/code-visualizer?file=${focusedFile.file}`,
+      );
+    }
+  };
+
+  const shareFileSnippet = () => {
+    if (focusedFile) {
+      const shareableLink = `${window.location.origin}/dashboard/${org}/${repo}/code-visualizer?file=${focusedFile.file}`;
+      void navigator.clipboard
+        .writeText(shareableLink)
+        .then(() => toast.success("Link copied to clipboard!"))
+        .catch((err) => console.error("Failed to copy: ", err));
+    }
+  };
+
   if (!mounted) return null;
 
   return (
@@ -190,6 +206,22 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
             </div>
           </div>
         </div>
+        {focusedFile && (
+          <div className="mb-4 flex justify-end space-x-2">
+            <button
+              onClick={navigateToFile}
+              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+            >
+              Go to File
+            </button>
+            <button
+              onClick={shareFileSnippet}
+              className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+            >
+              Share
+            </button>
+          </div>
+        )}
         <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
           {messages
             .filter((m) => m.role !== "tool")
