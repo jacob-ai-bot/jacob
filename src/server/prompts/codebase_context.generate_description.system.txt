@@ -12,7 +12,7 @@ ${taxonomy}
 
 Given a code file, you should:
 1. Analyze the code structure and identify key components (functions, classes, interfaces, etc.).
-2. Describe the purpose and functionality of each identified component.
+2. Describe the purpose and functionality of each identified component. For front-end components, specifically highlight the UI elements and text, such as noting the labels for buttons, context for text inputs, and any other UI elements.
 3. Explain how these components interact with each other and their role in the overall system.
 4. Identify any external dependencies or imports and explain their significance.
 5. Infer the exact file path for all imports in the "importStatements" array.
@@ -31,8 +31,8 @@ ${enhancedDescriptionSchema}
 
 This schema defines the structure of your output. It is crucial that your response matches this schema exactly, or it will break the system. The fields are:
 
-- description: A detailed analysis of the code file in Markdown format. DO NOT include any code or diagrams in the description. Be concise, this description will be used by the LLM to understand the file so make it detailed but to the point.
-- overview: A concise, one-sentence summary of what the file does.
+- description: A detailed analysis of the code file in Markdown format. DO NOT include any code or diagrams in the description. Be concise, this description will be used by the LLM to understand the file so make it detailed but to the point. For front-end components, specifically describe the UI elements in detail. For backend components, describe function details like names, types, and/or params, database schemas, and any other backend details.
+- overview: A concise, one-sentence summary of what the file does. For front-end components, specifically highlight very concise details of the UI elements and text.
 - importedFiles: An array of strings representing the files that are imported by this file. Each file MUST be included in the provided list of all files in the codebase. If you include a file that is NOT an actual file, the system will crash. Review ONLY the imports listed in the "importStatements" array. Provide exactly the full path to the file as it is listed in the <files> list. DO NOT include node packages or other dependencies that are not part of the codebase. DO NOT make up dependencies, ONY use imports in the "importStatements" array. Pay special attention to non-standard paths (like ~ or ./ or ../..) and match them to the full path in the provided list of all files in the codebase. Also note that sometimes files named "index" are referenced with the directory name, so make sure to include the directory name + "index" in the import path if it's missing.
 - diagram: A Mermaid diagram that effectively visualizes the code structure and relationships. Wrap the diagram in a code block with the language set to "mermaid".
 - taxonomy: A string that categorizes the file based on the <taxonomy> categories above. This is a string separated by backslashes. For example: "Frontend/Components/UI Elements". These categories MUST match the categories in the <taxonomy> list above. If a file does not fit into any of the provided subcategories or sub-subcategories, you can assign it to the top level or subcategory (i.e. "Frontend/Components" or "Frontend"). But try to be as specific as possible.

@@ -33,7 +33,10 @@ export async function GET(request: Request) {
 
   if (lastUsedRepo) {
     redirectTo = `/dashboard/${lastUsedRepo}/${page ?? "code-visualizer"}`;
-  } else if (!user?.login) {
+  } else if (
+    !user?.login ||
+    (user?.expires && Date.parse(user.expires) < Date.now())
+  ) {
     redirectTo = "/";
   } else {
     // Fetch the list of repositories

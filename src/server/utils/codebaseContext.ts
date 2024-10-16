@@ -111,7 +111,7 @@ export async function getOrCreateCodebaseContext(
   projectId: number,
   rootPath: string,
   filePaths: StandardizedPath[],
-  models: Model[] = ["gpt-4o-mini-2024-07-18", "gemini-1.5-flash-latest"],
+  models: Model[] = ["gpt-4o-mini-2024-07-18", "gpt-4o-2024-08-06"],
 ): Promise<ContextItem[]> {
   const contextItems: ContextItem[] = [];
   const filesToProcess: StandardizedPath[] = [];
@@ -520,13 +520,13 @@ async function enhanceWithLLM(
   rootPath: string,
   projectId: number,
 ): Promise<void> {
-  const maxConcurrentRequests = 20;
+  const maxConcurrentRequests = 10;
   for (let i = 0; i < sections.length; i += maxConcurrentRequests) {
-    // alternate between models to avoid rate limits
-    const model = models[i % models.length]!;
     const chunk = sections.slice(i, i + maxConcurrentRequests);
-    const enhanceTasks = chunk.map(async (section) => {
+    const enhanceTasks = chunk.map(async (section, index) => {
       try {
+        // alternate between models to avoid rate limits
+        const model = models[index % models.length]!;
         const enhancedContent = await generateDescription(
           section,
           model,

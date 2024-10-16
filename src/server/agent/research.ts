@@ -124,12 +124,12 @@ export const researchIssue = async function ({
   const allFiles = traverseCodebase(rootDir);
   const query = `Based on the GitHub issue, your job is to find the most important files in this codebase.\n
   Here is the issue <issue>${githubIssue}</issue> \n
-  Based on the GitHub issue, what are the 25 most relevant files to resolving this GitHub issue in this codebase?`;
+  Based on the GitHub issue, what are the 100 most relevant files to resolving this GitHub issue in this codebase? Order them from most relevant to least relevant. After identifying the top 10 most relevant files, prioritize other files that are closely related to the most important files, such as other files in the same directory or files that implement the same interface or have similar functionality.`;
   const relevantFiles = await selectRelevantFiles(
     query,
     undefined,
     allFiles,
-    25,
+    100,
   );
 
   const codebaseContext = await getOrCreateCodebaseContext(
@@ -209,19 +209,19 @@ export const researchIssue = async function ({
           rootDir,
           codebaseContext,
         );
+        const research: Research = {
+          todoId,
+          issueId,
+          type: functionName,
+          question: args.query,
+          answer: functionResponse,
+        };
         if (functionName === ResearchAgentActionType.AskProjectOwner) {
           questionsForProjectOwner.push(args.query);
         } else {
-          const research: Research = {
-            todoId,
-            issueId,
-            type: functionName,
-            question: args.query,
-            answer: functionResponse,
-          };
           gatheredInformation.push(research);
-          await db.research.create(research);
         }
+        await db.research.create(research);
         allInfoGathered = false;
       }
 
@@ -229,7 +229,7 @@ export const researchIssue = async function ({
         const updatedPrompt = dedent`
             ### Gathered Information:
             ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
-            ### Questions for Project Owner (Note that the user has not seen these questions yet and did not yet provide an answer):
+            ### Questions Already Asked for Project Owner (Note that the user has not seen these questions yet and did not yet provide an answer):
             ${questionsForProjectOwner.join("\n")}
             ### Missing Information:
             Reflect on the gathered information and specify what is still needed to fully address the issue and why it is needed.
@@ -375,7 +375,7 @@ export async function selectRelevantFiles(
       : codebaseContext
           ?.map(
             (file) =>
-              `${file.file} - ${file.overview}. Diagram: ${file.diagram ?? ""}`,
+              `${file.file} - ${file.text}\n Diagram: ${file.diagram ?? ""}`,
           )
           .join("\n") ?? "",
     numFiles: numFiles.toString(),
@@ -405,7 +405,7 @@ export async function selectRelevantFiles(
       0.3,
       undefined,
       3,
-      "gpt-4o-2024-08-06",
+      "claude-3-5-sonnet-20240620",
     )) as RelevantFiles;
 
     if (!response.files) {

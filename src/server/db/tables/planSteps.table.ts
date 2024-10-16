@@ -1,5 +1,11 @@
 import type { Selectable, Insertable, Updateable, Queryable } from "orchid-orm";
 import { BaseTable } from "../baseTable";
+import { PlanningAgentActionType } from "../enums";
+
+const PLANNING_ACTION_TYPE_VALUES = Object.values(PlanningAgentActionType) as [
+  PlanningAgentActionType,
+  ...PlanningAgentActionType[],
+];
 
 export type PlanStep = Selectable<PlanStepsTable>;
 export type NewPlanStep = Insertable<PlanStepsTable>;
@@ -12,10 +18,12 @@ export class PlanStepsTable extends BaseTable {
     id: t.identity().primaryKey(),
     projectId: t.integer().foreignKey("projects", "id"),
     issueNumber: t.integer(),
-    stepNumber: t.integer(),
-    filePath: t.text().nullable(),
+    type: t.enum("planning_action_type_values", PLANNING_ACTION_TYPE_VALUES),
+    title: t.text(),
     instructions: t.text(),
+    filePath: t.text(),
     exitCriteria: t.text().nullable(),
+    dependencies: t.text().nullable(),
     isActive: t.boolean().default(true),
     ...t.timestamps(),
   }));

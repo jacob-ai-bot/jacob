@@ -10,7 +10,7 @@ export interface PlanStep {
   title: string;
   instructions: string;
   filePath: StandardizedPath;
-  exitCriteria: string;
+  exitCriteria?: string;
   dependencies?: string;
 }
 
@@ -18,7 +18,7 @@ export interface Plan {
   steps: PlanStep[];
 }
 
-const planningTools: OpenAI.ChatCompletionTool[] = [
+export const planningTools: OpenAI.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
@@ -54,7 +54,7 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
               "Identify any previous steps in the plan that need to be completed before this step. If there are no dependencies, skip this field.",
           },
         },
-        required: ["instructions", "filePaths", "exitCriteria"],
+        required: ["instructions", "filePath", "exitCriteria"],
       },
     },
   },
@@ -93,7 +93,7 @@ const planningTools: OpenAI.ChatCompletionTool[] = [
               "Identify any previous steps in the plan that need to be completed before this step. If there are no dependencies, skip this field.",
           },
         },
-        required: ["instructions", "filePaths", "exitCriteria"],
+        required: ["instructions", "filePath", "exitCriteria"],
       },
     },
   },
@@ -161,45 +161,52 @@ export const createPlan = async function (
   //       JSON.stringify(r.choices[0]?.message?.tool_calls) ?? "No message found",
   //   ),
   // );
-  const plans: Plan[] = responses.map((response) => {
-    const toolCalls = response.choices[0]?.message.tool_calls;
-    if (!toolCalls) {
-      console.error("No tool calls found in response.");
-      return { steps: [] };
-    }
-
-    const plan: Plan = {
-      steps: [],
-    };
-
-    for (const toolCall of toolCalls) {
-      const functionName = toolCall.function.name as PlanningAgentActionType;
-      if (!Object.values(PlanningAgentActionType).includes(functionName)) {
-        console.error(`Invalid function name: ${functionName}`);
-        continue;
-      }
-      const args = JSON.parse(toolCall.function.arguments) as PlanStep;
-
-      const { title, filePath, instructions, exitCriteria, dependencies } =
-        args;
-      const standardizedPath = standardizePath(filePath);
-      const step = {
-        type: functionName,
-        title,
-        instructions,
-        filePath: standardizedPath,
-        exitCriteria,
-        dependencies,
-      };
-      plan.steps.push(step);
-    }
-    return plan;
-  });
+  const plans = await Promise.all(
+    responses.map((response) => {
+      return createPlanFromToolCalls(response);
+    }),
+  );
 
   const bestPlan = await getBestPlan(plans, userPrompt, systemPrompt);
   // console.log("<best plan>\n\n", JSON.stringify(bestPlan));
   // console.log("\n\n</best plan>");
   return bestPlan;
+};
+
+export const createPlanFromToolCalls = async (
+  response: OpenAI.Chat.Completions.ChatCompletion,
+) => {
+  const toolCalls = response.choices[0]?.message.tool_calls;
+  if (!toolCalls) {
+    console.error("No tool calls found in response.");
+    return { steps: [] };
+  }
+
+  const plan: Plan = {
+    steps: [],
+  };
+
+  for (const toolCall of toolCalls) {
+    const functionName = toolCall.function.name as PlanningAgentActionType;
+    if (!Object.values(PlanningAgentActionType).includes(functionName)) {
+      console.error(`Invalid function name: ${functionName}`);
+      continue;
+    }
+    const args = JSON.parse(toolCall.function.arguments) as PlanStep;
+
+    const { title, filePath, instructions, exitCriteria, dependencies } = args;
+    const standardizedPath = standardizePath(filePath);
+    const step = {
+      type: functionName,
+      title,
+      instructions,
+      filePath: standardizedPath,
+      exitCriteria,
+      dependencies,
+    };
+    plan.steps.push(step);
+  }
+  return plan;
 };
 
 const getPromptsForNewPlan = (

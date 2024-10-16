@@ -7,7 +7,7 @@ import { type Todo } from "~/server/api/routers/events";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import TodoItem from "./components/TodoItem";
-import IssueDetails from "./components/Issue";
+import IssueDetails from "./components/TodoDetails";
 
 export interface Issue {
   title: string;

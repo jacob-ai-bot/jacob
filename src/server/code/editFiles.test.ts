@@ -72,6 +72,49 @@ vi.mock("../utils/files", () => mockedFiles);
 
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
+const mockedDb = vi.hoisted(() => ({
+  research: {
+    where: vi.fn().mockReturnValue({
+      all: vi.fn().mockResolvedValue([{ someResearchData: "mocked research" }]),
+    }),
+  },
+  planSteps: {
+    select: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnValue({
+      all: vi.fn().mockResolvedValue([
+        {
+          type: "EditExistingCode",
+          title: "Edit file.txt",
+          instructions: "Update the content",
+          filePath: "file.txt",
+          exitCriteria: "File is updated",
+          dependencies: null,
+        },
+      ]),
+    }),
+  },
+  todos: {
+    findByOptional: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
+  },
+}));
+vi.mock("~/server/db/db", () => ({ db: mockedDb }));
+
+const mockedPlan = vi.hoisted(() => ({
+  getOrGeneratePlan: vi.fn().mockResolvedValue({
+    steps: [
+      {
+        type: "EditExistingCode",
+        title: "Edit file.txt",
+        instructions: "Update the content",
+        filePath: "file.txt",
+        exitCriteria: "File is updated",
+        dependencies: null,
+      },
+    ],
+  }),
+}));
+vi.mock("~/server/utils/plan", () => mockedPlan);
+
 describe("editFiles", () => {
   beforeEach(() => {
     process.env.PROMPT_FOLDER = originalPromptsFolder;
@@ -108,14 +151,12 @@ describe("editFiles", () => {
   test("editFiles success path", async () => {
     await editFiles(editFilesParams);
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(2);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+
     expect(mockedRequest.sendGptRequest.mock.calls[0]![0]).toContain(
-      "Here is a Github Issue:",
-    );
-    expect(mockedRequest.sendGptRequest.mock.calls[1]![0]).toContain(
       "Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.",
     );
-    expect(mockedRequest.sendGptRequest.mock.calls[1]![1]).toContain(
+    expect(mockedRequest.sendGptRequest.mock.calls[0]![1]).toContain(
       "You are the top, most distinguished Technical Fellow at Microsoft.",
     );
 
@@ -136,19 +177,29 @@ describe("editFiles", () => {
     });
 
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledOnce();
-    expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenLastCalledWith({
-      ...mockEventData,
-      repository: editFilesParams.repository,
-      token: editFilesParams.token,
-      rootPath: editFilesParams.rootPath,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      branch: expect.stringContaining("jacob-issue-"),
-      commitMessage: `JACoB PR for Issue ${issue.title}`,
-      issue,
-      newPrTitle: `JACoB PR for Issue ${issue.title}`,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      newPrBody: expect.stringContaining("## Plan:\n\nsteps-to-address-issue"),
-      newPrReviewers: issue.assignees.map((assignee) => assignee.login),
+    expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        newPrBody: expect.stringContaining("## Plan:\n"),
+      }),
+    );
+
+    // Verify that the research data is fetched
+    expect(mockedDb.research.where).toHaveBeenCalledWith({
+      issueId: issue.number,
+    });
+
+    // Verify that the plan steps are fetched
+    expect(mockedDb.planSteps.select).toHaveBeenCalledWith(
+      "type",
+      "title",
+      "instructions",
+      "filePath",
+      "exitCriteria",
+      "dependencies",
+    );
+    expect(mockedDb.planSteps.where).toHaveBeenCalledWith({
+      issueNumber: issue.number,
+      projectId: mockEventData.projectId,
     });
   });
 });

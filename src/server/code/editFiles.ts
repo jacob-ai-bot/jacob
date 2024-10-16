@@ -1,32 +1,31 @@
 import { type Issue, type Repository } from "@octokit/webhooks-types";
-
-import { getTypes, getImages } from "../analyze/sourceMap";
 import {
   parseTemplate,
   constructNewOrEditSystemPrompt,
   type RepoSettings,
   type BaseEventData,
-  getStyles,
   generateJacobBranchName,
+  getStyles,
 } from "../utils";
-import { concatenateFiles, reconstructFiles } from "../utils/files";
 import {
   countTokens,
   MAX_OUTPUT,
   type Model,
   sendGptRequest,
-  sendGptRequestWithSchema,
 } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
-import { saveImages } from "../utils/images";
-import {
-  ExtractedIssueInfoSchema,
-  type ExtractedIssueInfo,
-} from "./extractedIssue";
+import { concatenateFiles, reconstructFiles } from "../utils/files";
 import { emitCodeEvent } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { db } from "../db/db";
+import { researchIssue } from "../agent/research";
+import { createTodo } from "../utils/todos";
+import { getTypes, getImages } from "../analyze/sourceMap";
+import { saveImages } from "../utils/images";
+import { getOrGeneratePlan } from "../utils/plan";
+import { type PlanStep } from "~/server/agent/plan";
+import { PlanningAgentActionType } from "../db/enums";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -49,71 +48,77 @@ export async function editFiles(params: EditFilesParams) {
     repoSettings,
     ...baseEventData
   } = params;
+
   const snapshotUrl = getSnapshotUrl(issue.body);
-  // When we start processing PRs, need to handle appending additionalComments
   const issueBody = issue.body ? `\n${issue.body}` : "";
+  const issueText = issue.title + issueBody;
 
-  // If there is research available, add it to the issue text
-  const researchData = await db.research.where({ issueId: issue.number }).all();
-  const codebaseInformation =
-    researchData
-      .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
-      .join("\n\n") ?? sourceMap;
+  // Fetch or generate research data
+  let researchData = await db.research.where({ issueId: issue.number }).all();
+  const projectId = baseEventData.projectId;
+  if (!researchData.length) {
+    console.log(`[${repository.full_name}] No research found. Researching...`);
+    let todo = await db.todos.findByOptional({
+      issueId: issue.number,
+      projectId,
+    });
+    if (!todo) {
+      console.log(
+        `[${repository.full_name}] No todo found for issue ${issue.number}. Creating todo...`,
+      );
+      todo = await createTodo(
+        repository.full_name,
+        projectId,
+        issue.number,
+        token,
+      );
+      if (!todo) {
+        console.log(
+          `[${repository.full_name}] Error creating todo for issue ${issue.number}. Exiting...`,
+        );
+        throw new Error("Error creating todo");
+      }
+    }
+    await researchIssue({
+      githubIssue: issueText,
+      todoId: todo.id,
+      issueId: issue.number,
+      rootDir: rootPath,
+      projectId,
+    });
+    researchData = await db.research.where({ todoId: todo.id }).all();
+  }
 
-  const initialIssueText = `${issue.title}${issueBody}}`;
-
-  // use o1-mini to generate a plan
-  const o1Prompt = `Here is a Github Issue:\n
-  <issue>${initialIssueText}</issue>\n
-  Here is some information about the codebase that may be relevant:\n
-  <codebase-information>${codebaseInformation}</codebase-information>\n
-  Generate a straightforward plan for how to resolve this issue while making changes to as few files as possible. 
-  Be concise and specific, providing a step-by-step guide for the developer.`;
-
-  const o1Plan = await sendGptRequest(
-    o1Prompt,
-    "",
-    1,
-    undefined,
-    3,
-    60000,
-    null,
-    "o1-mini-2024-09-12",
-  );
-  const issueText = `${initialIssueText}\n\nPlan:\n${o1Plan}`;
-
-  const extractedIssueTemplateParams = {
-    sourceMap,
-    issueText,
-  };
-
-  const extractedIssueSystemPrompt = parseTemplate(
-    "dev",
-    "extracted_issue",
-    "system",
-    extractedIssueTemplateParams,
-  );
-  const extractedIssueUserPrompt = parseTemplate(
-    "dev",
-    "extracted_issue",
-    "user",
-    extractedIssueTemplateParams,
-  );
-  const extractedIssue = (await sendGptRequestWithSchema(
-    extractedIssueUserPrompt,
-    extractedIssueSystemPrompt,
-    ExtractedIssueInfoSchema,
-    0.2,
-    baseEventData,
-  )) as ExtractedIssueInfo;
-
-  // TODO: handle previousAssessments
-  const filesToUpdate = extractedIssue.filesToUpdate ?? [];
-  const filesToCreate = extractedIssue.filesToCreate ?? [];
+  let planSteps = (await db.planSteps
+    .select(
+      "type",
+      "title",
+      "instructions",
+      "filePath",
+      "exitCriteria",
+      "dependencies",
+    )
+    .where({ issueNumber: issue.number, projectId })
+    .all()) as PlanStep[];
+  if (!planSteps?.length) {
+    const plan = await getOrGeneratePlan({
+      projectId,
+      issueId: issue.number,
+      githubIssue: issueText,
+      rootPath,
+    });
+    planSteps = plan.steps;
+  }
+  const filesToUpdate = planSteps
+    .filter((step) => step.type === PlanningAgentActionType.EditExistingCode)
+    .map((step) => step.filePath);
+  const filesToCreate = planSteps
+    .filter((step) => step.type === PlanningAgentActionType.CreateNewCode)
+    .map((step) => step.filePath);
 
   console.log(`[${repository.full_name}] Files to update:`, filesToUpdate);
   console.log(`[${repository.full_name}] Files to create:`, filesToCreate);
-  if (!filesToUpdate?.length && !filesToCreate?.length) {
+  if (!filesToUpdate.length && !filesToCreate.length) {
     console.log(
       "\n\n\n\n^^^^^^\n\n\n\nERROR: No files to update or create\n\n\n\n",
     );
@@ -135,8 +140,6 @@ export async function editFiles(params: EditFilesParams) {
   let images = await getImages(rootPath, repoSettings);
   images = await saveImages(images, issue?.body, rootPath, repoSettings);
 
-  // TODO: populate tailwind colors and leverage in system prompt
-
   const codeTemplateParams = {
     sourceMap,
     types,
@@ -145,7 +148,7 @@ export async function editFiles(params: EditFilesParams) {
     images,
     code,
     issueBody: issueText,
-    plan: extractedIssue.stepsToAddressIssue ?? "",
+    plan: JSON.stringify(planSteps, null, 2),
     snapshotUrl: snapshotUrl ?? "",
   };
 
@@ -203,6 +206,29 @@ export async function editFiles(params: EditFilesParams) {
       files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
     );
 
+    const detailedMarkdownPlanFromSteps = planSteps
+      .map(
+        (step, index) => `
+### Step ${index + 1}: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
+
+**Task:** ${step.title}
+
+**Instructions:**
+${step.instructions}
+
+**Exit Criteria:**
+${step.exitCriteria}
+
+${
+  step.dependencies
+    ? `**Dependencies:**
+${step.dependencies}`
+    : ""
+}
+`,
+      )
+      .join("\n");
+
     await checkAndCommit({
       ...baseEventData,
       repository,
@@ -214,7 +240,7 @@ export async function editFiles(params: EditFilesParams) {
       issue,
       newPrTitle: `JACoB PR for Issue ${issue.title}`,
       newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
-        extractedIssue.stepsToAddressIssue ?? ""
+        detailedMarkdownPlanFromSteps ?? ""
       }`,
       newPrReviewers: issue.assignees?.map((assignee) => assignee.login) ?? [],
     });

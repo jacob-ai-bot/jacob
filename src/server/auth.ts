@@ -34,6 +34,7 @@ declare module "next-auth" {
       id: string;
       login: string;
       role?: UserRole;
+      expires?: string; // ISO DateString
       // ...other properties
     } & DefaultSession["user"];
     accessToken: string;
@@ -47,6 +48,7 @@ declare module "next-auth" {
     // ...other properties
     role: UserRole;
     login: string;
+    expires?: string;
   }
 }
 
@@ -116,6 +118,7 @@ export const authOptions: NextAuthOptions = {
           id: userId,
           role: user.role,
           login: user.login,
+          expires: session.expires,
         },
       };
     },
