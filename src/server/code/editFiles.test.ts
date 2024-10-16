@@ -78,21 +78,6 @@ const mockedDb = vi.hoisted(() => ({
       all: vi.fn().mockResolvedValue([{ someResearchData: "mocked research" }]),
     }),
   },
-  planSteps: {
-    select: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnValue({
-      all: vi.fn().mockResolvedValue([
-        {
-          type: "EditExistingCode",
-          title: "Edit file.txt",
-          instructions: "Update the content",
-          filePath: "file.txt",
-          exitCriteria: "File is updated",
-          dependencies: null,
-        },
-      ]),
-    }),
-  },
   todos: {
     findByOptional: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
   },
@@ -186,20 +171,6 @@ describe("editFiles", () => {
     // Verify that the research data is fetched
     expect(mockedDb.research.where).toHaveBeenCalledWith({
       issueId: issue.number,
-    });
-
-    // Verify that the plan steps are fetched
-    expect(mockedDb.planSteps.select).toHaveBeenCalledWith(
-      "type",
-      "title",
-      "instructions",
-      "filePath",
-      "exitCriteria",
-      "dependencies",
-    );
-    expect(mockedDb.planSteps.where).toHaveBeenCalledWith({
-      issueNumber: issue.number,
-      projectId: mockEventData.projectId,
     });
   });
 });
