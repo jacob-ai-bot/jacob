@@ -6,6 +6,7 @@ import {
   type InstallationAccessTokenAuthentication,
   createAppAuth,
 } from "@octokit/auth-app";
+import { v4 as uuidv4 } from "uuid";
 
 import { db } from "../db/db";
 import { cloneRepo } from "../git/clone";
@@ -94,18 +95,18 @@ export async function initRabbitMQ({ listener }: { listener: boolean }) {
         const event = JSON.parse(message.content.toString()) as QueuedEvent;
         if (event.name === "web_event") {
           if (messageId && !processedMessageIds.has(messageId)) {
+            if (messageId) {
+              processedMessageIds.add(messageId);
+            }
+            // Remove messageId after 10 minutes
+            setTimeout(
+              () => processedMessageIds.delete(messageId),
+              10 * 60 * 1000,
+            );
             await handleWebEvent(event);
           } else {
             console.log("Duplicate message detected, skipping: ", messageId);
           }
-          if (messageId) {
-            processedMessageIds.add(messageId);
-          }
-          // Remove messageId after 10 minutes
-          setTimeout(
-            () => processedMessageIds.delete(messageId),
-            10 * 60 * 1000,
-          );
         } else {
           await onGitHubEvent(event);
         }
@@ -919,11 +920,13 @@ export const publishGitHubEventToQueue = async (
     return;
   }
   console.log(`publishGitHubEventToQueue: ${event.id} ${event.name}`);
+  const messageId = `${event.id}-${event.name}`;
   channel.sendToQueue(
     QUEUE_NAME,
     Buffer.from(JSON.stringify(eventWithoutOctokit)),
     {
       persistent: true,
+      messageId: messageId,
     },
   );
   const repoName =
@@ -936,7 +939,7 @@ export const publishGitHubEventToQueue = async (
           .map(({ full_name }) => full_name)
           .join(",");
   console.log(
-    `[${repoName}] publishGitHubEventToQueue: ${event.id} ${event.name}`,
+    `[${repoName}] publishGitHubEventToQueue: ${event.id} ${event.name} (messageId: ${messageId})`,
   );
 };
 
@@ -948,11 +951,13 @@ export const publishWebEventToQueue = async (event: WebEvent) => {
     return;
   }
   console.log(`publishWebEventToQueue: ${event.payload.action}`);
+  const messageId = (event.payload.params.messageId as string) ?? uuidv4();
   channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(event)), {
     persistent: true,
+    messageId,
   });
   console.log(
-    `[${event.payload.repoFullName}] Web Event queued: ${event.payload.action}`,
+    `[${event.payload.repoFullName}] Web Event queued: ${event.payload.action} (messageId: ${messageId})`,
   );
 };
 

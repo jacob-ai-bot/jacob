@@ -20,7 +20,7 @@ import {
   type NewCodebaseFile,
   type CodebaseFileUpdate,
 } from "../db/tables/codebaseContext.table";
-import { standardizePath, type StandardizedPath } from "./files";
+import { getFiles, standardizePath, type StandardizedPath } from "./files";
 
 interface ExportInfo {
   name: string;
@@ -111,7 +111,7 @@ export async function getOrCreateCodebaseContext(
   projectId: number,
   rootPath: string,
   filePaths: StandardizedPath[],
-  models: Model[] = ["gpt-4o-mini-2024-07-18", "gemini-1.5-flash-latest"],
+  models: Model[] = ["gpt-4o-mini-2024-07-18", "gpt-4o-2024-08-06"],
 ): Promise<ContextItem[]> {
   const contextItems: ContextItem[] = [];
   const filesToProcess: StandardizedPath[] = [];
@@ -299,7 +299,7 @@ async function analyzeFiles(
   projectId: number,
 ): Promise<ContextItem[]> {
   const codeStructure = await analyzeCodeStructure(rootPath, files);
-  const contextSections = await createContextSections(codeStructure);
+  const contextSections = await createContextSections(codeStructure, rootPath);
   await enhanceWithLLM(
     contextSections,
     models,
@@ -472,6 +472,7 @@ function extractExportInfo(node: Parser.SyntaxNode): ExportInfo {
 }
 async function createContextSections(
   codeStructure: Record<string, any>,
+  rootPath: string,
 ): Promise<ContextItem[]> {
   const sections: ContextItem[] = [];
 
@@ -492,11 +493,6 @@ async function createContextSections(
       fileSection.exports = (fileInfo.exports ?? []) as ExportInfo[];
     }
 
-    // Create a set of exported code references for quick lookup
-    const exportedCodeSet = new Set(
-      fileSection.exports.map((e) => e.code_referenced ?? ""),
-    );
-
     // Process other entities
     for (const [entityType, entities] of Object.entries(
       fileInfo as Record<string, any[]>,
@@ -505,21 +501,11 @@ async function createContextSections(
         for (const entity of entities) {
           fileSection.importStatements.push(`${entity.code_referenced ?? ""}`);
         }
-      } else if (entityType !== "exports") {
-        for (const entity of entities) {
-          // Check if the code is not already in exports before adding to code array
-          if (
-            ![...exportedCodeSet].some((exportedCode) =>
-              exportedCode.includes((entity.code_referenced ?? "") as string),
-            )
-          ) {
-            fileSection.code.push(
-              `(${entity.type}) ${entity.line_no}: ${entity.code_referenced}`,
-            );
-          }
-        }
       }
     }
+    // Add the file to the context
+    const fileContent = getFiles(rootPath, [standardizePath(filePath)], false);
+    fileSection.code.push(fileContent);
 
     sections.push(fileSection);
   }
@@ -534,13 +520,13 @@ async function enhanceWithLLM(
   rootPath: string,
   projectId: number,
 ): Promise<void> {
-  const maxConcurrentRequests = 20;
+  const maxConcurrentRequests = 10;
   for (let i = 0; i < sections.length; i += maxConcurrentRequests) {
-    // alternate between models to avoid rate limits
-    const model = models[i % models.length]!;
     const chunk = sections.slice(i, i + maxConcurrentRequests);
-    const enhanceTasks = chunk.map(async (section) => {
+    const enhanceTasks = chunk.map(async (section, index) => {
       try {
+        // alternate between models to avoid rate limits
+        const model = models[index % models.length]!;
         const enhancedContent = await generateDescription(
           section,
           model,

@@ -86,6 +86,8 @@ export async function emitPlanEvent(params: EmitPlanEventParams) {
       steps: plan.steps.map(({ type: actionType, ...restOfPlanStep }) => ({
         type: TaskType.plan_step as TaskType.plan_step,
         actionType,
+        exitCriteria: restOfPlanStep.exitCriteria ?? "",
+        dependencies: restOfPlanStep.dependencies ?? "",
         ...restOfPlanStep,
       })),
     },
@@ -106,6 +108,8 @@ export async function emitPlanStepEvent(params: EmitPlanStepEventParams) {
     payload: {
       type: TaskType.plan_step,
       actionType,
+      exitCriteria: restOfPlanStep.exitCriteria ?? "",
+      dependencies: restOfPlanStep.dependencies ?? "",
       ...restOfPlanStep,
     },
   });

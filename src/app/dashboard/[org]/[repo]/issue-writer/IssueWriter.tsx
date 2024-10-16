@@ -1,9 +1,8 @@
-// IssueWriter.tsx
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { api } from "~/trpc/react";
+import { trpcClient } from "~/trpc/client";
 import { toast } from "react-toastify";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -34,6 +33,11 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(
     null,
   );
+  const [isLoadingCreatedIssue, setIsLoadingCreatedIssue] = useState(false);
+  const [createdIssue, setCreatedIssue] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
 
   const [rewrittenIssue, setRewrittenIssue] = useState<string | null>(null);
@@ -49,20 +53,6 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     });
   const createIssueMutation = api.github.createIssue.useMutation();
   const rewriteIssueMutation = api.github.rewriteIssue.useMutation();
-  const {
-    data: createdIssue,
-    refetch: getCreatedIssue,
-    isLoading: isLoadingCreatedIssue,
-  } = api.github.getIssue.useQuery(
-    {
-      org,
-      repo,
-      issueId: createdIssueNumber ?? 0,
-    },
-    {
-      enabled: createdIssueNumber !== null,
-    },
-  );
 
   useEffect(() => {
     if (isEditing) {
@@ -85,7 +75,14 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
       });
 
       setCreatedIssueNumber(result.number);
-      await getCreatedIssue();
+      setIsLoadingCreatedIssue(true);
+      const createdIssue = await trpcClient.github.getIssue.query({
+        org,
+        repo,
+        issueId: result.number,
+      });
+      setCreatedIssue(createdIssue);
+      setIsLoadingCreatedIssue(false);
       toast.success("Issue created successfully!");
       setIsEditing(false);
       setRewrittenIssue(null);

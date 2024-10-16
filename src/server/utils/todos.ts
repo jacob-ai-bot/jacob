@@ -1,11 +1,12 @@
-import { getExtractedIssue } from "../api/utils";
-import { getIssue } from "../github/issue";
-import { db } from "../db/db";
-import { TodoStatus } from "../db/enums";
+import { getExtractedIssue } from "~/server/api/utils";
+import { getIssue } from "~/server/github/issue";
+import { db } from "~/server/db/db";
+import { TodoStatus } from "~/server/db/enums";
 import { researchIssue } from "~/server/agent/research";
-import { getRepoSettings } from "./settings";
-import { cloneRepo } from "../git/clone";
+import { cloneRepo } from "~/server/git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
+import { getOrGeneratePlan } from "./plan";
+import { getRepoSettings } from "./settings";
 
 const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
@@ -67,7 +68,7 @@ export const createTodo = async (
       position: issue.number,
     });
 
-    // Only research issues for agent repos for now
+    // Only research issues and create plans for agent repos for now
     // TODO: only research issues for premium accounts
     if (agentRepos.includes(repo?.trim())) {
       await researchIssue({
@@ -76,6 +77,12 @@ export const createTodo = async (
         issueId: issue.number,
         rootDir: rootPath,
         projectId,
+      });
+      await getOrGeneratePlan({
+        projectId,
+        issueId: issue.number,
+        githubIssue: issueText,
+        rootPath,
       });
     } else {
       console.log(

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db/db";
+import { PlanningAgentActionType } from "~/server/db/enums";
+import { type PlanStep } from "~/server/db/tables/planSteps.table";
 
 export const planStepsRouter = createTRPCRouter({
   create: protectedProcedure
@@ -8,13 +10,15 @@ export const planStepsRouter = createTRPCRouter({
       z.object({
         projectId: z.number().int(),
         issueNumber: z.number().int(),
-        stepNumber: z.number().int(),
-        filePath: z.string().nullable(),
+        type: z.nativeEnum(PlanningAgentActionType),
+        title: z.string(),
+        filePath: z.string(),
         instructions: z.string(),
-        exitCriteria: z.string().nullable(),
+        exitCriteria: z.string(),
+        dependencies: z.string().nullable(),
       }),
     )
-    .mutation(({ input }) => db.planSteps.create(input)),
+    .mutation(async ({ input }) => await db.planSteps.create(input)),
 
   getByProjectAndIssue: protectedProcedure
     .input(
@@ -23,36 +27,41 @@ export const planStepsRouter = createTRPCRouter({
         issueNumber: z.number().int(),
       }),
     )
-    .query(({ input }) =>
-      db.planSteps
-        .selectAll()
-        .where({
-          projectId: input.projectId,
-          issueNumber: input.issueNumber,
-          isActive: true,
-        })
-        .order("stepNumber"),
+    .query(
+      async ({ input: { projectId, issueNumber } }): Promise<PlanStep[]> =>
+        await db.planSteps
+          .where({
+            projectId,
+            issueNumber,
+            isActive: true,
+          })
+          .all()
+          .order("createdAt"),
     ),
 
-  getById: protectedProcedure
-    .input(z.number().int())
-    .query(({ input }) =>
-      db.planSteps.findByOptional({ id: input, isActive: true }),
-    ),
+  getById: protectedProcedure.input(z.number().int()).query(
+    async ({ input: id }): Promise<PlanStep | undefined> =>
+      await db.planSteps.findByOptional({
+        id,
+      }),
+  ),
 
   update: protectedProcedure
     .input(
       z.object({
         id: z.number().int(),
-        filePath: z.string().nullable().optional(),
+        type: z.nativeEnum(PlanningAgentActionType).optional(),
+        title: z.string().optional(),
+        filePath: z.string().optional(),
         instructions: z.string().optional(),
         exitCriteria: z.string().nullable().optional(),
+        dependencies: z.string().nullable().optional(),
         isActive: z.boolean().optional(),
       }),
     )
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      return db.planSteps.find(id).update(data);
+      return await db.planSteps.find(id).update(data);
     }),
 
   delete: protectedProcedure
@@ -60,14 +69,4 @@ export const planStepsRouter = createTRPCRouter({
     .mutation(({ input }) =>
       db.planSteps.find(input).update({ isActive: false }),
     ),
-
-  reorder: protectedProcedure
-    .input(z.array(z.number().int()))
-    .mutation(async ({ input }) => {
-      await Promise.all(
-        input.map((id, index) =>
-          db.planSteps.find(id).update({ stepNumber: index + 1 }),
-        ),
-      );
-    }),
 });

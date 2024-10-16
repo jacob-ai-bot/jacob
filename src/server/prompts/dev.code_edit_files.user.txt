@@ -7,8 +7,8 @@ ${plan}
 
 ## Notes:
 Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.
-ALWAYS use the source map and types when writing your final code.
-The ideal solution is to only provide the absolute minimum amount of code changes necessary to address the GitHub Issue.
+ALWAYS use the plan,source map and types when writing your final code.
+The ideal solution is to only provide the absolute minimum amount of code changes necessary to address the GitHub Issue. DO NOT EVER remove existing comments! This might break the build and the code changes will automatically be rejected. NEVER remove comments!
 Your response will be copied directly into a production code base, so replying with anything other than the updated file named "code.txt" will break the build.
 Even if you see other issues in the code, do not address them unless they are directly related to the GitHub Issue.
 

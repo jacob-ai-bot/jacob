@@ -12,7 +12,6 @@ import { getLastUsedRepoCookie } from "./actions";
 
 export default async function Home() {
   const session = await getServerAuthSession();
-
   const lastUsedRepo = await getLastUsedRepoCookie();
 
   // Redirect to the last used repo if available
