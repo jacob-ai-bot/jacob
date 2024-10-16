@@ -24,7 +24,6 @@ import { createTodo } from "../utils/todos";
 import { getTypes, getImages } from "../analyze/sourceMap";
 import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
-import { type PlanStep } from "~/server/agent/plan";
 import { PlanningAgentActionType } from "../db/enums";
 
 export interface EditFilesParams extends BaseEventData {
