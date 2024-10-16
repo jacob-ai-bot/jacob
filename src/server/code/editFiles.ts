@@ -89,26 +89,14 @@ export async function editFiles(params: EditFilesParams) {
     researchData = await db.research.where({ todoId: todo.id }).all();
   }
 
-  let planSteps = (await db.planSteps
-    .select(
-      "type",
-      "title",
-      "instructions",
-      "filePath",
-      "exitCriteria",
-      "dependencies",
-    )
-    .where({ issueNumber: issue.number, projectId })
-    .all()) as PlanStep[];
-  if (!planSteps?.length) {
-    const plan = await getOrGeneratePlan({
-      projectId,
-      issueId: issue.number,
-      githubIssue: issueText,
-      rootPath,
-    });
-    planSteps = plan.steps;
-  }
+  const plan = await getOrGeneratePlan({
+    projectId,
+    issueId: issue.number,
+    githubIssue: issueText,
+    rootPath,
+  });
+  const planSteps = plan.steps;
+
   const filesToUpdate = planSteps
     .filter((step) => step.type === PlanningAgentActionType.EditExistingCode)
     .map((step) => step.filePath);
