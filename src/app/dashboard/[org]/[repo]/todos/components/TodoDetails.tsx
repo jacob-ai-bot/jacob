@@ -36,6 +36,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
 
   const [isGeneratingResearch, setIsGeneratingResearch] = useState(false);
   const [isStartingWork, setIsStartingWork] = useState(false);
+  const [runBuild, setRunBuild] = useState(false);
 
   const { mutateAsync: researchIssue } = api.todos.researchIssue.useMutation();
   const { mutateAsync: updateTodo } = api.todos.update.useMutation();
@@ -61,7 +62,10 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
 
   const handleStartWork = async () => {
     setIsStartingWork(true);
-    const updatedBody = `${selectedIssue?.body ?? ""}\n@jacob-ai-bot`;
+    let updatedBody = `${selectedIssue?.body ?? ""}\n@jacob-ai-bot`;
+    if (!runBuild) {
+      updatedBody += " --skip-build";
+    }
     try {
       await updateIssue({
         repo: `${org}/${repo}`,
@@ -95,13 +99,13 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between overflow-clip">
-        <div className="flex flex-row space-x-2">
+      <div className="mb-6 flex flex-row flex-nowrap items-center justify-between gap-4 overflow-clip">
+        <div className="flex flex-row flex-nowrap items-center space-x-2">
           <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
             {selectedIssue.title}
           </h2>
           <div
-            className={`text-center text-sm font-medium ${
+            className={`inline-flex items-center text-center text-sm font-medium ${
               selectedTodo.status === TodoStatus.DONE
                 ? "bg-aurora-100 text-aurora-800 dark:bg-aurora-800 dark:text-aurora-100"
                 : selectedTodo.status === TodoStatus.IN_PROGRESS
@@ -109,24 +113,37 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
                   : selectedTodo.status === TodoStatus.ERROR
                     ? "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100"
                     : "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100"
-            } rounded-full px-2 py-1`}
+            } whitespace-nowrap rounded-full px-2 py-1`}
           >
             {getTodoLabel(selectedTodo.status)}
           </div>
         </div>
-        {selectedTodo.status === TodoStatus.TODO && (
-          <button
-            onClick={handleStartWork}
-            disabled={isStartingWork}
-            className={`rounded-full px-4 py-2 text-white ${
-              isStartingWork
-                ? "cursor-not-allowed bg-gray-400"
-                : "bg-sunset-500 hover:bg-sunset-600 dark:bg-purple-700 dark:hover:bg-purple-600"
-            }`}
-          >
-            {isStartingWork ? "Starting Work..." : "Start Work"}
-          </button>
-        )}
+        <div className="flex flex-row items-center space-x-2">
+          {selectedTodo.status === TodoStatus.TODO && (
+            <div className="flex items-center space-x-4 ">
+              <label className="flex items-center space-x-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={runBuild}
+                  onChange={(e) => setRunBuild(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-sunset-600 focus:ring-sunset-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-purple-600"
+                />
+                <span>Run Build</span>
+              </label>
+              <button
+                onClick={handleStartWork}
+                disabled={isStartingWork}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-white ${
+                  isStartingWork
+                    ? "cursor-not-allowed bg-gray-400"
+                    : "bg-sunset-500 hover:bg-sunset-600 dark:bg-purple-700 dark:hover:bg-purple-600"
+                }`}
+              >
+                {isStartingWork ? "Starting Work..." : "Start Work"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-8">

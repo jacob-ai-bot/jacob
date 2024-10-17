@@ -105,6 +105,7 @@ export const sendAnthropicRequest = async (
         responsePrompt: content,
       });
     }
+    console.log(`\n\nResponse: ${content}\n\n`);
 
     return content as string;
   } catch (error) {

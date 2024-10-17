@@ -116,5 +116,9 @@ export async function sendTransactionalEmail(
     Source: process.env.SES_EMAIL_SOURCE ?? "",
   };
 
+  console.log(
+    `[${githubOrg}/${githubRepo}] Sending transactional email for issue #${todoItem.id}`,
+  );
+  console.log(`[${githubOrg}/${githubRepo}] params: ${userEmail}`);
   await ses.sendEmail(params).promise();
 }
