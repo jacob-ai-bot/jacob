@@ -16,6 +16,7 @@ import SearchBar from "../../components/SearchBar";
 import { api } from "~/trpc/react";
 import { getLanguageFromFile } from "~/app/utils";
 import ChatMessage from "./ChatMessage";
+import { useSearchParams } from "next/navigation";
 
 interface ChatProps {
   project: Project;
@@ -60,6 +61,7 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<SpeechToTextAreaRef>(null);
+  const searchParams = useSearchParams();
 
   const { data: codeContent, refetch: refetchCodeContent } =
     api.github.fetchFileContents.useQuery({
@@ -162,6 +164,14 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
       setArtifactLanguage(language);
     }
   }, [codeContent]);
+
+  useEffect(() => {
+    const filePath = searchParams.get("filePath");
+    if (filePath) {
+      setSelectedFiles([filePath]);
+      void refetchCodeContent();
+    }
+  }, [searchParams, refetchCodeContent]);
 
   const handleSearchResultSelect = (filePath: string) => {
     setSelectedFiles([filePath]);

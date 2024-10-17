@@ -10,6 +10,7 @@ import {
   faChevronDown,
   faCopy,
   faCheck,
+  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
 import Markdown, { type Components } from "react-markdown";
@@ -25,6 +26,7 @@ import {
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
 interface CodebaseDetailsProps {
   item: ContextItem;
@@ -35,6 +37,8 @@ interface CodebaseDetailsProps {
   onNodeClick: (path: string) => void;
   viewMode: "folder" | "taxonomy";
   theme: "light" | "dark";
+  org: string;
+  repo: string;
 }
 
 const copyToClipboard = async (text: string) => {
@@ -103,8 +107,11 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   onNodeClick,
   viewMode,
   theme,
+  org,
+  repo,
 }) => {
   const [copyStatus, setCopyStatus] = useState(false);
+  const router = useRouter();
 
   const handleCopy = () => {
     navigator.clipboard
@@ -116,6 +123,11 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
       .catch(() => {
         console.error("Failed to copy context item");
       });
+  };
+
+  const handleChatClick = () => {
+    const encodedFilePath = encodeURIComponent(item.file);
+    router.push(`/dashboard/${org}/${repo}/chat?filePath=${encodedFilePath}`);
   };
 
   return (
@@ -186,6 +198,14 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
         {item?.code?.length ? (
           <CodeSection code={item.code} theme={theme} />
         ) : null}
+
+        <button
+          onClick={handleChatClick}
+          className="mt-4 flex w-full items-center justify-center rounded-lg bg-aurora-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 dark:bg-aurora-600 dark:hover:bg-aurora-700"
+        >
+          <FontAwesomeIcon icon={faComments} className="mr-2" />
+          Chat about this file
+        </button>
       </div>
     </div>
   );
@@ -237,3 +257,4 @@ export const Section: React.FC<{
 };
 
 export default CodebaseDetails;
+
