@@ -107,20 +107,34 @@ export function constructNewOrEditSystemPrompt(
     "default",
     templateParams,
   );
-  const instructionsLanguage = parseTemplate(
-    "dev",
-    "code_new_or_edit",
-    repoSettings?.language === Language.JavaScript
-      ? "javascript"
-      : "typescript",
-    templateParams,
-  );
-  const instructionsStyle = parseTemplate(
-    "dev",
-    "code_new_or_edit",
-    repoSettings?.style === Style.CSS ? "css" : "tailwind",
-    templateParams,
-  );
+  let instructionsBackgroundInfo = "";
+  if (templateParams.research) {
+    instructionsBackgroundInfo = parseTemplate(
+      "dev",
+      "code_new_or_edit",
+      "research",
+      templateParams,
+    );
+  } else {
+    const instructionsLanguage = parseTemplate(
+      "dev",
+      "code_new_or_edit",
+      repoSettings?.language === Language.JavaScript
+        ? "javascript"
+        : "typescript",
+      templateParams,
+    );
+    const instructionsStyle = parseTemplate(
+      "dev",
+      "code_new_or_edit",
+      repoSettings?.style === Style.CSS ? "css" : "tailwind",
+      templateParams,
+    );
+    instructionsBackgroundInfo = dedent`
+      ${instructionsLanguage}
+      ${instructionsStyle}
+    `.trim();
+  }
   let snapshotInstructions = "";
   if (templateParams.snapshotUrl) {
     snapshotInstructions = parseTemplate(
@@ -134,8 +148,7 @@ export function constructNewOrEditSystemPrompt(
       ${baseSystemPrompt}
       ${specificInstructions}
       ${instructionsDefault}
-      ${instructionsLanguage}
-      ${instructionsStyle}
+      ${instructionsBackgroundInfo}
       ${snapshotInstructions}
     `.trim();
 }

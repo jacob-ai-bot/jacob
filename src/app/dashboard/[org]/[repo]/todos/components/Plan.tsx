@@ -275,7 +275,9 @@ const PlanStepComponent: React.FC<PlanStepProps> = ({
                     <span className="font-bold text-slate-900/70 dark:text-slate-300/50">
                       Dependencies:
                     </span>{" "}
-                    {step.dependencies}
+                    <MarkdownRenderer className="markdown-chat">
+                      {step.dependencies ?? ""}
+                    </MarkdownRenderer>
                   </p>
                 )}
                 <div className="flex justify-end space-x-4 pt-4">

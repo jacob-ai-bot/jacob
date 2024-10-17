@@ -6,16 +6,13 @@ import { getServerAuthSession } from "~/server/auth";
 export async function GET() {
   const session = await getServerAuthSession();
   if (!session) {
-    return NextResponse.redirect("/");
+    return NextResponse.json({ expires_in: 0 });
   }
+
   const { user } = session;
-  let msToExpiration = 0;
-  if (user.expires) {
-    // expires is an ISODateString
-    const expiresAt = Date.parse(user.expires);
-    const currentTime = Date.now();
-    msToExpiration = expiresAt - currentTime;
-  }
+  const msToExpiration = user.expires
+    ? Date.parse(user.expires) - Date.now()
+    : 0;
 
   return NextResponse.json({ expires_in: msToExpiration });
 }

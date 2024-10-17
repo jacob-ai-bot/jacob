@@ -1,0 +1,5 @@
+A developer on the team has reviewed this request and asked several clarifying questions. These questions were answered by the top Principal Engineer on the team. 
+This information is critical to consider when completing the task. Note that these answers may contain snippets of code from the codebase. 
+Do not copy this code, but use it as guidance to ensure your code fits the style and conventions of the existing code.
+Here is the information:
+${research}

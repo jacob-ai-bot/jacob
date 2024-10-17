@@ -73,14 +73,14 @@ const Workspace: React.FC<WorkspaceProps> = ({
       {/* Main Content Area */}
       <div className="hide-scrollbar relative h-[calc(100vh-116px)] w-full overflow-y-scroll">
         <div ref={topRef} />
-        <div className=" sticky top-0 z-50 flex items-center justify-between bg-white/80 p-6 pb-2 backdrop-blur-lg dark:bg-gray-800">
-          <div className="flex flex-row space-x-2">
+        <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-6 pb-2 backdrop-blur-lg dark:bg-gray-800">
+          <div className="flex flex-row items-center space-x-2">
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
               {selectedTask?.name ?? ""}
             </h2>
             {selectedTask && (
               <div
-                className={`text-center text-sm font-medium ${
+                className={`inline-flex items-center text-center text-sm font-medium ${
                   selectedTask.status === TaskStatus.DONE
                     ? "bg-aurora-100 text-aurora-800 dark:bg-aurora-800 dark:text-aurora-100"
                     : selectedTask.status === TaskStatus.IN_PROGRESS
@@ -88,7 +88,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                       : selectedTask.status === TaskStatus.ERROR
                         ? "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100"
                         : "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100"
-                } rounded-full px-2 py-1`}
+                } whitespace-nowrap rounded-full px-2 py-1`}
               >
                 {getTaskStatusLabel(selectedTask.status)}
               </div>
@@ -101,7 +101,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
               rel="noopener noreferrer"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="rounded-full bg-aurora-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 hover:text-aurora-50 dark:bg-sky-600/30 dark:hover:bg-sky-500/30"
+              className="ml-2 whitespace-nowrap rounded-full bg-aurora-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 hover:text-aurora-50 dark:bg-sky-600/30 dark:hover:bg-sky-500/30"
             >
               View Pull Request
             </motion.a>

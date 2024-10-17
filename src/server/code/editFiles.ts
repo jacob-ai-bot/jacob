@@ -126,6 +126,41 @@ export async function editFiles(params: EditFilesParams) {
   const styles = await getStyles(rootPath, repoSettings);
   let images = await getImages(rootPath, repoSettings);
   images = await saveImages(images, issue?.body, rootPath, repoSettings);
+  const detailedMarkdownPlanFromSteps = planSteps
+    .map(
+      (step, index) => `
+### Step ${index + 1}: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
+
+**Task:** ${step.title}
+
+**Instructions:**
+${step.instructions}
+
+**Exit Criteria:**
+${step.exitCriteria}
+
+${
+  step.dependencies
+    ? `**Dependencies:**
+${step.dependencies}`
+    : ""
+}
+`,
+    )
+    .join("\n");
+
+  const detailedMarkdownResearchData = researchData
+    .filter((research) => research.answer?.length)
+    .map(
+      (research) => `
+  ## Question:
+  ${research.question}
+
+  ## Answer:
+  ${research.answer}
+  `,
+    )
+    .join("\n");
 
   const codeTemplateParams = {
     sourceMap,
@@ -135,7 +170,8 @@ export async function editFiles(params: EditFilesParams) {
     images,
     code,
     issueBody: issueText,
-    plan: JSON.stringify(planSteps, null, 2),
+    plan: detailedMarkdownPlanFromSteps,
+    research: detailedMarkdownResearchData,
     snapshotUrl: snapshotUrl ?? "",
   };
 
@@ -192,29 +228,6 @@ export async function editFiles(params: EditFilesParams) {
     await Promise.all(
       files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
     );
-
-    const detailedMarkdownPlanFromSteps = planSteps
-      .map(
-        (step, index) => `
-### Step ${index + 1}: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
-
-**Task:** ${step.title}
-
-**Instructions:**
-${step.instructions}
-
-**Exit Criteria:**
-${step.exitCriteria}
-
-${
-  step.dependencies
-    ? `**Dependencies:**
-${step.dependencies}`
-    : ""
-}
-`,
-      )
-      .join("\n");
 
     await checkAndCommit({
       ...baseEventData,

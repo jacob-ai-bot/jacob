@@ -81,6 +81,12 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 
         if (userEmail && todo) {
           try {
+            console.log(`[${repository.full_name}] User email: ${userEmail}`);
+            console.log(`[${repository.full_name}] githubOrg: ${githubOrg}`);
+            console.log(`[${repository.full_name}] githubRepo: ${githubRepo}`);
+            console.log(
+              `[${repository.full_name}] Sending transactional email for issue #${payload.issue.number}`,
+            );
             await sendTransactionalEmail(
               userEmail,
               todo,
