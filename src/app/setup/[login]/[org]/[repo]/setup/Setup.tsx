@@ -113,6 +113,8 @@ const Setup: React.FC<SetupProps> = ({
     { enabled: false }, // disabled because we don't want to run it on initial render
   );
 
+  const verifyAndEnableIssues = api.github.verifyAndEnableIssues.useMutation();
+
   useEffect(() => {
     if (isLoading) {
       const maxTimeout = 20000;
@@ -159,12 +161,22 @@ const Setup: React.FC<SetupProps> = ({
         org,
         repo,
       });
-      const result = await checkBuildQuery.refetch();
-      if (result.data && result.data.length > 0) {
-        console.log("result.data", result.data);
-        setErrorMessage(result.data);
+
+      const issuesResult = await verifyAndEnableIssues.mutateAsync({
+        org,
+        repo,
+      });
+
+      if (!issuesResult.success) {
+        setErrorMessage(issuesResult.message);
       } else {
-        router.push(`/dashboard/${org}/${repo}`);
+        const result = await checkBuildQuery.refetch();
+        if (result.data && result.data.length > 0) {
+          console.log("result.data", result.data);
+          setErrorMessage(result.data);
+        } else {
+          router.push(`/dashboard/${org}/${repo}`);
+        }
       }
     } catch (error) {
       setErrorMessage("An error occurred while validating settings.");
