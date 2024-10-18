@@ -20,7 +20,7 @@ import { emitCodeEvent } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { db } from "../db/db";
 import { researchIssue } from "../agent/research";
-import { createTodo } from "../utils/todos";
+import { getOrCreateTodo } from "../utils/todos";
 import { getTypes, getImages } from "../analyze/sourceMap";
 import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
@@ -57,26 +57,20 @@ export async function editFiles(params: EditFilesParams) {
   const projectId = baseEventData.projectId;
   if (!researchData.length) {
     console.log(`[${repository.full_name}] No research found. Researching...`);
-    let todo = await db.todos.findByOptional({
-      issueId: issue.number,
+    const todo = await getOrCreateTodo({
+      repo: repository.full_name,
       projectId,
+      issueNumber: issue.number,
+      accessToken: token,
+      rootDir: rootPath,
+      sourceMap,
+      repoSettings,
     });
     if (!todo) {
       console.log(
-        `[${repository.full_name}] No todo found for issue ${issue.number}. Creating todo...`,
+        `[${repository.full_name}] Error creating todo for issue ${issue.number}. Exiting...`,
       );
-      todo = await createTodo(
-        repository.full_name,
-        projectId,
-        issue.number,
-        token,
-      );
-      if (!todo) {
-        console.log(
-          `[${repository.full_name}] Error creating todo for issue ${issue.number}. Exiting...`,
-        );
-        throw new Error("Error creating todo");
-      }
+      throw new Error("Error creating todo");
     }
     await researchIssue({
       githubIssue: issueText,

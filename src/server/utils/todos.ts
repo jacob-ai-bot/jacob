@@ -6,16 +6,29 @@ import { researchIssue } from "~/server/agent/research";
 import { cloneRepo } from "~/server/git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
 import { getOrGeneratePlan } from "./plan";
-import { getRepoSettings } from "./settings";
+import { getRepoSettings, type RepoSettings } from "./settings";
 
 const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
-export const createTodo = async (
-  repo: string,
-  projectId: number,
-  issueNumber: number,
-  accessToken: string | undefined,
-) => {
+interface GetOrCreateTodoParams {
+  repo: string;
+  projectId: number;
+  issueNumber: number;
+  accessToken?: string;
+  rootDir?: string;
+  sourceMap?: string;
+  repoSettings?: RepoSettings;
+}
+
+export const getOrCreateTodo = async ({
+  repo,
+  projectId,
+  issueNumber,
+  accessToken,
+  rootDir,
+  sourceMap,
+  repoSettings,
+}: GetOrCreateTodoParams) => {
   const [repoOwner, repoName] = repo?.split("/") ?? [];
 
   if (!repoOwner || !repoName) {
@@ -34,7 +47,7 @@ export const createTodo = async (
 
   if (existingTodo) {
     console.log(`Todo for issue #${issueNumber} already exists`);
-    return;
+    return existingTodo;
   }
 
   // Fetch the specific issue
@@ -49,15 +62,23 @@ export const createTodo = async (
 
   let cleanupClone: (() => Promise<void>) | undefined;
   try {
-    const { path: rootPath, cleanup } = await cloneRepo({
-      repoName: repo,
-      token: accessToken,
-    });
-    cleanupClone = cleanup;
+    let rootPath = rootDir;
+    if (!rootPath) {
+      const { path, cleanup } = await cloneRepo({
+        repoName: repo,
+        token: accessToken,
+      });
+      rootPath = path;
+      cleanupClone = cleanup;
+    }
 
-    const repoSettings = await getRepoSettings(rootPath, repo);
-    const sourceMap = getSourceMap(rootPath, repoSettings);
-    const extractedIssue = await getExtractedIssue(sourceMap, issueText);
+    const sourceMapToUse =
+      sourceMap ??
+      getSourceMap(
+        rootPath,
+        repoSettings ?? (await getRepoSettings(rootPath, repo)),
+      );
+    const extractedIssue = await getExtractedIssue(sourceMapToUse, issueText);
 
     const newTodo = await db.todos.create({
       projectId: projectId,

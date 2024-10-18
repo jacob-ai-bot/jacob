@@ -10,7 +10,7 @@ import {
 import { AT_MENTION } from "../utils";
 import { codeReviewCommandSuggestion } from "../github/issue";
 import { db } from "../db/db";
-import { createTodo } from "../utils/todos";
+import { getOrCreateTodo } from "../utils/todos";
 import { sendTransactionalEmail } from "../utils/email";
 
 dotenv.config();
@@ -57,20 +57,21 @@ ghApp.webhooks.on("issues.opened", async (event) => {
       const project = await db.projects.findBy({
         repoFullName: repository.full_name,
       });
-      const todos = await db.todos.selectAll().where({
+      const existingTodo = await db.todos.findByOptional({
         projectId: project.id,
+        issueId: payload.issue.number,
       });
       // if the todo for this issue is already in the database, do not create a new todo item
-      if (!todos.some((todo) => todo.issueId === payload.issue.number)) {
+      if (!existingTodo) {
         const installationAuthentication = await authInstallation(
           installation?.id,
         );
-        const todo = await createTodo(
-          repository.full_name,
-          project.id,
-          payload?.issue.number,
-          installationAuthentication?.token,
-        );
+        const todo = await getOrCreateTodo({
+          repo: repository.full_name,
+          projectId: project.id,
+          issueNumber: payload.issue.number,
+          accessToken: installationAuthentication?.token,
+        });
 
         console.log(
           `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,

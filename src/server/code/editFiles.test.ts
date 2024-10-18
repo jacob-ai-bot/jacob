@@ -84,6 +84,11 @@ const mockedDb = vi.hoisted(() => ({
 }));
 vi.mock("~/server/db/db", () => ({ db: mockedDb }));
 
+const mockedTodos = vi.hoisted(() => ({
+  getOrCreateTodo: vi.fn().mockResolvedValue({}),
+}));
+vi.mock("../utils/todos", () => mockedTodos);
+
 const mockedPlan = vi.hoisted(() => ({
   getOrGeneratePlan: vi.fn().mockResolvedValue({
     steps: [
@@ -172,5 +177,8 @@ describe("editFiles", () => {
     expect(mockedDb.research.where).toHaveBeenCalledWith({
       issueId: issue.number,
     });
+
+    // Because the research data is already present, we don't need to create a todo
+    expect(mockedTodos.getOrCreateTodo).not.toHaveBeenCalled();
   });
 });
