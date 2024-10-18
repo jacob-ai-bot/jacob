@@ -57,6 +57,8 @@ const Codebase: React.FC<CodebaseParams> = ({ org, repo }) => {
       <CodebaseVisualizer
         contextItems={contextItems}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
+        org={org}
+        repo={repo}
       />
     </Suspense>
   );
