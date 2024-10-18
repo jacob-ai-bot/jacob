@@ -261,4 +261,4 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
 };
 
 function getCircleSize(text: string) {
-  return Math.floor(text.length / 50
+  return Math.floor(text.length / 50) + 1
