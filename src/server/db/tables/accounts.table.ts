@@ -15,5 +15,8 @@ export class AccountsTable extends BaseTable {
     scope: t.text(0, Infinity),
     session_state: t.text(0, Infinity),
     token_type: t.text(0, Infinity),
+    localPath: t.text(0, Infinity).nullable(),
+    doesCurrentBranchBuild: t.boolean().default(false),
   }));
 }
+

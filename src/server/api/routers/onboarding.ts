@@ -70,6 +70,7 @@ export const onboardingRouter = createTRPCRouter({
       }) => {
         let cleanupClone: (() => Promise<void>) | undefined;
         let buildErrorMessage: string | undefined = "";
+        let buildSuccess = false;
         try {
           const repoFullName = `${org}/${repoName}`;
           const { path, cleanup } = await cloneRepo({
@@ -93,6 +94,7 @@ export const onboardingRouter = createTRPCRouter({
               repoFullName: repoFullName,
               userId: user.id,
             });
+            buildSuccess = true;
           } catch (error) {
             const { message } = error as Error;
             buildErrorMessage = message;
@@ -102,7 +104,12 @@ export const onboardingRouter = createTRPCRouter({
             await cleanupClone();
           }
         }
+        // Update the user's account with the build status
+        await db.accounts.findBy({ userId: user.id }).update({
+          doesCurrentBranchBuild: buildSuccess,
+        });
         return buildErrorMessage;
       },
     ),
 });
+
