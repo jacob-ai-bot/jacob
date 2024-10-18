@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
@@ -19,6 +19,7 @@ export default function Header({ org, repoName }: HeaderProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState<string>("main");
 
   const {
     data: repos,
@@ -36,11 +37,28 @@ export default function Header({ org, repoName }: HeaderProps) {
       },
     });
 
+  const { data: branches, isLoading: isLoadingBranches } = api.github.getBranches.useQuery(
+    { org, repo: repoName },
+    { enabled: !!org && !!repoName }
+  );
+
+  useEffect(() => {
+    if (branches && branches.length > 0) {
+      setSelectedBranch(branches[0]);
+    }
+  }, [branches]);
+
   const handleRepoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedRepo = e.target.value;
     if (selectedRepo) {
       router.push(`/dashboard/${selectedRepo}`);
     }
+  };
+
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBranch = e.target.value;
+    setSelectedBranch(newBranch);
+    console.log(`Selected branch: ${newBranch}`);
   };
 
   const handleRefresh = () => {
@@ -78,11 +96,19 @@ export default function Header({ org, repoName }: HeaderProps) {
             )}
           </select>
           <select
+            value={selectedBranch}
+            onChange={handleBranchChange}
             className="rounded-full border-none bg-aurora-50 px-4 py-2 pr-8 text-sm text-dark-blue transition-all focus:ring-2 focus:ring-aurora-500 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-sky-400"
-            defaultValue="main"
-            disabled
           >
-            <option value="main">main</option>
+            {isLoadingBranches ? (
+              <option>Loading branches...</option>
+            ) : (
+              branches?.map((branch) => (
+                <option key={branch} value={branch}>
+                  {branch}
+                </option>
+              ))
+            )}
           </select>
         </div>
         <div className="flex items-center space-x-3">

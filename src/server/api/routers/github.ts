@@ -491,4 +491,31 @@ export const githubRouter = createTRPCRouter({
         rewrittenIssue,
       };
     }),
+  getBranches: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { org, repo } = input;
+      const { accessToken } = ctx.session;
+
+      try {
+        const octokit = new Octokit({ auth: accessToken });
+        const { data: branches } = await octokit.repos.listBranches({
+          owner: org,
+          repo,
+        });
+
+        return branches.map((branch) => branch.name);
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch repository branches",
+        });
+      }
+    }),
 });
