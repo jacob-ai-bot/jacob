@@ -170,3 +170,32 @@ export const cloneAndGetSourceMap = async (
     }
   }
 };
+
+export const checkAndEnableIssues = async (
+  org: string,
+  repo: string,
+  accessToken: string,
+) => {
+  const octokit = new Octokit({ auth: accessToken });
+
+  try {
+    const { data: repository } = await octokit.repos.get({
+      owner: org,
+      repo,
+    });
+
+    if (!repository.has_issues) {
+      await octokit.repos.update({
+        owner: org,
+        repo,
+        has_issues: true,
+      });
+      return { success: true, message: "Issues have been enabled." };
+    }
+
+    return { success: true, message: "Issues are already enabled." };
+  } catch (error) {
+    console.error("Error checking or enabling issues:", error);
+    return { success: false, message: "Failed to check or enable issues." };
+  }
+};

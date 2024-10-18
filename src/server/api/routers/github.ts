@@ -12,6 +12,7 @@ import {
   getAllRepos,
   getExtractedIssue,
   validateRepo,
+  checkAndEnableIssues,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
 import {
@@ -491,4 +492,25 @@ export const githubRouter = createTRPCRouter({
         rewrittenIssue,
       };
     }),
+  verifyAndEnableIssues: protectedProcedure
+    .input(z.object({ org: z.string(), repo: z.string() }))
+    .mutation(
+      async ({
+        input: { org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        try {
+          const result = await checkAndEnableIssues(org, repo, accessToken);
+          return { success: result.success, message: result.message };
+        } catch (error) {
+          console.error("Error verifying and enabling issues:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Internal server error",
+          });
+        }
+      },
+    ),
 });
