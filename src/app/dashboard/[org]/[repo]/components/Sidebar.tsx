@@ -25,6 +25,7 @@ const navItems = [
   { name: "Issue Writer", icon: faPencil },
   { name: "Code Visualizer", icon: faCode },
   { name: "Design", icon: faPaintBrush },
+  { name: "Settings", icon: faCog },
 ];
 
 export default function Sidebar({ org, repo }: { org: string; repo: string }) {
@@ -152,23 +153,8 @@ export default function Sidebar({ org, repo }: { org: string; repo: string }) {
             </motion.span>
           )}
         </Link>{" "}
-        <Link
-          href={`/dashboard/${org}/${repo}/settings`}
-          className={`flex items-center justify-center rounded-lg bg-sunset-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sunset-600 dark:bg-sky-600/30 dark:hover:bg-sky-500/30`}
-        >
-          <FontAwesomeIcon icon={faCog} className="h-5 w-5" />
-          {isExpanded && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-              className="ml-3"
-            >
-              Settings
-            </motion.span>
-          )}
-        </Link>
       </motion.div>
     </motion.aside>
   );
 }
+

@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { useTheme } from "next-themes";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import { type CodeFile } from "./Chat";
+import { api } from "~/trpc/react";
 
 interface ArtifactProps {
   content: string;
@@ -27,6 +28,8 @@ export function Artifact({
   const [activeTab, setActiveTab] = useState<"view" | "edit" | "diff">("view");
   const [originalContent, setOriginalContent] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
+
+  const { data: accountSettings } = api.settings.getAccountSettings.useQuery();
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -71,7 +74,9 @@ export function Artifact({
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = fileName;
+        link.download = accountSettings?.localPath
+          ? `${accountSettings.localPath}/${fileName}`
+          : fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
