@@ -257,4 +257,3 @@ export const Section: React.FC<{
 };
 
 export default CodebaseDetails;
-
