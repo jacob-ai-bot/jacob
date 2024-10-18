@@ -11,6 +11,8 @@ import SearchBar from "../../components/SearchBar";
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
   theme: "light" | "dark";
+  org: string;
+  repo: string;
 }
 
 const HEADER_HEIGHT = 100;
@@ -20,6 +22,8 @@ const DETAILS_WIDTH = 30;
 export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   contextItems,
   theme,
+  org,
+  repo,
 }) => {
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
   const [currentPath, setCurrentPath] = useState<string[]>(["root"]);
@@ -245,6 +249,8 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 onNodeClick={handleNodeClick}
                 viewMode={viewMode}
                 theme={theme}
+                org={org}
+                repo={repo}
               />
             </motion.div>
           )}

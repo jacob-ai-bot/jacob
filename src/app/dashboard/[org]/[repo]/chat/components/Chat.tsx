@@ -22,6 +22,7 @@ interface ChatProps {
   contextItems: ContextItem[];
   org: string;
   repo: string;
+  selectedFilePath?: string;
 }
 
 export interface CodeFile {
@@ -44,7 +45,7 @@ const STARTING_MESSAGE = {
     "Hi, I'm JACoB. I can answer questions about your codebase. Ask me anything!",
 };
 
-export function Chat({ contextItems, org, repo }: ChatProps) {
+export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
   const [artifactFileName, setArtifactFileName] = useState<string>("");
   const [artifactLanguage, setArtifactLanguage] = useState<string>("");
@@ -162,6 +163,20 @@ export function Chat({ contextItems, org, repo }: ChatProps) {
       setArtifactLanguage(language);
     }
   }, [codeContent]);
+
+  useEffect(() => {
+    if (selectedFilePath) {
+      const selectedFile = contextItems.find(
+        (item) => item.file === selectedFilePath,
+      );
+      if (selectedFile) {
+        setSelectedFiles([selectedFilePath]);
+        void refetchCodeContent();
+      } else {
+        toast.error("Selected file not found in the codebase context.");
+      }
+    }
+  }, [selectedFilePath, contextItems, refetchCodeContent]);
 
   const handleSearchResultSelect = (filePath: string) => {
     setSelectedFiles([filePath]);

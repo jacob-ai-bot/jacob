@@ -10,6 +10,7 @@ import {
   faChevronDown,
   faCopy,
   faCheck,
+  faComment,
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
 import Markdown, { type Components } from "react-markdown";
@@ -25,6 +26,7 @@ import {
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
 interface CodebaseDetailsProps {
   item: ContextItem;
@@ -35,6 +37,8 @@ interface CodebaseDetailsProps {
   onNodeClick: (path: string) => void;
   viewMode: "folder" | "taxonomy";
   theme: "light" | "dark";
+  org: string;
+  repo: string;
 }
 
 const copyToClipboard = async (text: string) => {
@@ -103,8 +107,11 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   onNodeClick,
   viewMode,
   theme,
+  org,
+  repo,
 }) => {
   const [copyStatus, setCopyStatus] = useState(false);
+  const router = useRouter();
 
   const handleCopy = () => {
     navigator.clipboard
@@ -116,6 +123,19 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
       .catch(() => {
         console.error("Failed to copy context item");
       });
+  };
+
+  const handleSendToChat = () => {
+    if (item.file) {
+      const encodedFilePath = encodeURIComponent(item.file);
+      router.push(
+        `/dashboard/${org}/${repo}/chat?file_path=${encodedFilePath}`,
+      );
+    } else {
+      toast.error(
+        "No file selected. Please select a file before sending to chat.",
+      );
+    }
   };
 
   return (
@@ -186,6 +206,16 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
         {item?.code?.length ? (
           <CodeSection code={item.code} theme={theme} />
         ) : null}
+      </div>
+
+      <div className="sticky bottom-0 left-0 right-0 bg-white p-4 dark:bg-gray-900">
+        <button
+          onClick={handleSendToChat}
+          className="flex w-full items-center justify-center rounded-lg bg-aurora-500 px-4 py-2 font-semibold text-white transition-colors hover:bg-aurora-600 dark:bg-aurora-800 dark:hover:bg-aurora-900"
+        >
+          <FontAwesomeIcon icon={faComment} className="mr-2" />
+          Update with Chat
+        </button>
       </div>
     </div>
   );

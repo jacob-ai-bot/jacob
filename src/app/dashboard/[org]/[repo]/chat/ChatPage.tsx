@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import { Chat } from "./components/Chat";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
+import { useSearchParams } from "next/navigation";
 
 interface ChatPageProps {
   org: string;
@@ -20,6 +21,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ org, repo }) => {
     org,
     repo,
   });
+
+  const searchParams = useSearchParams();
+  const filePath = searchParams.get("file_path");
+  const selectedFilePath = filePath ? decodeURIComponent(filePath) : undefined;
 
   const memoizedContextItems = useMemo(
     () => contextItems ?? [],
@@ -40,6 +45,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ org, repo }) => {
         contextItems={memoizedContextItems}
         org={org}
         repo={repo}
+        selectedFilePath={selectedFilePath}
       />
     </div>
   );
