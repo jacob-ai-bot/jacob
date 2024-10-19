@@ -17,7 +17,7 @@ export async function sendTransactionalEmail(
   githubOrg: string,
   githubRepo: string,
 ): Promise<void> {
-  const actionLink = `https://app.jacb.ai/dashboard/${githubOrg}/${githubRepo}/todos/${todoItem.id}`;
+  const actionLink = `https://app.jacb.ai/dashboard/${githubOrg}/${githubRepo}/todos`;
 
   const params: AWS.SES.SendEmailRequest = {
     Destination: {
@@ -106,6 +106,7 @@ export async function sendTransactionalEmail(
             border-radius: 8px;
             padding: 24px;
             margin-bottom: 32px;
+            text-align: center;
         }
         .todo-link {
             display: inline-block;
@@ -114,6 +115,7 @@ export async function sendTransactionalEmail(
             font-weight: 600;
             margin-top: 12px;
             transition: color 0.3s ease;
+            font-size: 16px;
         }
         .todo-link:hover {
             color: #00C8FF;
@@ -133,9 +135,6 @@ export async function sendTransactionalEmail(
 <body>
     <div class="container">
         <div class="card">
-            <div class="logo">
-                <img src="https://jacb.ai/images/logo.svg" alt="JACoB AI Logo">
-            </div>
             <h1>Your New Todo is Ready</h1>
             <p>Hey there,</p>
             <p>JACoB's been busy. We've taken your GitHub issue and turned it into a smart, actionable todo. Here's what's cooking:</p>
