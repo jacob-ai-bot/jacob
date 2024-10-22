@@ -110,6 +110,7 @@ export const authOptions: NextAuthOptions = {
       const { session, user } = params;
       const userId = parseInt(user.id, 10);
       const account = await db.accounts.findBy({ userId });
+
       return {
         ...session,
         accessToken: account.access_token,
@@ -136,7 +137,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: env.GITHUB_CLIENT_SECRET,
       authorization: {
         params: {
-          scope: "read:user, read:org, repo",
+          scope: "read:user user:email read:org repo admin:org",
         },
       },
       profile(profile: GithubProfile) {
