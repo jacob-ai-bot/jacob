@@ -156,7 +156,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
         rewrittenIssue ? "max-w-[100rem]" : "max-w-4xl"
       }`}
     >
-      <div className="hide-scrollbar h-[calc(100vh-119px)] flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
+      <div className="hide-scrollbar h-[calc(100vh-119px)] flex-1 overflow-hidden rounded-md bg-white/50 p-4 pb-8 shadow-sm dark:bg-slate-800">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-aurora-700 dark:text-aurora-300">
             Issue Creator
@@ -217,7 +217,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
             </div>
           </div>
         ) : createdIssue ? (
-          <div className="h-full space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="hide-scrollbar h-full space-y-4 overflow-hidden overflow-y-scroll rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="flex flex-col items-start justify-between space-y-2 sm:flex-row sm:items-center sm:space-y-0">
               <div className="flex items-center space-x-4">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
