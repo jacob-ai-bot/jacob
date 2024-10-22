@@ -22,20 +22,6 @@ import {
 import { db } from "~/server/db/db";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
 
-const verifyScopes = async (accessToken: string) => {
-  const octokit = new Octokit({ auth: accessToken });
-  const { headers } = await octokit.request("GET /user");
-  console.log("headers", headers);
-  const scopes = headers["x-oauth-scopes"] || "";
-  console.log("Token scopes:", scopes);
-
-  if (!scopes.includes("repo")) {
-    console.log("Missing required GitHub scopes", scopes);
-    // throw new Error("Missing required GitHub scopes");
-  }
-  return true;
-};
-
 export async function fetchGithubFileContents(
   accessToken: string,
   org: string,
