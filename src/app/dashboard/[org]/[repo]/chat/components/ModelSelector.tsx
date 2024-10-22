@@ -4,6 +4,8 @@ export type ChatModel = {
   description: string;
   modelName: string;
   provider: "openai" | "anthropic" | "google" | "groq";
+  inputTokenPrice?: number;
+  outputTokenPrice?: number;
 };
 
 export const ChatModels: ChatModel[] = [
@@ -11,18 +13,16 @@ export const ChatModels: ChatModel[] = [
     description: "Claude 3.5 Sonnet",
     modelName: "claude-3-5-sonnet-20240620",
     provider: "anthropic",
+    inputTokenPrice: 3,
+    outputTokenPrice: 15,
   },
-  { description: "GPT 4o", modelName: "gpt-4o-2024-08-06", provider: "openai" },
-  //   {
-  //     description: "Gemini 1.5 Pro",
-  //     modelName: "gemini-1.5-pro-latest",
-  //     provider: "google",
-  //   },
-  //   {
-  //     description: "Gemini 1.5 Flash",
-  //     modelName: "gemini-1.5-flash-latest",
-  //     provider: "google",
-  //   },
+  {
+    description: "GPT 4o",
+    modelName: "gpt-4o-2024-08-06",
+    provider: "openai",
+    inputTokenPrice: 2.5,
+    outputTokenPrice: 10,
+  },
   {
     description: "Groq Llama 3.2 90b",
     modelName: "llama-3.2-90b-text-preview",
@@ -32,11 +32,22 @@ export const ChatModels: ChatModel[] = [
     description: "o1 Preview",
     modelName: "o1-preview-2024-09-12",
     provider: "openai",
+    inputTokenPrice: 15,
+    outputTokenPrice: 60,
   },
   {
     description: "o1 Mini",
     modelName: "o1-mini-2024-09-12",
     provider: "openai",
+    inputTokenPrice: 3,
+    outputTokenPrice: 12,
+  },
+  {
+    description: "Claude 3.5 Sonnet 24-1022",
+    modelName: "claude-3-5-sonnet-20241022",
+    provider: "anthropic",
+    inputTokenPrice: 3,
+    outputTokenPrice: 15,
   },
 ];
 
@@ -51,12 +62,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
 }) => {
   return (
     <div className="mb-2">
-      {/* <label
-        htmlFor="model-select"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-      >
-        Select Model
-      </label> */}
       <select
         id="model-select"
         value={selectedModel.modelName}
@@ -70,7 +75,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       >
         {ChatModels.map((model) => (
           <option key={model.modelName} value={model.modelName}>
-            {model.description}
+            {model.description} - ${model.inputTokenPrice ?? "N/A"}/M input, ${model.outputTokenPrice ?? "N/A"}/M output
           </option>
         ))}
       </select>
