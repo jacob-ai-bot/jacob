@@ -4,7 +4,6 @@ import {
   type Model,
   sendGptRequest,
   sendGptRequestWithSchema,
-  sendGptToolRequest,
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
 import { parseTemplate } from "../utils";
@@ -25,74 +24,18 @@ export interface Research {
   answer: string;
 }
 
-const researchTools: OpenAI.ChatCompletionTool[] = [
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.ResearchCodebase,
-      description: "Analyze the existing codebase for relevant information.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description:
-              "The detailed, full-sentence search query to search within the codebase.",
-          },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.ResearchInternet,
-      description:
-        "Search the internet for specific details if there are unique aspects that need further understanding.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description: "The query to search on the internet.",
-          },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.AskProjectOwner,
-      description:
-        "Ask the project owner for any additional details or clarifications.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description: "The question to ask the project owner.",
-          },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.ResearchComplete,
-      description:
-        "The system will continue in a loop until this tool is called. Call this tool to confirm that either all of the most important information has been gathered to address the issue, or if the system attemped to gather key missing information but was unable to do so.",
-      parameters: {
-        type: "object",
-        properties: {},
-      },
-    },
-  },
-];
+const ResearchSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        type: z.nativeEnum(ResearchAgentActionType),
+        question: z.string(),
+      }),
+    )
+    .max(10),
+});
+
+type ResearchResponse = z.infer<typeof ResearchSchema>;
 
 interface ResearchIssueParams {
   githubIssue: string;
@@ -111,10 +54,9 @@ export const researchIssue = async function ({
   rootDir,
   projectId,
   maxLoops = 10,
-  model = "gpt-4o-2024-08-06",
+  model = "claude-3-5-sonnet-20241022",
 }: ResearchIssueParams): Promise<Research[]> {
   console.log("Researching issue...");
-  // First get the context for the full codebase
   const allFiles = traverseCodebase(rootDir);
   const query = `Based on the GitHub issue, your job is to find the most important files in this codebase.\n
   Here is the issue <issue>${githubIssue}</issue> \n
@@ -131,7 +73,6 @@ export const researchIssue = async function ({
     rootDir,
     relevantFiles.map((file) => standardizePath(file)) ?? [],
   );
-  // For now, change the sourcemap to be a list of all the files from the context and overview of each file
   const sourceMap = codebaseContext
     .map((file) => `${file.file} - ${file.overview}`)
     .join("\n");
@@ -152,52 +93,27 @@ export const researchIssue = async function ({
     "user",
     researchTemplateParams,
   );
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ];
 
-  let allInfoGathered = false;
   const gatheredInformation: Research[] = [];
-  const questionsForProjectOwner: string[] = [];
   let loops = 0;
 
-  while (!allInfoGathered && loops < maxLoops) {
+  while (loops < maxLoops) {
     loops++;
-    const response = await sendGptToolRequest(
-      messages,
-      researchTools,
-      0.3,
-      undefined,
-      2,
-      60000,
-      model,
-      "required",
-      true,
-    );
+    try {
+      const response = await sendGptRequestWithSchema(
+        userPrompt,
+        systemPrompt,
+        ResearchSchema,
+        0.3,
+        undefined,
+        3,
+        model,
+      );
 
-    const toolCalls = response.choices[0]?.message.tool_calls;
-
-    if (toolCalls && toolCalls.length > 0) {
-      allInfoGathered = true;
-
-      for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name as ResearchAgentActionType;
-        if (!Object.values(ResearchAgentActionType).includes(functionName)) {
-          console.error(`Invalid function name: ${functionName}`);
-          continue;
-        }
-        if (functionName === ResearchAgentActionType.ResearchComplete) {
-          allInfoGathered = true;
-          break;
-        }
-        const args = JSON.parse(toolCall.function.arguments) as {
-          query: string;
-        };
-        console.log(`Calling function: ${functionName} with arguments:`, args);
+      for (const question of response.questions) {
         const functionResponse = await callFunction(
-          functionName,
-          args,
+          question.type,
+          { query: question.question },
           githubIssue,
           sourceMap,
           rootDir,
@@ -206,39 +122,33 @@ export const researchIssue = async function ({
         const research: Research = {
           todoId,
           issueId,
-          type: functionName,
-          question: args.query,
+          type: question.type,
+          question: question.question,
           answer: functionResponse,
         };
-        if (functionName === ResearchAgentActionType.AskProjectOwner) {
-          questionsForProjectOwner.push(args.query);
-        } else {
-          gatheredInformation.push(research);
-        }
+        gatheredInformation.push(research);
         await db.research.create(research);
-        allInfoGathered = false;
       }
 
-      if (!allInfoGathered) {
-        const updatedPrompt = dedent`
-            ### Gathered Information:
-            ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
-            ### Questions Already Asked for Project Owner (Note that the user has not seen these questions yet and did not yet provide an answer):
-            ${questionsForProjectOwner.join("\n")}
-            ### Missing Information:
-            Reflect on the gathered information and specify what is still needed to fully address the issue and why it is needed.
-            ### Plan Information Gathering:
-            Decide on the best action to obtain each missing piece of information (ResearchCodebase, ResearchInternet, AskProjectOwner, ResearchComplete).
-            Choose the correct tools and formulate very specific, detailed queries to gather all of the missing information effectively. If you need to ask follow-up questions, only ask up to 5 additional questions. Each question should be a full sentence and clearly state what information you are looking for.
-            NEVER repeat the same question, even if the system did not answer the question. It better to call the ResearchComplete tool if you have asked all of the questions, even if the system did not answer them, than to repeat the same question.
-            ### Important:
-                If you have all the necessary information to proceed with the task, return a single tool call to confirm that the research is complete. If you need more information, ask up to 5 additional questions to gather it.
-        `;
-        messages.push({ role: "assistant", content: "Research Step Complete" });
-        messages.push({ role: "user", content: updatedPrompt });
+      if (response.questions.length === 0) {
+        break;
       }
-    } else {
-      allInfoGathered = true;
+
+      const updatedPrompt = dedent`
+        ### Gathered Information:
+        ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
+        ### Missing Information:
+        Reflect on the gathered information and specify what is still needed to fully address the issue and why it is needed.
+        ### Plan Information Gathering:
+        Decide on the best action to obtain each missing piece of information (ResearchCodebase, ResearchInternet, AskProjectOwner).
+        Choose the correct types and formulate very specific, detailed queries to gather all of the missing information effectively.
+        ### Important:
+        If you have all the necessary information to proceed with the task, return an empty array of questions. Otherwise, generate up to 10 additional questions to gather more information.
+      `;
+      userPrompt = updatedPrompt;
+    } catch (error) {
+      console.error("Error in research loop:", error);
+      break;
     }
   }
 
@@ -268,12 +178,12 @@ async function callFunction(
     case ResearchAgentActionType.ResearchInternet:
       return await researchInternet(args.query);
     case ResearchAgentActionType.AskProjectOwner:
-      // just return the question for now
       return args.query;
     default:
       return "Function not found.";
   }
 }
+
 export async function researchCodebase(
   query: string,
   githubIssue: string,
@@ -289,7 +199,6 @@ export async function researchCodebase(
   } else {
     relevantFiles = await selectRelevantFiles(query, codebaseContext);
   }
-  // get the context for all of the relevant files
   const relevantContext = codebaseContext.filter((file) =>
     relevantFiles.includes(file.file),
   );
@@ -317,34 +226,24 @@ export async function researchCodebase(
   );
   let result: string | null = "";
 
-  // First try to send the request to the claude model. If that fails because the codebase is too large, call gemini.
   try {
-    result = await sendGptRequest(
+    result = await sendGptRequestWithSchema(
       codeResearchUserPrompt,
       codeResearchSystemPrompt,
+      z.string(),
       0.3,
       undefined,
-      0, // no retries, so we can quickly failover to gemini
-      60000,
-      null,
+      3,
       "claude-3-5-sonnet-20241022",
     );
   } catch (error) {
-    result = await sendGptRequest(
-      codeResearchUserPrompt,
-      codeResearchSystemPrompt,
-      0.3,
-      undefined,
-      2,
-      60000,
-      null,
-      "gemini-1.5-pro-latest",
-    );
+    console.error("Error in researchCodebase:", error);
+    result = "An error occurred while researching the codebase.";
   }
 
-  return result ?? "No response from the AI model.";
+  return result;
 }
-// Define the schema for the response
+
 const RelevantFilesSchema = z.object({
   files: z.array(z.string()),
 });
@@ -392,7 +291,7 @@ export async function selectRelevantFiles(
   );
 
   try {
-    const response = (await sendGptRequestWithSchema(
+    const response = await sendGptRequestWithSchema(
       selectFilesUserPrompt,
       selectFilesSystemPrompt,
       RelevantFilesSchema,
@@ -400,18 +299,16 @@ export async function selectRelevantFiles(
       undefined,
       3,
       "claude-3-5-sonnet-20241022",
-    )) as RelevantFiles;
+    );
 
     if (!response.files) {
       throw new Error("No files found in response");
     }
 
-    // convert relevant files to standard paths
     const relevantFiles = response.files
       .map(standardizePath)
       .filter((p) => p?.length);
 
-    // Filter the relevant files to ensure they exist in allFiles
     const filteredRelevantFiles = relevantFiles.filter((file) =>
       allFiles?.some((setFile) => setFile === file),
     );
@@ -421,7 +318,6 @@ export async function selectRelevantFiles(
       `Bottom ${numFiles - 10} relevant files:`,
       filteredRelevantFiles.slice(-10),
     );
-    // remove duplicates and return the top numFiles
     return Array.from(new Set(filteredRelevantFiles)).slice(0, numFiles);
   } catch (error) {
     console.error("Error selecting relevant files:", error);
@@ -447,16 +343,19 @@ export async function researchInternet(query: string): Promise<string> {
     internetResearchTemplateParams,
   );
 
-  const result = await sendGptRequest(
-    internetResearchUserPrompt,
-    internetResearchSystemPrompt,
-    0.3,
-    undefined,
-    2,
-    60000,
-    null,
-    "llama-3.1-sonar-large-128k-online",
-  );
-
-  return result ?? "No response from the AI model.";
+  try {
+    const result = await sendGptRequestWithSchema(
+      internetResearchUserPrompt,
+      internetResearchSystemPrompt,
+      z.string(),
+      0.3,
+      undefined,
+      3,
+      "claude-3-5-sonnet-20241022",
+    );
+    return result;
+  } catch (error) {
+    console.error("Error in researchInternet:", error);
+    return "An error occurred while researching the internet.";
+  }
 }
