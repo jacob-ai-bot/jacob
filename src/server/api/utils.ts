@@ -38,7 +38,6 @@ export const getAllRepos = async (
             const project = await db.projects.findByOptional({
               repoFullName: full_name,
             });
-            console.log("project", project);
             projectId = project?.id ?? null;
             hasSettings = Object.keys(project?.settings ?? {}).length > 0;
           }
@@ -185,6 +184,7 @@ export const checkAndEnableIssues = async (
     });
 
     if (!repository.has_issues) {
+      console.log("Enabling issues...");
       await octokit.repos.update({
         owner: org,
         repo,

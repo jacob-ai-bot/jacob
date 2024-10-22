@@ -9,6 +9,7 @@ import { Pool } from "pg";
 
 import { env } from "~/env";
 import { db } from "./db/db";
+import { Octokit } from "@octokit/core";
 
 export enum UserRole {
   user = "user",
@@ -110,6 +111,12 @@ export const authOptions: NextAuthOptions = {
       const { session, user } = params;
       const userId = parseInt(user.id, 10);
       const account = await db.accounts.findBy({ userId });
+      // Log token scopes in development
+      if (process.env.NODE_ENV !== "production" && session?.accessToken) {
+        const octokit = new Octokit({ auth: session.accessToken });
+        const { headers } = await octokit.request("GET /user");
+        console.log("Token scopes:", headers["x-oauth-scopes"]);
+      }
       return {
         ...session,
         accessToken: account.access_token,
@@ -125,6 +132,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/error",
   },
   session: {
     maxAge: 8 * 60 * 60, // 8 hours (to match GitHub's token expiration time)
@@ -136,7 +144,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: env.GITHUB_CLIENT_SECRET,
       authorization: {
         params: {
-          scope: "read:user, read:org, repo",
+          scope: "read:user user:email read:org repo admin:org",
         },
       },
       profile(profile: GithubProfile) {
