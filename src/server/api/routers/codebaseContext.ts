@@ -222,7 +222,7 @@ const searchCodebase = async (
     temperature,
     undefined,
     3,
-    "gemini-1.5-flash-latest",
+    "claude-3-5-sonnet-20241022",
   )) as unknown as SearchResult;
 
   if (!searchResult.files) {
