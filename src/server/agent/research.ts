@@ -192,7 +192,7 @@ export async function researchCodebase(
 ): Promise<string> {
   const allFiles = codebaseContext.map((file) => standardizePath(file.file));
 
-  let relevantFiles: string[];
+  let relevantFiles: StandardizedPath[];
   if (allFiles.length <= 50) {
     relevantFiles = allFiles;
   } else {
@@ -273,7 +273,7 @@ export async function selectRelevantFiles(
     numFiles: numFiles.toString(),
   };
   if (!allFiles) {
-    allFiles = codebaseContext?.map((file) => standardizePath(file.file));
+    allFiles = codebaseContext?.map((file) => standardizePath(file.file)) ?? [];
   }
 
   const selectFilesSystemPrompt = parseTemplate(
@@ -306,7 +306,7 @@ export async function selectRelevantFiles(
 
     const relevantFiles = response.files
       .map(standardizePath)
-      .filter((p) => p?.length);
+      .filter((p): p is StandardizedPath => p !== undefined);
 
     const filteredRelevantFiles = relevantFiles.filter((file) =>
       allFiles?.some((setFile) => setFile === file),
