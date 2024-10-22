@@ -2,15 +2,10 @@ import React, { useState } from "react";
 import { api } from "~/trpc/react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-
-interface Question {
-  id: number;
-  question: string;
-  answer: string;
-}
+import { type Research } from "~/server/db/tables/research.table";
 
 interface QuestionsForUserProps {
-  questions: Question[];
+  questions: Research[];
   todoId: number;
   issueId: number;
 }
@@ -22,7 +17,8 @@ const QuestionsForUser: React.FC<QuestionsForUserProps> = ({
 }) => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
-  const { mutateAsync: submitUserAnswers } = api.todos.submitUserAnswers.useMutation();
+  const { mutateAsync: submitUserAnswers } =
+    api.todos.submitUserAnswers.useMutation();
 
   const handleAnswerChange = (id: number, answer: string) => {
     setAnswers((prev) => ({ ...prev, [id]: answer }));

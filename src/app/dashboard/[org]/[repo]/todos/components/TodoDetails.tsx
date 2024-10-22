@@ -11,7 +11,7 @@ import Research from "./Research";
 import IssueComponent from "./Issue";
 import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
-import { ResearchAgentActionType } from "~/server/db/enums";
+import { ResearchAgentActionType } from "~/server/agent/research";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -100,10 +100,10 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
   }
 
   const userQuestions = research?.filter(
-    (item) => item.type === ResearchAgentActionType.AskProjectOwner
+    (item) => item.type === ResearchAgentActionType.AskProjectOwner,
   );
   const otherResearch = research?.filter(
-    (item) => item.type !== ResearchAgentActionType.AskProjectOwner
+    (item) => item.type !== ResearchAgentActionType.AskProjectOwner,
   );
 
   return (
