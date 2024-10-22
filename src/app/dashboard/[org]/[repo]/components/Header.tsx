@@ -37,14 +37,15 @@ export default function Header({ org, repoName }: HeaderProps) {
       },
     });
 
-  const { data: branches, isLoading: isLoadingBranches } = api.github.getBranches.useQuery(
-    { org, repo: repoName },
-    { enabled: !!org && !!repoName }
-  );
+  const { data: branches, isLoading: isLoadingBranches } =
+    api.github.getBranches.useQuery(
+      { org, repo: repoName },
+      { enabled: !!org && !!repoName },
+    );
 
   useEffect(() => {
     if (branches && branches.length > 0) {
-      setSelectedBranch(branches[0]);
+      setSelectedBranch(branches[0] ?? "main");
     }
   }, [branches]);
 
