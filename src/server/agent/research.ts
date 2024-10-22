@@ -194,7 +194,9 @@ export async function researchCodebase(
 
   let relevantFiles: StandardizedPath[];
   if (allFiles.length <= 50) {
-    relevantFiles = allFiles;
+    relevantFiles = allFiles.filter(
+      (file): file is StandardizedPath => file !== undefined,
+    );
   } else {
     relevantFiles = await selectRelevantFiles(query, codebaseContext);
   }
