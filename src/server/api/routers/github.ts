@@ -504,12 +504,32 @@ export const githubRouter = createTRPCRouter({
 
       try {
         const octokit = new Octokit({ auth: accessToken });
-        const { data: branches } = await octokit.repos.listBranches({
+
+        // Get repository info to find default branch
+        const { data: repoInfo } = await octokit.repos.get({
           owner: org,
           repo,
         });
 
-        return branches.map((branch) => branch.name);
+        // Get all branches
+        const { data: branches } = await octokit.repos.listBranches({
+          owner: org,
+          repo,
+          per_page: 100,
+        });
+
+        // Reorder branches to put default branch first
+        const defaultBranch = branches.find(
+          (branch) => branch.name === repoInfo.default_branch,
+        );
+        const otherBranches = branches.filter(
+          (branch) => branch.name !== repoInfo.default_branch,
+        );
+
+        return [
+          defaultBranch?.name ?? repoInfo.default_branch,
+          ...otherBranches.map((branch) => branch.name),
+        ];
       } catch (error) {
         console.error("Error fetching branches:", error);
         throw new TRPCError({
