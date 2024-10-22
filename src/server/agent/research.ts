@@ -87,7 +87,7 @@ export const researchIssue = async function ({
     "system",
     researchTemplateParams,
   );
-  const userPrompt = parseTemplate(
+  let userPrompt = parseTemplate(
     "research",
     "research_issue",
     "user",
@@ -134,7 +134,7 @@ export const researchIssue = async function ({
         break;
       }
 
-      const updatedPrompt = dedent`
+      userPrompt = dedent`
         ### Gathered Information:
         ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
         ### Missing Information:
@@ -145,7 +145,6 @@ export const researchIssue = async function ({
         ### Important:
         If you have all the necessary information to proceed with the task, return an empty array of questions. Otherwise, generate up to 10 additional questions to gather more information.
       `;
-      userPrompt = updatedPrompt;
     } catch (error) {
       console.error("Error in research loop:", error);
       break;
