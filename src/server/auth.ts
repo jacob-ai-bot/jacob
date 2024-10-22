@@ -9,7 +9,6 @@ import { Pool } from "pg";
 
 import { env } from "~/env";
 import { db } from "./db/db";
-import { Octokit } from "@octokit/core";
 
 export enum UserRole {
   user = "user",
@@ -127,7 +126,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/auth/signin",
-    error: "/auth/error",
   },
   session: {
     maxAge: 8 * 60 * 60, // 8 hours (to match GitHub's token expiration time)
