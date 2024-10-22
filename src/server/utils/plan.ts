@@ -53,6 +53,7 @@ export const getOrGeneratePlan = async ({
       .where({
         projectId,
         issueNumber: issueId,
+        isActive: true,
       })
       .all();
     if (planSteps?.length) {

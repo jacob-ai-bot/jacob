@@ -216,7 +216,7 @@ async function updateFileContext(
 export const getCodebaseContext = async function (
   rootPath: string,
   files: StandardizedPath[] = [],
-  models: Model[] = ["gpt-4o-mini-2024-07-18", "gemini-1.5-flash-latest"], // "claude-3-5-sonnet-20240620", // "gpt-4o-mini-2024-07-18"
+  models: Model[] = ["gpt-4o-mini-2024-07-18", "gemini-1.5-flash-latest"], // "claude-3-5-sonnet-20241022", // "gpt-4o-mini-2024-07-18"
   taxonomy: string,
   projectId: number,
 ): Promise<ContextItem[]> {

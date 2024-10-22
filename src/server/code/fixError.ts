@@ -177,7 +177,7 @@ export async function fixError(params: FixErrorParams) {
       const images = await getImages(rootPath, repoSettings);
 
       // Start with Claude, but if there is a lot of code, we need to use a model with a large output token limit
-      let model: Model = "claude-3-5-sonnet-20240620";
+      let model: Model = "claude-3-5-sonnet-20241022";
       const codeTokenCount = countTokens(code) * 1.05; // Leave a little room for bug fixes
       if (codeTokenCount > MAX_OUTPUT[model]) {
         model = "gpt-4o-64k-output-alpha";

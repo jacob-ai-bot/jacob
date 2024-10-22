@@ -114,8 +114,8 @@ export const createPlan = async function (
     : "";
 
   // const models: Model[] = [
-  //   "claude-3-5-sonnet-20240620",
-  //   "claude-3-5-sonnet-20240620",
+  //   "claude-3-5-sonnet-20241022",
+  //   "claude-3-5-sonnet-20241022",
   // ];
   console.log("research", research);
   const models: Model[] = [

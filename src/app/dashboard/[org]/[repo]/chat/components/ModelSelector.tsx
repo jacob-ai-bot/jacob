@@ -4,25 +4,21 @@ export type ChatModel = {
   description: string;
   modelName: string;
   provider: "openai" | "anthropic" | "google" | "groq";
+  inputTokenPrice?: number;
+  outputTokenPrice?: number;
 };
 
 export const ChatModels: ChatModel[] = [
   {
     description: "Claude 3.5 Sonnet",
-    modelName: "claude-3-5-sonnet-20240620",
+    modelName: "claude-3-5-sonnet-20241022",
     provider: "anthropic",
   },
-  { description: "GPT 4o", modelName: "gpt-4o-2024-08-06", provider: "openai" },
-  //   {
-  //     description: "Gemini 1.5 Pro",
-  //     modelName: "gemini-1.5-pro-latest",
-  //     provider: "google",
-  //   },
-  //   {
-  //     description: "Gemini 1.5 Flash",
-  //     modelName: "gemini-1.5-flash-latest",
-  //     provider: "google",
-  //   },
+  {
+    description: "GPT 4o",
+    modelName: "gpt-4o-2024-08-06",
+    provider: "openai",
+  },
   {
     description: "Groq Llama 3.2 90b",
     modelName: "llama-3.2-90b-text-preview",
@@ -37,6 +33,8 @@ export const ChatModels: ChatModel[] = [
     description: "o1 Mini",
     modelName: "o1-mini-2024-09-12",
     provider: "openai",
+    inputTokenPrice: 3,
+    outputTokenPrice: 12,
   },
 ];
 
@@ -51,12 +49,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
 }) => {
   return (
     <div className="mb-2">
-      {/* <label
-        htmlFor="model-select"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-      >
-        Select Model
-      </label> */}
       <select
         id="model-select"
         value={selectedModel.modelName}
