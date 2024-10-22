@@ -170,7 +170,7 @@ export const sendGptRequest = async (
   retries = 10,
   delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  model: Model = "claude-3-5-sonnet-20240620",
+  model: Model = "claude-3-5-sonnet-20241022",
   isJSONMode = false,
 ): Promise<string | null> => {
   console.log("\n\n --- User Prompt --- \n\n", userPrompt);
@@ -194,7 +194,7 @@ export const sendGptRequest = async (
     }
 
     // For now, if we get a request to use Sonnet 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
-    if (model === "claude-3-5-sonnet-20240620" && !isJSONMode) {
+    if (model === "claude-3-5-sonnet-20241022" && !isJSONMode) {
       return sendAnthropicRequest(
         userPrompt,
         systemPrompt,
@@ -370,7 +370,7 @@ export const sendGptRequestWithSchema = async (
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
   retries = 3,
-  model: Model = "claude-3-5-sonnet-20240620",
+  model: Model = "claude-3-5-sonnet-20241022",
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;

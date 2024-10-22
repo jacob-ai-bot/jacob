@@ -11,17 +11,13 @@ export type ChatModel = {
 export const ChatModels: ChatModel[] = [
   {
     description: "Claude 3.5 Sonnet",
-    modelName: "claude-3-5-sonnet-20240620",
+    modelName: "claude-3-5-sonnet-20241022",
     provider: "anthropic",
-    inputTokenPrice: 3,
-    outputTokenPrice: 15,
   },
   {
     description: "GPT 4o",
     modelName: "gpt-4o-2024-08-06",
     provider: "openai",
-    inputTokenPrice: 2.5,
-    outputTokenPrice: 10,
   },
   {
     description: "Groq Llama 3.2 90b",
@@ -32,8 +28,6 @@ export const ChatModels: ChatModel[] = [
     description: "o1 Preview",
     modelName: "o1-preview-2024-09-12",
     provider: "openai",
-    inputTokenPrice: 15,
-    outputTokenPrice: 60,
   },
   {
     description: "o1 Mini",
@@ -41,13 +35,6 @@ export const ChatModels: ChatModel[] = [
     provider: "openai",
     inputTokenPrice: 3,
     outputTokenPrice: 12,
-  },
-  {
-    description: "Claude 3.5 Sonnet 24-1022",
-    modelName: "claude-3-5-sonnet-20241022",
-    provider: "anthropic",
-    inputTokenPrice: 3,
-    outputTokenPrice: 15,
   },
 ];
 
@@ -75,7 +62,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       >
         {ChatModels.map((model) => (
           <option key={model.modelName} value={model.modelName}>
-            {model.description} - ${model.inputTokenPrice ?? "N/A"}/M input, ${model.outputTokenPrice ?? "N/A"}/M output
+            {model.description}
           </option>
         ))}
       </select>
