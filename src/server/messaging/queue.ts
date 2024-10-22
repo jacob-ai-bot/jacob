@@ -50,6 +50,7 @@ import {
   getOrCreateCodebaseContext,
   removeUnusedContextFiles,
 } from "../utils/codebaseContext";
+import { handleJiraEvent } from "../webhooks/jira";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -107,6 +108,8 @@ export async function initRabbitMQ({ listener }: { listener: boolean }) {
           } else {
             console.log("Duplicate message detected, skipping: ", messageId);
           }
+        } else if (event.name.startsWith("jira")) {
+          await handleJiraEvent(event);
         } else {
           await onGitHubEvent(event);
         }
