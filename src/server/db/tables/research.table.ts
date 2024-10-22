@@ -1,5 +1,5 @@
 import { BaseTable } from "../baseTable";
-import { ResearchAgentActionType } from "../../agent/research";
+import { ResearchAgentActionType } from "~/types";
 
 const RESEARCH_TYPE_VALUES = Object.values(ResearchAgentActionType) as [
   ResearchAgentActionType,

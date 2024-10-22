@@ -80,6 +80,7 @@ const mockedDb = vi.hoisted(() => ({
   },
   todos: {
     findByOptional: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
+    update: vi.fn().mockResolvedValue(undefined),
   },
 }));
 vi.mock("~/server/db/db", () => ({ db: mockedDb }));

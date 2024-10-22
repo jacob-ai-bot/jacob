@@ -17,8 +17,9 @@ import {
 import { createPR, markPRReadyForReview } from "../github/pr";
 import { getIssue } from "../github/issue";
 import { emitPREvent, emitTaskEvent } from "~/server/utils/events";
-import { TaskStatus, TaskSubType } from "~/server/db/enums";
+import { TaskStatus, TaskSubType, TodoStatus } from "~/server/db/enums";
 import { checkForChanges } from "../git/operations";
+import { db } from "../db/db";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -168,6 +169,22 @@ export async function checkAndCommit({
     prTitle = existingPr.title;
     prUrl = existingPr.html_url;
     if (buildErrorMessage === undefined) {
+      // Update todo status to DONE
+      await db.todos
+        .where({
+          issueId: issue?.number ?? 0,
+          projectId: baseEventData.projectId,
+        })
+        .update({ status: TodoStatus.DONE });
+
+      // Emit TaskEvent with status DONE
+      await emitTaskEvent({
+        ...baseEventData,
+        issue,
+        subType: TaskSubType.EDIT_FILES,
+        status: TaskStatus.DONE,
+        statusMessage: "File edits completed successfully",
+      });
       await markPRReadyForReview(token, existingPr.node_id);
     }
   } else {
@@ -191,9 +208,24 @@ export async function checkAndCommit({
   if (buildErrorMessage) {
     if ((buildErrorAttemptNumber ?? 0) >= MAX_ATTEMPTS_TO_FIX_BUILD_ERROR - 1) {
       // Too many consecutive attempts to fix the build/test error. Give up.
-      throw new Error(
-        `Too many attempts to fix errors.\n\nThe latest error:\n\n${buildErrorMessage}`,
-      );
+      const statusMessage = `Too many attempts to fix errors.\n\nThe latest error:\n\n${buildErrorMessage}`;
+      // Update todo status to DONE
+      await db.todos
+        .where({
+          issueId: issue?.number ?? 0,
+          projectId: baseEventData.projectId,
+        })
+        .update({ status: TodoStatus.ERROR });
+
+      // Emit TaskEvent with status DONE
+      await emitTaskEvent({
+        ...baseEventData,
+        issue,
+        subType: TaskSubType.EDIT_FILES,
+        status: TaskStatus.ERROR,
+        statusMessage,
+      });
+      throw new Error(statusMessage);
     }
     if (existingPr) {
       const nextStepsMessage = dedent`
@@ -294,6 +326,14 @@ export async function checkAndCommit({
       `;
 
       await addCommentToIssue(repository, issue.number, token, issueMessage);
+
+      // Update todo status to DONE
+      await db.todos
+        .where({
+          issueId: issue.number,
+          projectId: baseEventData.projectId,
+        })
+        .update({ status: TodoStatus.DONE });
 
       await emitTaskEvent({
         ...baseEventData,

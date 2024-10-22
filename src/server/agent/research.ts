@@ -15,13 +15,7 @@ import {
 import { traverseCodebase } from "../analyze/traverse";
 import { type StandardizedPath, standardizePath } from "../utils/files";
 import { z } from "zod";
-
-export enum ResearchAgentActionType {
-  ResearchCodebase = "ResearchCodebase",
-  ResearchInternet = "ResearchInternet",
-  AskProjectOwner = "AskProjectOwner",
-  ResearchComplete = "ResearchComplete",
-}
+import { ResearchAgentActionType } from "~/types";
 
 export interface Research {
   todoId: number;
@@ -333,7 +327,7 @@ export async function researchCodebase(
       0, // no retries, so we can quickly failover to gemini
       60000,
       null,
-      "claude-3-5-sonnet-20240620",
+      "claude-3-5-sonnet-20241022",
     );
   } catch (error) {
     result = await sendGptRequest(
@@ -405,7 +399,7 @@ export async function selectRelevantFiles(
       0.3,
       undefined,
       3,
-      "claude-3-5-sonnet-20240620",
+      "claude-3-5-sonnet-20241022",
     )) as RelevantFiles;
 
     if (!response.files) {

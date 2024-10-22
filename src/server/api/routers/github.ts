@@ -513,4 +513,51 @@ export const githubRouter = createTRPCRouter({
         }
       },
     ),
+  getBranches: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { org, repo } = input;
+      const { accessToken } = ctx.session;
+
+      try {
+        const octokit = new Octokit({ auth: accessToken });
+
+        // Get repository info to find default branch
+        const { data: repoInfo } = await octokit.repos.get({
+          owner: org,
+          repo,
+        });
+
+        // Get all branches
+        const { data: branches } = await octokit.repos.listBranches({
+          owner: org,
+          repo,
+          per_page: 100,
+        });
+
+        // Reorder branches to put default branch first
+        const defaultBranch = branches.find(
+          (branch) => branch.name === repoInfo.default_branch,
+        );
+        const otherBranches = branches.filter(
+          (branch) => branch.name !== repoInfo.default_branch,
+        );
+
+        return [
+          defaultBranch?.name ?? repoInfo.default_branch,
+          ...otherBranches.map((branch) => branch.name),
+        ];
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch repository branches",
+        });
+      }
+    }),
 });

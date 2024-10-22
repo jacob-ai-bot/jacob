@@ -143,8 +143,10 @@ export enum ResearchAgentActionType {
 }
 
 export interface Research {
+  id?: number;
   type: ResearchAgentActionType;
   question: string;
   answer: string;
+  todoId: number;
   issueId: number;
 }
