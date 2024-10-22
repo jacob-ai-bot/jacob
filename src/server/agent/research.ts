@@ -311,7 +311,7 @@ export async function selectRelevantFiles(
       .filter((p): p is StandardizedPath => p !== undefined);
 
     const filteredRelevantFiles = relevantFiles.filter((file) =>
-      allFiles?.some((setFile) => setFile === file),
+      allFiles?.includes(file),
     );
 
     console.log("Top 10 relevant files:", filteredRelevantFiles.slice(0, 10));
