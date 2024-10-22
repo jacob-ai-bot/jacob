@@ -195,9 +195,10 @@ export const eventsRouter = createTRPCRouter({
         // Use the unique issue IDs to create a list of tasks
         const tasks = await Promise.all(
           (uniqueIssueIds.filter(Boolean) as number[]).map(async (issueId) => {
-            // Each task should have a single issue. Get the most recent issue
-            let issue = events.find((e) => e.type === TaskType.issue)
-              ?.payload as Issue;
+            // Each task should have a single issue. Get the most recent issue for this specific issueId
+            let issue = events.find(
+              (e) => e.type === TaskType.issue && e.issueId === issueId,
+            )?.payload as Issue;
 
             if (!issue && org && repo && issueId && accessToken) {
               // Fetch the issue from the GitHub API using Octokit
@@ -245,6 +246,9 @@ export const eventsRouter = createTRPCRouter({
 
         // return an `observable` with a callback which is triggered immediately
         return observable<Event>((emit) => {
+          let redisConnection: ReturnType<typeof newRedisConnection> | null =
+            null;
+
           const onRedisMessage = (_channel: string, message: string) => {
             try {
               const event = JSON.parse(message) as Event;
@@ -263,27 +267,33 @@ export const eventsRouter = createTRPCRouter({
           };
 
           // trigger `onAdd()` when `add` is triggered in our event emitter
-          const redisConnection = newRedisConnection();
+          redisConnection = newRedisConnection();
           void redisConnection
             .subscribe("events", (err, count) => {
               if (err) {
-                // Just like other commands, subscribe() can fail for some reasons,
-                // ex network issues.
+                // Close the connection on error
                 console.error("Failed to subscribe:", err);
-              } else {
-                // `count` represents the number of channels this client are currently subscribed to.
-                console.log(
-                  `Subscribed successfully! This client is currently subscribed to ${String(count)} channels.`,
-                );
+                void redisConnection.quit();
+                return;
               }
+              // `count` represents the number of channels this client are currently subscribed to.
+              console.log(
+                `Subscribed successfully! This client is currently subscribed to ${String(count)} channels.`,
+              );
             })
             .then(() => {
               redisConnection.on("message", onRedisMessage);
+            })
+            .catch((error) => {
+              console.error("Failed to set up Redis subscription:", error);
+              void redisConnection.quit();
             });
 
           // unsubscribe function when client disconnects or stops subscribing
           return () => {
-            void redisConnection.quit();
+            if (redisConnection) {
+              void redisConnection.quit();
+            }
           };
         });
       },
@@ -325,11 +335,10 @@ const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
     issue.filesToCreate = [newFileName];
   }
 
-  // const plan = getPlanForTaskSubType(taskSubType);
-
-  // Each issue should have a single pull request. Get the most recent pull request
-  const pullRequest = events.find((e) => e.type === TaskType.pull_request)
-    ?.payload as PullRequest;
+  // Each issue should have a single pull request. Get the most recent pull request for this specific issue
+  const pullRequest = events.find(
+    (e) => e.type === TaskType.pull_request && e.issueId === issueId,
+  )?.payload as PullRequest;
 
   // Get the most recent code event for each unique 'code.fileName' associated with the issue
   const codeFiles = events
