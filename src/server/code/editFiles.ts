@@ -242,7 +242,7 @@ ${step.dependencies}`
 
     // Update todo status to DONE
     await db.todos
-      .where({ issueId: issue.number })
+      .where({ issueId: issue.number, projectId: baseEventData.projectId })
       .update({ status: TodoStatus.DONE });
 
     // Emit TaskEvent with status DONE
