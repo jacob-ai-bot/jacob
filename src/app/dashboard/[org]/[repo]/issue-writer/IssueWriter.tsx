@@ -157,7 +157,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
       }`}
     >
       <div
-        className={`hide-scrollbar h-[calc(100vh-119px)] flex-1 overflow-hidden rounded-md bg-white/50 p-4 pb-8 shadow-sm dark:bg-slate-800 ${isEditing ? "" : "overflow-y-scroll"}`}
+        className={`hide-scrollbar dark:bg-slate-800} h-[calc(100vh-119px)] flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 pb-8 shadow-sm`}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-aurora-700 dark:text-aurora-300">
