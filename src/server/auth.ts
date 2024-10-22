@@ -111,12 +111,7 @@ export const authOptions: NextAuthOptions = {
       const { session, user } = params;
       const userId = parseInt(user.id, 10);
       const account = await db.accounts.findBy({ userId });
-      // Log token scopes in development
-      if (process.env.NODE_ENV !== "production" && session?.accessToken) {
-        const octokit = new Octokit({ auth: session.accessToken });
-        const { headers } = await octokit.request("GET /user");
-        console.log("Token scopes:", headers["x-oauth-scopes"]);
-      }
+
       return {
         ...session,
         accessToken: account.access_token,
