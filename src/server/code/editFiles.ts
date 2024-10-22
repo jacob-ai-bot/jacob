@@ -16,7 +16,7 @@ import {
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import { concatenateFiles, reconstructFiles } from "../utils/files";
-import { emitCodeEvent } from "../utils/events";
+import { emitCodeEvent, emitTaskEvent } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { db } from "../db/db";
 import { researchIssue } from "../agent/research";
@@ -25,6 +25,7 @@ import { getTypes, getImages } from "../analyze/sourceMap";
 import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
 import { PlanningAgentActionType } from "../db/enums";
+import { TodoStatus, TaskStatus, TaskSubType } from "../db/enums";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -237,6 +238,20 @@ ${step.dependencies}`
         detailedMarkdownPlanFromSteps ?? ""
       }`,
       newPrReviewers: issue.assignees?.map((assignee) => assignee.login) ?? [],
+    });
+
+    // Update todo status to DONE
+    await db.todos
+      .where({ issueId: issue.number })
+      .update({ status: TodoStatus.DONE });
+
+    // Emit TaskEvent with status DONE
+    await emitTaskEvent({
+      ...baseEventData,
+      issue,
+      subType: TaskSubType.EDIT_FILES,
+      status: TaskStatus.DONE,
+      statusMessage: "File edits completed successfully",
     });
   }
 }

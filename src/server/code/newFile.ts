@@ -3,7 +3,7 @@ import { dedent } from "ts-dedent";
 import fs from "fs";
 import path from "path";
 
-import { emitCodeEvent } from "~/server/utils/events";
+import { emitCodeEvent, emitTaskEvent } from "~/server/utils/events";
 import { getTypes, getImages } from "../analyze/sourceMap";
 import {
   parseTemplate,
@@ -19,6 +19,8 @@ import { checkAndCommit } from "./checkAndCommit";
 import { saveNewFile } from "../utils/files";
 import { saveImages } from "../utils/images";
 import { getSnapshotUrl } from "~/app/utils";
+import { db } from "../db/db";
+import { TodoStatus, TaskStatus, TaskSubType } from "../db/enums";
 
 export interface CreateNewFileParams extends BaseEventData {
   newFileName: string;
@@ -149,5 +151,19 @@ export async function createNewFile(params: CreateNewFileParams) {
     newPrTitle: `Create ${newFileName}`,
     newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${plan}`,
     newPrReviewers: issue.assignees.map((assignee) => assignee.login),
+  });
+
+  // Update todo status to DONE
+  await db.todos
+    .where({ issueId: issue.number })
+    .update({ status: TodoStatus.DONE });
+
+  // Emit TaskEvent with status DONE
+  await emitTaskEvent({
+    ...baseEventData,
+    issue,
+    subType: TaskSubType.CREATE_NEW_FILE,
+    status: TaskStatus.DONE,
+    statusMessage: "New file created successfully",
   });
 }
