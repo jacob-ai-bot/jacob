@@ -15,13 +15,7 @@ import {
 import { traverseCodebase } from "../analyze/traverse";
 import { type StandardizedPath, standardizePath } from "../utils/files";
 import { z } from "zod";
-
-export enum ResearchAgentActionType {
-  ResearchCodebase = "ResearchCodebase",
-  ResearchInternet = "ResearchInternet",
-  AskProjectOwner = "AskProjectOwner",
-  ResearchComplete = "ResearchComplete",
-}
+import { ResearchAgentActionType } from "~/types";
 
 export interface Research {
   todoId: number;

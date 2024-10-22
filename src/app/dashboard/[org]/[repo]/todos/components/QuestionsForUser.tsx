@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { api } from "~/trpc/react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { type Research } from "~/server/db/tables/research.table";
+import { type Research } from "~/types";
 
 interface QuestionsForUserProps {
   questions: Research[];
@@ -15,7 +15,15 @@ const QuestionsForUser: React.FC<QuestionsForUserProps> = ({
   todoId,
   issueId,
 }) => {
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<number, string>>(
+    questions?.reduce(
+      (acc, question) => {
+        acc[question.id!] = question.answer;
+        return acc;
+      },
+      {} as Record<number, string>,
+    ),
+  );
 
   const { mutateAsync: submitUserAnswers } =
     api.todos.submitUserAnswers.useMutation();
@@ -59,8 +67,8 @@ const QuestionsForUser: React.FC<QuestionsForUserProps> = ({
             <textarea
               className="w-full rounded-md border border-aurora-300 bg-white p-2 text-aurora-900 dark:border-aurora-600 dark:bg-aurora-900 dark:text-aurora-100"
               rows={3}
-              value={answers[question.id] || ""}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+              value={answers[question.id!] ?? ""}
+              onChange={(e) => handleAnswerChange(question.id!, e.target.value)}
               placeholder="Enter your answer here..."
             />
           </motion.div>

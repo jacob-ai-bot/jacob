@@ -11,7 +11,7 @@ import Research from "./Research";
 import IssueComponent from "./Issue";
 import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
-import { ResearchAgentActionType } from "~/server/agent/research";
+import { ResearchAgentActionType } from "~/types";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;

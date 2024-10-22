@@ -5,7 +5,6 @@ import { researchIssue } from "~/server/agent/research";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
 import { cloneRepo } from "~/server/git/clone";
-import { ResearchAgentActionType } from "~/server/db/enums";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -167,11 +166,13 @@ export const todoRouter = createTRPCRouter({
         answers: z.record(z.string(), z.string()),
       }),
     )
-    .mutation(async ({ input: { todoId, issueId, answers } }): Promise<void> => {
-      for (const [questionId, answer] of Object.entries(answers)) {
-        await db.research
-          .where({ id: parseInt(questionId), todoId, issueId })
-          .update({ answer });
-      }
-    }),
+    .mutation(
+      async ({ input: { todoId, issueId, answers } }): Promise<void> => {
+        for (const [questionId, answer] of Object.entries(answers)) {
+          await db.research
+            .where({ id: parseInt(questionId), todoId, issueId })
+            .update({ answer });
+        }
+      },
+    ),
 });

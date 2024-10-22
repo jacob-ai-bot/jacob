@@ -1,16 +1,10 @@
 import { BaseTable } from "../baseTable";
-import { ResearchAgentActionType } from "../../agent/research";
-import { Insertable, Queryable, Updateable, Selectable } from "orchid-orm";
+import { ResearchAgentActionType } from "~/types";
 
 const RESEARCH_TYPE_VALUES = Object.values(ResearchAgentActionType) as [
   ResearchAgentActionType,
   ...ResearchAgentActionType[],
 ];
-
-export type Research = Selectable<ResearchTable>;
-export type NewResearch = Insertable<ResearchTable>;
-export type ResearchUpdate = Updateable<ResearchTable>;
-export type ResearchQueryable = Queryable<ResearchTable>;
 
 export class ResearchTable extends BaseTable {
   readonly table = "research";
