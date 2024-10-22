@@ -10,6 +10,10 @@ export const Research: React.FC<{ item: any; isLastItem: boolean }> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  if (item.type === 'user') {
+    return null;
+  }
+
   return (
     <div
       className={`mb-6 border-b border-sunset-200/50 pb-4 dark:border-gray-700/50 ${isLastItem ? "border-none" : ""}`}

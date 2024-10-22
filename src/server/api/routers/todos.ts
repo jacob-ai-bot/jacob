@@ -157,4 +157,20 @@ export const todoRouter = createTRPCRouter({
         }
       },
     ),
+
+  updateResearch: protectedProcedure
+    .input(
+      z.object({
+        todoId: z.number(),
+        issueId: z.number(),
+        questionId: z.number(),
+        answer: z.string(),
+      }),
+    )
+    .mutation(async ({ input: { todoId, issueId, questionId, answer } }): Promise<any> => {
+      const updatedResearch = await db.research
+        .where({ todoId, issueId, id: questionId })
+        .update({ answer });
+      return updatedResearch;
+    }),
 });

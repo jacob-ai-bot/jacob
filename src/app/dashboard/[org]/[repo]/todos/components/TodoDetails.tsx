@@ -10,6 +10,7 @@ import { getTodoLabel } from "~/app/utils";
 import Research from "./Research";
 import IssueComponent from "./Issue";
 import Plan from "./Plan";
+import QuestionsForUser from "./QuestionsForUser";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -90,6 +91,9 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     }
   };
 
+  const userQuestions = research?.filter(item => item.type === 'user') ?? [];
+  const otherResearch = research?.filter(item => item.type !== 'user') ?? [];
+
   if (isLoadingIssue) {
     return <LoadingIndicator />;
   }
@@ -169,6 +173,20 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
           />
         </motion.div>
 
+        {/* Questions for User Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="rounded-lg bg-gradient-to-b from-aurora-50/70 to-50% p-6 shadow-lg transition-all dark:from-aurora-800/30 dark:to-aurora-800/10"
+        >
+          <QuestionsForUser
+            questions={userQuestions}
+            todoId={selectedTodo.id}
+            issueId={selectedTodo.issueId ?? 0}
+          />
+        </motion.div>
+
         {/* Research Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -182,12 +200,12 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
                 Research
               </h3>
               <p className="text-sm text-sunset-900/80 dark:text-gray-400">
-                {research?.length
+                {otherResearch.length
                   ? "This research will be used to help JACoB complete the issue."
                   : "Generate a list of research questions to give JACoB more context about the issue."}
               </p>
             </div>
-            {research?.length ? null : (
+            {otherResearch.length ? null : (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -220,7 +238,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
               }}
               className="space-y-4"
             >
-              {research?.map((item, index) => (
+              {otherResearch.map((item, index) => (
                 <motion.div
                   key={item.id}
                   variants={{
@@ -230,7 +248,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
                 >
                   <Research
                     item={item}
-                    isLastItem={index === research.length - 1}
+                    isLastItem={index === otherResearch.length - 1}
                   />
                 </motion.div>
               ))}
