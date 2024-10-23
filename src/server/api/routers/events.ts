@@ -323,6 +323,22 @@ export const eventsRouter = createTRPCRouter({
         .select("*");
       return research;
     }),
+  getEventsByIssue: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+        issueId: z.number(),
+      }),
+    )
+    .query(async ({ input: { org, repo, issueId } }) => {
+      const events = await db.events
+        .where({ repoFullName: `${org}/${repo}` })
+        .where({ issueId })
+        .order({ createdAt: "ASC" });
+
+      return events;
+    }),
 });
 
 const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
