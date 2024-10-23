@@ -220,18 +220,49 @@ Below is the context and detailed steps to guide the process.
   }
   \`\`\`
   `;
-
-    const o1Plan = await sendGptRequest(
-      o1Prompt,
-      "",
-      1,
-      undefined,
-      3,
-      60000,
-      null,
-      "o1-preview-2024-09-12",
-    );
-    console.log("\n\n\n\n\n****** Generated plan:", o1Plan, "\n\n\n\n\n");
+    let o1Plan: string | null = null;
+    // plans have been getting flagged as harmful, so we'll try a few times with different models
+    try {
+      o1Plan = await sendGptRequest(
+        o1Prompt,
+        "",
+        1,
+        undefined,
+        3,
+        60000,
+        null,
+        "o1-preview-2024-09-12",
+      );
+      console.log("\n\n\n\n\n****** Generated plan:", o1Plan, "\n\n\n\n\n");
+    } catch (error) {
+      console.error("Error generating plan:", error);
+      try {
+        // try to generate the plan using claude
+        o1Plan = await sendGptRequest(
+          o1Prompt,
+          "",
+          1,
+          undefined,
+          3,
+          60000,
+          null,
+          "claude-3-5-sonnet-20241022",
+        );
+      } catch (error) {
+        console.error("Error generating plan using claude:", error);
+        // if that fails, try to generate the plan using gemini
+        o1Plan = await sendGptRequest(
+          o1Prompt,
+          "",
+          1,
+          undefined,
+          3,
+          60000,
+          null,
+          "gemini-1.5-pro-latest",
+        );
+      }
+    }
     if (!o1Plan) {
       throw new Error(
         `Error generating plan for todo ${todo.id}, no plan generated`,
