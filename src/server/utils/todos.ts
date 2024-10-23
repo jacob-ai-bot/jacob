@@ -127,18 +127,16 @@ export const getOrCreateTodo = async ({
   }
 };
 
-export const archiveTodosByIssueId = async (issueId: number): Promise<void> => {
+export const archiveTodosByIssueId = async (
+  issueId: number,
+  projectId: number,
+): Promise<void> => {
   try {
-    const todosToArchive = await db.todos
-      .where({ issueId })
-      .where({ isArchived: false })
-      .all();
+    const updatedCount = await db.todos
+      .where({ issueId, projectId })
+      .update({ isArchived: true });
 
-    for (const todo of todosToArchive) {
-      await db.todos.find(todo.id).update({ isArchived: true });
-    }
-
-    console.log(`Archived todos for issue #${issueId}`);
+    console.log(`Archived ${updatedCount} todos for issue #${issueId}`);
   } catch (error) {
     console.error(
       `Error while archiving todos for issue #${issueId}: ${String(error)}`,

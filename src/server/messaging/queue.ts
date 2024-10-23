@@ -545,7 +545,10 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       });
 
       // Archive associated todos
-      await archiveTodosByIssueId(baseEventData.issueId);
+      await archiveTodosByIssueId(
+        baseEventData.issueId,
+        baseEventData.projectId,
+      );
     }
     logEventDuration();
     return;
