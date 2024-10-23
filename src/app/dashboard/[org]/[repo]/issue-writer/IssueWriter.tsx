@@ -39,6 +39,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     body: string;
   } | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [titleError, setTitleError] = useState(false);
 
   const [rewrittenIssue, setRewrittenIssue] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -61,8 +62,17 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   }, [isEditing]);
 
   const handleCreateIssue = async () => {
-    if (!issueTitle.trim() && !issueBody.trim()) {
-      toast.error("Please provide a title and body for the issue.");
+    if (!issueTitle.trim()) {
+      toast.error(
+        "Error: Issue title is required. Please add a title to proceed.",
+      );
+      setTitleError(true);
+      titleInputRef.current?.focus();
+      return;
+    }
+
+    if (!issueBody.trim()) {
+      toast.error("Please provide a body for the issue.");
       return;
     }
 
@@ -100,6 +110,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     setIssueBody("");
     setCreatedIssueNumber(null);
     setIsEditing(true);
+    setTitleError(false);
   };
 
   const handleEvaluateIssue = async (
@@ -142,6 +153,11 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     }
   };
 
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIssueTitle(e.target.value);
+    setTitleError(false);
+  };
+
   if (isLoadingProject || !project) {
     return (
       <div className="flex h-full items-center justify-center p-4">
@@ -177,8 +193,12 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
               ref={titleInputRef}
               type="text"
               value={issueTitle}
-              onChange={(e) => setIssueTitle(e.target.value)}
-              className="w-full rounded-md border border-gray-300 p-2 text-lg font-semibold focus:border-aurora-400 focus:outline-none focus:ring-2 focus:ring-aurora-200 dark:border-gray-600 dark:bg-gray-800 dark:focus:border-aurora-400 dark:focus:ring-aurora-800"
+              onChange={handleTitleChange}
+              className={`w-full rounded-md border p-2 text-lg font-semibold focus:outline-none focus:ring-2 ${
+                titleError
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+                  : "border-gray-300 focus:border-aurora-400 focus:ring-aurora-200"
+              } dark:border-gray-600 dark:bg-gray-800 dark:focus:border-aurora-400 dark:focus:ring-aurora-800`}
               placeholder="Issue Title"
             />
             <div className="flex-1">
