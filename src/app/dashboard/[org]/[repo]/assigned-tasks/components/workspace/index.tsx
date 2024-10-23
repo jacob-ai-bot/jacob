@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { type Task, type Event } from "~/server/api/routers/events";
 import { type SidebarIcon } from "~/types";
 import { CodeComponent } from "./Code";
@@ -32,6 +32,36 @@ const Workspace: React.FC<WorkspaceProps> = ({
   events,
 }) => {
   const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      const latestEvent = events[events.length - 1];
+      switch (latestEvent.type) {
+        case TaskType.code:
+          setSelectedIcon(SidebarIcon.Code);
+          break;
+        case TaskType.terminal:
+        case TaskType.command:
+          setSelectedIcon(SidebarIcon.Terminal);
+          break;
+        case TaskType.issue:
+          setSelectedIcon(SidebarIcon.Issue);
+          break;
+        case TaskType.design:
+          setSelectedIcon(SidebarIcon.Design);
+          break;
+        case TaskType.prompt:
+          setSelectedIcon(SidebarIcon.Prompts);
+          break;
+        case TaskType.pull_request:
+          setSelectedIcon(SidebarIcon.PullRequest);
+          break;
+        default:
+          setSelectedIcon(SidebarIcon.Code);
+      }
+    }
+  }, [events, setSelectedIcon]);
+
   const renderComponent = (selectedTask: Task | undefined) => {
     if (!selectedTask) {
       return (
@@ -41,11 +71,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
       );
     }
 
-    const latestEvent = events[events.length - 1];
-    const eventType = latestEvent ? latestEvent.type : null;
-
-    switch (eventType) {
-      case TaskType.code:
+    switch (selectedIcon) {
+      case SidebarIcon.Code:
         return (
           <CodeComponent
             codeFiles={selectedTask?.codeFiles}
@@ -53,16 +80,15 @@ const Workspace: React.FC<WorkspaceProps> = ({
             repo={repo}
           />
         );
-      case TaskType.terminal:
-      case TaskType.command:
+      case SidebarIcon.Terminal:
         return <TerminalComponent commands={selectedTask?.commands} />;
-      case TaskType.issue:
+      case SidebarIcon.Issue:
         return <IssueComponent issue={selectedTask?.issue} />;
-      case TaskType.design:
+      case SidebarIcon.Design:
         return <DesignComponent imageUrl={selectedTask?.imageUrl} />;
-      case TaskType.prompt:
+      case SidebarIcon.Prompts:
         return <PromptsComponent promptDetailsArray={selectedTask.prompts} />;
-      case TaskType.pull_request:
+      case SidebarIcon.PullRequest:
         return <PullRequestComponent pullRequest={selectedTask?.pullRequest} />;
       default:
         return (
