@@ -1,10 +1,8 @@
-import type OpenAI from "openai";
 import { dedent } from "ts-dedent";
 import {
   type Model,
   sendGptRequest,
   sendGptRequestWithSchema,
-  sendGptToolRequest,
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
 import { parseTemplate } from "../utils";
@@ -25,75 +23,6 @@ export interface Research {
   answer: string;
 }
 
-const researchTools: OpenAI.ChatCompletionTool[] = [
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.ResearchCodebase,
-      description: "Analyze the existing codebase for relevant information.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description:
-              "The detailed, full-sentence search query to search within the codebase.",
-          },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.ResearchInternet,
-      description:
-        "Search the internet for specific details if there are unique aspects that need further understanding.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description: "The query to search on the internet.",
-          },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.AskProjectOwner,
-      description:
-        "Ask the project owner for any additional details or clarifications.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description: "The question to ask the project owner.",
-          },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: ResearchAgentActionType.ResearchComplete,
-      description:
-        "The system will continue in a loop until this tool is called. Call this tool to confirm that either all of the most important information has been gathered to address the issue, or if the system attemped to gather key missing information but was unable to do so.",
-      parameters: {
-        type: "object",
-        properties: {},
-      },
-    },
-  },
-];
-
 interface ResearchIssueParams {
   githubIssue: string;
   todoId: number;
@@ -104,6 +33,18 @@ interface ResearchIssueParams {
   model?: Model;
 }
 
+const ResearchSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        type: z.nativeEnum(ResearchAgentActionType),
+        question: z.string(),
+      }),
+    )
+    .max(10),
+});
+type ResearchSchema = z.infer<typeof ResearchSchema>;
+
 export const researchIssue = async function ({
   githubIssue,
   todoId,
@@ -111,7 +52,7 @@ export const researchIssue = async function ({
   rootDir,
   projectId,
   maxLoops = 10,
-  model = "gpt-4o-2024-08-06",
+  model = "claude-3-5-sonnet-20241022",
 }: ResearchIssueParams): Promise<Research[]> {
   console.log("Researching issue...");
   // First get the context for the full codebase
@@ -146,58 +87,33 @@ export const researchIssue = async function ({
     "system",
     researchTemplateParams,
   );
-  const userPrompt = parseTemplate(
+  let userPrompt = parseTemplate(
     "research",
     "research_issue",
     "user",
     researchTemplateParams,
   );
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ];
 
-  let allInfoGathered = false;
   const gatheredInformation: Research[] = [];
-  const questionsForProjectOwner: string[] = [];
   let loops = 0;
 
-  while (!allInfoGathered && loops < maxLoops) {
+  while (loops < maxLoops) {
     loops++;
-    const response = await sendGptToolRequest(
-      messages,
-      researchTools,
-      0.3,
-      undefined,
-      2,
-      60000,
-      model,
-      "required",
-      true,
-    );
+    try {
+      const response = (await sendGptRequestWithSchema(
+        userPrompt,
+        systemPrompt,
+        ResearchSchema,
+        0.3,
+        undefined,
+        3,
+        model,
+      )) as ResearchSchema;
 
-    const toolCalls = response.choices[0]?.message.tool_calls;
-
-    if (toolCalls && toolCalls.length > 0) {
-      allInfoGathered = true;
-
-      for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name as ResearchAgentActionType;
-        if (!Object.values(ResearchAgentActionType).includes(functionName)) {
-          console.error(`Invalid function name: ${functionName}`);
-          continue;
-        }
-        if (functionName === ResearchAgentActionType.ResearchComplete) {
-          allInfoGathered = true;
-          break;
-        }
-        const args = JSON.parse(toolCall.function.arguments) as {
-          query: string;
-        };
-        console.log(`Calling function: ${functionName} with arguments:`, args);
+      for (const question of response.questions) {
         const functionResponse = await callFunction(
-          functionName,
-          args,
+          question.type as ResearchAgentActionType,
+          question.question,
           githubIssue,
           sourceMap,
           rootDir,
@@ -206,39 +122,30 @@ export const researchIssue = async function ({
         const research: Research = {
           todoId,
           issueId,
-          type: functionName,
-          question: args.query,
+          type: question.type,
+          question: question.question,
           answer: functionResponse,
         };
-        if (functionName === ResearchAgentActionType.AskProjectOwner) {
-          questionsForProjectOwner.push(args.query);
-        } else {
-          gatheredInformation.push(research);
-        }
+        gatheredInformation.push(research);
         await db.research.create(research);
-        allInfoGathered = false;
       }
-
-      if (!allInfoGathered) {
-        const updatedPrompt = dedent`
-            ### Gathered Information:
-            ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
-            ### Questions Already Asked for Project Owner (Note that the user has not seen these questions yet and did not yet provide an answer):
-            ${questionsForProjectOwner.join("\n")}
-            ### Missing Information:
-            Reflect on the gathered information and specify what is still needed to fully address the issue and why it is needed.
-            ### Plan Information Gathering:
-            Decide on the best action to obtain each missing piece of information (ResearchCodebase, ResearchInternet, AskProjectOwner, ResearchComplete).
-            Choose the correct tools and formulate very specific, detailed queries to gather all of the missing information effectively. If you need to ask follow-up questions, only ask up to 5 additional questions. Each question should be a full sentence and clearly state what information you are looking for.
-            NEVER repeat the same question, even if the system did not answer the question. It better to call the ResearchComplete tool if you have asked all of the questions, even if the system did not answer them, than to repeat the same question.
-            ### Important:
-                If you have all the necessary information to proceed with the task, return a single tool call to confirm that the research is complete. If you need more information, ask up to 5 additional questions to gather it.
-        `;
-        messages.push({ role: "assistant", content: "Research Step Complete" });
-        messages.push({ role: "user", content: updatedPrompt });
+      if (response.questions.length === 0) {
+        break;
       }
-    } else {
-      allInfoGathered = true;
+      userPrompt = dedent`
+      ### Gathered Information:
+      ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
+      ### Missing Information:
+      Reflect on the gathered information and specify what is still needed to fully address the issue and why it is needed.
+      ### Plan Information Gathering:
+      Decide on the best action to obtain each missing piece of information (ResearchCodebase, ResearchInternet, AskProjectOwner).
+      Choose the correct types and formulate very specific, detailed queries to gather all of the missing information effectively.
+      ### Important:
+      If you have all the necessary information to proceed with the task, return an object that matches the ResearchSchema schema with an empty array of questions. Otherwise, generate up to 10 additional questions to gather more information.
+    `;
+    } catch (error) {
+      console.error("Error in research loop:", error);
+      break;
     }
   }
 
@@ -250,7 +157,7 @@ export const researchIssue = async function ({
 
 async function callFunction(
   functionName: ResearchAgentActionType,
-  args: { query: string },
+  question: string,
   githubIssue: string,
   sourceMap: string,
   rootDir: string,
@@ -259,17 +166,17 @@ async function callFunction(
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:
       return await researchCodebase(
-        args.query,
+        question,
         githubIssue,
         sourceMap,
         rootDir,
         codebaseContext,
       );
     case ResearchAgentActionType.ResearchInternet:
-      return await researchInternet(args.query);
+      return await researchInternet(question);
     case ResearchAgentActionType.AskProjectOwner:
       // just return the question for now
-      return args.query;
+      return question;
     default:
       return "Function not found.";
   }
