@@ -1,3 +1,4 @@
+import { dedent } from "ts-dedent";
 import { type Issue, type Repository } from "@octokit/webhooks-types";
 import {
   parseTemplate,
@@ -32,6 +33,7 @@ export interface EditFilesParams extends BaseEventData {
   issue: Issue;
   rootPath: string;
   sourceMap: string;
+  baseBranch?: string;
   dryRun?: boolean;
   repoSettings?: RepoSettings;
 }
@@ -43,6 +45,7 @@ export async function editFiles(params: EditFilesParams) {
     issue,
     rootPath,
     sourceMap,
+    baseBranch,
     dryRun,
     repoSettings,
     ...baseEventData
@@ -122,37 +125,37 @@ export async function editFiles(params: EditFilesParams) {
   images = await saveImages(images, issue?.body, rootPath, repoSettings);
   const detailedMarkdownPlanFromSteps = planSteps
     .map(
-      (step, index) => `
-### Step ${index + 1}: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
+      (step, index) => dedent`
+        ### Step ${index + 1}: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
 
-**Task:** ${step.title}
+        **Task:** ${step.title}
 
-**Instructions:**
-${step.instructions}
+        **Instructions:**
+        ${step.instructions}
 
-**Exit Criteria:**
-${step.exitCriteria}
+        **Exit Criteria:**
+        ${step.exitCriteria}
 
-${
-  step.dependencies
-    ? `**Dependencies:**
-${step.dependencies}`
-    : ""
-}
-`,
+        ${
+          step.dependencies
+            ? `**Dependencies:**
+        ${step.dependencies}`
+            : ""
+        }
+      `,
     )
     .join("\n");
 
   const detailedMarkdownResearchData = researchData
     .filter((research) => research.answer?.length)
     .map(
-      (research) => `
-  ## Question:
-  ${research.question}
+      (research) => dedent`
+        ## Question:
+        ${research.question}
 
-  ## Answer:
-  ${research.answer}
-  `,
+        ## Answer:
+        ${research.answer}
+      `,
     )
     .join("\n");
 
@@ -228,6 +231,7 @@ ${step.dependencies}`
       repository,
       token,
       rootPath,
+      baseBranch,
       branch: newBranch,
       repoSettings,
       commitMessage: `JACoB PR for Issue ${issue.title}`,

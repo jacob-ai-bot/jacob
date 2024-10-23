@@ -306,6 +306,47 @@ describe("onGitHubEvent", () => {
     expect(mockedAgentEditFiles.editFiles).not.toHaveBeenCalled();
   });
 
+  test("base branch command - issue opened - edit files", async () => {
+    process.env.AGENT_REPOS = "";
+
+    await onGitHubEvent({
+      id: "2",
+      name: "issues",
+      payload: {
+        ...issuesOpenedEditFilesPayload,
+        issue: {
+          ...issuesOpenedEditFilesPayload.issue,
+          body:
+            issuesOpenedEditFilesPayload.issue.body +
+            "\n\n--base-branch foo-branch  \n",
+        },
+      },
+    } as WebhookIssueOpenedEvent);
+
+    expect(mockedComments.addStartingWorkComment).toHaveBeenCalledTimes(1);
+    expect(mockedClone.cloneRepo).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      projectId: 777,
+      repoFullName: "PioneerSquareLabs/t3-starter-template",
+      userId: "jacob-ai-bot[bot]",
+      issueId: 49,
+      path: "/tmp/jacob/1",
+      afterModifications: false,
+      repoSettings: {
+        language: Language.JavaScript,
+      },
+      skipBuild: false,
+    });
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalledTimes(1);
+    expect(mockedEditFiles.editFiles).toHaveBeenCalledTimes(1);
+    expect(mockedEditFiles.editFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ baseBranch: "foo-branch" }),
+    );
+
+    expect(mockedAgentEditFiles.editFiles).not.toHaveBeenCalled();
+  });
+
   test("Agent repo: issue opened - edit files", async () => {
     await onGitHubEvent({
       id: "2",

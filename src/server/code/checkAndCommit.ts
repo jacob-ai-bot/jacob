@@ -33,6 +33,7 @@ export interface CheckAndCommitOptions extends BaseEventData {
   token: string;
   rootPath: string;
   branch: string;
+  baseBranch?: string;
   repoSettings?: RepoSettings;
   commitMessage: string;
   issue?: Issue | RetrievedIssue;
@@ -49,6 +50,7 @@ export async function checkAndCommit({
   token,
   rootPath,
   branch,
+  baseBranch,
   repoSettings,
   commitMessage,
   issue: actingOnIssue,
@@ -195,6 +197,7 @@ export async function checkAndCommit({
       newPrTitle,
       `${newPrBody}\n${prBodySuffix}`,
       newPrReviewers ?? [],
+      baseBranch,
       buildErrorMessage !== undefined,
     );
     await emitPREvent({ ...baseEventData, pullRequest });

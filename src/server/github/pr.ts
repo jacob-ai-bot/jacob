@@ -35,6 +35,7 @@ export async function createPR(
   title: string,
   body: string,
   reviewers: string[],
+  baseBranch?: string,
   draft?: boolean,
 ) {
   const octokit = new Octokit({
@@ -51,7 +52,7 @@ export async function createPR(
       repo: repository.name,
       title,
       head: newBranch,
-      base: repository.default_branch,
+      base: baseBranch ?? repository.default_branch,
       body,
       draft,
     });
@@ -67,7 +68,7 @@ export async function createPR(
         repo: repository.name,
         title,
         head: newBranch,
-        base: repository.default_branch,
+        base: baseBranch ?? repository.default_branch,
         body,
         draft: false, // retry with draft set to false
       });

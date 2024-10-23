@@ -27,6 +27,7 @@ export interface CreateNewFileParams extends BaseEventData {
   issue: Issue;
   rootPath: string;
   sourceMap: string;
+  baseBranch?: string;
   repoSettings?: RepoSettings;
 }
 
@@ -38,6 +39,7 @@ export async function createNewFile(params: CreateNewFileParams) {
     issue,
     rootPath,
     sourceMap,
+    baseBranch,
     repoSettings,
     ...baseEventData
   } = params;
@@ -142,6 +144,7 @@ export async function createNewFile(params: CreateNewFileParams) {
     repository,
     token,
     rootPath,
+    baseBranch,
     branch: newBranch,
     repoSettings,
     commitMessage: `JACoB commit for Issue ${issue.number}`,

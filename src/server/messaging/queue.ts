@@ -516,6 +516,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     baseEventData.issueId = extractIssueNumberFromBranchName(prBranch);
   }
 
+  const baseBranch =
+    prBranch ??
+    (issueOpened && body
+      ? /--base-branch +(\S+)[\s|\n]+/gm.exec(body)?.[1]
+      : undefined);
+
   const newFileName = issueOpenedTitle
     ? extractFilePathWithArrow(issueOpenedTitle)
     : undefined;
@@ -560,7 +566,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
     const { path, cleanup } = await cloneRepo({
       baseEventData,
       repoName: repository.full_name,
-      branch: prBranch,
+      branch: baseBranch,
       token: installationAuthentication.token,
     });
 
@@ -590,6 +596,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             token: installationAuthentication.token,
             issue: event.payload.issue,
             rootPath: path,
+            baseBranch,
             sourceMap,
             repoSettings,
           });
@@ -614,6 +621,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             token: installationAuthentication.token,
             issue: event.payload.issue,
             rootPath: path,
+            baseBranch,
             sourceMap,
             repoSettings,
           });
