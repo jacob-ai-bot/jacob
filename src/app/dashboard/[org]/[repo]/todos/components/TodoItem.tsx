@@ -89,14 +89,11 @@ export const TodoItem: React.FC<TodoItemProps> = ({
           {todo.name}
         </h3>
         <div className="flex items-center space-x-1">
-          {(todo.status === TodoStatus.IN_PROGRESS ||
-            todo.status === TodoStatus.DONE) && (
-            <span
-              className={`overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium ${statusColors[todo.status as TodoStatus]}`}
-            >
-              {getTodoLabel(todo.status)}
-            </span>
-          )}
+          <span
+            className={`overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium ${statusColors[todo.status]}`}
+          >
+            {getTodoLabel(todo.status)}
+          </span>
           <button
             onClick={handleArchiveClick}
             disabled={isArchiving}

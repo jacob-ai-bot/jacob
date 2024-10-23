@@ -6,6 +6,10 @@ const safelist = [
   "bg-red-700",
   "bg-purple-700",
   "bg-github-green",
+  "bg-error-100",
+  "bg-error-800",
+  "text-error-100",
+  "text-error-800",
 ]; // colors that dynamically generated, need to be whitelisted
 
 export default {
@@ -223,6 +227,18 @@ export default {
           700: "#B38000",
           800: "#8C6500",
           900: "#664A00",
+        },
+        error: {
+          50: "#FEF2F2",
+          100: "#FEE2E2",
+          200: "#FECACA",
+          300: "#FCA5A5",
+          400: "#F87171",
+          500: "#EF4444",
+          600: "#DC2626",
+          700: "#B91C1C",
+          800: "#991B1B",
+          900: "#7F1D1D",
         },
       },
       fontFamily: {
