@@ -188,28 +188,7 @@ const Setup: React.FC<SetupProps> = ({
   const handleSkipBuild = async () => {
     setErrorMessage(null);
     setIsLoading(true);
-    try {
-      await saveSettings.mutateAsync({
-        settings,
-        org,
-        repo,
-      });
-
-      const issuesResult = await verifyAndEnableIssues.mutateAsync({
-        org,
-        repo,
-      });
-
-      if (!issuesResult.success) {
-        setErrorMessage(issuesResult.message);
-      } else {
-        router.push(`/dashboard/${org}/${repo}`);
-      }
-    } catch (error) {
-      setErrorMessage("An error occurred while skipping the build process.");
-    } finally {
-      setIsLoading(false);
-    }
+    router.push(`/dashboard/${org}/${repo}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
