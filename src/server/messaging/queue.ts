@@ -936,5 +936,4 @@ export const publishGitHubEventToQueue = async (
   const repoName =
     "repository" in event.payload
       ? event.payload.repository.full_name
-      : ("repositories_added" in event.payload
-          ? event.payload.repositories_adde
+      : ("repositories_
