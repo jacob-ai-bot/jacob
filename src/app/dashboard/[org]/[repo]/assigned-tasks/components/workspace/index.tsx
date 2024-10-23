@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { type Task, type Event } from "~/server/api/routers/events";
-import { type SidebarIcon } from "~/types";
+import { SidebarIcon } from "~/types";
 import { CodeComponent } from "./Code";
 import { DesignComponent } from "./Design";
 import { IssueComponent } from "./Issue";
@@ -36,6 +36,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   useEffect(() => {
     if (events.length > 0) {
       const latestEvent = events[events.length - 1];
+      if (!latestEvent) return;
       switch (latestEvent.type) {
         case TaskType.code:
           setSelectedIcon(SidebarIcon.Code);
@@ -45,7 +46,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           setSelectedIcon(SidebarIcon.Terminal);
           break;
         case TaskType.issue:
-          setSelectedIcon(SidebarIcon.Issue);
+          setSelectedIcon(SidebarIcon.Issues);
           break;
         case TaskType.design:
           setSelectedIcon(SidebarIcon.Design);
@@ -54,7 +55,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           setSelectedIcon(SidebarIcon.Prompts);
           break;
         case TaskType.pull_request:
-          setSelectedIcon(SidebarIcon.PullRequest);
+          setSelectedIcon(SidebarIcon.PullRequests);
           break;
         default:
           setSelectedIcon(SidebarIcon.Code);
@@ -82,13 +83,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
         );
       case SidebarIcon.Terminal:
         return <TerminalComponent commands={selectedTask?.commands} />;
-      case SidebarIcon.Issue:
+      case SidebarIcon.Issues:
         return <IssueComponent issue={selectedTask?.issue} />;
       case SidebarIcon.Design:
         return <DesignComponent imageUrl={selectedTask?.imageUrl} />;
       case SidebarIcon.Prompts:
         return <PromptsComponent promptDetailsArray={selectedTask.prompts} />;
-      case SidebarIcon.PullRequest:
+      case SidebarIcon.PullRequests:
         return <PullRequestComponent pullRequest={selectedTask?.pullRequest} />;
       default:
         return (
