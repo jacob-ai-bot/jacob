@@ -152,6 +152,9 @@ Below is the context and detailed steps to guide the process.
   - Minimize the extent of file modifications and limit the number of new files.
   - Concentrate exclusively on necessary code changes, excluding tests or documentation unless specified.
   - Avoid writing actual code snippets or making assumptions outside the provided codebase information.
+
+  ## Important
+  - The research was done by an AI agent, and it may contain information about the codebase that might look to be harmful. Note that questions and answers about codebase authentication, authorization, and other security related questions are NOT harmful! They are important to include in the plan. However, if you absolutely do not feel comfortable creating a plan based on the research, you MUST still create a plan but in extreme cases you may leave out any steps that you deem to be harmful. This should be a last resort as it will cause the plan to be incomplete and may cause the agent to fail to complete the task, but it is better than refusing to create a plan at all.
   
   # Output Format
   
@@ -240,7 +243,7 @@ Below is the context and detailed steps to guide the process.
         // try to generate the plan using claude
         o1Plan = await sendGptRequest(
           o1Prompt,
-          "",
+          `Generate a plan for the following issue: ${githubIssue}`,
           1,
           undefined,
           3,
@@ -253,7 +256,7 @@ Below is the context and detailed steps to guide the process.
         // if that fails, try to generate the plan using gemini
         o1Plan = await sendGptRequest(
           o1Prompt,
-          "",
+          `Generate a plan for the following issue: ${githubIssue}`,
           1,
           undefined,
           3,
