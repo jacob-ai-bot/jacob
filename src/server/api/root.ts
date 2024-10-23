@@ -6,6 +6,7 @@ import { codebaseContextRouter } from "./routers/codebaseContext";
 import { onboardingRouter } from "./routers/onboarding";
 import { chatRouter } from "./routers/chat";
 import { planStepsRouter } from "./routers/planSteps";
+import { jiraRouter } from "./routers/jira";
 
 /**
  * This is the primary router for your server.
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
   onboarding: onboardingRouter,
   chat: chatRouter,
   planSteps: planStepsRouter,
+  jira: jiraRouter,
 });
 
 // export type definition of API
