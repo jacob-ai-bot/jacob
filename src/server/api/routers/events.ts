@@ -12,7 +12,7 @@ import { extractFilePathWithArrow } from "~/server/utils";
 import { observable } from "@trpc/server/observable";
 
 import {
-  type Event,
+  type Event as EventsEvent,
   type Task as EventsTask,
   EventsTable,
 } from "~/server/db/tables/events.table";
@@ -31,6 +31,8 @@ export interface Task extends EventsTask {
   codeFiles?: Code[];
   prompts?: Prompt[];
 }
+
+export type Event = EventsEvent;
 
 export type Code = {
   type: TaskType.code;
@@ -322,6 +324,22 @@ export const eventsRouter = createTRPCRouter({
         .where({ issueId })
         .select("*");
       return research;
+    }),
+  getEventsByIssue: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+        issueId: z.number(),
+      }),
+    )
+    .query(async ({ input: { org, repo, issueId } }) => {
+      const events = await db.events
+        .where({ repoFullName: `${org}/${repo}` })
+        .where({ issueId })
+        .order({ createdAt: "ASC" });
+
+      return events;
     }),
 });
 

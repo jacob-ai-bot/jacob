@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Workspace from "./components/workspace";
 import { SidebarIcon } from "~/types";
 import { TaskStatus } from "~/server/db/enums";
-import { type Task } from "~/server/api/routers/events";
+import { type Task, type Event } from "~/server/api/routers/events";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
 import TaskItem from "./components/TaskItem";
@@ -22,6 +22,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
 
   const {
     data: tasks,
@@ -31,7 +32,17 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const { data: project, isLoading: loadingProject } =
     api.events.getProject.useQuery({ org, repo });
 
-  // const archiveTodo = api.todos.archive.useMutation();
+  const { data: taskEvents, refetch: refetchEvents } =
+    api.events.getEventsByIssue.useQuery(
+      { org, repo, issueId: selectedTask?.issueId ?? 0 },
+      { enabled: !!selectedTask },
+    );
+
+  useEffect(() => {
+    if (taskEvents) {
+      setEvents(taskEvents);
+    }
+  }, [taskEvents]);
 
   useEffect(() => {
     if (tasks && tasks.length > 0) {
@@ -50,10 +61,19 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     }
   }, [tasks, searchQuery]);
 
+  useEffect(() => {
+    if (selectedTask) {
+      void refetchEvents();
+    }
+  }, [selectedTask, refetchEvents]);
+
   api.events.onAdd.useSubscription(
     { org, repo },
     {
-      onData() {
+      onData(newEvent: Event) {
+        if (selectedTask && newEvent.issueId === selectedTask.issueId) {
+          setEvents((prevEvents) => [...prevEvents, newEvent]);
+        }
         void refetchTasks();
       },
       onError(err) {
@@ -61,11 +81,6 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       },
     },
   );
-
-  // const onRemoveTask = (todoId: number) => {
-  //   console.log("Removing todo: ", todoId);
-  //   archiveTodo.mutate({ id: todoId });
-  // };
 
   if (loadingTasks || loadingProject || !tasks || !project) {
     return <LoadingIndicator />;
@@ -120,6 +135,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           setSelectedTask={setSelectedTask}
           org={org}
           repo={repo}
+          events={events}
         />
       </div>
     </div>
