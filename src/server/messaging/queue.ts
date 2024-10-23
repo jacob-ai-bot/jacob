@@ -466,7 +466,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       prNumber: eventIssueOrPRNumber,
       prCommand,
     });
-  } else if (issueCommand && issueCommand) {
+  } else if (issueCommand && issueComment) {
     await addStartingWorkComment({
       ...startingWorkParams,
       task: "issueCommand",
@@ -545,7 +545,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       });
 
       // Archive associated todos
-      await archiveTodosByIssueId(baseEventData.issueId);
+      await archiveTodosByIssueId(baseEventData.projectId, baseEventData.issueId);
     }
     logEventDuration();
     return;
@@ -937,60 +937,4 @@ export const publishGitHubEventToQueue = async (
     "repository" in event.payload
       ? event.payload.repository.full_name
       : ("repositories_added" in event.payload
-          ? event.payload.repositories_added
-          : event.payload.repositories ?? []
-        )
-          .map(({ full_name }) => full_name)
-          .join(",");
-  console.log(
-    `[${repoName}] publishGitHubEventToQueue: ${event.id} ${event.name} (messageId: ${messageId})`,
-  );
-};
-
-// This function is used to publish events from the web frontend to the queue via the API.
-export const publishWebEventToQueue = async (event: WebEvent) => {
-  await initRabbitMQ({ listener: false });
-  if (!channel) {
-    console.error(`publishWebEventToQueue: NO CHANNEL`);
-    return;
-  }
-  console.log(`publishWebEventToQueue: ${event.payload.action}`);
-  const messageId = (event.payload.params.messageId as string) ?? uuidv4();
-  channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(event)), {
-    persistent: true,
-    messageId,
-  });
-  console.log(
-    `[${event.payload.repoFullName}] Web Event queued: ${event.payload.action} (messageId: ${messageId})`,
-  );
-};
-
-export type WebEventAction =
-  | "generate_context"
-  | "create_project"
-  | "generate_settings";
-
-export const createWebEvent = ({
-  repoId,
-  repoFullName,
-  action,
-  token,
-  params = {},
-}: {
-  repoId: number;
-  repoFullName: string;
-  action: WebEventAction;
-  token: string;
-  params: Record<string, unknown>;
-}): WebEvent => {
-  return {
-    name: "web_event",
-    payload: {
-      repoId,
-      repoFullName,
-      action,
-      token,
-      params,
-    },
-  };
-};
+          ? event.payload.repositories_adde
