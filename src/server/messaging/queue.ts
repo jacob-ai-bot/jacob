@@ -50,6 +50,7 @@ import {
   getOrCreateCodebaseContext,
   removeUnusedContextFiles,
 } from "../utils/codebaseContext";
+import { archiveTodosByIssueId } from "../utils/todos";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -548,6 +549,12 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
         subType: taskSubType,
         status: TaskStatus.CLOSED,
       });
+
+      // Archive associated todos
+      await archiveTodosByIssueId(
+        baseEventData.issueId,
+        baseEventData.projectId,
+      );
     }
     logEventDuration();
     return;
