@@ -185,6 +185,12 @@ const Setup: React.FC<SetupProps> = ({
     }
   };
 
+  const handleSkipBuild = async () => {
+    setErrorMessage(null);
+    setIsLoading(true);
+    router.push(`/dashboard/${org}/${repo}`);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -402,7 +408,7 @@ const Setup: React.FC<SetupProps> = ({
             <button
               type="button"
               onClick={handleValidateSettings}
-              className="mx-auto flex w-full max-w-xl transform items-center justify-center space-x-2 rounded-lg bg-aurora-500 px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-aurora-600 focus:outline-none focus:ring-2 focus:ring-aurora-400 focus:ring-offset-2 active:translate-y-0"
+              className="mx-auto mb-4 flex w-full max-w-xl transform items-center justify-center space-x-2 rounded-lg bg-aurora-500 px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-aurora-600 focus:outline-none focus:ring-2 focus:ring-aurora-400 focus:ring-offset-2 active:translate-y-0"
             >
               {isLoading ? (
                 <span>
@@ -415,6 +421,14 @@ const Setup: React.FC<SetupProps> = ({
               ) : (
                 <span>Validate Settings</span>
               )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSkipBuild}
+              className="mx-auto flex w-full max-w-xl transform items-center justify-center space-x-2 rounded-lg bg-gray-300 px-6 py-3 text-lg font-semibold text-gray-700 shadow-md transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 active:translate-y-0"
+            >
+              Skip Build
             </button>
 
             {errorMessage && (
