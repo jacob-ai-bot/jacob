@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { type Task, type Event } from "~/server/api/routers/events";
-import { SidebarIcon } from "~/types";
+import { type SidebarIcon } from "~/types";
 import { CodeComponent } from "./Code";
 import { DesignComponent } from "./Design";
 import { IssueComponent } from "./Issue";

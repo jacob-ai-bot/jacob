@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Workspace from "./components/workspace";
 import { SidebarIcon } from "~/types";
-import { TaskStatus, TaskType } from "~/server/db/enums";
+import { TaskStatus } from "~/server/db/enums";
 import { type Task, type Event } from "~/server/api/routers/events";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
@@ -32,10 +32,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const { data: project, isLoading: loadingProject } =
     api.events.getProject.useQuery({ org, repo });
 
-  const { data: taskEvents, refetch: refetchEvents } = api.events.getEventsByIssue.useQuery(
-    { org, repo, issueId: selectedTask?.issueId ?? 0 },
-    { enabled: !!selectedTask }
-  );
+  const { data: taskEvents, refetch: refetchEvents } =
+    api.events.getEventsByIssue.useQuery(
+      { org, repo, issueId: selectedTask?.issueId ?? 0 },
+      { enabled: !!selectedTask },
+    );
 
   useEffect(() => {
     if (taskEvents) {
