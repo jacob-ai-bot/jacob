@@ -453,7 +453,9 @@ export const githubRouter = createTRPCRouter({
   
   **Rewritten Issue**:
 
-  - [Your rewritten issue here]
+  # [Your rewritten title here]
+
+  [Your rewritten body here]
 
   ---
 
@@ -475,89 +477,4 @@ export const githubRouter = createTRPCRouter({
       const feedbackMatch = aiResponse.match(
         /(?<=\*\*Feedback for Improvement\*\*:\n)([\s\S]*?)(?=\n---)/,
       );
-      const rewrittenIssueMatch = aiResponse.match(
-        /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\S]*)/,
-      );
-      const feedback = feedbackMatch ? feedbackMatch[0].trim() : "";
-      let rewrittenIssue = rewrittenIssueMatch
-        ? rewrittenIssueMatch[0].trim()
-        : "";
-
-      if (!rewrittenIssue?.length) {
-        rewrittenIssue = aiResponse ?? "";
-      }
-
-      return {
-        feedback,
-        rewrittenIssue,
-      };
-    }),
-  verifyAndEnableIssues: protectedProcedure
-    .input(z.object({ org: z.string(), repo: z.string() }))
-    .mutation(
-      async ({
-        input: { org, repo },
-        ctx: {
-          session: { accessToken },
-        },
-      }) => {
-        try {
-          const result = await checkAndEnableIssues(org, repo, accessToken);
-          return { success: result.success, message: result.message };
-        } catch (error) {
-          console.error("Error verifying and enabling issues:", error);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Internal server error",
-          });
-        }
-      },
-    ),
-  getBranches: protectedProcedure
-    .input(
-      z.object({
-        org: z.string(),
-        repo: z.string(),
-      }),
-    )
-    .query(async ({ input, ctx }) => {
-      const { org, repo } = input;
-      const { accessToken } = ctx.session;
-
-      try {
-        const octokit = new Octokit({ auth: accessToken });
-
-        // Get repository info to find default branch
-        const { data: repoInfo } = await octokit.repos.get({
-          owner: org,
-          repo,
-        });
-
-        // Get all branches
-        const { data: branches } = await octokit.repos.listBranches({
-          owner: org,
-          repo,
-          per_page: 100,
-        });
-
-        // Reorder branches to put default branch first
-        const defaultBranch = branches.find(
-          (branch) => branch.name === repoInfo.default_branch,
-        );
-        const otherBranches = branches.filter(
-          (branch) => branch.name !== repoInfo.default_branch,
-        );
-
-        return [
-          defaultBranch?.name ?? repoInfo.default_branch,
-          ...otherBranches.map((branch) => branch.name),
-        ];
-      } catch (error) {
-        console.error("Error fetching branches:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch repository branches",
-        });
-      }
-    }),
-});
+      const rewrittenIssueMatch
