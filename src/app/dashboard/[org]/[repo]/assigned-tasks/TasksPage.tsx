@@ -25,6 +25,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
+  const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState<boolean>(true);
 
   const {
     data: tasks,
@@ -73,9 +74,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     }
   }, [selectedTask, refetchEvents]);
 
-  api.events.onAdd.useSubscription(
+  const subscription = api.events.onAdd.useSubscription(
     { org, repo },
     {
+      enabled: liveUpdatesEnabled,
       onData(newEvent: Event) {
         if (selectedTask && newEvent.issueId === selectedTask.issueId) {
           setEvents((prevEvents) => [...prevEvents, newEvent]);
@@ -96,13 +98,25 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     setCurrentEventIndex((prev) => Math.min(events.length - 1, prev + 1));
   const handleJumpToEnd = () => setCurrentEventIndex(events.length - 1);
 
+  const handleToggleLiveUpdates = () => {
+    setLiveUpdatesEnabled((prev) => !prev);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refetchEvents();
+      await refetchTasks();
+    } catch (error) {
+      console.error("Failed to refresh events:", error);
+    }
+  };
+
   if (loadingTasks || loadingProject || !tasks || !project) {
     return <LoadingIndicator />;
   }
 
   return (
     <div className="flex h-full w-full flex-col overflow-clip rounded-md dark:bg-gray-900 lg:flex-row">
-      {/* Left column: Task list */}
       <div className="w-1/3 border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800">
         <div className="border-b border-r border-gray-200 p-4 dark:border-gray-700">
           <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
@@ -134,8 +148,6 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
         </div>
       </div>
 
-      {/* Right column: Workspace */}
-
       <div className=" hide-scrollbar h-[calc(100vh-116px)] w-2/3 overflow-y-scroll bg-white dark:bg-gray-800 ">
         <Workspace
           tasks={tasks.filter(
@@ -160,6 +172,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
               onJumpToEnd={handleJumpToEnd}
               currentIndex={currentEventIndex}
               totalSteps={events.length}
+              liveUpdatesEnabled={liveUpdatesEnabled}
+              onToggleLiveUpdates={handleToggleLiveUpdates}
+              onRefresh={handleRefresh}
             />
           </div>
         </div>
