@@ -15,6 +15,7 @@ import {
 } from "~/server/db/tables/events.table";
 import { newRedisConnection } from "~/server/utils/redis";
 import { type ExtractedIssueInfo } from "~/server/code/extractedIssue";
+import { validateRepo } from "../utils";
 
 export interface Task extends EventsTask {
   issueId: number;
@@ -148,14 +149,21 @@ export const eventsRouter = createTRPCRouter({
         type: z.nativeEnum(TaskType),
       }),
     )
-    .query(async ({ input: { org, repo, type } }) => {
-      // await validateRepo(org, repo, accessToken);
-      const events = await db.events
-        .where({ type })
-        .where({ repoFullName: `${org}/${repo}` });
+    .query(
+      async ({
+        input: { org, repo, type },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        await validateRepo(org, repo, accessToken);
+        const events = await db.events
+          .where({ type })
+          .where({ repoFullName: `${org}/${repo}` });
 
-      return events.map((e) => e.payload as EventPayload);
-    }),
+        return events.map((e) => e.payload as EventPayload);
+      },
+    ),
   getTasks: protectedProcedure
     .input(
       z.object({
@@ -163,35 +171,42 @@ export const eventsRouter = createTRPCRouter({
         repo: z.string(),
       }),
     )
-    .query(async ({ input: { org, repo } }) => {
-      // await validateRepo(org, repo, accessToken);
+    .query(
+      async ({
+        input: { org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        await validateRepo(org, repo, accessToken);
 
-      // Fetch all events from the repo matching the `TaskType.issue`
-      const events = await db.events
-        .where({ repoFullName: `${org}/${repo}` })
-        .order({
-          createdAt: "DESC",
-        });
+        // Fetch all events from the repo matching the `TaskType.issue`
+        const events = await db.events
+          .where({ repoFullName: `${org}/${repo}` })
+          .order({
+            createdAt: "DESC",
+          });
 
-      // Extract unique issue IDs
-      const uniqueIssueIds = [...new Set(events.map((e) => e.issueId))].filter(
-        (issueId) => issueId,
-      );
+        // Extract unique issue IDs
+        const uniqueIssueIds = [
+          ...new Set(events.map((e) => e.issueId)),
+        ].filter((issueId) => issueId);
 
-      // Use the unique issue IDs to create a list of tasks
-      const tasks = await Promise.all(
-        (uniqueIssueIds.filter(Boolean) as number[]).map(async (issueId) => {
-          //  Get the most recent task for this specific issueId
-          const task = events.find(
-            (e) => e.type === TaskType.task && e.issueId === issueId,
-          )?.payload as Task;
-          task.issueId = issueId;
-          return createEnhancedTask(task, events, `${org}/${repo}`);
-        }),
-      );
+        // Use the unique issue IDs to create a list of tasks
+        const tasks = await Promise.all(
+          (uniqueIssueIds.filter(Boolean) as number[]).map(async (issueId) => {
+            //  Get the most recent task for this specific issueId
+            const task = events.find(
+              (e) => e.type === TaskType.task && e.issueId === issueId,
+            )?.payload as Task;
+            task.issueId = issueId;
+            return createEnhancedTask(task, events, `${org}/${repo}`);
+          }),
+        );
 
-      return tasks;
-    }),
+        return tasks;
+      },
+    ),
 
   getProject: protectedProcedure
     .input(
@@ -216,62 +231,69 @@ export const eventsRouter = createTRPCRouter({
         repo: z.string(),
       }),
     )
-    .subscription(async ({ input: { org, repo } }) => {
-      // await validateRepo(org, repo, accessToken);
+    .subscription(
+      async ({
+        input: { org, repo },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        await validateRepo(org, repo, accessToken);
 
-      // return an `observable` with a callback which is triggered immediately
-      return observable<Event>((emit) => {
-        let redisConnection: ReturnType<typeof newRedisConnection> | null =
-          null;
+        // return an `observable` with a callback which is triggered immediately
+        return observable<Event>((emit) => {
+          let redisConnection: ReturnType<typeof newRedisConnection> | null =
+            null;
 
-        const onRedisMessage = (_channel: string, message: string) => {
-          try {
-            const event = JSON.parse(message) as Event;
-            if (
-              event.repoFullName.toLowerCase() ===
-              `${org}/${repo}`.toLowerCase()
-            ) {
-              emit.next(event);
+          const onRedisMessage = (_channel: string, message: string) => {
+            try {
+              const event = JSON.parse(message) as Event;
+              if (
+                event.repoFullName.toLowerCase() ===
+                `${org}/${repo}`.toLowerCase()
+              ) {
+                emit.next(event);
+              }
+            } catch (error) {
+              console.error("Failed to parse event in redis message", {
+                message,
+                error,
+              });
             }
-          } catch (error) {
-            console.error("Failed to parse event in redis message", {
-              message,
-              error,
-            });
-          }
-        };
+          };
 
-        // trigger `onAdd()` when `add` is triggered in our event emitter
-        redisConnection = newRedisConnection();
-        void redisConnection
-          .subscribe("events", (err, count) => {
-            if (err) {
-              // Close the connection on error
-              console.error("Failed to subscribe:", err);
+          // trigger `onAdd()` when `add` is triggered in our event emitter
+          redisConnection = newRedisConnection();
+          void redisConnection
+            .subscribe("events", (err, count) => {
+              if (err) {
+                // Close the connection on error
+                console.error("Failed to subscribe:", err);
+                void redisConnection.quit();
+                return;
+              }
+              // `count` represents the number of channels this client are currently subscribed to.
+              console.log(
+                `Subscribed successfully! This client is currently subscribed to ${String(count)} channels.`,
+              );
+            })
+            .then(() => {
+              redisConnection.on("message", onRedisMessage);
+            })
+            .catch((error) => {
+              console.error("Failed to set up Redis subscription:", error);
               void redisConnection.quit();
-              return;
-            }
-            // `count` represents the number of channels this client are currently subscribed to.
-            console.log(
-              `Subscribed successfully! This client is currently subscribed to ${String(count)} channels.`,
-            );
-          })
-          .then(() => {
-            redisConnection.on("message", onRedisMessage);
-          })
-          .catch((error) => {
-            console.error("Failed to set up Redis subscription:", error);
-            void redisConnection.quit();
-          });
+            });
 
-        // unsubscribe function when client disconnects or stops subscribing
-        return () => {
-          if (redisConnection) {
-            void redisConnection.quit();
-          }
-        };
-      });
-    }),
+          // unsubscribe function when client disconnects or stops subscribing
+          return () => {
+            if (redisConnection) {
+              void redisConnection.quit();
+            }
+          };
+        });
+      },
+    ),
   add: protectedProcedure
     .input(
       EventsTable.schema().omit({ id: true, createdAt: true, updatedAt: true }),
