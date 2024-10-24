@@ -15,6 +15,9 @@ export class ProjectsTable extends BaseTable {
     repoName: t.text(0, Infinity),
     repoFullName: t.text(0, Infinity).unique(),
     settings: t.json().default({}),
+    buildStatus: t.boolean().nullable(),
+    lastBuildAt: t.timestamp().nullable(),
+    buildError: t.text(0, 65535).nullable(),
     ...t.timestamps(),
   }));
 }
