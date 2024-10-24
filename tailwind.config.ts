@@ -240,6 +240,7 @@ export default {
           800: "#991B1B",
           900: "#7F1D1D",
         },
+        done: "#28a745",
       },
       fontFamily: {
         sans: ["Inter var", "sans-serif"],

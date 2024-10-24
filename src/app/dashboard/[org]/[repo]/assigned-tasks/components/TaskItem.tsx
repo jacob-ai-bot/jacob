@@ -28,7 +28,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     [TaskStatus.IN_PROGRESS]:
       "bg-meadow-100 text-meadow-800 dark:bg-meadow-800 dark:text-meadow-100",
     [TaskStatus.DONE]:
-      "bg-aurora-100 text-aurora-800 dark:bg-aurora-800 dark:text-aurora-100",
+      "bg-done text-white dark:bg-done dark:text-white",
     [TaskStatus.ERROR]:
       "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100",
   };
