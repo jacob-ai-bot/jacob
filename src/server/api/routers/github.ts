@@ -476,4 +476,4 @@ export const githubRouter = createTRPCRouter({
         /(?<=\*\*Feedback for Improvement\*\*:\n)([\s\S]*?)(?=\n---)/,
       );
       const rewrittenIssueMatch = aiResponse.match(
-        /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\
+        /
