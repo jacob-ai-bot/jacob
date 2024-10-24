@@ -11,7 +11,6 @@ import {
   cloneAndGetSourceMap,
   getAllRepos,
   getExtractedIssue,
-  validateRepo,
   checkAndEnableIssues,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
@@ -36,6 +35,7 @@ export async function fetchGithubFileContents(
     const fileContents = await Promise.all(
       filePaths.map(async (path) => {
         try {
+          console.log(`fetching file from GitHub: ${path}`);
           const response = await octokit.repos.getContent({
             owner: org,
             repo,
@@ -107,7 +107,6 @@ export const githubRouter = createTRPCRouter({
             message: "Invalid request",
           });
         }
-        await validateRepo(repoOwner, repoName, accessToken);
 
         const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
         const extractedIssue = await getExtractedIssue(sourceMap, issueText);
@@ -291,7 +290,6 @@ export const githubRouter = createTRPCRouter({
             message: "Invalid request",
           });
         }
-        await validateRepo(org, repo, accessToken);
         return await cloneAndGetSourceMap(`${org}/${repo}`, accessToken);
       },
     ),
@@ -346,7 +344,7 @@ export const githubRouter = createTRPCRouter({
             });
           }
 
-          console.log("Getting issue", issueId);
+          console.log("Getting issue from GitHub...", issueId);
           const { data: issue } = await octokit.issues.get({
             owner: org,
             repo,
@@ -368,51 +366,44 @@ export const githubRouter = createTRPCRouter({
     ),
   evaluateIssue: protectedProcedure
     .input(z.object({ repo: z.string(), title: z.string(), body: z.string() }))
-    .mutation(
-      async ({
-        input: { repo, title, body },
-        ctx: {
-          session: { accessToken },
-        },
-      }) => {
-        const [repoOwner, repoName] = repo?.split("/") ?? [];
-        const issueText = `${title} ${body}`;
-        if (!repoOwner || !repoName || !issueText?.length) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid request",
-          });
-        }
-        await validateRepo(repoOwner, repoName, accessToken);
-
-        const project = await db.projects.findBy({
-          repoFullName: repo,
+    .mutation(async ({ input: { repo, title, body } }) => {
+      const [repoOwner, repoName] = repo?.split("/") ?? [];
+      const issueText = `${title} ${body}`;
+      if (!repoOwner || !repoName || !issueText?.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid request",
         });
-        const codebaseContext = await db.codebaseContext
-          .where({ projectId: project?.id })
-          .order({ filePath: "ASC" })
-          .all();
-        if (codebaseContext.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Codebase context not found",
-          });
-        }
-        const extractedIssue = await getExtractedIssue(
-          `${codebaseContext.map((c) => `${c.filePath}: ${c.context.overview} ${c.context.diagram} `).join("\n")}`,
-          issueText,
-          "o1-mini-2024-09-12",
-        );
-        if (!extractedIssue) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Issue not found",
-          });
-        }
+      }
+      //  await validateRepo(repoOwner, repoName, accessToken);
 
-        return { extractedIssue };
-      },
-    ),
+      const project = await db.projects.findBy({
+        repoFullName: repo,
+      });
+      const codebaseContext = await db.codebaseContext
+        .where({ projectId: project?.id })
+        .order({ filePath: "ASC" })
+        .all();
+      if (codebaseContext.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Codebase context not found",
+        });
+      }
+      const extractedIssue = await getExtractedIssue(
+        `${codebaseContext.map((c) => `${c.filePath}: ${c.context.overview} ${c.context.diagram} `).join("\n")}`,
+        issueText,
+        "o1-mini-2024-09-12",
+      );
+      if (!extractedIssue) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Issue not found",
+        });
+      }
+
+      return { extractedIssue };
+    }),
   rewriteIssue: publicProcedure
     .input(
       z.object({

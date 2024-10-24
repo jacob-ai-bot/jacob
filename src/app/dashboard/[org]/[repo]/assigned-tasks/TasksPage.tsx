@@ -28,7 +28,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     data: tasks,
     isLoading: loadingTasks,
     refetch: refetchTasks,
-  } = api.events.getTasks.useQuery({ org, repo });
+  } = api.events.getTasks.useQuery({
+    org,
+    repo,
+  });
   const { data: project, isLoading: loadingProject } =
     api.events.getProject.useQuery({ org, repo });
 
@@ -38,6 +41,8 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       { enabled: !!selectedTask },
     );
 
+  console.log("tasks", tasks);
+  console.log("selectedTask", selectedTask);
   useEffect(() => {
     if (taskEvents) {
       setEvents(taskEvents);
@@ -46,6 +51,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (tasks && tasks.length > 0) {
+      console.log("setting selected task to", tasks[0]);
       setSelectedTask(tasks[0]);
     }
   }, [tasks]);

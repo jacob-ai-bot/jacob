@@ -71,7 +71,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         {task?.issue?.createdAt && (
           <span className="text-[8pt] text-neutral-400 dark:text-neutral-400">
             Created{" "}
-            {formatDistanceToNow(new Date(task.issue.createdAt), {
+            {formatDistanceToNow(new Date(task.issue?.createdAt), {
               addSuffix: true,
             })}
           </span>
