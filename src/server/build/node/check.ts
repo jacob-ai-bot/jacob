@@ -57,10 +57,8 @@ export async function runBuildCheck({
   repoSettings,
   ...baseEventData
 }: RunBuildCheckParams): ExecPromise {
-  if (baseEventData?.skipBuild) {
-    console.log("Build skipped due to skipBuild flag");
-    return { stdout: "", stderr: "" };
-  }
+  const shouldSkipBuild = baseEventData?.skipBuild ?? false;
+
   const env = getEnv(repoSettings);
   const {
     installCommand = "npm install",
@@ -82,15 +80,17 @@ export async function runBuildCheck({
     }`;
 
   try {
-    await executeWithLogRequiringSuccess({
-      ...baseEventData,
-      directory: path,
-      command: installCommand,
-      options: {
-        env,
-        timeout: INSTALL_TIMEOUT,
-      },
-    });
+    if (!shouldSkipBuild) {
+      await executeWithLogRequiringSuccess({
+        ...baseEventData,
+        directory: path,
+        command: installCommand,
+        options: {
+          env,
+          timeout: INSTALL_TIMEOUT,
+        },
+      });
+    }
     if (afterModifications && formatCommand) {
       try {
         await executeWithLogRequiringSuccess({
@@ -110,6 +110,10 @@ export async function runBuildCheck({
           error,
         );
       }
+    }
+    if (shouldSkipBuild) {
+      console.log("Build skipped due to skipBuild flag");
+      return { stdout: "", stderr: "" };
     }
     const buildResult = await executeWithLogRequiringSuccess({
       ...baseEventData,
