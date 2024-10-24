@@ -9,6 +9,7 @@ import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
 import TaskItem from "./components/TaskItem";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { Switch } from "@headlessui/react";
 
 interface TasksPageProps {
   org: string;
@@ -23,6 +24,13 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("liveUpdatesEnabled");
+      return stored !== null ? JSON.parse(stored) : true;
+    }
+    return true;
+  });
 
   const {
     data: tasks,
@@ -67,20 +75,32 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     }
   }, [selectedTask, refetchEvents]);
 
+  useEffect(() => {
+    localStorage.setItem("liveUpdatesEnabled", JSON.stringify(liveUpdatesEnabled));
+  }, [liveUpdatesEnabled]);
+
   api.events.onAdd.useSubscription(
     { org, repo },
     {
       onData(newEvent: Event) {
-        if (selectedTask && newEvent.issueId === selectedTask.issueId) {
-          setEvents((prevEvents) => [...prevEvents, newEvent]);
+        if (liveUpdatesEnabled) {
+          if (selectedTask && newEvent.issueId === selectedTask.issueId) {
+            setEvents((prevEvents) => [...prevEvents, newEvent]);
+          }
+          void refetchTasks();
         }
-        void refetchTasks();
       },
       onError(err) {
         console.error("Subscription error:", err);
       },
+      enabled: liveUpdatesEnabled,
     },
   );
+
+  const handleRefresh = () => {
+    void refetchTasks();
+    void refetchEvents();
+  };
 
   if (loadingTasks || loadingProject || !tasks || !project) {
     return <LoadingIndicator />;
@@ -94,6 +114,35 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
             Assigned Tasks
           </h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Switch
+                checked={liveUpdatesEnabled}
+                onChange={setLiveUpdatesEnabled}
+                className={`${
+                  liveUpdatesEnabled ? "bg-blue-600" : "bg-gray-200"
+                } relative inline-flex h-6 w-11 items-center rounded-full`}
+              >
+                <span className="sr-only">Enable live updates</span>
+                <span
+                  className={`${
+                    liveUpdatesEnabled ? "translate-x-6" : "translate-x-1"
+                  } inline-block h-4 w-4 transform rounded-full bg-white transition`}
+                />
+              </Switch>
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                Live Updates
+              </span>
+            </div>
+            {!liveUpdatesEnabled && (
+              <button
+                onClick={handleRefresh}
+                className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Refresh
+              </button>
+            )}
+          </div>
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
