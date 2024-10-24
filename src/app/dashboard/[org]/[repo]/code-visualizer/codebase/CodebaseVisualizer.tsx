@@ -7,6 +7,7 @@ import CodebaseDetails from "./CodebaseDetails";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { type FileType } from "./types";
 import SearchBar from "../../components/SearchBar";
+import { startsWithIgnoreCase, includesIgnoreCase } from "~/app/utils";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
@@ -57,8 +58,8 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     const prefix = "/" + currentPath.slice(1).join("/");
     return contextItems.filter((item) => {
       return viewMode === "folder"
-        ? item.file.startsWith(prefix)
-        : item.taxonomy!.startsWith(prefix) ?? false;
+        ? startsWithIgnoreCase(item.file, prefix)
+        : startsWithIgnoreCase(item.taxonomy!, prefix);
     });
   }, [contextItems, currentPath, viewMode]);
 
@@ -77,7 +78,9 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
         setCurrentPath([...path.split("/").filter(Boolean)]);
       }
 
-      const item = contextItems.find((item) => item.file?.includes(path));
+      const item = contextItems.find((item) =>
+        includesIgnoreCase(item.file, path),
+      );
       if (item) {
         setSelectedItem(item);
         const parts = ["root", ...path.split("/").filter(Boolean)];
@@ -99,7 +102,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
       const item = contextItems.find((item) => {
         const taxonomy =
           item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
-        return taxonomy?.includes(path);
+        return includesIgnoreCase(taxonomy, path);
       });
       if (item) {
         setSelectedItem(item);
@@ -294,7 +297,9 @@ function processContextItems(
     let currentNode = root;
 
     parts.forEach((part, index) => {
-      let child = currentNode.children?.find((c) => c.name === part);
+      let child = currentNode.children?.find(
+        (c) => c.name.toLowerCase() === part.toLowerCase(),
+      );
       if (!child) {
         child = {
           name: part,

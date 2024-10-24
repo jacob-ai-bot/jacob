@@ -21,7 +21,7 @@ export const statusStyles = {
 };
 
 // The snapshot url of a Figma design might be found in the issue body. If so, we want to extract it.
-// Here is the specific format that a snapshot url will be in:  \`\`\`![snapshot](${snapshotUrl})\`\`\``
+// Here is the specific format that a snapshot url will be in:  ```![snapshot](${snapshotUrl})```
 // This function will extract the snapshotUrl from the issue body
 export const getSnapshotUrl = (
   issueBody: string | null | undefined,
@@ -212,4 +212,12 @@ export function getLanguageFromFile(fileName: string): string {
     language = "yaml";
   }
   return language;
+}
+
+export function startsWithIgnoreCase(str: string, prefix: string): boolean {
+  return str.toLowerCase().startsWith(prefix.toLowerCase());
+}
+
+export function includesIgnoreCase(str: string, searchString: string): boolean {
+  return str.toLowerCase().includes(searchString.toLowerCase());
 }
