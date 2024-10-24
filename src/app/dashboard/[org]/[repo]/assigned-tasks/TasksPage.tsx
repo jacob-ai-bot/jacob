@@ -87,8 +87,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   );
 
   const handleRestart = () => setCurrentEventIndex(0);
-  const handleStepBackward = () => setCurrentEventIndex((prev) => Math.max(0, prev - 1));
-  const handleStepForward = () => setCurrentEventIndex((prev) => Math.min(events.length - 1, prev + 1));
+  const handleStepBackward = () =>
+    setCurrentEventIndex((prev) => Math.max(0, prev - 1));
+  const handleStepForward = () =>
+    setCurrentEventIndex((prev) => Math.min(events.length - 1, prev + 1));
   const handleJumpToEnd = () => setCurrentEventIndex(events.length - 1);
 
   if (loadingTasks || loadingProject || !tasks || !project) {

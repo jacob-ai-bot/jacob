@@ -1,5 +1,10 @@
-import React from 'react';
-import { ArrowPathIcon, ArrowLeftIcon, ArrowRightIcon, ForwardIcon } from '@heroicons/react/24/outline';
+import React from "react";
+import {
+  ArrowPathIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ForwardIcon,
+} from "@heroicons/react/24/outline";
 
 interface StepNavigationProps {
   onRestart: () => void;
