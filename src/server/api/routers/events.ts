@@ -3,11 +3,8 @@ import { db } from "~/server/db/db";
 import { TaskType, type TodoStatus } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
-import { TaskStatus, TaskSubType } from "~/server/db/enums";
 import { type Language } from "~/types";
-import { getIssue, validateRepo } from "../utils";
 import { getSnapshotUrl } from "~/app/utils";
-import { extractFilePathWithArrow } from "~/server/utils";
 
 import { observable } from "@trpc/server/observable";
 
@@ -18,6 +15,7 @@ import {
 } from "~/server/db/tables/events.table";
 import { newRedisConnection } from "~/server/utils/redis";
 import { type ExtractedIssueInfo } from "~/server/code/extractedIssue";
+import { validateRepo } from "../utils";
 
 export interface Task extends EventsTask {
   issueId: number;
@@ -197,16 +195,12 @@ export const eventsRouter = createTRPCRouter({
         // Use the unique issue IDs to create a list of tasks
         const tasks = await Promise.all(
           (uniqueIssueIds.filter(Boolean) as number[]).map(async (issueId) => {
-            // Each task should have a single issue. Get the most recent issue for this specific issueId
-            let issue = events.find(
-              (e) => e.type === TaskType.issue && e.issueId === issueId,
-            )?.payload as Issue;
-
-            if (!issue && org && repo && issueId && accessToken) {
-              // Fetch the issue from the GitHub API using Octokit
-              issue = await getIssue(org, repo, issueId, accessToken);
-            }
-            return createTaskForIssue(issue, events, `${org}/${repo}`);
+            //  Get the most recent task for this specific issueId
+            const task = events.find(
+              (e) => e.type === TaskType.task && e.issueId === issueId,
+            )?.payload as Task;
+            task.issueId = issueId;
+            return createEnhancedTask(task, events, `${org}/${repo}`);
           }),
         );
 
@@ -343,15 +337,8 @@ export const eventsRouter = createTRPCRouter({
     }),
 });
 
-const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
-  const issueId = issue.issueId;
-  const newFileName = extractFilePathWithArrow(issue.title);
-  const taskSubType = newFileName
-    ? TaskSubType.CREATE_NEW_FILE
-    : TaskSubType.EDIT_FILES;
-  if (newFileName) {
-    issue.filesToCreate = [newFileName];
-  }
+const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
+  const issueId = task.issueId;
 
   // Each issue should have a single pull request. Get the most recent pull request for this specific issue
   const pullRequest = events.find(
@@ -381,19 +368,32 @@ const createTaskForIssue = (issue: Issue, events: Event[], repo: string) => {
     .map((e) => e.payload as Prompt);
 
   let imageUrl = "";
-  if (issue) {
-    imageUrl = getSnapshotUrl(issue.description) ?? "";
+  if (task.description) {
+    imageUrl = getSnapshotUrl(task.description) ?? "";
   }
+  const issue = {
+    issueId,
+    type: TaskType.issue,
+    id: `${issueId}`,
+    title: task.name,
+    description: task.description,
+    createdAt: new Date().toISOString(),
+    comments: [],
+    author: "",
+    assignee: "",
+    status: "open",
+    link: "",
+  };
 
   return {
     id: `task-${issueId}`,
     issueId,
     type: TaskType.task,
     repo,
-    name: issue?.title ?? "New Task",
-    subType: taskSubType,
-    description: issue.description,
-    status: issue.status === "open" ? TaskStatus.IN_PROGRESS : TaskStatus.DONE,
+    name: task.name,
+    subType: task.subType,
+    description: task.description,
+    status: task.status,
     storyPoints: 1, // TODO: Calculate story points
     imageUrl,
     issue,

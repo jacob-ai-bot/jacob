@@ -11,8 +11,8 @@ import {
   cloneAndGetSourceMap,
   getAllRepos,
   getExtractedIssue,
-  validateRepo,
   checkAndEnableIssues,
+  validateRepo,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
 import {
@@ -36,6 +36,7 @@ export async function fetchGithubFileContents(
     const fileContents = await Promise.all(
       filePaths.map(async (path) => {
         try {
+          console.log(`fetching file from GitHub: ${path}`);
           const response = await octokit.repos.getContent({
             owner: org,
             repo,
@@ -107,7 +108,6 @@ export const githubRouter = createTRPCRouter({
             message: "Invalid request",
           });
         }
-        await validateRepo(repoOwner, repoName, accessToken);
 
         const sourceMap = await cloneAndGetSourceMap(repo, accessToken);
         const extractedIssue = await getExtractedIssue(sourceMap, issueText);
@@ -291,7 +291,6 @@ export const githubRouter = createTRPCRouter({
             message: "Invalid request",
           });
         }
-        await validateRepo(org, repo, accessToken);
         return await cloneAndGetSourceMap(`${org}/${repo}`, accessToken);
       },
     ),
@@ -346,7 +345,7 @@ export const githubRouter = createTRPCRouter({
             });
           }
 
-          console.log("Getting issue", issueId);
+          console.log("Getting issue from GitHub...", issueId);
           const { data: issue } = await octokit.issues.get({
             owner: org,
             repo,

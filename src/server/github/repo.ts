@@ -12,6 +12,7 @@ export async function getFile(
     userAgent: "jacob",
   });
 
+  console.log("Getting file from GitHub...", path);
   return octokit.repos.getContent({
     owner: repository.owner.login,
     repo: repository.name,

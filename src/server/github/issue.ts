@@ -43,6 +43,7 @@ export async function getIssue(
     userAgent: "jacob",
   });
 
+  console.log("Getting issue from GitHub...", issue_number);
   return octokit.issues.get({
     owner: repository.owner.login,
     repo: repository.name,

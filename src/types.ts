@@ -150,3 +150,14 @@ export interface Research {
   todoId: number;
   issueId: number;
 }
+
+export interface Repo {
+  id: number;
+  node_id: string;
+  full_name: string;
+  org: string | undefined;
+  repo: string | undefined;
+  description: string | null;
+  projectId: number | null;
+  hasSettings: boolean;
+}

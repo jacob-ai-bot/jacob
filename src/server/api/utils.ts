@@ -10,11 +10,13 @@ import {
 import { cloneRepo } from "../git/clone";
 import { getSourceMap } from "../analyze/sourceMap";
 import { db } from "~/server/db/db";
+import { type Repo } from "~/types";
 
 export const getAllRepos = async (
   accessToken: string,
   includeProjects = false,
-) => {
+): Promise<Repo[]> => {
+  console.log("calling getAllRepos...");
   const octokit = new Octokit({ auth: accessToken });
   const {
     data: { installations },
@@ -51,7 +53,7 @@ export const getAllRepos = async (
             description,
             projectId,
             hasSettings,
-          };
+          } as Repo;
         }),
       );
     }),
@@ -77,6 +79,7 @@ export const getIssue = async (
   issueNumber: number,
   accessToken: string,
 ) => {
+  console.log("calling getIssue...");
   const octokit = new Octokit({ auth: accessToken });
   const { data: issueData } = await octokit.rest.issues.get({
     owner: org,
@@ -107,6 +110,7 @@ export const validateRepo = async (
   repo: string,
   accessToken: string,
 ) => {
+  console.log("calling validateRepo...");
   const repositories = await getAllRepos(accessToken);
   const repos = repositories.map((r) => r.full_name);
   if (!repos.includes(`${org}/${repo}`)) {

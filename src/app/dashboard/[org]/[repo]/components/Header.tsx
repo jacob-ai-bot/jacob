@@ -9,23 +9,29 @@ import { faRefresh } from "@fortawesome/free-solid-svg-icons";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { api } from "~/trpc/react";
 import { toast } from "react-toastify";
+import { type Repo } from "~/types";
 
 interface HeaderProps {
   org: string;
   repoName: string;
+  branches: string[] | undefined;
+  isLoadingBranches: boolean;
+  repos: Repo[] | undefined;
+  isLoadingRepos: boolean;
 }
 
-export default function Header({ org, repoName }: HeaderProps) {
+export default function Header({
+  org,
+  repoName,
+  branches = [],
+  isLoadingBranches,
+  repos = [],
+  isLoadingRepos,
+}: HeaderProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<string>("main");
-
-  const {
-    data: repos,
-    isLoading: isLoadingRepos,
-    refetch,
-  } = api.github.getRepos.useQuery();
 
   const refreshContextMutation =
     api.codebaseContext.generateCodebaseContext.useMutation({
@@ -36,12 +42,6 @@ export default function Header({ org, repoName }: HeaderProps) {
         console.error("Refresh context failed:", error);
       },
     });
-
-  const { data: branches, isLoading: isLoadingBranches } =
-    api.github.getBranches.useQuery(
-      { org, repo: repoName },
-      { enabled: !!org && !!repoName },
-    );
 
   useEffect(() => {
     if (branches && branches.length > 0) {
@@ -68,7 +68,6 @@ export default function Header({ org, repoName }: HeaderProps) {
       org,
       repoName,
     });
-    void refetch();
 
     setTimeout(() => {
       setIsRefreshing(false);

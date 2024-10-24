@@ -28,7 +28,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     data: tasks,
     isLoading: loadingTasks,
     refetch: refetchTasks,
-  } = api.events.getTasks.useQuery({ org, repo });
+  } = api.events.getTasks.useQuery({
+    org,
+    repo,
+  });
   const { data: project, isLoading: loadingProject } =
     api.events.getProject.useQuery({ org, repo });
 
