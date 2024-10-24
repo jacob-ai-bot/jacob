@@ -134,14 +134,6 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       {/* Right column: Workspace */}
 
       <div className=" hide-scrollbar h-[calc(100vh-116px)] w-2/3 overflow-y-scroll bg-white dark:bg-gray-800 ">
-        <StepNavigation
-          onRestart={handleRestart}
-          onStepBackward={handleStepBackward}
-          onStepForward={handleStepForward}
-          onJumpToEnd={handleJumpToEnd}
-          currentIndex={currentEventIndex}
-          totalSteps={events.length}
-        />
         <Workspace
           tasks={tasks.filter(
             (t) =>
@@ -156,6 +148,18 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           repo={repo}
           events={events.slice(0, currentEventIndex + 1)}
         />
+        <div className="sticky bottom-0 flex w-full justify-center bg-white dark:bg-gray-800">
+          <div className="max-w-md">
+            <StepNavigation
+              onRestart={handleRestart}
+              onStepBackward={handleStepBackward}
+              onStepForward={handleStepForward}
+              onJumpToEnd={handleJumpToEnd}
+              currentIndex={currentEventIndex}
+              totalSteps={events.length}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
