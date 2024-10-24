@@ -145,7 +145,6 @@ export const todoRouter = createTRPCRouter({
                   issueId,
                   rootDir: rootPath,
                   projectId: createdTodo.projectId,
-                  maxLoops: 3,
                 });
               } catch (error) {
                 console.error(error);

@@ -51,7 +51,7 @@ export const researchIssue = async function ({
   issueId,
   rootDir,
   projectId,
-  maxLoops = 10,
+  maxLoops = 1, // don't loop for now, we'll just do one pass
   model = "claude-3-5-sonnet-20241022",
 }: ResearchIssueParams): Promise<Research[]> {
   console.log("Researching issue...");
@@ -116,7 +116,6 @@ export const researchIssue = async function ({
           question.question,
           githubIssue,
           sourceMap,
-          rootDir,
           codebaseContext,
         );
         const research: Research = {
@@ -160,7 +159,6 @@ async function callFunction(
   question: string,
   githubIssue: string,
   sourceMap: string,
-  rootDir: string,
   codebaseContext: ContextItem[],
 ): Promise<string> {
   switch (functionName) {
@@ -169,14 +167,13 @@ async function callFunction(
         question,
         githubIssue,
         sourceMap,
-        rootDir,
         codebaseContext,
       );
     case ResearchAgentActionType.ResearchInternet:
       return await researchInternet(question);
     case ResearchAgentActionType.AskProjectOwner:
-      // just return the question for now
-      return question;
+      // just return a blank answer, the user will answer it later
+      return "";
     default:
       return "Function not found.";
   }
@@ -185,7 +182,6 @@ export async function researchCodebase(
   query: string,
   githubIssue: string,
   sourceMap: string,
-  rootDir: string,
   codebaseContext: ContextItem[],
 ): Promise<string> {
   const allFiles = codebaseContext.map((file) => standardizePath(file.file));

@@ -18,7 +18,7 @@ const QuestionsForUser: React.FC<QuestionsForUserProps> = ({
   const [answers, setAnswers] = useState<Record<number, string>>(
     questions?.reduce(
       (acc, question) => {
-        acc[question.id!] = question.answer;
+        acc[question.id!] = question.answer ?? "";
         return acc;
       },
       {} as Record<number, string>,
