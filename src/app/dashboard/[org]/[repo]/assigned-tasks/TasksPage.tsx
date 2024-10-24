@@ -9,6 +9,7 @@ import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
 import TaskItem from "./components/TaskItem";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import StepNavigation from "./components/StepNavigation";
 
 interface TasksPageProps {
   org: string;
@@ -23,6 +24,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
 
   const {
     data: tasks,
@@ -41,6 +43,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   useEffect(() => {
     if (taskEvents) {
       setEvents(taskEvents);
+      setCurrentEventIndex(taskEvents.length - 1);
     }
   }, [taskEvents]);
 
@@ -73,6 +76,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       onData(newEvent: Event) {
         if (selectedTask && newEvent.issueId === selectedTask.issueId) {
           setEvents((prevEvents) => [...prevEvents, newEvent]);
+          setCurrentEventIndex((prevIndex) => prevIndex + 1);
         }
         void refetchTasks();
       },
@@ -81,6 +85,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       },
     },
   );
+
+  const handleRestart = () => setCurrentEventIndex(0);
+  const handleStepBackward = () => setCurrentEventIndex((prev) => Math.max(0, prev - 1));
+  const handleStepForward = () => setCurrentEventIndex((prev) => Math.min(events.length - 1, prev + 1));
+  const handleJumpToEnd = () => setCurrentEventIndex(events.length - 1);
 
   if (loadingTasks || loadingProject || !tasks || !project) {
     return <LoadingIndicator />;
@@ -123,6 +132,14 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       {/* Right column: Workspace */}
 
       <div className=" hide-scrollbar h-[calc(100vh-116px)] w-2/3 overflow-y-scroll bg-white dark:bg-gray-800 ">
+        <StepNavigation
+          onRestart={handleRestart}
+          onStepBackward={handleStepBackward}
+          onStepForward={handleStepForward}
+          onJumpToEnd={handleJumpToEnd}
+          currentIndex={currentEventIndex}
+          totalSteps={events.length}
+        />
         <Workspace
           tasks={tasks.filter(
             (t) =>
@@ -135,7 +152,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           setSelectedTask={setSelectedTask}
           org={org}
           repo={repo}
-          events={events}
+          events={events.slice(0, currentEventIndex + 1)}
         />
       </div>
     </div>
