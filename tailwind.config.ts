@@ -10,6 +10,7 @@ const safelist = [
   "bg-error-800",
   "text-error-100",
   "text-error-800",
+  "bg-done",
 ]; // colors that dynamically generated, need to be whitelisted
 
 export default {
