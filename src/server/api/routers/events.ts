@@ -214,7 +214,9 @@ export const eventsRouter = createTRPCRouter({
 
             task.todo = todo;
             if (todo) {
-              task.status = mapTodoStatusToTaskStatus(todo.status);
+              task.status = todo.isArchived
+                ? TaskStatus.CLOSED
+                : mapTodoStatusToTaskStatus(todo.status);
             }
 
             return createEnhancedTask(task, events, `${org}/${repo}`);
