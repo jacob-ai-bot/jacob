@@ -282,31 +282,41 @@ export const SpeechToTextArea = forwardRef<
         setIsUploading(true);
 
         try {
-          const formData = new FormData();
-          formData.append("image", file);
-          formData.append("imageType", file.type);
-          formData.append("imageName", file.name);
+          // Convert file to base64
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64String = (reader.result as string).split(",")[1];
 
-          const response = await fetch("/api/image/upload", {
-            method: "POST",
-            body: formData,
-          });
+            const response = await fetch("/api/image/upload", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                image: base64String,
+                imageType: file.type,
+                imageName: file.name,
+                shouldResize: true,
+              }),
+            });
 
-          if (!response.ok) {
-            throw new Error("Image upload failed");
-          }
+            if (!response.ok) {
+              throw new Error("Image upload failed");
+            }
 
-          const data = await response.json();
-          if (data.success && data.url) {
-            const imageMarkdown = `![snapshot](${data.url})`;
-            const newValue = value + (value ? "\n" : "") + imageMarkdown;
-            onChange({
-              target: { value: newValue },
-            } as React.ChangeEvent<HTMLTextAreaElement>);
-            adjustTextareaHeight();
-          } else {
-            throw new Error("Invalid response from server");
-          }
+            const data = await response.json();
+            if (data.success && data.url) {
+              const imageMarkdown = `![snapshot](${data.url})`;
+              const newValue = value + (value ? "\n" : "") + imageMarkdown;
+              onChange({
+                target: { value: newValue },
+              } as React.ChangeEvent<HTMLTextAreaElement>);
+              adjustTextareaHeight();
+            } else {
+              throw new Error("Invalid response from server");
+            }
+          };
+          reader.readAsDataURL(file);
         } catch (error) {
           console.error("Image upload error:", error);
           toast.error("Image upload failed. Please try again.");
