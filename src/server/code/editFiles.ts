@@ -7,6 +7,7 @@ import {
   type BaseEventData,
   generateJacobBranchName,
   getStyles,
+  type TemplateParams,
 } from "../utils";
 import {
   countTokens,
@@ -26,6 +27,7 @@ import { getTypes, getImages } from "../analyze/sourceMap";
 import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
 import { PlanningAgentActionType } from "../db/enums";
+import { type PlanStep } from "../agent/plan";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -36,6 +38,112 @@ export interface EditFilesParams extends BaseEventData {
   baseBranch?: string;
   dryRun?: boolean;
   repoSettings?: RepoSettings;
+}
+
+async function processStepIndividually(
+  step: PlanStep,
+  params: {
+    rootPath: string;
+    repoSettings?: RepoSettings;
+    baseEventData: BaseEventData;
+    issueText: string;
+    researchData: (typeof db.research.prototype)[];
+    model: Model;
+  },
+) {
+  const {
+    rootPath,
+    repoSettings,
+    baseEventData,
+    issueText,
+    researchData,
+    model,
+  } = params;
+
+  const filesToProcess = [step.filePath];
+  const { code } = concatenateFiles(
+    rootPath,
+    undefined,
+    step.type === PlanningAgentActionType.EditExistingCode
+      ? filesToProcess
+      : [],
+    step.type === PlanningAgentActionType.CreateNewCode ? filesToProcess : [],
+  );
+
+  const types = getTypes(rootPath, repoSettings);
+  const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
+    "\n",
+  );
+  const styles = await getStyles(rootPath, repoSettings);
+  const images = await saveImages(
+    await getImages(rootPath, repoSettings),
+    issueText,
+    rootPath,
+    repoSettings,
+  );
+
+  const detailedMarkdownPlanFromSteps = dedent`
+    ### Step: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
+
+    **Task:** ${step.title}
+
+    **Instructions:**
+    ${step.instructions}
+
+    **Exit Criteria:**
+    ${step.exitCriteria}
+
+    ${step.dependencies ? `**Dependencies:**\n${step.dependencies}` : ""}
+  `;
+
+  const detailedMarkdownResearchData = researchData
+    .filter((research) => research.answer?.length)
+    .map(
+      (research) => dedent`
+        ## Question:
+        ${research.question}
+
+        ## Answer:
+        ${research.answer}
+      `,
+    )
+    .join("\n");
+
+  const codeTemplateParams: TemplateParams = {
+    sourceMap: "",
+    types,
+    packages,
+    styles,
+    images,
+    code,
+    issueBody: issueText,
+    plan: detailedMarkdownPlanFromSteps,
+    research: detailedMarkdownResearchData,
+    snapshotUrl: "",
+  };
+
+  const codeSystemPrompt = constructNewOrEditSystemPrompt(
+    "code_edit_files",
+    codeTemplateParams,
+    repoSettings,
+  );
+  const codeUserPrompt = parseTemplate(
+    "dev",
+    "code_edit_files",
+    "user",
+    codeTemplateParams,
+  );
+
+  return await sendGptRequest(
+    codeUserPrompt,
+    codeSystemPrompt,
+    0.2,
+    baseEventData,
+    3,
+    60000,
+    undefined,
+    model,
+  );
 }
 
 export async function editFiles(params: EditFilesParams) {
@@ -184,24 +292,49 @@ export async function editFiles(params: EditFilesParams) {
     codeTemplateParams,
   );
 
-  // Start with Claude, but if there is a lot of code, we need to use a model with a large output token limit
   let model: Model = "claude-3-5-sonnet-20241022";
   const codeTokenCount = countTokens(code) * 1.25; // Leave room for new code additions
   if (codeTokenCount > MAX_OUTPUT[model]) {
     model = "gpt-4o-64k-output-alpha";
   }
 
-  // Call sendGptRequest with the issue and concatenated code file
-  const updatedCode = (await sendGptRequest(
-    codeUserPrompt,
-    codeSystemPrompt,
-    0.2,
-    baseEventData,
-    3,
-    60000,
-    undefined,
-    model,
-  ))!;
+  let updatedCode: string;
+
+  if (codeTokenCount > MAX_OUTPUT[model] / 2) {
+    // Process each step individually
+    const results = await Promise.all(
+      planSteps
+        .filter(
+          (step) =>
+            step.type === PlanningAgentActionType.EditExistingCode ||
+            step.type === PlanningAgentActionType.CreateNewCode,
+        )
+        .map((step) =>
+          processStepIndividually(step, {
+            rootPath,
+            repoSettings,
+            baseEventData,
+            issueText,
+            researchData,
+            model,
+          }),
+        ),
+    );
+
+    updatedCode = results.filter(Boolean).join("\n\n");
+  } else {
+    // Original single request logic
+    updatedCode = (await sendGptRequest(
+      codeUserPrompt,
+      codeSystemPrompt,
+      0.2,
+      baseEventData,
+      3,
+      60000,
+      undefined,
+      model,
+    ))!;
+  }
 
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
     console.log(`[${repository.full_name}] code`, code);

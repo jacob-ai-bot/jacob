@@ -12,6 +12,9 @@ The ideal solution is to only provide the absolute minimum amount of code change
 Your response will be copied directly into a production code base, so replying with anything other than the updated file named "code.txt" will break the build.
 Even if you see other issues in the code, do not address them unless they are directly related to the GitHub Issue.
 
+# IMPORTANT: 
+You MUST return the entire response. You MUST NEVER cut the response short or provide placeholder text, even for very long responses. ALWAYS provide the full response, never cut it off.
+
 ## Instructions:
 
 You will earn points as follows:
@@ -20,6 +23,7 @@ You will earn points as follows:
 - 100 points for adhering strictly to the given instructions
 
 You will lose points as follows:
+- Lose 5000 points if you cut the response short or provide placeholder text
 - Lose 2000 points if your code breaks the build
 - Lose 1000 points if you respond in a diff format
 - Lose 1000 points if you do not respond with a valid file
