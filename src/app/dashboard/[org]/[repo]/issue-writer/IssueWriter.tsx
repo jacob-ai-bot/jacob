@@ -68,9 +68,9 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   useEffect(() => {
     if (filePath) {
       const decodedFilePath = decodeURIComponent(filePath);
-      const fileName = decodedFilePath.split("/").pop() || "";
+      const fileName = decodedFilePath.split("/").pop() ?? "";
       setIssueTitle(`Update ${fileName}`);
-      setIssueBody(`## Update Required for ${fileName}
+      setIssueBody(`## Update Required for ${decodedFilePath}
 
 Please update the \`${fileName}\` file to address the following:
 
