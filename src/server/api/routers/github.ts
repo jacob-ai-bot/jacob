@@ -593,7 +593,7 @@ export const githubRouter = createTRPCRouter({
         return { success: true, message: "Branch created successfully" };
       } catch (error) {
         console.error("Error creating branch:", error);
-        if (error.status === 422) {
+        if (error instanceof Error && error.message.includes("422")) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Branch already exists or invalid branch name",
@@ -606,4 +606,3 @@ export const githubRouter = createTRPCRouter({
       }
     }),
 });
-

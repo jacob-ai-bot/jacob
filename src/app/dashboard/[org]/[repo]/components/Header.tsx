@@ -24,7 +24,7 @@ interface HeaderProps {
 export default function Header({
   org,
   repoName,
-  branches = [],
+  branches: _branches = [],
   isLoadingBranches,
   repos = [],
   isLoadingRepos,
@@ -34,6 +34,7 @@ export default function Header({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<string>("main");
   const [isCreateBranchModalOpen, setIsCreateBranchModalOpen] = useState(false);
+  const [branches, setBranches] = useState<string[]>([]);
 
   const refreshContextMutation =
     api.codebaseContext.generateCodebaseContext.useMutation({
@@ -46,10 +47,11 @@ export default function Header({
     });
 
   useEffect(() => {
-    if (branches && branches.length > 0) {
-      setSelectedBranch(branches[0] ?? "main");
+    if (_branches && _branches.length > 0) {
+      setSelectedBranch(_branches[0] ?? "main");
+      setBranches(_branches);
     }
-  }, [branches]);
+  }, [_branches]);
 
   const handleRepoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedRepo = e.target.value;
@@ -61,7 +63,6 @@ export default function Header({
   const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newBranch = e.target.value;
     setSelectedBranch(newBranch);
-    console.log(`Selected branch: ${newBranch}`);
   };
 
   const handleRefresh = () => {
@@ -78,9 +79,10 @@ export default function Header({
   };
 
   const handleCreateBranch = (newBranch: string) => {
-    setSelectedBranch(newBranch);
+    setBranches([...branches, newBranch]);
     setIsCreateBranchModalOpen(false);
     toast.success(`Branch "${newBranch}" created successfully`);
+    setSelectedBranch(newBranch);
   };
 
   return (
@@ -175,12 +177,11 @@ export default function Header({
       <CreateBranchModal
         isOpen={isCreateBranchModalOpen}
         onClose={() => setIsCreateBranchModalOpen(false)}
-        onCreateBranch={handleCreateBranch}
-        existingBranches={branches}
+        onBranchCreated={handleCreateBranch}
+        branches={branches}
         org={org}
-        repoName={repoName}
+        repo={repoName}
       />
     </header>
   );
 }
-
