@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "~/server/db/db";
-import { TaskType, type TodoStatus } from "~/server/db/enums";
+import { TaskStatus, TaskType, TodoStatus } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 import { type Language } from "~/types";
@@ -28,6 +28,7 @@ export interface Task extends EventsTask {
   commands?: Command[];
   codeFiles?: Code[];
   prompts?: Prompt[];
+  todo?: Todo;
 }
 
 export type Event = EventsEvent;
@@ -181,6 +182,9 @@ export const eventsRouter = createTRPCRouter({
         },
       }) => {
         await validateRepo(org, repo, accessToken);
+        const project = await db.projects.findBy({
+          repoFullName: `${org}/${repo}`,
+        });
 
         // Fetch all events from the repo matching the `TaskType.issue`
         const events = await db.events
@@ -197,14 +201,25 @@ export const eventsRouter = createTRPCRouter({
         // Use the unique issue IDs to create a list of tasks
         const tasks = await Promise.all(
           (uniqueIssueIds.filter(Boolean) as number[]).map(async (issueId) => {
-            //  Get the most recent task for this specific issueId
-            const task = events.find(
-              (e) => e.type === TaskType.task && e.issueId === issueId,
-            )?.payload as Task;
+            const task = getLatestTaskForIssue(events, issueId);
+            if (!task) return null;
+
             task.issueId = issueId;
+
+            // Get and map todo status
+            const todo = await db.todos.findByOptional({
+              issueId,
+              projectId: project?.id,
+            });
+
+            task.todo = todo;
+            if (todo) {
+              task.status = mapTodoStatusToTaskStatus(todo.status);
+            }
+
             return createEnhancedTask(task, events, `${org}/${repo}`);
           }),
-        );
+        ).then((tasks) => tasks.filter(Boolean) as Task[]);
 
         return tasks;
       },
@@ -412,4 +427,26 @@ const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
     codeFiles,
     prompts,
   } as Task;
+};
+
+const getLatestTaskForIssue = (
+  events: Event[],
+  issueId: number,
+): Task | null => {
+  const taskEvent = events
+    .filter((e) => e.issueId === issueId && e.type === TaskType.task)
+    .at(0); // Explicit way to get first element, returns undefined if empty
+
+  return (taskEvent?.payload as Task) ?? null;
+};
+
+const mapTodoStatusToTaskStatus = (todoStatus: TodoStatus): TaskStatus => {
+  const statusMap: Record<TodoStatus, TaskStatus> = {
+    [TodoStatus.DONE]: TaskStatus.DONE,
+    [TodoStatus.ERROR]: TaskStatus.ERROR,
+    [TodoStatus.IN_PROGRESS]: TaskStatus.IN_PROGRESS,
+    [TodoStatus.TODO]: TaskStatus.TODO,
+  };
+
+  return statusMap[todoStatus];
 };
