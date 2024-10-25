@@ -171,11 +171,28 @@ export function getTaskStatusLabel(status: TaskStatus) {
     case TaskStatus.IN_PROGRESS:
       return "In Progress";
     case TaskStatus.DONE:
-      return "Done";
+      return "Review PR";
     case TaskStatus.ERROR:
       return "Error";
     case TaskStatus.CLOSED:
       return "Closed";
+  }
+}
+
+export function getTaskStatusColor(status: TaskStatus) {
+  switch (status) {
+    case TaskStatus.TODO:
+      return "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100";
+    case TaskStatus.IN_PROGRESS:
+      return "bg-meadow-100 text-meadow-800 dark:bg-meadow-800 dark:text-meadow-100";
+    case TaskStatus.DONE:
+      return "bg-blossom-100 text-blossom-800 dark:bg-blossom-800 dark:text-blossom-100";
+    case TaskStatus.ERROR:
+      return "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100";
+    case TaskStatus.CLOSED:
+      return "bg-closed text-slate-800 dark:bg-slate-800 dark:text-slate-100";
+    default:
+      return "";
   }
 }
 
