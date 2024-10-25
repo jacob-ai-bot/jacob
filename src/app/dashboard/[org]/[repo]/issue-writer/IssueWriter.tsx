@@ -17,6 +17,7 @@ import ExtractedIssueDetails from "./components/ExtractedIssueDetails";
 import SpeechToTextArea, {
   type SpeechToTextAreaRef,
 } from "../components/SpeechToTextArea";
+import { useSearchParams } from "next/navigation";
 
 interface IssueWriterProps {
   org: string;
@@ -47,6 +48,9 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const speechToTextRef = useRef<SpeechToTextAreaRef>(null);
 
+  const searchParams = useSearchParams();
+  const filePath = searchParams.get("file_path");
+
   const { data: project, isLoading: isLoadingProject } =
     api.events.getProject.useQuery({
       org,
@@ -60,6 +64,21 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
       speechToTextRef.current?.focus();
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    if (filePath) {
+      const decodedFilePath = decodeURIComponent(filePath);
+      const fileName = decodedFilePath.split("/").pop() ?? "";
+      setIssueTitle(`Update ${fileName}`);
+      setIssueBody(`## Update Required for ${decodedFilePath}
+
+Please update the \`${fileName}\` file to address the following:
+
+- **Description**: [Provide a detailed description of the required update.]
+- **Reason**: [Explain why this update is necessary.]
+- **Additional Notes**: [Any other relevant information.]`);
+    }
+  }, [filePath]);
 
   const handleCreateIssue = async () => {
     if (!issueTitle.trim()) {

@@ -11,6 +11,7 @@ import {
   faCopy,
   faCheck,
   faComment,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import Mermaid from "./Mermaid";
 import Markdown, { type Components } from "react-markdown";
@@ -138,6 +139,19 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
     }
   };
 
+  const handleStartNewIssue = () => {
+    if (item.file) {
+      const encodedFilePath = encodeURIComponent(item.file);
+      router.push(
+        `/dashboard/${org}/${repo}/issue-writer?file_path=${encodedFilePath}`,
+      );
+    } else {
+      toast.error(
+        "No file selected. Please select a file before starting a new issue.",
+      );
+    }
+  };
+
   return (
     <div className="details hide-scrollbar h-full overflow-scroll bg-white text-left text-sm text-gray-800 dark:bg-gray-900 dark:text-white">
       <div className="sticky top-0 z-10 flex h-12 items-center justify-between bg-gradient-to-r from-aurora-50 to-aurora-100/70 px-4 shadow-sm dark:from-gray-800 dark:to-gray-700">
@@ -209,13 +223,22 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
       </div>
 
       <div className="sticky bottom-0 left-0 right-0 bg-white p-4 dark:bg-gray-900">
-        <button
-          onClick={handleSendToChat}
-          className="flex w-full items-center justify-center rounded-lg bg-aurora-500 px-4 py-2 font-semibold text-white transition-colors hover:bg-aurora-600 dark:bg-aurora-800 dark:hover:bg-aurora-900"
-        >
-          <FontAwesomeIcon icon={faComment} className="mr-2" />
-          Update with Chat
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={handleStartNewIssue}
+            className="flex w-full items-center justify-center rounded-lg bg-aurora-500 px-4 py-2 font-semibold text-white transition-colors hover:bg-aurora-600 dark:bg-aurora-800 dark:hover:bg-aurora-900"
+          >
+            <FontAwesomeIcon icon={faPlus} className="mr-2" />
+            Start New Issue
+          </button>
+          <button
+            onClick={handleSendToChat}
+            className="flex w-full items-center justify-center rounded-lg bg-aurora-500 px-4 py-2 font-semibold text-white transition-colors hover:bg-aurora-600 dark:bg-aurora-800 dark:hover:bg-aurora-900"
+          >
+            <FontAwesomeIcon icon={faComment} className="mr-2" />
+            Update with Chat
+          </button>
+        </div>
       </div>
     </div>
   );
