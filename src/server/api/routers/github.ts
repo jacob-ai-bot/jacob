@@ -559,4 +559,50 @@ export const githubRouter = createTRPCRouter({
         });
       }
     }),
+  createBranch: protectedProcedure
+    .input(
+      z.object({
+        org: z.string(),
+        repo: z.string(),
+        branchName: z.string(),
+        baseBranch: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { org, repo, branchName, baseBranch } = input;
+      const { accessToken } = ctx.session;
+
+      try {
+        const octokit = new Octokit({ auth: accessToken });
+
+        // Get the SHA of the latest commit on the base branch
+        const { data: baseRef } = await octokit.git.getRef({
+          owner: org,
+          repo,
+          ref: `heads/${baseBranch}`,
+        });
+
+        // Create the new branch
+        await octokit.git.createRef({
+          owner: org,
+          repo,
+          ref: `refs/heads/${branchName}`,
+          sha: baseRef.object.sha,
+        });
+
+        return { success: true, message: "Branch created successfully" };
+      } catch (error) {
+        console.error("Error creating branch:", error);
+        if (error.status === 422) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Branch already exists or invalid branch name",
+          });
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create branch",
+        });
+      }
+    }),
 });
