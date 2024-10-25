@@ -10,6 +10,7 @@ const safelist = [
   "bg-error-800",
   "text-error-100",
   "text-error-800",
+  "bg-done",
 ]; // colors that dynamically generated, need to be whitelisted
 
 export default {
@@ -240,6 +241,7 @@ export default {
           800: "#991B1B",
           900: "#7F1D1D",
         },
+        done: "#28a745",
       },
       fontFamily: {
         sans: ["Inter var", "sans-serif"],
