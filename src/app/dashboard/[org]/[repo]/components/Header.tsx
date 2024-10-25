@@ -10,6 +10,7 @@ import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { api } from "~/trpc/react";
 import { toast } from "react-toastify";
 import { type Repo } from "~/types";
+import CreateBranchModal from "./CreateBranchModal";
 
 interface HeaderProps {
   org: string;
@@ -32,6 +33,7 @@ export default function Header({
   const { theme, setTheme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<string>("main");
+  const [isCreateBranchModalOpen, setIsCreateBranchModalOpen] = useState(false);
 
   const refreshContextMutation =
     api.codebaseContext.generateCodebaseContext.useMutation({
@@ -75,6 +77,12 @@ export default function Header({
     }, 10000);
   };
 
+  const handleCreateBranch = (newBranch: string) => {
+    setSelectedBranch(newBranch);
+    setIsCreateBranchModalOpen(false);
+    toast.success(`Branch "${newBranch}" created successfully`);
+  };
+
   return (
     <header className="bg-white/90 pl-[96px] shadow-sm dark:bg-slate-800">
       <div className="flex items-center justify-between px-6 py-4">
@@ -110,6 +118,14 @@ export default function Header({
               ))
             )}
           </select>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsCreateBranchModalOpen(true)}
+            className="rounded-full bg-aurora-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 dark:bg-sky-600/30 dark:hover:bg-sky-500/30"
+          >
+            Create Branch
+          </motion.button>
         </div>
         <div className="flex items-center space-x-3">
           <motion.button
@@ -156,6 +172,15 @@ export default function Header({
           </button>
         </div>
       </div>
+      <CreateBranchModal
+        isOpen={isCreateBranchModalOpen}
+        onClose={() => setIsCreateBranchModalOpen(false)}
+        onCreateBranch={handleCreateBranch}
+        existingBranches={branches}
+        org={org}
+        repoName={repoName}
+      />
     </header>
   );
 }
+
