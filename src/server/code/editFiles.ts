@@ -293,15 +293,13 @@ export async function editFiles(params: EditFilesParams) {
   );
 
   let model: Model = "claude-3-5-sonnet-20241022";
-  const codeTokenCount = countTokens(code) * 1.25; // Leave room for new code additions
+  const codeTokenCount = countTokens(code);
+  let updatedCode: string;
   if (codeTokenCount > MAX_OUTPUT[model]) {
     model = "gpt-4o-64k-output-alpha";
   }
-
-  let updatedCode: string;
-
-  if (codeTokenCount > MAX_OUTPUT[model] / 2) {
-    // Process each step individually
+  if (codeTokenCount > MAX_OUTPUT[model] * 0.8) {
+    // if the estimated output token count is too close to the model's limit, process each step individually to prevent responses getting truncated
     const results = await Promise.all(
       planSteps
         .filter(
