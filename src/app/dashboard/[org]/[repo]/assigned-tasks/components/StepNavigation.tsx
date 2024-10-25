@@ -1,11 +1,12 @@
 import React from "react";
 import {
-  ArrowPathIcon,
+  BackwardIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   ForwardIcon,
-  RefreshIcon,
 } from "@heroicons/react/24/outline";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faRefresh } from "@fortawesome/free-solid-svg-icons";
 
 interface StepNavigationProps {
   onRestart: () => void;
@@ -31,8 +32,8 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
   onRefresh,
 }) => {
   return (
-    <div className="flex items-center justify-between bg-white px-4 py-2 dark:bg-gray-800">
-      <div className="flex items-center">
+    <div className="flex w-full  justify-between bg-white px-4 py-2 dark:bg-gray-800">
+      <div className="flex w-full flex-1 items-center">
         <label className="mr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           Live Updates
         </label>
@@ -48,16 +49,25 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
             }`}
           />
         </button>
+        {!liveUpdatesEnabled && (
+          <button
+            onClick={onRefresh}
+            className="rounded p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+            title="Refresh"
+          >
+            <FontAwesomeIcon icon={faRefresh} className="h-5 w-5" />
+          </button>
+        )}
       </div>
       {!liveUpdatesEnabled && (
-        <>
+        <div className="bg-blue-50/200 ml-4 flex items-center rounded-md">
           <button
             onClick={onRestart}
             disabled={currentIndex === 0}
             className="rounded p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-700"
             title="Restart"
           >
-            <ArrowPathIcon className="h-5 w-5" />
+            <BackwardIcon className="h-5 w-5" />
           </button>
           <button
             onClick={onStepBackward}
@@ -86,14 +96,7 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
           >
             <ForwardIcon className="h-5 w-5" />
           </button>
-          <button
-            onClick={onRefresh}
-            className="rounded p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-            title="Refresh"
-          >
-            <RefreshIcon className="h-5 w-5" />
-          </button>
-        </>
+        </div>
       )}
     </div>
   );

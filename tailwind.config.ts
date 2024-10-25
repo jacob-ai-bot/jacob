@@ -11,6 +11,10 @@ const safelist = [
   "text-error-100",
   "text-error-800",
   "bg-done",
+  "bg-blossom-100",
+  "bg-blossom-800",
+  "text-blossom-100",
+  "text-blossom-800",
 ]; // colors that dynamically generated, need to be whitelisted
 
 export default {

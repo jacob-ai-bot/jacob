@@ -1,9 +1,8 @@
 import React from "react";
 import { type Task } from "~/server/api/routers/events";
-import { TaskStatus } from "~/server/db/enums";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRightCircleIcon } from "@heroicons/react/24/outline";
-import { getTaskStatusLabel } from "~/app/utils";
+import { getTaskStatusColor, getTaskStatusLabel } from "~/app/utils";
 
 interface TaskItemProps {
   task: Task;
@@ -22,16 +21,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   org,
   repo,
 }) => {
-  const statusColors = {
-    [TaskStatus.TODO]:
-      "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100",
-    [TaskStatus.IN_PROGRESS]:
-      "bg-meadow-100 text-meadow-800 dark:bg-meadow-800 dark:text-meadow-100",
-    [TaskStatus.DONE]: "bg-done text-white dark:bg-done dark:text-white",
-    [TaskStatus.ERROR]:
-      "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100",
-  };
-
   const getBackgroundColor = (index: number, selected: boolean) => {
     if (selected) {
       return "border-l-4 border-l-meadow-200 bg-meadow-50 hover:bg-meadow-50 dark:bg-sky-900/50 dark:hover:bg-slate-600/50";
@@ -55,9 +44,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </h3>
         <div className="flex items-center space-x-1">
           <span
-            className={`overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium ${
-              statusColors[task.status as keyof typeof statusColors]
-            }`}
+            className={`overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium ${getTaskStatusColor(
+              task.status,
+            )}`}
           >
             {getTaskStatusLabel(task.status)}
           </span>
@@ -75,17 +64,30 @@ const TaskItem: React.FC<TaskItemProps> = ({
             })}
           </span>
         )}
-        {task.issueId && (
-          <a
-            href={`https://github.com/${org}/${repo}/issues/${task.issueId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center text-aurora-600 hover:text-aurora-700 dark:text-slate-400 dark:hover:text-slate-300"
-          >
-            Issue #{task.issueId}
-            <ArrowRightCircleIcon className="ml-1 h-4 w-4" />
-          </a>
-        )}
+        <div className="flex items-center space-x-4">
+          {task.issueId && !task.pullRequest && (
+            <a
+              href={`https://github.com/${org}/${repo}/issues/${task.issueId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center text-aurora-600 hover:text-aurora-700 dark:text-slate-400 dark:hover:text-slate-300"
+            >
+              Issue #{task.issueId}
+              <ArrowRightCircleIcon className="ml-1 h-4 w-4" />
+            </a>
+          )}
+          {task.pullRequest && (
+            <a
+              href={task.pullRequest.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center text-blossom-600 hover:text-blossom-700 dark:text-slate-400 dark:hover:text-slate-300"
+            >
+              PR #{task.pullRequest.pullRequestId}
+              <ArrowRightCircleIcon className="ml-1 h-4 w-4" />
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );

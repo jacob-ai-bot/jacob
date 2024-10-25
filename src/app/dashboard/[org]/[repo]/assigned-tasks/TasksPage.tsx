@@ -10,6 +10,8 @@ import LoadingIndicator from "../components/LoadingIndicator";
 import TaskItem from "./components/TaskItem";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import StepNavigation from "./components/StepNavigation";
+import { Switch } from "@headlessui/react";
+import TaskHeader from "./components/TaskHeader";
 
 interface TasksPageProps {
   org: string;
@@ -26,6 +28,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
   const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState<boolean>(true);
+  const [showAllTasks, setShowAllTasks] = useState(false);
 
   const {
     data: tasks,
@@ -52,6 +55,12 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   }, [taskEvents]);
 
   useEffect(() => {
+    if (taskEvents) {
+      setEvents(taskEvents?.slice(0, currentEventIndex + 1) ?? []);
+    }
+  }, [currentEventIndex, taskEvents]);
+
+  useEffect(() => {
     if (tasks && tasks.length > 0) {
       setSelectedTask(tasks[0]);
     }
@@ -59,14 +68,23 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (tasks) {
-      const filtered = tasks.filter(
+      let filtered = tasks;
+
+      // Apply status filter if not showing all tasks
+      if (!showAllTasks) {
+        filtered = filtered.filter((task) => task.status !== TaskStatus.CLOSED);
+      }
+
+      // Apply search filter
+      filtered = filtered.filter(
         (task) =>
           task.name?.toLowerCase().includes(searchQuery.toLowerCase()) ??
           task.description?.toLowerCase().includes(searchQuery.toLowerCase()),
       );
+
       setFilteredTasks(filtered);
     }
-  }, [tasks, searchQuery]);
+  }, [tasks, searchQuery, showAllTasks]);
 
   useEffect(() => {
     if (selectedTask) {
@@ -74,7 +92,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     }
   }, [selectedTask, refetchEvents]);
 
-  const subscription = api.events.onAdd.useSubscription(
+  api.events.onAdd.useSubscription(
     { org, repo },
     {
       enabled: liveUpdatesEnabled,
@@ -95,8 +113,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const handleStepBackward = () =>
     setCurrentEventIndex((prev) => Math.max(0, prev - 1));
   const handleStepForward = () =>
-    setCurrentEventIndex((prev) => Math.min(events.length - 1, prev + 1));
-  const handleJumpToEnd = () => setCurrentEventIndex(events.length - 1);
+    setCurrentEventIndex((prev) =>
+      Math.min((taskEvents?.length ?? 1) - 1, prev + 1),
+    );
+  const handleJumpToEnd = () =>
+    setCurrentEventIndex((taskEvents?.length ?? 1) - 1);
 
   const handleToggleLiveUpdates = () => {
     setLiveUpdatesEnabled((prev) => !prev);
@@ -119,9 +140,31 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     <div className="flex h-full w-full flex-col overflow-clip rounded-md dark:bg-gray-900 lg:flex-row">
       <div className="w-1/3 border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800">
         <div className="border-b border-r border-gray-200 p-4 dark:border-gray-700">
-          <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
-            Assigned Tasks
-          </h1>
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Assigned Tasks
+            </h1>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                Show all tasks
+              </span>
+              <Switch
+                checked={showAllTasks}
+                onChange={setShowAllTasks}
+                className={`${
+                  showAllTasks
+                    ? "bg-aurora-800/80"
+                    : "bg-slate-200 dark:bg-slate-700"
+                } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              >
+                <span
+                  className={`${
+                    showAllTasks ? "translate-x-6" : "translate-x-1"
+                  } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                />
+              </Switch>
+            </div>
+          </div>
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
@@ -148,35 +191,30 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
         </div>
       </div>
 
-      <div className=" hide-scrollbar h-[calc(100vh-116px)] w-2/3 overflow-y-scroll bg-white dark:bg-gray-800 ">
+      <div className="h-[calc(100vh-117px)] w-2/3 bg-white dark:bg-gray-800 ">
+        <TaskHeader selectedTask={selectedTask} />
         <Workspace
-          tasks={tasks.filter(
-            (t) =>
-              t.status === TaskStatus.IN_PROGRESS ||
-              t.status === TaskStatus.DONE,
-          )}
           selectedIcon={selectedIcon}
           selectedTask={selectedTask}
           setSelectedIcon={setSelectedIcon}
           setSelectedTask={setSelectedTask}
           org={org}
           repo={repo}
-          events={events.slice(0, currentEventIndex + 1)}
+          events={events}
+          currentEventIndex={currentEventIndex}
         />
-        <div className="sticky bottom-0 flex w-full justify-center bg-white dark:bg-gray-800">
-          <div className="max-w-md">
-            <StepNavigation
-              onRestart={handleRestart}
-              onStepBackward={handleStepBackward}
-              onStepForward={handleStepForward}
-              onJumpToEnd={handleJumpToEnd}
-              currentIndex={currentEventIndex}
-              totalSteps={events.length}
-              liveUpdatesEnabled={liveUpdatesEnabled}
-              onToggleLiveUpdates={handleToggleLiveUpdates}
-              onRefresh={handleRefresh}
-            />
-          </div>
+        <div className="sticky bottom-0 flex  h-12 w-full justify-center bg-white dark:bg-gray-800">
+          <StepNavigation
+            onRestart={handleRestart}
+            onStepBackward={handleStepBackward}
+            onStepForward={handleStepForward}
+            onJumpToEnd={handleJumpToEnd}
+            currentIndex={currentEventIndex}
+            totalSteps={taskEvents?.length ?? 0}
+            liveUpdatesEnabled={liveUpdatesEnabled}
+            onToggleLiveUpdates={handleToggleLiveUpdates}
+            onRefresh={handleRefresh}
+          />
         </div>
       </div>
     </div>

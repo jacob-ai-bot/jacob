@@ -74,6 +74,7 @@ export type Prompt = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     prompt: ReturnType<any>;
   };
+  eventIndex: number;
 };
 
 export type Issue = {
@@ -113,6 +114,7 @@ export type Command = {
   response: string;
   directory: string;
   exitCode: number | null;
+  eventIndex: number;
 };
 
 type EventPayload =
@@ -358,14 +360,22 @@ const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
 
   // Get the commands associated with the issue, sorted from least to most recent
   const commands = events
-    .filter((e) => e.type === TaskType.command && e.issueId === issueId)
-    .map((e) => e.payload as Command)
-    .reverse();
+    .reverse()
+    .filter((e) => e.issueId === issueId)
+    .map((e, index) => ({
+      ...(e.payload as Command),
+      eventIndex: index, // add the index in so we can hide them during the rewind functionality
+    }))
+    .filter((e) => e.type === TaskType.command);
 
   // Get the prompts associated with the issue
   const prompts = events
-    .filter((e) => e.type === TaskType.prompt && e.issueId === issueId)
-    .map((e) => e.payload as Prompt);
+    .filter((e) => e.issueId === issueId)
+    .map((e, index) => ({
+      ...(e.payload as Prompt),
+      eventIndex: index, // add the index in so we can hide them during the rewind functionality
+    }))
+    .filter((e) => e.type === TaskType.prompt);
 
   let imageUrl = "";
   if (task.description) {

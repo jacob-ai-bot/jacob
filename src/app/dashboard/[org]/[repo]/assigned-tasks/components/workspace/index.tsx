@@ -1,5 +1,10 @@
-import { useRef, useEffect } from "react";
-import { type Task, type Event } from "~/server/api/routers/events";
+import { useEffect, useRef, useState } from "react";
+import {
+  type Task,
+  type Event,
+  type Command,
+  type Prompt,
+} from "~/server/api/routers/events";
 import { SidebarIcon } from "~/types";
 import { CodeComponent } from "./Code";
 import { DesignComponent } from "./Design";
@@ -8,12 +13,9 @@ import { PromptsComponent } from "./Prompts";
 import { PullRequestComponent } from "./PullRequest";
 import { TerminalComponent } from "./Terminal";
 import Sidebar from "../Sidebar";
-import { getTaskStatusLabel } from "~/app/utils";
-import { TaskStatus, TaskType } from "~/server/db/enums";
-import { motion } from "framer-motion";
+import { TaskType } from "~/server/db/enums";
 
 type WorkspaceProps = {
-  tasks: Task[];
   selectedIcon: SidebarIcon;
   selectedTask?: Task;
   setSelectedIcon: (icon: SidebarIcon) => void;
@@ -21,6 +23,7 @@ type WorkspaceProps = {
   org: string;
   repo: string;
   events: Event[];
+  currentEventIndex: number;
 };
 
 const Workspace: React.FC<WorkspaceProps> = ({
@@ -30,8 +33,28 @@ const Workspace: React.FC<WorkspaceProps> = ({
   org,
   repo,
   events,
+  currentEventIndex,
 }) => {
   const topRef = useRef<HTMLDivElement>(null);
+  const [commands, setCommands] = useState<Command[]>(
+    selectedTask?.commands ?? [],
+  );
+  const [prompts, setPrompts] = useState<Prompt[]>(selectedTask?.prompts ?? []);
+
+  useEffect(() => {
+    if (!selectedTask) return;
+    // filter out the commands and prompts that are before the currentEventIndex
+    setCommands(
+      selectedTask?.commands?.filter(
+        (c) => c.eventIndex <= currentEventIndex + 1,
+      ) ?? [],
+    );
+    setPrompts(
+      selectedTask?.prompts?.filter(
+        (p) => p.eventIndex <= currentEventIndex + 1,
+      ) ?? [],
+    );
+  }, [selectedTask, currentEventIndex]);
 
   useEffect(() => {
     if (events.length > 0) {
@@ -71,7 +94,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
         </p>
       );
     }
-
     switch (selectedIcon) {
       case SidebarIcon.Code:
         return (
@@ -82,13 +104,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
           />
         );
       case SidebarIcon.Terminal:
-        return <TerminalComponent commands={selectedTask?.commands} />;
+        return <TerminalComponent commands={commands} />;
       case SidebarIcon.Issues:
         return <IssueComponent issue={selectedTask?.issue} />;
       case SidebarIcon.Design:
         return <DesignComponent imageUrl={selectedTask?.imageUrl} />;
       case SidebarIcon.Prompts:
-        return <PromptsComponent promptDetailsArray={selectedTask.prompts} />;
+        return <PromptsComponent promptDetailsArray={prompts} />;
       case SidebarIcon.PullRequests:
         return <PullRequestComponent pullRequest={selectedTask?.pullRequest} />;
       default:
@@ -112,40 +134,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
       {/* Main Content Area */}
       <div className="hide-scrollbar relative h-[calc(100vh-116px)] w-full overflow-y-scroll">
         <div ref={topRef} />
-        <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-6 pb-2 backdrop-blur-lg dark:bg-gray-800">
-          <div className="flex flex-row items-center space-x-2">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-              {selectedTask?.name ?? ""}
-            </h2>
-            {selectedTask && (
-              <div
-                className={`inline-flex items-center text-center text-sm font-medium ${
-                  selectedTask.status === TaskStatus.DONE
-                    ? "bg-aurora-100 text-aurora-800 dark:bg-aurora-800 dark:text-aurora-100"
-                    : selectedTask.status === TaskStatus.IN_PROGRESS
-                      ? "bg-meadow-100 text-meadow-800 dark:bg-meadow-800 dark:text-meadow-100"
-                      : selectedTask.status === TaskStatus.ERROR
-                        ? "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100"
-                        : "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100"
-                } whitespace-nowrap rounded-full px-2 py-1`}
-              >
-                {getTaskStatusLabel(selectedTask.status)}
-              </div>
-            )}
-          </div>
-          {selectedTask?.pullRequest && (
-            <motion.a
-              href={selectedTask.pullRequest.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="ml-2 whitespace-nowrap rounded-full bg-aurora-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 hover:text-aurora-50 dark:bg-sky-600/30 dark:hover:bg-sky-500/30"
-            >
-              View Pull Request
-            </motion.a>
-          )}
-        </div>
         <div className="p-6 pt-4">{renderComponent(selectedTask)}</div>
       </div>
       {/* Sidebar */}
