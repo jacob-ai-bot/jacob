@@ -80,17 +80,16 @@ export async function runBuildCheck({
     }`;
 
   try {
-    if (!shouldSkipBuild) {
-      await executeWithLogRequiringSuccess({
-        ...baseEventData,
-        directory: path,
-        command: installCommand,
-        options: {
-          env,
-          timeout: INSTALL_TIMEOUT,
-        },
-      });
-    }
+    await executeWithLogRequiringSuccess({
+      ...baseEventData,
+      directory: path,
+      command: installCommand,
+      options: {
+        env,
+        timeout: INSTALL_TIMEOUT,
+      },
+    });
+
     if (afterModifications && formatCommand) {
       try {
         await executeWithLogRequiringSuccess({
