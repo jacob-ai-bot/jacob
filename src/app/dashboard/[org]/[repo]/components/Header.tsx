@@ -10,6 +10,7 @@ import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
 import { api } from "~/trpc/react";
 import { toast } from "react-toastify";
 import { type Repo } from "~/types";
+import CreateBranchModal from "./CreateBranchModal";
 
 interface HeaderProps {
   org: string;
@@ -23,7 +24,7 @@ interface HeaderProps {
 export default function Header({
   org,
   repoName,
-  branches = [],
+  branches: _branches = [],
   isLoadingBranches,
   repos = [],
   isLoadingRepos,
@@ -32,6 +33,8 @@ export default function Header({
   const { theme, setTheme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<string>("main");
+  const [isCreateBranchModalOpen, setIsCreateBranchModalOpen] = useState(false);
+  const [branches, setBranches] = useState<string[]>([]);
 
   const refreshContextMutation =
     api.codebaseContext.generateCodebaseContext.useMutation({
@@ -44,10 +47,11 @@ export default function Header({
     });
 
   useEffect(() => {
-    if (branches && branches.length > 0) {
-      setSelectedBranch(branches[0] ?? "main");
+    if (_branches && _branches.length > 0) {
+      setSelectedBranch(_branches[0] ?? "main");
+      setBranches(_branches);
     }
-  }, [branches]);
+  }, [_branches]);
 
   const handleRepoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedRepo = e.target.value;
@@ -59,7 +63,6 @@ export default function Header({
   const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newBranch = e.target.value;
     setSelectedBranch(newBranch);
-    console.log(`Selected branch: ${newBranch}`);
   };
 
   const handleRefresh = () => {
@@ -73,6 +76,13 @@ export default function Header({
       setIsRefreshing(false);
       toast.success("Codebase context refreshed successfully");
     }, 10000);
+  };
+
+  const handleCreateBranch = (newBranch: string) => {
+    setBranches([...branches, newBranch]);
+    setIsCreateBranchModalOpen(false);
+    toast.success(`Branch "${newBranch}" created successfully`);
+    setSelectedBranch(newBranch);
   };
 
   return (
@@ -110,6 +120,14 @@ export default function Header({
               ))
             )}
           </select>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsCreateBranchModalOpen(true)}
+            className="rounded-full bg-aurora-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 dark:bg-sky-600/30 dark:hover:bg-sky-500/30"
+          >
+            Create Branch
+          </motion.button>
         </div>
         <div className="flex items-center space-x-3">
           <motion.button
@@ -156,6 +174,14 @@ export default function Header({
           </button>
         </div>
       </div>
+      <CreateBranchModal
+        isOpen={isCreateBranchModalOpen}
+        onClose={() => setIsCreateBranchModalOpen(false)}
+        onBranchCreated={handleCreateBranch}
+        branches={branches}
+        org={org}
+        repo={repoName}
+      />
     </header>
   );
 }
