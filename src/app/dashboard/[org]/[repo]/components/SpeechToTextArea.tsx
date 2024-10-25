@@ -10,6 +10,7 @@ import {
   faMicrophone,
   faStop,
   faSpinner,
+  faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
@@ -58,6 +59,7 @@ export const SpeechToTextArea = forwardRef<
 
     const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
     const [isTranscribing, setIsTranscribing] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
       const prepareMicrophone = async () => {
@@ -259,6 +261,62 @@ export const SpeechToTextArea = forwardRef<
       }
     };
 
+    const handleImageUpload = async () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/png, image/jpeg";
+      input.onchange = async (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        if (!["image/png", "image/jpeg"].includes(file.type)) {
+          toast.error("File must be a PNG or JPEG image.");
+          return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+          toast.error("File size must be under 20MB.");
+          return;
+        }
+
+        setIsUploading(true);
+
+        try {
+          const formData = new FormData();
+          formData.append("image", file);
+          formData.append("imageType", file.type);
+          formData.append("imageName", file.name);
+
+          const response = await fetch("/api/image/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Image upload failed");
+          }
+
+          const data = await response.json();
+          if (data.success && data.url) {
+            const imageMarkdown = `![snapshot](${data.url})`;
+            const newValue = value + (value ? "\n" : "") + imageMarkdown;
+            onChange({
+              target: { value: newValue },
+            } as React.ChangeEvent<HTMLTextAreaElement>);
+            adjustTextareaHeight();
+          } else {
+            throw new Error("Invalid response from server");
+          }
+        } catch (error) {
+          console.error("Image upload error:", error);
+          toast.error("Image upload failed. Please try again.");
+        } finally {
+          setIsUploading(false);
+        }
+      };
+      input.click();
+    };
+
     // Expose methods to the parent component
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus(),
@@ -323,13 +381,30 @@ export const SpeechToTextArea = forwardRef<
             <button
               type="button"
               className={`${
+                isUploading
+                  ? "text-blossom-500 hover:text-blossom-700"
+                  : "text-aurora-500 hover:text-aurora-600"
+              } transform text-xl dark:text-gray-300 dark:hover:text-gray-500`}
+              onClick={handleImageUpload}
+              aria-label="Upload image"
+              disabled={isUploading || isRecording}
+            >
+              {isUploading ? (
+                <FontAwesomeIcon icon={faSpinner} spin />
+              ) : (
+                <FontAwesomeIcon icon={faUpload} />
+              )}
+            </button>
+            <button
+              type="button"
+              className={`${
                 waveformActive
                   ? "z-20 mr-5 text-blossom-500 hover:text-blossom-700"
                   : " text-aurora-500 hover:text-aurora-600"
               } transform text-xl dark:text-gray-300 dark:hover:text-gray-500`}
               onClick={isRecording ? stopRecording : startRecording}
               aria-label={isRecording ? "Stop recording" : "Start recording"}
-              disabled={isTranscribing}
+              disabled={isTranscribing || isUploading}
             >
               {isTranscribing ? (
                 <FontAwesomeIcon icon={faSpinner} spin />
@@ -346,7 +421,9 @@ export const SpeechToTextArea = forwardRef<
                 className={`${
                   waveformActive ? "hidden" : ""
                 } flex h-8 w-8 items-center justify-center rounded-full bg-aurora-500 text-white transition-colors hover:bg-aurora-600 focus-visible:outline-none disabled:bg-gray-300 dark:bg-sky-600 dark:hover:bg-sky-700 dark:disabled:bg-gray-600`}
-                disabled={!value.trim() || isLoading || waveformActive}
+                disabled={
+                  !value.trim() || isLoading || waveformActive || isUploading
+                }
                 aria-label="Send message - or use cmd + enter"
               >
                 {/* Send button icon */}
