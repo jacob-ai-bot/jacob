@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "~/server/db/db";
-import { TaskType, type TodoStatus } from "~/server/db/enums";
+import { TaskType, type TodoStatus, TaskStatus } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 import { type Language } from "~/types";
@@ -336,6 +336,36 @@ export const eventsRouter = createTRPCRouter({
         .order({ createdAt: "ASC" });
 
       return events;
+    }),
+  updateTaskStatus: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.number(),
+        status: z.nativeEnum(TaskStatus),
+      }),
+    )
+    .mutation(async ({ input: { taskId, status } }) => {
+      const updatedTask = await db.events
+        .where({ type: TaskType.task })
+        .where({ id: taskId })
+        .update({ status });
+
+      if (!updatedTask) {
+        throw new Error(`Task with id ${taskId} not found`);
+      }
+
+      const event: Event = {
+        type: TaskType.task,
+        payload: updatedTask,
+        repoFullName: updatedTask.repoFullName,
+        issueId: updatedTask.issueId,
+      };
+
+      const redisPub = newRedisConnection();
+      await redisPub.publish("events", JSON.stringify(event));
+      await redisPub.quit();
+
+      return updatedTask;
     }),
 });
 
