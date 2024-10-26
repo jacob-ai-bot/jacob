@@ -8,6 +8,7 @@ import LoadingIndicator from "../components/LoadingIndicator";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import TodoItem from "./components/TodoItem";
 import IssueDetails from "./components/TodoDetails";
+import EmptyTodoPlaceholder from "./components/EmptyTodoPlaceholder";
 
 export interface Issue {
   title: string;
@@ -144,6 +145,8 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
             <div className="py-4">
               <LoadingIndicator />
             </div>
+          ) : filteredTodos.length === 0 ? (
+            <EmptyTodoPlaceholder />
           ) : (
             filteredTodos.map((todo, index) => (
               <TodoItem
