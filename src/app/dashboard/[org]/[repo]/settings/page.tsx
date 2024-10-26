@@ -20,7 +20,8 @@ export default async function SettingsPage({ params }: PageProps) {
   }
 
   const { org, repo } = params;
-
+  console.log("org", org);
+  console.log("repo", repo);
   return (
     <Suspense>
       <div className="h-full w-full text-left">

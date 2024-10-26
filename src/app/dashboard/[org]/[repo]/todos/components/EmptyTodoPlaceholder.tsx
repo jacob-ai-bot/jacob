@@ -11,7 +11,7 @@ const EmptyTodoPlaceholder: React.FC = () => {
           Inbox zero achieved! 🚀
         </AnimatedShinyText>
         <p className="text-gray-600 dark:text-gray-400">
-          Time to conquer new horizons. What's your next big move?
+          Time to conquer new horizons. What&apos;s your next big move?
         </p>
       </div>
     </div>
