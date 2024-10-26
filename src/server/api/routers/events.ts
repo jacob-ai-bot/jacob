@@ -398,13 +398,24 @@ const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
   if (task.description) {
     imageUrl = getSnapshotUrl(task.description) ?? "";
   }
+
+  // Find the earliest event for this issue to get the correct creation timestamp
+  const earliestEvent = events
+    .filter((e) => e.issueId === issueId)
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )[0];
+
   const issue = {
     issueId,
     type: TaskType.issue,
     id: `${issueId}`,
     title: task.name,
     description: task.description,
-    createdAt: new Date().toISOString(),
+    createdAt: earliestEvent
+      ? earliestEvent.createdAt
+      : new Date().toISOString(),
     comments: [],
     author: "",
     assignee: "",
