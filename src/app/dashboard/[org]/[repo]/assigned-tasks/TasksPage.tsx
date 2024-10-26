@@ -83,6 +83,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       );
 
       setFilteredTasks(filtered);
+
+      // If filtered tasks are empty but there are tasks, show all tasks
+      if (filtered.length === 0 && tasks.length > 0 && !showAllTasks) {
+        setShowAllTasks(true);
+      }
     }
   }, [tasks, searchQuery, showAllTasks]);
 
