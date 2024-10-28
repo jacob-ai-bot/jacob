@@ -9,6 +9,7 @@ const ILLUSTRATION_IMAGE_NAMES = [
   "hedgehog.png",
   "owl.png",
   "otter.png",
+  "hippo.png",
 ];
 
 const TodoDetailsPlaceholder: React.FC = () => {
