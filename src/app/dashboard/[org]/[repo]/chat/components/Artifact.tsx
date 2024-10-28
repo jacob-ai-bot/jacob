@@ -80,7 +80,13 @@ export function Artifact({
       }
     } catch (error) {
       console.error("Error saving file:", error);
-      toast.error("Failed to save file. Please try again.");
+      if (error instanceof DOMException && error.name === "AbortError") {
+        // User cancelled the save operation, do nothing
+        console.log("Save operation cancelled by user");
+      } else {
+        // Display error toast for other types of errors
+        toast.error("Failed to save file. Please try again.");
+      }
     }
   };
 
