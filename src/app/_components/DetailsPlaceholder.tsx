@@ -22,7 +22,7 @@ const TodoDetailsPlaceholder: React.FC = () => {
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       <img
-        className="w-1/2"
+        className="w-1/2 dark:mix-blend-multiply"
         src={`/images/illustrations/${illustration}`}
         alt="Todo Details"
       />
