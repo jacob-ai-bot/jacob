@@ -41,7 +41,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: .tool-versions
-          cache: 'npm'
+          cache: "npm"
       - uses: actions/cache@v4
         with:
           path: |
@@ -51,6 +51,11 @@ jobs:
           # If source files changed but packages didn't, rebuild from a prior cache.
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/package-lock.json') }}-
       - run: npm install
       - run: npm run typecheck
       - run: npm run build
