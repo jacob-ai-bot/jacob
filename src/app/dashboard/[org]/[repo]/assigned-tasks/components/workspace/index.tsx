@@ -14,7 +14,7 @@ import { PullRequestComponent } from "./PullRequest";
 import { TerminalComponent } from "./Terminal";
 import Sidebar from "../Sidebar";
 import { TaskType } from "~/server/db/enums";
-
+import TaskDetailsPlaceholder from "~/app/_components/DetailsPlaceholder";
 type WorkspaceProps = {
   selectedIcon: SidebarIcon;
   selectedTask?: Task;
@@ -88,11 +88,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   const renderComponent = (selectedTask: Task | undefined) => {
     if (!selectedTask) {
-      return (
-        <p className="text-center text-gray-500 dark:text-gray-400">
-          Select a task to view details
-        </p>
-      );
+      return <TaskDetailsPlaceholder />;
     }
     switch (selectedIcon) {
       case SidebarIcon.Code:

@@ -8,7 +8,8 @@ import LoadingIndicator from "../components/LoadingIndicator";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import TodoItem from "./components/TodoItem";
 import IssueDetails from "./components/TodoDetails";
-import EmptyTodoPlaceholder from "./components/EmptyTodoPlaceholder";
+import TodoItemPlaceholder from "./components/TodoItemPlaceholder";
+import TodoDetailsPlaceholder from "~/app/_components/DetailsPlaceholder";
 
 export interface Issue {
   title: string;
@@ -97,6 +98,14 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
 
   const handleArchive = (id: number) => {
     console.log("Archiving todo with id:", id);
+    // if the todo is selected, clear it
+    if (selectedTodo?.id === id) {
+      setSelectedTodo(null);
+    }
+    // select the first todo
+    if (filteredTodos.length > 0) {
+      setSelectedTodo(filteredTodos[0] ?? null);
+    }
     void refetchTodos();
   };
 
@@ -146,7 +155,7 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
               <LoadingIndicator />
             </div>
           ) : filteredTodos.length === 0 ? (
-            <EmptyTodoPlaceholder />
+            <TodoItemPlaceholder />
           ) : (
             filteredTodos.map((todo, index) => (
               <TodoItem
@@ -175,10 +184,8 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
             org={org}
             repo={repo}
           />
-        ) : (
-          <p className="text-center text-gray-500 dark:text-gray-400">
-            Select a todo to view details
-          </p>
+        ) : isLoadingIssue ? null : (
+          <TodoDetailsPlaceholder />
         )}
       </div>
     </div>
