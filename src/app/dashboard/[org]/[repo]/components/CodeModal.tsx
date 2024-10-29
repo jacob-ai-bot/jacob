@@ -1,6 +1,8 @@
 import React from "react";
 import Modal from "react-modal";
 import CodeViewer from "./CodeViewer";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 interface CodeModalProps {
   filePath: string;
@@ -23,9 +25,11 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, isOpen, onClose }) => {
       borderRadius: "8px",
       border: "none",
       boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      zIndex: 99999,
     },
     overlay: {
       backgroundColor: "rgba(0, 0, 0, 0.75)",
+      zIndex: 9999,
     },
   };
 
@@ -39,12 +43,12 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, isOpen, onClose }) => {
     >
       <div className="flex h-full flex-col">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{filePath}</h2>
+          <h2 className="mr-4 truncate text-xl font-semibold">{filePath}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 focus:outline-none"
           >
-            ×
+            <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
         <div className="flex-grow overflow-auto">

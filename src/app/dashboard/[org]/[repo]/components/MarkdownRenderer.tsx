@@ -77,6 +77,28 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           </code>
         );
       } else {
+        const pathCheck = Array.isArray(children) ? "" : children;
+
+        const isCodeFile =
+          pathCheck.startsWith("/") &&
+          /\.(js|ts|jsx|tsx|py|rb|go|java|cpp|h|cs|php|swift|kt|rs|scala|elm|hs|lua|r|m|f|sql)$/i.test(
+            pathCheck,
+          );
+
+        if (isCodeFile) {
+          return (
+            <code
+              {...props}
+              onClick={(e) => {
+                e.preventDefault();
+                setModalFilePath(pathCheck);
+              }}
+              className={`cursor-pointer  text-aurora-800/80 no-underline hover:text-aurora-800/80 hover:underline${className}`}
+            >
+              {children}
+            </code>
+          );
+        }
         return (
           <code className={className} {...props}>
             {children}
@@ -86,40 +108,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     };
   }, [resolvedTheme]);
 
-  const linkRenderer = (
-    props: React.AnchorHTMLAttributes<HTMLAnchorElement>,
-  ) => {
-    const href = props.href || "";
-    const isCodeFile =
-      /\.(js|ts|jsx|tsx|py|rb|go|java|cpp|h|cs|php|swift|kt|rs|scala|elm|hs|lua|r|m|f|sql)$/i.test(
-        href,
-      );
-
-    if (isCodeFile) {
-      return (
-        <a
-          {...props}
-          onClick={(e) => {
-            e.preventDefault();
-            setModalFilePath(href);
-          }}
-          className="cursor-pointer text-blue-500 hover:underline"
-        >
-          {props.children}
-        </a>
-      );
-    }
-
-    return <a {...props} />;
-  };
-
   return (
     <>
       <ReactMarkdown
         className={className}
         components={{
           code: CodeBlock as any,
-          a: linkRenderer,
         }}
       >
         {Array.isArray(children) ? children.join("") : children ?? ""}
