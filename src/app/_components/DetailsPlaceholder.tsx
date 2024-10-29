@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 
 const ILLUSTRATION_IMAGE_NAMES = [
-  "bird.png",
+  "panda.png",
   "cat.png",
   "dog.png",
   "elephant.png",
