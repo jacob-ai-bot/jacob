@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
   oneDark,
@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import ReactMarkdown from "react-markdown";
+import CodeModal from "./CodeModal";
 
 interface CodeBlockProps {
   inline?: boolean;
@@ -26,6 +27,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   children,
 }) => {
   const { resolvedTheme } = useTheme();
+  const [modalFilePath, setModalFilePath] = useState<string | null>(null);
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -75,6 +77,28 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           </code>
         );
       } else {
+        const pathCheck = Array.isArray(children) ? "" : children;
+
+        const isCodeFile =
+          pathCheck.startsWith("/") &&
+          /\.(js|ts|jsx|tsx|py|rb|go|java|cpp|h|cs|php|swift|kt|rs|scala|elm|hs|lua|r|m|f|sql)$/i.test(
+            pathCheck,
+          );
+
+        if (isCodeFile) {
+          return (
+            <code
+              {...props}
+              onClick={(e) => {
+                e.preventDefault();
+                setModalFilePath(pathCheck);
+              }}
+              className={`cursor-pointer  text-aurora-800/80 no-underline hover:text-aurora-800/80 hover:underline${className}`}
+            >
+              {children}
+            </code>
+          );
+        }
         return (
           <code className={className} {...props}>
             {children}
@@ -85,15 +109,23 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   }, [resolvedTheme]);
 
   return (
-    <ReactMarkdown
-      className={className}
-      components={{
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        code: CodeBlock as any,
-      }}
-    >
-      {Array.isArray(children) ? children.join("") : children ?? ""}
-    </ReactMarkdown>
+    <>
+      <ReactMarkdown
+        className={className}
+        components={{
+          code: CodeBlock as any,
+        }}
+      >
+        {Array.isArray(children) ? children.join("") : children ?? ""}
+      </ReactMarkdown>
+      {modalFilePath && (
+        <CodeModal
+          filePath={modalFilePath}
+          isOpen={!!modalFilePath}
+          onClose={() => setModalFilePath(null)}
+        />
+      )}
+    </>
   );
 };
 
