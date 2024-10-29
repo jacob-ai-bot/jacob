@@ -228,6 +228,7 @@ Please update the \`${fileName}\` file to address the following:
                 minHeight={TEXTAREA_MIN_HEIGHT}
                 placeholder="Describe the issue..."
                 isLoading={isCreating || isEvaluating}
+                shouldSubmitOnEnter={false}
               />
             </div>
             <div className="flex justify-end space-x-2">
