@@ -21,6 +21,7 @@ import {
 } from "~/server/openai/request";
 import { db } from "~/server/db/db";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { getCodebaseContext } from "../utils";
 
 export async function fetchGithubFileContents(
   accessToken: string,
@@ -384,13 +385,11 @@ export const githubRouter = createTRPCRouter({
         }
         await validateRepo(repoOwner, repoName, accessToken);
 
-        const project = await db.projects.findBy({
-          repoFullName: repo,
-        });
-        const codebaseContext = await db.codebaseContext
-          .where({ projectId: project?.id })
-          .order({ filePath: "ASC" })
-          .all();
+        const codebaseContext = await getCodebaseContext(
+          repoOwner,
+          repoName,
+          accessToken,
+        );
         if (codebaseContext.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -412,82 +411,94 @@ export const githubRouter = createTRPCRouter({
         return { extractedIssue };
       },
     ),
-  rewriteIssue: publicProcedure
+  rewriteIssue: protectedProcedure
     .input(
       z.object({
+        org: z.string(),
+        repo: z.string(),
         title: z.string(),
         body: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const prompt = `
-  You are an expert GitHub issue reviewer and writer. Your task is to analyze the given issue draft, provide specific feedback on how to improve it, and then rewrite it to create a top 1% quality GitHub issue. Use the provided information to craft a detailed, well-structured, and informative issue body using markdown.
-  
-  **Original Title**: ${input.title}
-  **Original Body**:
-  ${input.body}
-  
-  **Guidelines for creating an exceptional GitHub issue**:
-  1. Start with a clear, concise title that summarizes the issue.
-  2. Provide a detailed description of the problem or feature request.
-  3. Include steps to reproduce the issue if applicable.
-  4. Mention the expected outcome and the actual outcome.
-  5. List any relevant error messages or logs.
-  6. Use proper formatting, including headings, lists, and code blocks.
-  7. Be courteous and professional in tone.
-  
-  **Instructions**:
-  - First, analyze the original issue and identify any missing key components or areas that need improvement based on the guidelines above. Focus specifically on any information that is missing or unclear.
-  - Provide your analysis in a very brief and actionable bullet-pointed list under the heading "**Feedback for Improvement**". DO NOT provide generic feedback, only very specific actionable feedback biased towards capturing any missing or unclear information. This section should have at most 5 bullet points.
-  - Then, rewrite the issue incorporating all the necessary improvements. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
-  - Provide the rewritten issue in markdown format, starting with the title as an H1 heading. It is critical that you follow this exact format as the output will be parsed programatically.
-  
-  ---
-  
-  **Feedback for Improvement**:
-  
-  - [Your feedback here]
-  
-  ---
-  
-  **Rewritten Issue**:
+    .mutation(async ({ input, ctx }) => {
+      const { org, repo, title, body } = input;
+      const { accessToken } = ctx.session;
 
-  - [Your rewritten issue here]
-
-  ---
-
-  `;
-
-      const aiResponse =
-        (await sendGptRequest(
-          prompt,
-          undefined,
-          0.7,
-          undefined,
-          3,
-          undefined,
-          undefined,
-          "o1-mini-2024-09-12",
-        )) ?? "";
-
-      // Parse the AI response to separate feedback and rewritten issue
-      const feedbackMatch = aiResponse.match(
-        /(?<=\*\*Feedback for Improvement\*\*:\n)([\s\S]*?)(?=\n---)/,
-      );
-      const rewrittenIssueMatch = aiResponse.match(
-        /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\S]*)/,
-      );
-      const feedback = feedbackMatch ? feedbackMatch[0].trim() : "";
-      let rewrittenIssue = rewrittenIssueMatch
-        ? rewrittenIssueMatch[0].trim()
-        : "";
-
-      if (!rewrittenIssue?.length) {
-        rewrittenIssue = aiResponse ?? "";
+      const [repoOwner, repoName] = repo?.split("/") ?? [];
+      if (!repoOwner || !repoName) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid request",
+        });
       }
 
+      await validateRepo(repoOwner, repoName, accessToken);
+
+      const codebaseContext = await getCodebaseContext(
+        repoOwner,
+        repoName,
+        accessToken,
+      );
+      if (codebaseContext.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Codebase context not found",
+        });
+      }
+
+      const structuredCodebaseContext = codebaseContext
+        .map((c) => `${c.filePath}: ${c.context.overview}`)
+        .join("\n");
+
+      const prompt = `
+You are an expert GitHub issue reviewer and writer. Your task is to analyze the given issue draft and rewrite it to create a top 1% quality GitHub issue. Use the provided codebase context to ensure accuracy and relevance.
+
+**Original Title**: ${title}
+**Original Body**:
+${body}
+
+**Codebase Context**:
+${structuredCodebaseContext}
+
+**Guidelines for creating an exceptional GitHub issue**:
+1. Start with a clear, concise title that summarizes the issue.
+2. Provide a detailed description of the problem or feature request.
+3. Reference only existing files from the codebase context.
+4. Be concise and avoid unnecessary verbosity.
+5. Do not include information about adding tests or other irrelevant data.
+6. Use proper formatting, including headings and lists.
+7. Be courteous and professional in tone.
+
+**Instructions**:
+- Rewrite the issue incorporating all the necessary improvements. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
+- Ensure that you only reference files that exist in the provided codebase context.
+- Keep the rewritten issue concise and to the point, avoiding unnecessary verbosity.
+- Provide the rewritten issue in markdown format, starting with the title as an H1 heading.
+
+**Rewritten Issue**:
+
+[Your rewritten issue here]
+`;
+
+      const aiResponse = await sendGptRequest(
+        prompt,
+        undefined,
+        0.7,
+        undefined,
+        3,
+        undefined,
+        undefined,
+        "o1-mini-2024-09-12",
+      );
+
+      const rewrittenIssueMatch = aiResponse?.match(
+        /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\S]*)/,
+      );
+      const rewrittenIssue = rewrittenIssueMatch
+        ? rewrittenIssueMatch[0].trim()
+        : aiResponse ?? "";
+
       return {
-        feedback,
         rewrittenIssue,
       };
     }),
