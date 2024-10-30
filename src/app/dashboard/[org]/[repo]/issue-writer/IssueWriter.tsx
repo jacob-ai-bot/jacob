@@ -27,8 +27,18 @@ interface IssueWriterProps {
 const TEXTAREA_MIN_HEIGHT = "600px";
 
 const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
-  const [issueTitle, setIssueTitle] = useState("");
-  const [issueBody, setIssueBody] = useState("");
+  const [issueTitle, setIssueTitle] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(`issueTitle-${org}-${repo}`) ?? "";
+    }
+    return "";
+  });
+  const [issueBody, setIssueBody] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(`issueBody-${org}-${repo}`) ?? "";
+    }
+    return "";
+  });
   const [isEditing, setIsEditing] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(
@@ -80,6 +90,18 @@ Please update the \`${fileName}\` file to address the following:
     }
   }, [filePath]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`issueTitle-${org}-${repo}`, issueTitle);
+    }
+  }, [issueTitle, org, repo]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`issueBody-${org}-${repo}`, issueBody);
+    }
+  }, [issueBody, org, repo]);
+
   const handleCreateIssue = async () => {
     if (!issueTitle.trim()) {
       toast.error(
@@ -116,6 +138,13 @@ Please update the \`${fileName}\` file to address the following:
       setIsEditing(false);
       setRewrittenIssue(null);
       setFeedback(null);
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`issueTitle-${org}-${repo}`);
+        localStorage.removeItem(`issueBody-${org}-${repo}`);
+      }
+      setIssueTitle("");
+      setIssueBody("");
     } catch (error) {
       console.error("Error creating issue:", error);
       toast.error("Failed to create the issue.");
@@ -130,6 +159,10 @@ Please update the \`${fileName}\` file to address the following:
     setCreatedIssueNumber(null);
     setIsEditing(true);
     setTitleError(false);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`issueTitle-${org}-${repo}`);
+      localStorage.removeItem(`issueBody-${org}-${repo}`);
+    }
   };
 
   const handleEvaluateIssue = async (
