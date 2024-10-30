@@ -177,6 +177,8 @@ Please update the \`${fileName}\` file to address the following:
     setIsEvaluating(true);
     try {
       const rewrittenIssueResult = await rewriteIssueMutation.mutateAsync({
+        org,
+        repo,
         title: issueTitle,
         body: issueBody,
       });

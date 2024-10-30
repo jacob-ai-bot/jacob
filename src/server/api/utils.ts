@@ -203,3 +203,22 @@ export const checkAndEnableIssues = async (
     return { success: false, message: "Failed to check or enable issues." };
   }
 };
+
+export const getCodebaseContext = async (
+  repoOwner: string,
+  repoName: string,
+  accessToken: string,
+) => {
+  await validateRepo(repoOwner, repoName, accessToken);
+  const project = await db.projects.findBy({
+    repoFullName: `${repoOwner}/${repoName}`,
+  });
+  if (!project) {
+    throw new Error("Project not found");
+  }
+  const codebaseContext = await db.codebaseContext
+    .where({ projectId: project.id })
+    .order({ filePath: "ASC" })
+    .all();
+  return codebaseContext;
+};
