@@ -49,7 +49,7 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen w-full border-r border-r-aurora-300 bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:border-r-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100">
       <Sidebar org={org} repo={repo} />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden pt-14 md:pt-0 ">
         <Header
           org={org}
           repoName={repo}
@@ -58,7 +58,7 @@ export default function DashboardLayout({
           repos={repos}
           isLoadingRepos={isLoadingRepos}
         />
-        <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-6 pl-[96px] dark:from-slate-900 dark:to-slate-800 md:pl-6">
+        <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-1 pl-1 dark:from-slate-900 dark:to-slate-800 md:p-6 md:pl-[96px]">
           {children}
         </main>
       </div>

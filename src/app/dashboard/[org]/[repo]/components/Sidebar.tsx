@@ -182,7 +182,7 @@ export default function Sidebar({ org, repo }: { org: string; repo: string }) {
           </Link>
         </motion.div>
       </motion.aside>
-      <div className="flex md:hidden">
+      <div className="absolute items-start md:hidden ">
         <button
           onClick={toggleMobileMenu}
           className="p-4 text-2xl text-dark-blue dark:text-slate-100"

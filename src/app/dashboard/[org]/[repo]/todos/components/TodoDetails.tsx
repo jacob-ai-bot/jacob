@@ -112,9 +112,9 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
 
   return (
     <>
-      <div className="mb-6 flex flex-row flex-nowrap items-center justify-between gap-4 overflow-clip">
-        <div className="flex flex-row flex-nowrap items-center space-x-2">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+      <div className="mb-6 flex flex-col flex-nowrap items-center justify-between gap-1 overflow-clip md:flex-row md:gap-4">
+        <div className="flex w-full flex-row flex-nowrap items-center space-x-2">
+          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 md:text-xl">
             {selectedIssue.title}
           </h2>
           <div
@@ -131,7 +131,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             {getTodoLabel(selectedTodo.status)}
           </div>
         </div>
-        <div className="flex flex-row items-center space-x-2">
+        <div className="flex w-full flex-row items-center justify-between space-x-2 md:w-0 md:justify-end">
           {selectedTodo.status === TodoStatus.TODO && (
             <div className="flex items-center space-x-4 ">
               <label className="flex items-center space-x-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
@@ -160,17 +160,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       </div>
 
       <div className="space-y-8">
-        {/* Back Button for Mobile */}
-        <div className="md:hidden">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center space-x-2 text-sunset-500 hover:text-sunset-600 dark:text-purple-700 dark:hover:text-purple-600"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-            <span>Back</span>
-          </button>
-        </div>
-
         {/* Issue Section */}
         <IssueComponent
           org={org}
