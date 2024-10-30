@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "~/server/auth";
 import { Suspense } from "react";
+import Settings from "./Settings";
 
 interface PageProps {
   params: {
@@ -22,12 +23,10 @@ export default async function SettingsPage({ params }: PageProps) {
   const { org, repo } = params;
   console.log("org", org);
   console.log("repo", repo);
+
   return (
     <Suspense>
-      <div className="h-full w-full text-left">
-        <h1 className="mb-4 text-2xl font-bold">Settings</h1>
-        <p>Add settings here</p>
-      </div>
+      <Settings org={org} repo={repo} userLogin={user.login} />
     </Suspense>
   );
 }
