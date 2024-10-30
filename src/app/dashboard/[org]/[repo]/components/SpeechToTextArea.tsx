@@ -24,6 +24,7 @@ interface SpeechToTextInputProps {
   isLoading: boolean;
   minHeight?: string;
   placeholder?: string;
+  shouldSubmitOnEnter?: boolean;
 }
 
 export interface SpeechToTextAreaRef {
@@ -43,6 +44,7 @@ export const SpeechToTextArea = forwardRef<
       isLoading,
       minHeight = CHAT_INPUT_HEIGHT,
       placeholder = "Type your message...",
+      shouldSubmitOnEnter = true,
     },
     ref,
   ) => {
@@ -375,7 +377,10 @@ export const SpeechToTextArea = forwardRef<
             value={value}
             onChange={handleTextareaChange}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+              if (
+                e.key === "Enter" &&
+                (shouldSubmitOnEnter || e.shiftKey || e.ctrlKey || e.altKey)
+              ) {
                 e.preventDefault();
                 void handleSubmit();
               }
