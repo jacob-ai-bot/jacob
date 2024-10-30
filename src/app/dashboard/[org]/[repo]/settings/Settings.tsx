@@ -21,10 +21,9 @@ export default function Settings({ org, repo, userLogin }: SettingsProps) {
   return (
     <div className="relative h-full w-full text-left">
       <div className="absolute right-4 top-4">
-        <SignOutButton callbackUrl="/auth/signin" />
+        <SignOutButton callbackUrl="/" />
       </div>
       <h1 className="mb-4 text-2xl font-bold">Settings</h1>
-      <p>Add settings here</p>
       <button
         onClick={handleChangeSetup}
         className="mt-6 flex items-center rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
