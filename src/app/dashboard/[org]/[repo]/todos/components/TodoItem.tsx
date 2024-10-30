@@ -72,7 +72,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
 
   const getBackgroundColor = (index: number, selected: boolean) => {
     if (selected) {
-      return "border-l-4  bg-meadow-50 hover:bg-meadow-50 dark:bg-sky-900/50 dark:hover:bg-slate-600/50";
+      return "border-l-4 bg-meadow-50 hover:bg-meadow-50 dark:bg-sky-900/50 dark:hover:bg-slate-600/50";
     }
     return index % 2 === 0
       ? "bg-white/90 hover:bg-meadow-50/10 dark:bg-slate-700/50 dark:hover:bg-sky-900/20 border-l-0"
@@ -81,7 +81,10 @@ export const TodoItem: React.FC<TodoItemProps> = ({
 
   return (
     <div
-      className={`relative cursor-pointer border-l-meadow-200 px-4 pb-2 pt-1 transition-all dark:border-l-purple-800/80  ${getBackgroundColor(index, selected)}`}
+      className={`relative cursor-pointer border-l-meadow-200 px-4 pb-2 pt-1 transition-all dark:border-l-purple-800/80 ${getBackgroundColor(
+        index,
+        selected,
+      )}`}
       onClick={() => onSelect(todo.id)}
     >
       <div className="flex items-center justify-between">

@@ -10,6 +10,9 @@ import TodoItem from "./components/TodoItem";
 import IssueDetails from "./components/TodoDetails";
 import TodoItemPlaceholder from "./components/TodoItemPlaceholder";
 import TodoDetailsPlaceholder from "~/app/_components/DetailsPlaceholder";
+import { useRouter } from "next/navigation";
+
+const MOBILE_WIDTH_BREAKPOINT = 768;
 
 export interface Issue {
   title: string;
@@ -45,11 +48,7 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
     },
   );
 
-  // const { data: codebaseContext, isLoading: isLoadingCodebaseContext } =
-  //   api.codebaseContext.getAll.useQuery({
-  //     org,
-  //     repo,
-  //   });
+  const router = useRouter();
 
   useEffect(() => {
     if (todos && todos.length > 0) {
@@ -114,6 +113,10 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
     const todo = todos?.find((todo) => todo.id === id);
     if (todo) {
       setSelectedTodo(todo);
+      // only navigate on mobile
+      if (window?.innerWidth && window.innerWidth < MOBILE_WIDTH_BREAKPOINT) {
+        router.push(`/dashboard/${org}/${repo}/todos/${todo.id}`);
+      }
     }
   };
 
@@ -131,9 +134,9 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-clip rounded-md  dark:bg-gray-900 lg:flex-row">
+    <div className="flex h-full w-full flex-col overflow-clip rounded-md dark:bg-gray-900 lg:flex-row">
       {/* Left column: Todo list */}
-      <div className="w-1/3 border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800 ">
+      <div className="w-full border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800 md:w-1/3">
         <div className="border-b border-r border-gray-200 p-4 dark:border-gray-700">
           <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
             Todo List
@@ -149,7 +152,7 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
             />
           </div>
         </div>
-        <div className="hide-scrollbar h-[calc(100vh-239px)] overflow-y-scroll border-r border-gray-200 bg-white/80 dark:border-slate-900 dark:bg-neutral-800">
+        <div className="hide-scrollbar h-screen overflow-y-scroll border-r border-gray-200 bg-white/80 dark:border-slate-900 dark:bg-neutral-800 md:h-[calc(100vh-239px)]">
           {isLoadingTodos ? (
             <div className="py-4">
               <LoadingIndicator />
@@ -174,7 +177,7 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
       </div>
 
       {/* Details column: Selected todo details */}
-      <div className=" hide-scrollbar h-[calc(100vh-116px)] w-2/3 overflow-y-scroll bg-white p-6 dark:bg-gray-800 ">
+      <div className="hide-scrollbar hidden h-[calc(100vh-116px)] overflow-y-scroll bg-white p-6 dark:bg-gray-800 md:block md:w-2/3">
         {selectedTodo ? (
           <IssueDetails
             selectedTodo={selectedTodo}

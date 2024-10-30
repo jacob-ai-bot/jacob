@@ -12,6 +12,8 @@ import IssueComponent from "./Issue";
 import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
+import { useRouter } from "next/navigation";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -43,6 +45,8 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
   const { mutateAsync: researchIssue } = api.todos.researchIssue.useMutation();
   const { mutateAsync: updateTodo } = api.todos.update.useMutation();
   const { mutateAsync: updateIssue } = api.github.updateIssue.useMutation();
+
+  const router = useRouter();
 
   const handleResearchIssue = async () => {
     try {
@@ -108,9 +112,9 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
 
   return (
     <>
-      <div className="mb-6 flex flex-row flex-nowrap items-center justify-between gap-4 overflow-clip">
-        <div className="flex flex-row flex-nowrap items-center space-x-2">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+      <div className="mb-6 flex flex-col flex-nowrap items-center justify-between gap-1 overflow-clip md:flex-row md:gap-4">
+        <div className="flex w-full flex-row flex-nowrap items-center space-x-2">
+          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 md:text-xl">
             {selectedIssue.title}
           </h2>
           <div
@@ -127,7 +131,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             {getTodoLabel(selectedTodo.status)}
           </div>
         </div>
-        <div className="flex flex-row items-center space-x-2">
+        <div className="flex w-full flex-row items-center justify-between space-x-2 md:w-0 md:justify-end">
           {selectedTodo.status === TodoStatus.TODO && (
             <div className="flex items-center space-x-4 ">
               <label className="flex items-center space-x-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">

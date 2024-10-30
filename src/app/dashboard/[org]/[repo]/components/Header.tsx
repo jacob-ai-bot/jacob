@@ -86,7 +86,7 @@ export default function Header({
   };
 
   return (
-    <header className="bg-white/90 pl-[96px] shadow-sm dark:bg-slate-800">
+    <header className="hidden bg-white/90 pl-[96px] shadow-sm dark:bg-slate-800 md:block">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center space-x-4">
           <select
