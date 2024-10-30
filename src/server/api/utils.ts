@@ -209,6 +209,7 @@ export const getCodebaseContext = async (
   repoName: string,
   accessToken: string,
 ) => {
+  await validateRepo(repoOwner, repoName, accessToken);
   const project = await db.projects.findBy({
     repoFullName: `${repoOwner}/${repoName}`,
   });
