@@ -179,7 +179,7 @@ describe("editFiles", () => {
       issueId: issue.number,
     });
 
-    // Because the research data is already present, we don't need to create a todo
-    expect(mockedTodos.getOrCreateTodo).not.toHaveBeenCalled();
+    // We always want to check that there is a todo before continuing with the edit
+    expect(mockedTodos.getOrCreateTodo).toHaveBeenCalledOnce();
   });
 });

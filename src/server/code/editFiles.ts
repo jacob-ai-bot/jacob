@@ -163,26 +163,28 @@ export async function editFiles(params: EditFilesParams) {
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = issue.title + issueBody;
 
+  const projectId = baseEventData.projectId;
+  const todo = await getOrCreateTodo({
+    repo: repository.full_name,
+    projectId,
+    issueNumber: issue.number,
+    accessToken: token,
+    rootDir: rootPath,
+    sourceMap,
+    repoSettings,
+  });
+  if (!todo) {
+    console.log(
+      `[${repository.full_name}] Error creating todo for issue ${issue.number}. Exiting...`,
+    );
+    throw new Error("Error creating todo");
+  }
+
   // Fetch or generate research data
   let researchData = await db.research.where({ issueId: issue.number }).all();
-  const projectId = baseEventData.projectId;
   if (!researchData.length) {
     console.log(`[${repository.full_name}] No research found. Researching...`);
-    const todo = await getOrCreateTodo({
-      repo: repository.full_name,
-      projectId,
-      issueNumber: issue.number,
-      accessToken: token,
-      rootDir: rootPath,
-      sourceMap,
-      repoSettings,
-    });
-    if (!todo) {
-      console.log(
-        `[${repository.full_name}] Error creating todo for issue ${issue.number}. Exiting...`,
-      );
-      throw new Error("Error creating todo");
-    }
+
     await researchIssue({
       githubIssue: issueText,
       todoId: todo.id,
