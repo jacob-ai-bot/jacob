@@ -29,13 +29,13 @@ const TEXTAREA_MIN_HEIGHT = "600px";
 const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [issueTitle, setIssueTitle] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(`issueTitle-${org}-${repo}`) || "";
+      return localStorage.getItem(`issueTitle-${org}-${repo}`) ?? "";
     }
     return "";
   });
   const [issueBody, setIssueBody] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(`issueBody-${org}-${repo}`) || "";
+      return localStorage.getItem(`issueBody-${org}-${repo}`) ?? "";
     }
     return "";
   });
