@@ -13,6 +13,7 @@ import {
   getExtractedIssue,
   checkAndEnableIssues,
   validateRepo,
+  getCodebaseContext,
 } from "../utils";
 import { AT_MENTION } from "~/server/utils";
 import {
@@ -384,13 +385,11 @@ export const githubRouter = createTRPCRouter({
         }
         await validateRepo(repoOwner, repoName, accessToken);
 
-        const project = await db.projects.findBy({
-          repoFullName: repo,
-        });
-        const codebaseContext = await db.codebaseContext
-          .where({ projectId: project?.id })
-          .order({ filePath: "ASC" })
-          .all();
+        const codebaseContext = await getCodebaseContext(
+          repoOwner,
+          repoName,
+          accessToken,
+        );
         if (codebaseContext.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -412,85 +411,106 @@ export const githubRouter = createTRPCRouter({
         return { extractedIssue };
       },
     ),
-  rewriteIssue: publicProcedure
+  rewriteIssue: protectedProcedure
     .input(
       z.object({
+        org: z.string(),
+        repo: z.string(),
         title: z.string(),
         body: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const prompt = `
-  You are an expert GitHub issue reviewer and writer. Your task is to analyze the given issue draft, provide specific feedback on how to improve it, and then rewrite it to create a top 1% quality GitHub issue. Use the provided information to craft a detailed, well-structured, and informative issue body using markdown.
-  
-  **Original Title**: ${input.title}
-  **Original Body**:
-  ${input.body}
-  
-  **Guidelines for creating an exceptional GitHub issue**:
-  1. Start with a clear, concise title that summarizes the issue.
-  2. Provide a detailed description of the problem or feature request.
-  3. Include steps to reproduce the issue if applicable.
-  4. Mention the expected outcome and the actual outcome.
-  5. List any relevant error messages or logs.
-  6. Use proper formatting, including headings, lists, and code blocks.
-  7. Be courteous and professional in tone.
-  
-  **Instructions**:
-  - First, analyze the original issue and identify any missing key components or areas that need improvement based on the guidelines above. Focus specifically on any information that is missing or unclear.
-  - Provide your analysis in a very brief and actionable bullet-pointed list under the heading "**Feedback for Improvement**". DO NOT provide generic feedback, only very specific actionable feedback biased towards capturing any missing or unclear information. This section should have at most 5 bullet points.
-  - Then, rewrite the issue incorporating all the necessary improvements. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
-  - Provide the rewritten issue in markdown format, starting with the title as an H1 heading. It is critical that you follow this exact format as the output will be parsed programatically.
-  
-  ---
-  
-  **Feedback for Improvement**:
-  
-  - [Your feedback here]
-  
-  ---
-  
-  **Rewritten Issue**:
+    .mutation(
+      async ({
+        input: { org, repo, title, body },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        const [repoOwner, repoName] = repo?.split("/") ?? [];
+        const issueText = `${title} ${body}`;
+        if (!repoOwner || !repoName || !issueText?.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid request",
+          });
+        }
+        await validateRepo(repoOwner, repoName, accessToken);
 
-  - [Your rewritten issue here]
+        const codebaseContext = await getCodebaseContext(
+          repoOwner,
+          repoName,
+          accessToken,
+        );
+        if (codebaseContext.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Codebase context not found",
+          });
+        }
 
-  ---
+        const structuredCodebaseContext = codebaseContext
+          .map((c) => `${c.filePath}: ${c.context.overview}`)
+          .join("\n");
 
-  `;
+        const prompt = `
+You are an expert GitHub issue reviewer and writer. Your task is to analyze the given issue draft and rewrite it to create a top 1% quality GitHub issue. Use the provided codebase context to ensure accuracy and relevance.
 
-      const aiResponse =
-        (await sendGptRequest(
-          prompt,
-          undefined,
-          0.7,
-          undefined,
-          3,
-          undefined,
-          undefined,
-          "o1-mini-2024-09-12",
-        )) ?? "";
+**Original Title**: ${title}
+**Original Body**:
+${body}
 
-      // Parse the AI response to separate feedback and rewritten issue
-      const feedbackMatch = aiResponse.match(
-        /(?<=\*\*Feedback for Improvement\*\*:\n)([\s\S]*?)(?=\n---)/,
-      );
-      const rewrittenIssueMatch = aiResponse.match(
-        /(?<=\*\*Rewritten Issue\*\*:\n\n)([\s\S]*)/,
-      );
-      const feedback = feedbackMatch ? feedbackMatch[0].trim() : "";
-      let rewrittenIssue = rewrittenIssueMatch
-        ? rewrittenIssueMatch[0].trim()
-        : "";
+**Codebase Context**:
+${structuredCodebaseContext}
 
-      if (!rewrittenIssue?.length) {
-        rewrittenIssue = aiResponse ?? "";
-      }
+**Guidelines for creating an exceptional GitHub issue**:
+1. Start with a clear, concise title that summarizes the issue.
+2. Provide a detailed description of the problem or feature request.
+3. Include steps to reproduce the issue if applicable.
+4. Mention the expected outcome and the actual outcome.
+5. List any relevant error messages or logs.
+6. Use proper formatting, including headings, lists, and code blocks.
+7. Be courteous and professional in tone.
+8. Only reference existing files and components from the provided codebase context.
+9. Keep the issue description concise and to the point, avoiding unnecessary verbosity.
 
-      return {
-        feedback,
-        rewrittenIssue,
-      };
-    }),
+**Instructions**:
+- Rewrite the issue incorporating all the necessary improvements. The final result should be comprehensive enough for a developer to understand and address the issue with only this information.
+- Provide the rewritten issue in markdown format, starting with the title as an H1 heading.
+- Ensure that only existing files and components from the codebase context are referenced.
+- Keep the rewritten issue concise and focused, avoiding unnecessary details or verbosity.
+
+**Rewritten Issue**:
+
+[Your rewritten issue here]
+`;
+
+        const aiResponse =
+          (await sendGptRequest(
+            prompt,
+            undefined,
+            0.7,
+            undefined,
+            3,
+            undefined,
+            undefined,
+            "o1-mini-2024-09-12",
+          )) ?? "";
+
+        const rewrittenIssueMatch = aiResponse.match(/(?<=# )([\s\S]*)/);
+        let rewrittenIssue = rewrittenIssueMatch
+          ? rewrittenIssueMatch[0].trim()
+          : "";
+
+        if (!rewrittenIssue?.length) {
+          rewrittenIssue = aiResponse ?? "";
+        }
+
+        return {
+          rewrittenIssue,
+        };
+      },
+    ),
   verifyAndEnableIssues: protectedProcedure
     .input(z.object({ org: z.string(), repo: z.string() }))
     .mutation(
