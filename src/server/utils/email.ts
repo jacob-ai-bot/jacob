@@ -17,7 +17,7 @@ export async function sendTransactionalEmail(
   githubOrg: string,
   githubRepo: string,
 ): Promise<void> {
-  const actionLink = `https://app.jacb.ai/dashboard/${githubOrg}/${githubRepo}/todos`;
+  const actionLink = `https://app.jacb.ai/dashboard/${githubOrg}/${githubRepo}/todos/${todoItem.id}`;
 
   const params: AWS.SES.SendEmailRequest = {
     Destination: {
