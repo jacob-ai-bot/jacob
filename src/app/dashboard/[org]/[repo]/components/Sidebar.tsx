@@ -13,7 +13,6 @@ import {
   faCog,
   faPencil,
   faRobot,
-  faPlus,
   faBars,
 } from "@fortawesome/free-solid-svg-icons";
 import { debounce } from "lodash";
@@ -148,22 +147,6 @@ export default function Sidebar({ org, repo }: { org: string; repo: string }) {
           </ul>
         </nav>
         <motion.div className="mb-6 mt-auto space-y-2 px-2">
-          <Link
-            href={`/setup/${org}`}
-            className={`flex items-center justify-center rounded-lg bg-green-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 dark:bg-green-600/30 dark:hover:bg-green-500/30`}
-          >
-            <FontAwesomeIcon icon={faPlus} className="h-5 w-5" />
-            {isExpanded && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-                className="ml-3"
-              >
-                Add New Repo
-              </motion.span>
-            )}
-          </Link>{" "}
           <Link
             href={`/dashboard/${org}/${repo}/settings`}
             className={`flex items-center justify-center rounded-lg bg-sunset-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sunset-600 dark:bg-sunset-600/30 dark:hover:bg-sunset-500/30`}
