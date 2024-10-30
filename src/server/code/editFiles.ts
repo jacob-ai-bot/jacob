@@ -163,8 +163,6 @@ export async function editFiles(params: EditFilesParams) {
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = issue.title + issueBody;
 
-  // Fetch or generate research data
-  let researchData = await db.research.where({ issueId: issue.number }).all();
   const projectId = baseEventData.projectId;
   const todo = await getOrCreateTodo({
     repo: repository.full_name,
@@ -181,6 +179,9 @@ export async function editFiles(params: EditFilesParams) {
     );
     throw new Error("Error creating todo");
   }
+
+  // Fetch or generate research data
+  let researchData = await db.research.where({ issueId: issue.number }).all();
   if (!researchData.length) {
     console.log(`[${repository.full_name}] No research found. Researching...`);
 
