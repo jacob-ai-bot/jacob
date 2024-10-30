@@ -12,6 +12,8 @@ import IssueComponent from "./Issue";
 import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
+import { useRouter } from "next/navigation";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -43,6 +45,8 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
   const { mutateAsync: researchIssue } = api.todos.researchIssue.useMutation();
   const { mutateAsync: updateTodo } = api.todos.update.useMutation();
   const { mutateAsync: updateIssue } = api.github.updateIssue.useMutation();
+
+  const router = useRouter();
 
   const handleResearchIssue = async () => {
     try {
@@ -156,6 +160,17 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       </div>
 
       <div className="space-y-8">
+        {/* Back Button for Mobile */}
+        <div className="md:hidden">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-sunset-500 hover:text-sunset-600 dark:text-purple-700 dark:hover:text-purple-600"
+          >
+            <ArrowLeftIcon className="h-5 w-5" />
+            <span>Back</span>
+          </button>
+        </div>
+
         {/* Issue Section */}
         <IssueComponent
           org={org}

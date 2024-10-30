@@ -58,7 +58,7 @@ export default function DashboardLayout({
           repos={repos}
           isLoadingRepos={isLoadingRepos}
         />
-        <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-6 pl-[96px] dark:from-slate-900 dark:to-slate-800">
+        <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-6 pl-[96px] dark:from-slate-900 dark:to-slate-800 md:pl-6">
           {children}
         </main>
       </div>
