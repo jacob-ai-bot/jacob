@@ -61,11 +61,11 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
         }
       };
 
-      exchangeCodeForToken();
+      void exchangeCodeForToken();
     } else {
-      initiateOAuth();
+      void initiateOAuth();
     }
-  }, [router, redirectURI]);
+  }, [router, redirectURI, searchParams]);
 
   if (error) {
     return <div>Error: {error.message}</div>;
