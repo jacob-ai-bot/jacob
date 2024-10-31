@@ -22,10 +22,6 @@ export async function GET(req: NextRequest) {
   // }
 
   try {
-    console.log("code", code);
-    console.log("env.JIRA_CLIENT_ID", env.JIRA_CLIENT_ID);
-    console.log("env.JIRA_CLIENT_SECRET", env.JIRA_CLIENT_SECRET);
-    console.log("env.NEXTAUTH_URL", env.NEXTAUTH_URL);
     const tokenResponse = await fetch(
       "https://auth.atlassian.com/oauth/token",
       {
@@ -49,8 +45,6 @@ export async function GET(req: NextRequest) {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
-    console.log("accessToken", accessToken);
-    console.log("tokenData", tokenData);
 
     const session = await getServerAuthSession();
     if (!session?.user?.id) {
@@ -61,7 +55,6 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = parseInt(session.user.id);
-    console.log("userId", userId);
 
     await db.users.find(userId).update({
       jiraToken: accessToken,
