@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface JiraOAuthProps {
   redirectURI: string;
@@ -7,6 +9,7 @@ interface JiraOAuthProps {
 
 export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -29,8 +32,8 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
       window.location.href = authUrl.toString();
     };
 
-    const code = router.query.code as string;
-    const state = router.query.state as string;
+    const code = searchParams?.get("code");
+    const state = searchParams?.get("state");
 
     if (code && state) {
       const storedState = sessionStorage.getItem("jiraOAuthState");

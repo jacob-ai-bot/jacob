@@ -29,7 +29,7 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string(),
     GITHUB_CLIENT_SECRET: z.string(),
     JIRA_CLIENT_ID: z.string(),
-    JIRA_SECRET_KEY: z.string(),
+    JIRA_CLIENT_SECRET: z.string(),
   },
 
   /**
@@ -54,7 +54,7 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     JIRA_CLIENT_ID: process.env.JIRA_CLIENT_ID,
-    JIRA_SECRET_KEY: process.env.JIRA_SECRET_KEY,
+    JIRA_CLIENT_SECRET: process.env.JIRA_CLIENT_SECRET,
     NEXT_PUBLIC_JIRA_CLIENT_ID: process.env.NEXT_PUBLIC_JIRA_CLIENT_ID,
   },
   /**

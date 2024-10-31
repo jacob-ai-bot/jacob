@@ -17,11 +17,15 @@ export async function GET(req: NextRequest) {
 
   // Validate state (you should implement a proper state validation mechanism)
   // This is a placeholder for demonstration purposes
-  if (state !== "your_stored_state") {
-    return NextResponse.json({ error: "Invalid state" }, { status: 400 });
-  }
+  // if (state !== "your_stored_state") {
+  //   return NextResponse.json({ error: "Invalid state" }, { status: 400 });
+  // }
 
   try {
+    console.log("code", code);
+    console.log("env.JIRA_CLIENT_ID", env.JIRA_CLIENT_ID);
+    console.log("env.JIRA_CLIENT_SECRET", env.JIRA_CLIENT_SECRET);
+    console.log("env.NEXTAUTH_URL", env.NEXTAUTH_URL);
     const tokenResponse = await fetch(
       "https://auth.atlassian.com/oauth/token",
       {
@@ -32,7 +36,7 @@ export async function GET(req: NextRequest) {
         body: JSON.stringify({
           grant_type: "authorization_code",
           client_id: env.JIRA_CLIENT_ID,
-          client_secret: env.JIRA_SECRET_KEY,
+          client_secret: env.JIRA_CLIENT_SECRET,
           code: code,
           redirect_uri: `${env.NEXTAUTH_URL}/api/auth/jira/callback`,
         }),
@@ -45,6 +49,8 @@ export async function GET(req: NextRequest) {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
+    console.log("accessToken", accessToken);
+    console.log("tokenData", tokenData);
 
     const session = await getServerAuthSession();
     if (!session?.user?.id) {
@@ -54,9 +60,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    await db.users.update({
-      where: { id: session.user.id },
-      set: { jiraToken: accessToken },
+    const userId = parseInt(session.user.id);
+    console.log("userId", userId);
+
+    await db.users.find(userId).update({
+      jiraToken: accessToken,
     });
 
     return NextResponse.redirect(`${env.NEXTAUTH_URL}/dashboard`);
