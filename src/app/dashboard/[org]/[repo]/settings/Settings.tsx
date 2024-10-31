@@ -3,7 +3,7 @@
 import { SignOutButton } from "~/app/_components/SignOutButton";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCog, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faPlus, faLink } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 
 interface SettingsProps {
@@ -17,6 +17,10 @@ export default function Settings({ org, repo, userLogin }: SettingsProps) {
 
   const handleChangeSetup = () => {
     router.push(`/setup/${userLogin}/${org}/${repo}/setup`);
+  };
+
+  const handleConnectToJira = () => {
+    router.push("/auth/jira");
   };
 
   return (
@@ -40,6 +44,13 @@ export default function Settings({ org, repo, userLogin }: SettingsProps) {
         <FontAwesomeIcon icon={faPlus} className="mr-2 h-5 w-5" />
         Add New Repo
       </Link>
+      <button
+        onClick={handleConnectToJira}
+        className="mt-4 flex items-center rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
+      >
+        <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
+        Connect to Jira
+      </button>
     </div>
   );
 }
