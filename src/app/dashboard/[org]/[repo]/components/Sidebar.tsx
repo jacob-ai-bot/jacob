@@ -149,7 +149,7 @@ export default function Sidebar({ org, repo }: { org: string; repo: string }) {
         <motion.div className="mb-6 mt-auto space-y-2 px-2">
           <Link
             href={`/dashboard/${org}/${repo}/settings`}
-            className={`flex items-center justify-center rounded-lg bg-sunset-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sunset-600 dark:bg-sunset-600/30 dark:hover:bg-sunset-500/30`}
+            className={`flex items-center justify-center rounded-lg bg-sunset-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sunset-600 hover:text-white dark:bg-sunset-600/30 dark:hover:bg-sunset-500/30`}
           >
             <FontAwesomeIcon icon={faCog} className="h-5 w-5" />
             {isExpanded && (
