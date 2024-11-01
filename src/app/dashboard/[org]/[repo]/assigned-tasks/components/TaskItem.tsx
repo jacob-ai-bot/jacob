@@ -90,7 +90,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                copyToClipboard(task.pullRequest?.branch ?? "");
+                void copyToClipboard(task.pullRequest?.branch ?? "");
               }}
               className="flex items-center text-aurora-600 hover:text-aurora-700 dark:text-slate-400 dark:hover:text-slate-300"
             >
