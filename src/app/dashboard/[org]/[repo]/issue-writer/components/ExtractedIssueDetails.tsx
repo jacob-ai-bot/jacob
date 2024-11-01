@@ -1,25 +1,28 @@
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 export const ExtractedIssueDetails: React.FC<{
   feedback: string | null;
   rewrittenIssue: string | null;
   onUpdateIssue: (issueBody: string) => void;
 }> = ({ feedback, rewrittenIssue, onUpdateIssue }) => {
-  const phrases = [
-    "Gathering Codebase Context...",
-    "Analyzing Issue Details...",
-    "Loading Project Settings...",
-    "Contacting AI Model...",
-    "Processing Evaluation...",
-    "Compiling Results...",
-    "Finalizing Output...",
-    "Optimizing Suggestions...",
-    "Fetching Additional Data...",
-    "Almost There...",
-  ];
+  const phrases = useMemo(
+    () => [
+      "Gathering Codebase Context...",
+      "Analyzing Issue Details...",
+      "Loading Project Settings...",
+      "Contacting AI Model...",
+      "Processing Evaluation...",
+      "Compiling Results...",
+      "Finalizing Output...",
+      "Optimizing Suggestions...",
+      "Fetching Additional Data...",
+      "Almost There...",
+    ],
+    [],
+  );
 
   const [currentPhrase, setCurrentPhrase] = useState(phrases[0]);
 

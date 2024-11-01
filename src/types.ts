@@ -161,3 +161,8 @@ export interface Repo {
   projectId: number | null;
   hasSettings: boolean;
 }
+
+export enum EvaluationMode {
+  FASTER = "Faster Evaluation",
+  DETAILED = "Detailed Evaluation",
+}
