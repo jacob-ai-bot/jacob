@@ -18,6 +18,7 @@ interface GetOrCreateTodoParams {
   rootDir?: string;
   sourceMap?: string;
   repoSettings?: RepoSettings;
+  jiraIssue?: any;
 }
 
 export const getOrCreateTodo = async ({
@@ -28,6 +29,7 @@ export const getOrCreateTodo = async ({
   rootDir,
   sourceMap,
   repoSettings,
+  jiraIssue,
 }: GetOrCreateTodoParams) => {
   const [repoOwner, repoName] = repo?.split("/") ?? [];
 
@@ -35,8 +37,8 @@ export const getOrCreateTodo = async ({
     throw new Error("Invalid repo name");
   }
 
-  if (!accessToken) {
-    throw new Error("Access token is required");
+  if (!accessToken && !jiraIssue) {
+    throw new Error("Access token or Jira issue is required");
   }
 
   // Check if a todo for this issue already exists
@@ -50,15 +52,23 @@ export const getOrCreateTodo = async ({
     return existingTodo;
   }
 
-  // Fetch the specific issue
-  const { data: issue } = await getIssue(
-    { name: repoName, owner: { login: repoOwner } },
-    accessToken,
-    issueNumber,
-  );
+  let issue: any;
+  let issueText: string;
 
-  const issueBody = issue.body ? `\n${issue.body}` : "";
-  const issueText = `${issue.title}${issueBody}`;
+  if (jiraIssue) {
+    issue = jiraIssue;
+    issueText = `${issue.fields.summary}\n\n${issue.fields.description || ""}`;
+  } else {
+    // Fetch the specific issue from GitHub
+    const { data: githubIssue } = await getIssue(
+      { name: repoName, owner: { login: repoOwner } },
+      accessToken!,
+      issueNumber,
+    );
+    issue = githubIssue;
+    const issueBody = issue.body ? `\n${issue.body}` : "";
+    issueText = `${issue.title}${issueBody}`;
+  }
 
   let cleanupClone: (() => Promise<void>) | undefined;
   try {
@@ -82,11 +92,14 @@ export const getOrCreateTodo = async ({
 
     const newTodo = await db.todos.create({
       projectId: projectId,
-      description: `${issue.title}\n\n${issueBody}`,
-      name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
+      description: issueText,
+      name:
+        extractedIssue.commitTitle ??
+        (jiraIssue ? issue.fields.summary : issue.title) ??
+        "New Todo",
       status: TodoStatus.TODO,
-      issueId: issue.number,
-      position: issue.number,
+      issueId: jiraIssue ? issue.id : issue.number,
+      position: jiraIssue ? issue.id : issue.number,
     });
 
     // Only research issues and create plans for agent repos for now
@@ -95,29 +108,31 @@ export const getOrCreateTodo = async ({
       await researchIssue({
         githubIssue: issueText,
         todoId: newTodo.id,
-        issueId: issue.number,
+        issueId: jiraIssue ? issue.id : issue.number,
         rootDir: rootPath,
         projectId,
       });
       await getOrGeneratePlan({
         projectId,
-        issueId: issue.number,
+        issueId: jiraIssue ? issue.id : issue.number,
         githubIssue: issueText,
         rootPath,
       });
     } else {
       console.log(
-        `Skipping research for repo ${repo} issue #${issue.number}. Agent repos are ${agentRepos.join(
+        `Skipping research for repo ${repo} issue #${jiraIssue ? issue.id : issue.number}. Agent repos are ${agentRepos.join(
           ", ",
         )}`,
       );
     }
 
-    console.log(`Created new todo for issue #${issue.number}`);
+    console.log(
+      `Created new todo for issue #${jiraIssue ? issue.id : issue.number}`,
+    );
     return newTodo;
   } catch (error) {
     console.error(
-      `Error while creating todo for issue #${issue.number}: ${String(error)}`,
+      `Error while creating todo for issue #${jiraIssue ? issue.id : issue.number}: ${String(error)}`,
     );
     // Consider more specific error handling here
   } finally {

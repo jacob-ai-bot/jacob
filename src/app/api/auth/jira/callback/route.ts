@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
+    const refreshToken = tokenData.refresh_token;
+    const cloudId = tokenData.cloud_id;
 
     const session = await getServerAuthSession();
     if (!session?.user?.id) {
@@ -58,6 +60,8 @@ export async function GET(req: NextRequest) {
 
     await db.users.find(userId).update({
       jiraToken: accessToken,
+      jiraRefreshToken: refreshToken,
+      jiraCloudId: cloudId,
     });
 
     return NextResponse.redirect(`${env.NEXTAUTH_URL}/dashboard`);

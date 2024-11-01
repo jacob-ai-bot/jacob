@@ -25,6 +25,8 @@ export class UsersTable extends BaseTable {
       .enum("onboarding_status", ONBOARDING_STATUS_VALUES)
       .default(OnboardingStatus.NONE),
     jiraToken: t.text().nullable(),
+    jiraRefreshToken: t.text().nullable(),
+    jiraCloudId: t.varchar(255).nullable(),
     ...t.timestamps(),
   }));
 }

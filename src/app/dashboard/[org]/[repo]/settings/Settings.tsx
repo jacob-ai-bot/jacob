@@ -3,8 +3,15 @@
 import { SignOutButton } from "~/app/_components/SignOutButton";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCog, faPlus, faLink } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCog,
+  faPlus,
+  faLink,
+  faSync,
+} from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { trpc } from "~/trpc/react";
 
 interface SettingsProps {
   org: string;
@@ -12,8 +19,30 @@ interface SettingsProps {
   userLogin: string;
 }
 
+interface JiraBoard {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export default function Settings({ org, repo, userLogin }: SettingsProps) {
   const router = useRouter();
+  const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
+  const [selectedBoard, setSelectedBoard] = useState<string>("");
+
+  const { data: projectData } = trpc.projects.getByOrgAndRepo.useQuery({
+    org,
+    repo,
+  });
+  const { mutate: syncBoard } = trpc.jira.syncBoard.useMutation();
+  const { data: boards, isLoading: isLoadingBoards } =
+    trpc.jira.getBoards.useQuery();
+
+  useEffect(() => {
+    if (boards) {
+      setJiraBoards(boards);
+    }
+  }, [boards]);
 
   const handleChangeSetup = () => {
     router.push(`/setup/${userLogin}/${org}/${repo}/setup`);
@@ -21,6 +50,15 @@ export default function Settings({ org, repo, userLogin }: SettingsProps) {
 
   const handleConnectToJira = () => {
     router.push("/auth/jira");
+  };
+
+  const handleSyncBoard = () => {
+    if (selectedBoard && projectData) {
+      syncBoard({
+        projectId: projectData.id,
+        boardId: selectedBoard,
+      });
+    }
   };
 
   return (
@@ -51,6 +89,30 @@ export default function Settings({ org, repo, userLogin }: SettingsProps) {
         <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
         Connect to Jira
       </button>
+      <div className="mt-6">
+        <h2 className="mb-2 text-xl font-semibold">Sync Jira Board</h2>
+        <select
+          value={selectedBoard}
+          onChange={(e) => setSelectedBoard(e.target.value)}
+          className="mb-2 w-full rounded-md border border-gray-300 p-2"
+          disabled={isLoadingBoards}
+        >
+          <option value="">Select a Jira Board</option>
+          {jiraBoards.map((board) => (
+            <option key={board.id} value={board.id}>
+              {board.name} ({board.type})
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={handleSyncBoard}
+          disabled={!selectedBoard}
+          className="flex items-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-400"
+        >
+          <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
+          Sync Board
+        </button>
+      </div>
     </div>
   );
 }
