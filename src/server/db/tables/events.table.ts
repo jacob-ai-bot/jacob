@@ -145,6 +145,7 @@ export class EventsTable extends BaseTable {
           ),
           createdAt: t.string(),
           author: t.string(),
+          branch: t.string(),
         }),
         t.object({
           type: t.literal(TaskType.command),

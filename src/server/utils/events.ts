@@ -67,6 +67,7 @@ export async function emitPREvent(params: EmitPREventParams) {
       status: pullRequest.state,
       createdAt: pullRequest.created_at,
       author: pullRequest.user.login,
+      branch: pullRequest.head.ref,
     },
   });
   await redisConnection.publish("events", JSON.stringify(event));
