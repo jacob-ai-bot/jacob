@@ -18,6 +18,7 @@ import SpeechToTextArea, {
   type SpeechToTextAreaRef,
 } from "../components/SpeechToTextArea";
 import { useSearchParams } from "next/navigation";
+import { EvaluationMode } from "~/types";
 
 interface IssueWriterProps {
   org: string;
@@ -54,6 +55,17 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
 
   const [rewrittenIssue, setRewrittenIssue] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const [evaluationMode, setEvaluationMode] = useState<EvaluationMode>(() => {
+    if (typeof window !== "undefined") {
+      return (
+        (localStorage.getItem(
+          `evaluationMode-${org}-${repo}`,
+        ) as EvaluationMode) ?? EvaluationMode.DETAILED
+      );
+    }
+    return EvaluationMode.DETAILED;
+  });
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const speechToTextRef = useRef<SpeechToTextAreaRef>(null);
@@ -101,6 +113,12 @@ Please update the \`${fileName}\` file to address the following:
       localStorage.setItem(`issueBody-${org}-${repo}`, issueBody);
     }
   }, [issueBody, org, repo]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`evaluationMode-${org}-${repo}`, evaluationMode);
+    }
+  }, [evaluationMode, org, repo]);
 
   const handleCreateIssue = async () => {
     if (!issueTitle.trim()) {
@@ -181,6 +199,7 @@ Please update the \`${fileName}\` file to address the following:
         repo,
         title: issueTitle,
         body: issueBody,
+        evaluationMode,
       });
 
       setRewrittenIssue(rewrittenIssueResult.rewrittenIssue);
@@ -210,6 +229,12 @@ Please update the \`${fileName}\` file to address the following:
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIssueTitle(e.target.value);
     setTitleError(false);
+  };
+
+  const handleEvaluationModeChange = (event: {
+    target: { value: EvaluationMode };
+  }) => {
+    setEvaluationMode(event.target.value);
   };
 
   if (isLoadingProject || !project) {
@@ -266,31 +291,69 @@ Please update the \`${fileName}\` file to address the following:
                 shouldSubmitOnEnter={false}
               />
             </div>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={handleEvaluateIssue}
-                disabled={isEvaluating}
-                className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
-                  isEvaluating
-                    ? "cursor-not-allowed bg-gray-400"
-                    : "bg-yellow-400 hover:bg-yellow-500 dark:bg-yellow-600 dark:hover:bg-yellow-500"
-                }`}
-              >
-                <FontAwesomeIcon icon={faEye} className="mr-2" />
-                {isEvaluating ? "Evaluating..." : "Evaluate"}
-              </button>
-              <button
-                onClick={handleCreateIssue}
-                disabled={isCreating || !rewrittenIssue}
-                className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
-                  isCreating || !rewrittenIssue
-                    ? "cursor-not-allowed bg-gray-400"
-                    : "bg-aurora-400 hover:bg-aurora-500 dark:bg-aurora-600 dark:hover:bg-aurora-500"
-                }`}
-              >
-                <FontAwesomeIcon icon={faSave} className="mr-2" />
-                {isCreating ? "Creating..." : "Create Issue"}
-              </button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="relative inline-flex items-center">
+                  <div
+                    className="relative h-6 w-11 cursor-pointer rounded-full transition-colors duration-300 ease-in-out"
+                    style={{
+                      backgroundColor:
+                        evaluationMode === EvaluationMode.DETAILED
+                          ? "#00C8FF"
+                          : "#E5E7EB",
+                    }}
+                    onClick={() =>
+                      handleEvaluationModeChange({
+                        target: {
+                          value:
+                            evaluationMode === EvaluationMode.DETAILED
+                              ? EvaluationMode.FASTER
+                              : EvaluationMode.DETAILED,
+                        },
+                      })
+                    }
+                  >
+                    <div
+                      className={`absolute left-0.5 top-0.5 h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out ${
+                        evaluationMode === EvaluationMode.DETAILED
+                          ? "translate-x-5"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </div>
+                </div>
+                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {evaluationMode === EvaluationMode.DETAILED
+                    ? "Detailed Evaluation"
+                    : "Faster Evaluation"}
+                </span>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={handleEvaluateIssue}
+                  disabled={isEvaluating}
+                  className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
+                    isEvaluating
+                      ? "cursor-not-allowed bg-gray-400"
+                      : "bg-yellow-400 hover:bg-yellow-500 dark:bg-yellow-600 dark:hover:bg-yellow-500"
+                  }`}
+                >
+                  <FontAwesomeIcon icon={faEye} className="mr-2" />
+                  {isEvaluating ? "Evaluating..." : "Evaluate"}
+                </button>
+                <button
+                  onClick={handleCreateIssue}
+                  disabled={isCreating || !rewrittenIssue}
+                  className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
+                    isCreating || !rewrittenIssue
+                      ? "cursor-not-allowed bg-gray-400"
+                      : "bg-aurora-400 hover:bg-aurora-500 dark:bg-aurora-600 dark:hover:bg-aurora-500"
+                  }`}
+                >
+                  <FontAwesomeIcon icon={faSave} className="mr-2" />
+                  {isCreating ? "Creating..." : "Create Issue"}
+                </button>
+              </div>
             </div>
           </div>
         ) : createdIssue ? (
