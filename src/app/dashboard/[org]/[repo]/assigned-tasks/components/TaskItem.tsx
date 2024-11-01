@@ -3,6 +3,7 @@ import { type Task } from "~/server/api/routers/events";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRightCircleIcon } from "@heroicons/react/24/outline";
 import { getTaskStatusColor, getTaskStatusLabel } from "~/app/utils";
+import { toast } from "react-toastify";
 
 interface TaskItemProps {
   task: Task;
@@ -28,6 +29,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
     return index % 2 === 0
       ? "bg-white/90 hover:bg-meadow-50/10 dark:bg-slate-700/50 dark:hover:bg-sky-900/20 border-l-0"
       : "bg-aurora-50/10 hover:bg-meadow-50/10 dark:bg-slate-600/50 dark:hover:bg-sky-900/20 border-l-0";
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Branch name copied to clipboard");
+    } catch (err) {
+      toast.error("Failed to copy branch name to clipboard");
+    }
   };
 
   return (
@@ -75,6 +85,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
               Issue #{task.issueId}
               <ArrowRightCircleIcon className="ml-1 h-4 w-4" />
             </a>
+          )}
+          {task.pullRequest?.branch && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                copyToClipboard(task.pullRequest.branch);
+              }}
+              className="flex items-center text-aurora-600 hover:text-aurora-700 dark:text-slate-400 dark:hover:text-slate-300"
+            >
+              {task.pullRequest.branch}
+            </button>
           )}
           {task.pullRequest && (
             <a
