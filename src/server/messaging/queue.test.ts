@@ -318,7 +318,7 @@ describe("onGitHubEvent", () => {
           ...issuesOpenedEditFilesPayload.issue,
           body:
             issuesOpenedEditFilesPayload.issue.body +
-            "\n\n--base-branch foo-branch  \n",
+            "\n\n--branch foo-branch  \n",
         },
       },
     } as WebhookIssueOpenedEvent);

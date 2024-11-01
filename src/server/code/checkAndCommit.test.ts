@@ -67,6 +67,7 @@ vi.mock("../github/issue", () => mockedIssue);
 
 const mockedEvents = vi.hoisted(() => ({
   emitTaskEvent: vi.fn().mockResolvedValue(undefined),
+  emitPREvent: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("~/server/utils/events", () => mockedEvents);
 
@@ -333,7 +334,7 @@ describe("checkAndCommit", () => {
       npm verb exit 1
       npm verb code 1
     `;
-    mockedCheck.runBuildCheck.mockImplementation(
+    mockedCheck.runBuildCheck.mockImplementationOnce(
       () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
@@ -410,7 +411,7 @@ describe("checkAndCommit", () => {
       npm verb exit 1
       npm verb code 1
     `;
-    mockedCheck.runBuildCheck.mockImplementation(
+    mockedCheck.runBuildCheck.mockImplementationOnce(
       () => new Promise((_, reject) => reject(new Error(fakeBuildError))),
     );
 
@@ -501,7 +502,7 @@ describe("checkAndCommit", () => {
       commitMessage: "test-commit-message",
     });
 
-    expect(mockedPR.markPRReadyForReview).not.toHaveBeenCalled();
+    expect(mockedPR.markPRReadyForReview).toHaveBeenCalled();
     expect(mockedPR.createPR).not.toHaveBeenCalled();
 
     // Since we don't have an jacob-created branch name, we can't
@@ -510,6 +511,60 @@ describe("checkAndCommit", () => {
     // Since we don't know the associated issue, addCommentToIssue() will
     // only be called once: on the PR, but not on the associated issue.
     expect(mockedIssue.addCommentToIssue).toHaveBeenCalledOnce();
-    expect(mockedEvents.emitTaskEvent).not.toHaveBeenCalled();
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalled();
+  });
+
+  test("checkAndCommit - with a specified baseBranch and no existingPr", async () => {
+    const repository = {
+      owner: { login: "test-login" },
+      name: "test-repo",
+    } as Repository;
+
+    await checkAndCommit({
+      ...mockEventData,
+      repository,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      commitMessage: "test-commit-message",
+      baseBranch: "base-branch",
+      newPrBody: "test-new-pr-body",
+      newPrTitle: "test-new-pr-title",
+    });
+
+    expect(mockedCheck.runBuildCheck).toHaveBeenCalledTimes(1);
+    expect(mockedCheck.runBuildCheck).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      path: "/rootpath",
+      afterModifications: true,
+    });
+
+    expect(mockedCommit.addCommitAndPush).toHaveBeenCalledTimes(1);
+    expect(mockedCommit.addCommitAndPush).toHaveBeenLastCalledWith({
+      ...mockEventData,
+      rootPath: "/rootpath",
+      branchName: "jacob-issue-48-test",
+      token: "token",
+      commitMessage: "test-commit-message",
+    });
+
+    expect(mockedPR.markPRReadyForReview).not.toHaveBeenCalled();
+    expect(mockedPR.createPR).toHaveBeenCalled();
+    expect(mockedPR.createPR).toHaveBeenLastCalledWith(
+      repository,
+      "token",
+      "jacob-issue-48-test",
+      "test-new-pr-title",
+      "test-new-pr-body\n",
+      [],
+      "base-branch",
+      false,
+    );
+
+    expect(mockedEvents.emitPREvent).toHaveBeenCalled();
+
+    expect(mockedIssue.getIssue).toHaveBeenCalled();
+    expect(mockedIssue.addCommentToIssue).toHaveBeenCalledTimes(2);
+    expect(mockedEvents.emitTaskEvent).toHaveBeenCalled();
   });
 });
