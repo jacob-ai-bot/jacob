@@ -107,6 +107,7 @@ export type PullRequest = {
   status: "open" | "closed" | "merged";
   createdAt: string;
   author: string;
+  branch: string;
 };
 
 export type Command = {
