@@ -136,6 +136,7 @@ describe("editFiles", () => {
     token: "token",
     issue,
     rootPath: "/rootpath",
+    baseBranch: "base-branch",
     sourceMap: "source map",
   };
 
@@ -171,6 +172,7 @@ describe("editFiles", () => {
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenLastCalledWith(
       expect.objectContaining({
         newPrBody: expect.stringContaining("## Plan:\n"),
+        baseBranch: "base-branch",
       }),
     );
 

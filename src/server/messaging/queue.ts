@@ -31,6 +31,7 @@ import {
   enumFromStringValue,
   getRepoSettings,
   extractIssueNumberFromBranchName,
+  CUSTOM_BRANCH,
   SKIP_BUILD,
   SKIP_DEBUGGING,
   SKIP_STORYBOOK,
@@ -520,7 +521,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
   const baseBranch =
     prBranch ??
     (issueOpened && body
-      ? /--base-branch +(\S+)[\s|\n]+/gm.exec(body)?.[1]
+      ? new RegExp(`${CUSTOM_BRANCH} +(\\S+)[\\s|\\n]+`, "gm").exec(body)?.[1]
       : undefined);
 
   const newFileName = issueOpenedTitle
