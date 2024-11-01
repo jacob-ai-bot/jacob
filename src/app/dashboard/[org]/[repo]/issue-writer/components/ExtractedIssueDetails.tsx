@@ -1,12 +1,40 @@
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
+import React, { useEffect, useState } from "react";
 
 export const ExtractedIssueDetails: React.FC<{
   feedback: string | null;
   rewrittenIssue: string | null;
   onUpdateIssue: (issueBody: string) => void;
 }> = ({ feedback, rewrittenIssue, onUpdateIssue }) => {
+  const phrases = [
+    "Gathering Codebase Context...",
+    "Analyzing Issue Details...",
+    "Loading Project Settings...",
+    "Contacting AI Model...",
+    "Processing Evaluation...",
+    "Compiling Results...",
+    "Finalizing Output...",
+    "Optimizing Suggestions...",
+    "Fetching Additional Data...",
+    "Almost There...",
+  ];
+
+  const [currentPhrase, setCurrentPhrase] = useState(phrases[0]);
+
+  useEffect(() => {
+    const interval = setInterval(
+      () => {
+        const randomIndex = Math.floor(Math.random() * phrases.length);
+        setCurrentPhrase(phrases[randomIndex]);
+      },
+      Math.random() * (10000 - 5000) + 5000,
+    );
+
+    return () => clearInterval(interval);
+  }, [phrases]);
+
   return (
     <div className="hide-scrollbar h-full overflow-hidden overflow-y-auto rounded-md bg-white/80 px-6 shadow-sm dark:bg-slate-800">
       <h3 className="mb-2 mt-6 font-crimson text-3xl font-semibold text-gray-800 dark:text-gray-200">
@@ -42,6 +70,13 @@ export const ExtractedIssueDetails: React.FC<{
           Update Issue Draft
         </button>
       </div>
+      {rewrittenIssue && (
+        <div className="mt-6 flex items-center justify-center">
+          <div className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+            {currentPhrase}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

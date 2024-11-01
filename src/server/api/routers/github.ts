@@ -18,6 +18,11 @@ import {
 } from "~/server/openai/request";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
 
+export enum EvaluationMode {
+  FASTER = "Faster Evaluation",
+  DETAILED = "Detailed Evaluation",
+}
+
 export async function fetchGithubFileContents(
   accessToken: string,
   org: string,
@@ -412,11 +417,15 @@ export const githubRouter = createTRPCRouter({
         repo: z.string(),
         title: z.string(),
         body: z.string(),
+        evaluationMode: z
+          .nativeEnum(EvaluationMode)
+          .optional()
+          .default(EvaluationMode.DETAILED),
       }),
     )
     .mutation(
       async ({
-        input: { org, repo, title, body },
+        input: { org, repo, title, body, evaluationMode },
         ctx: {
           session: { accessToken },
         },
@@ -445,6 +454,11 @@ export const githubRouter = createTRPCRouter({
         const structuredCodebaseContext = codebaseContext
           .map((c) => `${c.filePath}: ${c.context.overview}`)
           .join("\n");
+
+        const model =
+          evaluationMode === EvaluationMode.FASTER
+            ? "claude-3-5-sonnet-20241022"
+            : "o1-preview-2024-09-12";
 
         const prompt = `
 You are an expert GitHub issue reviewer and writer. Your task is to analyze the given issue draft and rewrite it to create a top 1% quality GitHub issue. Use the provided codebase context to ensure accuracy and relevance.
@@ -514,7 +528,7 @@ Here is the expected format of your response:
             3,
             undefined,
             undefined,
-            "o1-preview-2024-09-12",
+            model,
           )) ?? "";
 
         // Parse the AI response to separate feedback and rewritten issue

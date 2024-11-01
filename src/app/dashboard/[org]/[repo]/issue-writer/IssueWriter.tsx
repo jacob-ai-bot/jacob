@@ -18,6 +18,7 @@ import SpeechToTextArea, {
   type SpeechToTextAreaRef,
 } from "../components/SpeechToTextArea";
 import { useSearchParams } from "next/navigation";
+import { EvaluationMode } from "~/server/api/routers/github";
 
 interface IssueWriterProps {
   org: string;
@@ -54,6 +55,17 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
 
   const [rewrittenIssue, setRewrittenIssue] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const [evaluationMode, setEvaluationMode] = useState<EvaluationMode>(() => {
+    if (typeof window !== "undefined") {
+      return (
+        (localStorage.getItem(
+          `evaluationMode-${org}-${repo}`,
+        ) as EvaluationMode) ?? EvaluationMode.DETAILED
+      );
+    }
+    return EvaluationMode.DETAILED;
+  });
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const speechToTextRef = useRef<SpeechToTextAreaRef>(null);
@@ -101,6 +113,12 @@ Please update the \`${fileName}\` file to address the following:
       localStorage.setItem(`issueBody-${org}-${repo}`, issueBody);
     }
   }, [issueBody, org, repo]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`evaluationMode-${org}-${repo}`, evaluationMode);
+    }
+  }, [evaluationMode, org, repo]);
 
   const handleCreateIssue = async () => {
     if (!issueTitle.trim()) {
@@ -181,6 +199,7 @@ Please update the \`${fileName}\` file to address the following:
         repo,
         title: issueTitle,
         body: issueBody,
+        evaluationMode,
       });
 
       setRewrittenIssue(rewrittenIssueResult.rewrittenIssue);
@@ -210,6 +229,12 @@ Please update the \`${fileName}\` file to address the following:
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIssueTitle(e.target.value);
     setTitleError(false);
+  };
+
+  const handleEvaluationModeChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setEvaluationMode(e.target.value as EvaluationMode);
   };
 
   if (isLoadingProject || !project) {
@@ -265,6 +290,35 @@ Please update the \`${fileName}\` file to address the following:
                 isLoading={isCreating || isEvaluating}
                 shouldSubmitOnEnter={false}
               />
+            </div>
+            <div className="flex items-center space-x-4">
+              <label className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                Evaluation Mode:
+              </label>
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center space-x-1">
+                  <input
+                    type="radio"
+                    value={EvaluationMode.FASTER}
+                    checked={evaluationMode === EvaluationMode.FASTER}
+                    onChange={handleEvaluationModeChange}
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Faster Evaluation
+                  </span>
+                </label>
+                <label className="flex items-center space-x-1">
+                  <input
+                    type="radio"
+                    value={EvaluationMode.DETAILED}
+                    checked={evaluationMode === EvaluationMode.DETAILED}
+                    onChange={handleEvaluationModeChange}
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Detailed Evaluation
+                  </span>
+                </label>
+              </div>
             </div>
             <div className="flex justify-end space-x-2">
               <button
