@@ -2,11 +2,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db/db";
 import { env } from "~/env";
+import { IssueBoardSource } from "~/types";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
+  const projectIdString = url.searchParams.get("projectId");
 
   if (!code || !state) {
     return NextResponse.json(
@@ -14,6 +16,12 @@ export async function GET(req: NextRequest) {
       { status: 400 },
     );
   }
+
+  if (!projectIdString || isNaN(parseInt(projectIdString))) {
+    return NextResponse.json({ error: "Invalid projectId" }, { status: 400 });
+  }
+
+  const projectId = parseInt(projectIdString);
 
   // Validate state (you should implement a proper state validation mechanism)
   // This is a placeholder for demonstration purposes
@@ -61,10 +69,19 @@ export async function GET(req: NextRequest) {
     await db.users.find(userId).update({
       jiraToken: accessToken,
       jiraRefreshToken: refreshToken,
-      jiraCloudId: cloudId,
     });
 
-    return NextResponse.redirect(`${env.NEXTAUTH_URL}/dashboard`);
+    // Update the project with the Jira cloudId
+    const repoFullName = await db.projects
+      .find(projectId)
+      .update({
+        jiraCloudId: cloudId,
+      })
+      .select("repoFullName");
+
+    return NextResponse.redirect(
+      `${env.NEXTAUTH_URL}/dashboard/${repoFullName}/settings`,
+    );
   } catch (error) {
     console.error("Error in Jira OAuth callback:", error);
     return NextResponse.json(

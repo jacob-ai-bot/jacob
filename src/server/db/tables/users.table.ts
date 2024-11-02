@@ -26,7 +26,6 @@ export class UsersTable extends BaseTable {
       .default(OnboardingStatus.NONE),
     jiraToken: t.text().nullable(),
     jiraRefreshToken: t.text().nullable(),
-    jiraCloudId: t.varchar(255).nullable(),
     ...t.timestamps(),
   }));
 }

@@ -11,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { trpc } from "~/trpc/react";
+import { api } from "~/trpc/react";
 
 interface SettingsProps {
   org: string;
@@ -30,13 +30,13 @@ export default function Settings({ org, repo, userLogin }: SettingsProps) {
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
   const [selectedBoard, setSelectedBoard] = useState<string>("");
 
-  const { data: projectData } = trpc.projects.getByOrgAndRepo.useQuery({
+  const { data: projectData } = api.projects.getByOrgAndRepo.useQuery({
     org,
     repo,
   });
-  const { mutate: syncBoard } = trpc.jira.syncBoard.useMutation();
+  const { mutate: syncBoard } = api.jira.syncBoard.useMutation();
   const { data: boards, isLoading: isLoadingBoards } =
-    trpc.jira.getBoards.useQuery();
+    api.jira.getBoards.useQuery();
 
   useEffect(() => {
     if (boards) {
@@ -49,7 +49,8 @@ export default function Settings({ org, repo, userLogin }: SettingsProps) {
   };
 
   const handleConnectToJira = () => {
-    router.push("/auth/jira");
+    const projectId = projectData?.id;
+    router.push(`/auth/jira?projectId=${projectId}`);
   };
 
   const handleSyncBoard = () => {

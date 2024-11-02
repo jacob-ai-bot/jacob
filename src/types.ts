@@ -166,3 +166,8 @@ export enum EvaluationMode {
   FASTER = "Faster Evaluation",
   DETAILED = "Detailed Evaluation",
 }
+
+export enum IssueBoardSource {
+  GITHUB = "GitHub",
+  JIRA = "Jira",
+}

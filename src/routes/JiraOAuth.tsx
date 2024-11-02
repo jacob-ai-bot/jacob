@@ -10,12 +10,16 @@ interface JiraOAuthProps {
 export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const projectId = searchParams?.get("projectId");
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const initiateOAuth = () => {
       const state = Math.random().toString(36).substring(7);
       sessionStorage.setItem("jiraOAuthState", state);
+      if (projectId) {
+        sessionStorage.setItem("jiraProjectId", projectId);
+      }
 
       const authUrl = new URL("https://auth.atlassian.com/authorize");
       authUrl.searchParams.append("audience", "api.atlassian.com");
@@ -65,7 +69,7 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
     } else {
       void initiateOAuth();
     }
-  }, [router, redirectURI, searchParams]);
+  }, [router, redirectURI, searchParams, projectId]);
 
   if (error) {
     return <div>Error: {error.message}</div>;
