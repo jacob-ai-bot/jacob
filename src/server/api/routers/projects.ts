@@ -6,8 +6,16 @@ export const projectsRouter = createTRPCRouter({
   getByOrgAndRepo: protectedProcedure
     .input(z.object({ org: z.string(), repo: z.string() }))
     .query(async ({ input }) => {
-      return db.projects.findBy({
-        repoFullName: `${input.org}/${input.repo}`,
-      });
+      try {
+        console.log(
+          `Getting project by org and repo: ${input.org}/${input.repo}`,
+        );
+        return db.projects.findBy({
+          repoFullName: `${input.org}/${input.repo}`,
+        });
+      } catch (error: any) {
+        console.error(`Error getting project by org and repo: ${error}`);
+        return null;
+      }
     }),
 });

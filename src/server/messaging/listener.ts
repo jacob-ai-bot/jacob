@@ -3,7 +3,7 @@ import { CronJob } from "cron";
 import { initRabbitMQ } from "./queue";
 import { purgeEvents } from "~/server/utils/events";
 import { purgeTokens } from "~/server/utils/tokens";
-import { fetchNewJiraIssues } from "~/server/utils/jira";
+import { fetchAllNewJiraIssues } from "~/server/utils/jira";
 
 void initRabbitMQ({ listener: true });
 
@@ -25,7 +25,7 @@ CronJob.from({
   cronTime: "0 * * * *",
   onTick: async () => {
     console.log("Fetching new Jira issues");
-    await fetchNewJiraIssues();
+    await fetchAllNewJiraIssues();
   },
   start: true,
 });

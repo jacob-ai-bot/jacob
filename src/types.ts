@@ -162,6 +162,30 @@ export interface Repo {
   hasSettings: boolean;
 }
 
+export interface JiraBoard {
+  expand: string;
+  self: string;
+  id: string;
+  key: string;
+  name: string;
+  avatarUrls: string;
+  projectTypeKey: string;
+  simplified: boolean;
+  style: string;
+  isPrivate: boolean;
+  properties: Record<string, unknown>;
+  entityId: string;
+  uuid: string;
+}
+
+export interface JiraAccessibleResource {
+  id: string;
+  url: string;
+  name: string;
+  scopes: string[];
+  avatarUrl: string;
+}
+
 export enum EvaluationMode {
   FASTER = "Faster Evaluation",
   DETAILED = "Detailed Evaluation",

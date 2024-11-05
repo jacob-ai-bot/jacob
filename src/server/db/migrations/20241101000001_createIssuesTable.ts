@@ -2,24 +2,6 @@ import { change } from "../dbScript";
 
 const issueSourceValues = ["GitHub", "Jira"] as [string, ...string[]];
 
-change(async (db) => {
-  await db.createTable("issues", (t) => ({
-    id: t.identity().primaryKey(),
-    issueBoardId: t.integer().foreignKey("issueBoards", "id", {
-      onDelete: "CASCADE",
-    }),
-    todoId: t
-      .integer()
-      .foreignKey("todos", "id", {
-        onDelete: "CASCADE",
-      })
-      .nullable(),
-    issueId: t.varchar(255),
-    title: t.text().nullable(),
-    ...t.timestamps(),
-  }));
-});
-
 change(async (db, up) => {
   if (up) {
     await db.createEnum("issue_source", issueSourceValues);
@@ -34,6 +16,23 @@ change(async (db, up) => {
     originalBoardId: t.varchar(255),
     boardUrl: t.text(),
     boardName: t.text(),
+    createdBy: t.integer().foreignKey("users", "id"),
+    ...t.timestamps(),
+  }));
+
+  await db.createTable("issues", (t) => ({
+    id: t.identity().primaryKey(),
+    issueBoardId: t.integer().foreignKey("issue_boards", "id", {
+      onDelete: "CASCADE",
+    }),
+    todoId: t
+      .integer()
+      .foreignKey("todos", "id", {
+        onDelete: "CASCADE",
+      })
+      .nullable(),
+    issueId: t.varchar(255),
+    title: t.text().nullable(),
     ...t.timestamps(),
   }));
   if (!up) {

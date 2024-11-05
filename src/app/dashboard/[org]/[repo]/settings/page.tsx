@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getServerAuthSession } from "~/server/auth";
 import { Suspense } from "react";
 import Settings from "./Settings";
+import { api } from "~/trpc/server";
+import LoadingPage from "~/app/dashboard/loading";
 
 interface PageProps {
   params: {
@@ -21,12 +23,26 @@ export default async function SettingsPage({ params }: PageProps) {
   }
 
   const { org, repo } = params;
-  console.log("org", org);
-  console.log("repo", repo);
+  const project = await api.projects.getByOrgAndRepo({
+    org,
+    repo,
+  });
+
+  if (!project) {
+    redirect("/dashboard");
+  }
+
+  const jiraCloudId = project?.jiraCloudId ?? undefined;
 
   return (
-    <Suspense>
-      <Settings org={org} repo={repo} userLogin={user.login} />
+    <Suspense fallback={<LoadingPage />}>
+      <Settings
+        org={org}
+        repo={repo}
+        projectId={project.id}
+        jiraCloudId={jiraCloudId}
+        userLogin={user.login}
+      />
     </Suspense>
   );
 }
