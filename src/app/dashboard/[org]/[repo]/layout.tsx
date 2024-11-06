@@ -18,23 +18,32 @@ export default function DashboardLayout({
   // This is used to redirect the user to the sign-in page if the session expires
   useEffect(() => {
     const getExpiresIn = async () => {
-      const res = await fetch("/api/auth/expires");
-      const data = (await res.json()) as { expires_in: number };
-      const expiresIn = data.expires_in; // in milliseconds
+      try {
+        const res = await fetch("/api/auth/expires");
+        const data = (await res.json()) as { expires_in: number };
+        const expiresIn = data.expires_in; // in milliseconds
 
-      if (expiresIn <= 0) {
-        router.push("/");
-      } else {
-        // Set a timeout to redirect when the session expires
-        console.log("setting timeout", expiresIn);
-        const timeoutId = setTimeout(() => {
+        if (expiresIn <= 0) {
+          await fetch("/api/auth/accessToken/refresh");
           router.push("/");
-        }, expiresIn);
+        } else {
+          // Set a timeout to redirect when the session expires
+          console.log("setting timeout", expiresIn);
+          const timeoutId = setTimeout(() => {
+            void fetch("/api/auth/accessToken/refresh").then(() => {
+              router.push("/");
+            });
+          }, expiresIn);
 
-        return () => {
-          console.log("clearing timeout", timeoutId);
-          clearTimeout(timeoutId);
-        };
+          return () => {
+            console.log("clearing timeout", timeoutId);
+            clearTimeout(timeoutId);
+          };
+        }
+      } catch (error) {
+        console.error("Error getting expires in", error);
+        // redirect to the sign-in page
+        router.push("/");
       }
     };
     void getExpiresIn();

@@ -7,7 +7,6 @@ import { cloneRepo } from "~/server/git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
 import { getOrGeneratePlan } from "./plan";
 import { getRepoSettings, type RepoSettings } from "./settings";
-import { IssueBoardSource, JiraIssue } from "~/types";
 
 const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
@@ -54,7 +53,7 @@ export const getOrCreateTodo = async ({
   // Fetch the specific issue from GitHub
   const { data: issue } = await getIssue(
     { name: repoName, owner: { login: repoOwner } },
-    accessToken!,
+    accessToken,
     issueNumber,
   );
   const issueBody = issue.body ? `\n${issue.body}` : "";

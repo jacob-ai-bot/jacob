@@ -3,7 +3,7 @@ import { db } from "~/server/db/db";
 import { TaskStatus, TaskType, TodoStatus } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
-import { IssueBoardSource, type Language } from "~/types";
+import { type Language } from "~/types";
 import { getSnapshotUrl } from "~/app/utils";
 
 import { observable } from "@trpc/server/observable";

@@ -1,5 +1,3 @@
-import { refreshToken } from "@octokit/oauth-methods";
-import { request } from "@octokit/request";
 import { env } from "~/env";
 import { db } from "~/server/db/db";
 
@@ -12,22 +10,24 @@ export async function refreshGitHubAccessToken(
     if (!account?.access_token || !account?.refresh_token) {
       throw new Error("User not connected to GitHub");
     }
-    const url =
-      "https://github.com/login/oauth/access_token?" +
-      new URLSearchParams({
-        client_id: env.GITHUB_CLIENT_ID,
-        client_secret: env.GITHUB_CLIENT_SECRET,
-        grant_type: "refresh_token",
-        refresh_token: account.refresh_token,
-      });
-
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      method: "POST",
+    const params = new URLSearchParams({
+      client_id: env.GITHUB_CLIENT_ID,
+      client_secret: env.GITHUB_CLIENT_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: account.refresh_token,
     });
+
+    const response = await fetch(
+      "https://github.com/login/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: params.toString(),
+      },
+    );
 
     const refreshedTokens = await response.json();
 

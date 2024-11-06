@@ -1,15 +1,15 @@
 import { db } from "~/server/db/db";
 import { env } from "~/env";
-import { getOrCreateTodo } from "./todos";
 import {
+  EvaluationMode,
   IssueBoardSource,
-  JiraIssue,
+  type JiraIssue,
   type JiraAccessibleResource,
   type JiraBoard,
 } from "~/types";
 import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
-import { createGitHubIssue } from "../github/issue";
+import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
 
 export async function refreshJiraAccessToken(
   accountId: number,
@@ -221,7 +221,7 @@ export async function fetchNewJiraIssues({
   const project = await db.projects.findBy({ id: projectId });
 
   try {
-    const jql = `project=${boardId} AND created>=-24h`;
+    const jql = `project=${boardId} AND created>=-2h`; // note that the cron job runs every hour
     const fields = "id,self,summary,description";
 
     const response = await fetch(
@@ -248,7 +248,6 @@ export async function fetchNewJiraIssues({
         numAttempts: numAttempts + 1,
       });
     }
-    console.log(`Response status: ${response.status}`);
     if (!response.ok) {
       const errorDetails = await response.text();
       console.error("Error details:", errorDetails);
@@ -264,7 +263,6 @@ export async function fetchNewJiraIssues({
     };
 
     const data = await response.json();
-    console.log(`Data: ${JSON.stringify(data)}`);
     const issues: JiraIssue[] = data.issues.map((issue: OriginalJiraIssue) => ({
       id: issue.id,
       url: issue.self,
@@ -272,7 +270,6 @@ export async function fetchNewJiraIssues({
       title: issue.fields.summary,
       description: extractTextFromADF(issue.fields.description),
     }));
-    console.log(`Issues: ${JSON.stringify(issues)}`);
     for (const issue of issues) {
       // first check if the issue already exists
       const existingIssue = await db.issues.findByOptional({
@@ -290,7 +287,7 @@ export async function fetchNewJiraIssues({
       console.log(
         `Repo ${project.repoFullName}: Creating new Jira issue ${issue.id}`,
       );
-      // create a new issue in the database
+      // create a new issue in the database - this ensures we don't duplicate issues
       await db.issues.create({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
@@ -301,12 +298,22 @@ export async function fetchNewJiraIssues({
       if (!owner || !repo) {
         throw new Error("Invalid repo full name");
       }
+      // use AI to generate a more detailed github issue description
+      const githubIssueDescription = await rewriteGitHubIssue(
+        githubAccessToken,
+        owner,
+        repo,
+        issue.title,
+        issue.description,
+        EvaluationMode.DETAILED,
+      );
+      const githubIssueBody = githubIssueDescription.rewrittenIssue;
       // create a new GitHub issue - there is a listener for this in the queue that will create a todo
       const githubIssue = await createGitHubIssue(
         owner,
         repo,
         issue.title,
-        issue.description,
+        githubIssueBody,
         githubAccessToken,
       );
 

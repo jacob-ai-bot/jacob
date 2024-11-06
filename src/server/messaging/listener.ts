@@ -24,7 +24,7 @@ CronJob.from({
 CronJob.from({
   cronTime: "0 * * * *",
   onTick: async () => {
-    console.log("Fetching new Jira issues");
+    console.log("Cron job: Fetching new Jira issues");
     await fetchAllNewJiraIssues();
   },
   start: true,
