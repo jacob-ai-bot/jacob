@@ -1,4 +1,6 @@
 import AWS from "aws-sdk";
+import { type PlanStep } from "../db/tables/planSteps.table";
+import { type Research } from "../db/tables/research.table";
 
 const ses = new AWS.SES({
   apiVersion: "2010-12-01",
@@ -16,8 +18,50 @@ export async function sendTransactionalEmail(
   todoItem: TodoItem,
   githubOrg: string,
   githubRepo: string,
+  planSteps?: PlanStep[],
+  researchDetails?: Research[],
 ): Promise<void> {
   const actionLink = `https://app.jacb.ai/dashboard/${githubOrg}/${githubRepo}/todos/${todoItem.id}`;
+
+  const planStepsHtml = planSteps
+    ? `
+    <h2 style="color: #007FB3; font-size: 22px; font-weight: 600; margin-bottom: 16px;">Plan Steps</h2>
+    <ul style="padding-left: 20px;">
+      ${planSteps
+        .map(
+          (step) => `
+        <li style="margin-bottom: 16px;">
+          <p style="margin: 0;"><strong>Type:</strong> ${step.type}</p>
+          <p style="margin: 0;"><strong>File Path:</strong> ${step.filePath}</p>
+          <p style="margin: 0;"><strong>Instructions:</strong> ${step.instructions}</p>
+          <p style="margin: 0;"><strong>Exit Criteria:</strong> ${
+            step.exitCriteria ?? ""
+          }</p>
+        </li>
+      `,
+        )
+        .join("")}
+    </ul>
+  `
+    : "";
+
+  const researchHtml = researchDetails
+    ? `
+    <h2 style="color: #007FB3; font-size: 22px; font-weight: 600; margin-bottom: 16px;">Research Details</h2>
+    <ul style="padding-left: 20px;">
+      ${researchDetails
+        .map(
+          (research) => `
+        <li style="margin-bottom: 16px;">
+          <p style="margin: 0;"><strong>Question:</strong> ${research.question}</p>
+          <p style="margin: 0;"><strong>Answer:</strong> ${research.answer}</p>
+        </li>
+      `,
+        )
+        .join("")}
+    </ul>
+  `
+    : "";
 
   const params: AWS.SES.SendEmailRequest = {
     Destination: {
@@ -35,7 +79,7 @@ export async function sendTransactionalEmail(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New ${githubRepo} todo - ${todoItem.name}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap');
         
         body {
             font-family: 'Inter', sans-serif;
@@ -66,6 +110,7 @@ export async function sendTransactionalEmail(
             height: auto;
         }
         h1 {
+            font-family: 'Crimson Text', serif;
             color: #003A66;
             font-size: 28px;
             font-weight: 700;
@@ -73,6 +118,7 @@ export async function sendTransactionalEmail(
             text-align: center;
         }
         h2 {
+            font-family: 'Crimson Text', serif;
             color: #007FB3;
             font-size: 22px;
             font-weight: 600;
@@ -135,6 +181,9 @@ export async function sendTransactionalEmail(
 <body>
     <div class="container">
         <div class="card">
+            <div class="logo">
+                <img src="https://app.jacb.ai/images/logo.svg" alt="JACoB Logo" width="120" height="120">
+            </div>
             <h1>Your New Todo is Ready</h1>
             <p>Hey there,</p>
             <p>JACoB's been busy. We've taken your GitHub issue and turned it into a smart, actionable todo. Here's what's cooking:</p>
@@ -143,6 +192,8 @@ export async function sendTransactionalEmail(
                 <a href="${actionLink}" class="todo-link">View Todo</a>
             </div>
             <p>JACoB didn't just copy-paste your issue. It dug deep, analyzing how this fits into your codebase and crafting a step-by-step game plan. Pretty neat, huh?</p>
+            ${planStepsHtml}
+            ${researchHtml}
             <p>What's next? Hop in, review the todo and the plan, tweak if needed, and set things in motion. You can assign it to JACoB for some AI magic or loop in one of your team's developers.</p>
             <a href="${actionLink}" class="btn">Check it out</a>
             <div class="divider"></div>
