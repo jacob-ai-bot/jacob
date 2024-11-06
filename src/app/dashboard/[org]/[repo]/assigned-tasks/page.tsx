@@ -23,7 +23,7 @@ export default async function LivePageRoute({ params }: PageProps) {
   const { org, repo } = params;
 
   return (
-    <Suspense fallback={<LoadingIndicator />}>
+    <Suspense>
       <TasksPage org={org} repo={repo} />
     </Suspense>
   );
