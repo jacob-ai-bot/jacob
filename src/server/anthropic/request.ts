@@ -13,6 +13,7 @@ export const CONTEXT_WINDOW = {
   "claude-3-haiku-20240307": 200000,
   "claude-3-5-sonnet-20240620": 200000,
   "claude-3-5-sonnet-20241022": 200000,
+  "claude-3-5-haiku-20241022": 200000,
 } as const;
 
 export const MAX_OUTPUT = {
@@ -20,6 +21,7 @@ export const MAX_OUTPUT = {
   "claude-3-haiku-20240307": 4096,
   "claude-3-5-sonnet-20240620": 8192,
   "claude-3-5-sonnet-20241022": 8192,
+  "claude-3-5-haiku-20241022": 8192,
 } as const;
 
 const INPUT_TOKEN_COSTS = {
@@ -27,6 +29,7 @@ const INPUT_TOKEN_COSTS = {
   "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 3 / ONE_MILLION,
   "claude-3-5-sonnet-20241022": 3 / ONE_MILLION,
+  "claude-3-5-haiku-20241022": 1 / ONE_MILLION,
 } as const;
 
 const OUTPUT_TOKEN_COSTS = {
@@ -34,6 +37,7 @@ const OUTPUT_TOKEN_COSTS = {
   "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 15 / ONE_MILLION,
   "claude-3-5-sonnet-20241022": 15 / ONE_MILLION,
+  "claude-3-5-haiku-20241022": 5 / ONE_MILLION,
 } as const;
 
 export type Model = keyof typeof CONTEXT_WINDOW;
