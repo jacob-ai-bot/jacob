@@ -85,11 +85,29 @@ ghApp.webhooks.on("issues.opened", async (event) => {
             console.log(
               `[${repository.full_name}] Sending transactional email for issue #${payload.issue.number}`,
             );
+            const planSteps = await db.planSteps
+              .where({
+                projectId: project.id,
+                issueNumber: payload.issue.number,
+                isActive: true,
+              })
+              .all()
+              .order("createdAt");
+
+            const researchDetails = await db.research
+              .where({
+                todoId: todo.id,
+                issueId: payload.issue.number,
+              })
+              .all();
+
             await sendTransactionalEmail(
               userEmail,
               todo,
               githubOrg ?? "",
               githubRepo ?? "",
+              planSteps,
+              researchDetails,
             );
             console.log(
               `[${repository.full_name}] Sent transactional email for issue #${payload.issue.number}`,
