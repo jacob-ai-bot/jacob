@@ -1,4 +1,5 @@
 import AWS from "aws-sdk";
+import { db } from "~/server/db/db";
 
 const ses = new AWS.SES({
   apiVersion: "2010-12-01",
@@ -16,8 +17,21 @@ export async function sendTransactionalEmail(
   todoItem: TodoItem,
   githubOrg: string,
   githubRepo: string,
+  projectId: number,
+  issueNumber: number,
 ): Promise<void> {
   const actionLink = `https://app.jacb.ai/dashboard/${githubOrg}/${githubRepo}/todos/${todoItem.id}`;
+
+  // Fetch plan steps
+  const planSteps = await db.planSteps.findMany({
+    where: { projectId, issueNumber },
+    orderBy: { position: "asc" },
+  });
+
+  // Fetch research data
+  const researchData = await db.research.findMany({
+    where: { todoId: todoItem.id, issueId: issueNumber },
+  });
 
   const params: AWS.SES.SendEmailRequest = {
     Destination: {
@@ -78,6 +92,12 @@ export async function sendTransactionalEmail(
             font-weight: 600;
             margin-bottom: 16px;
         }
+        h3 {
+            color: #00A3D9;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
         p {
             margin-bottom: 24px;
             font-size: 16px;
@@ -130,6 +150,23 @@ export async function sendTransactionalEmail(
             background-color: #E5E7EB;
             margin: 32px 0;
         }
+        .plan-steps, .research-data {
+            background-color: #F3F4F6;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .plan-step, .research-item {
+            margin-bottom: 16px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .plan-step:before, .research-item:before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #00C8FF;
+        }
     </style>
 </head>
 <body>
@@ -140,8 +177,45 @@ export async function sendTransactionalEmail(
             <p>JACoB's been busy. We've taken your GitHub issue and turned it into a smart, actionable todo. Here's what's cooking:</p>
             <div class="todo-card">
                 <h2>${todoItem.name}</h2>
+                <p>${todoItem.description}</p>
                 <a href="${actionLink}" class="todo-link">View Todo</a>
             </div>
+            ${
+              planSteps.length > 0
+                ? `
+            <h3>Plan Steps</h3>
+            <div class="plan-steps">
+                ${planSteps
+                  .map(
+                    (step, index) => `
+                <div class="plan-step">
+                    <strong>Step ${index + 1}:</strong> ${step.title}
+                </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+            `
+                : ""
+            }
+            ${
+              researchData.length > 0
+                ? `
+            <h3>Research Insights</h3>
+            <div class="research-data">
+                ${researchData
+                  .map(
+                    (item) => `
+                <div class="research-item">
+                    <strong>${item.type}:</strong> ${item.answer}
+                </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+            `
+                : ""
+            }
             <p>JACoB didn't just copy-paste your issue. It dug deep, analyzing how this fits into your codebase and crafting a step-by-step game plan. Pretty neat, huh?</p>
             <p>What's next? Hop in, review the todo and the plan, tweak if needed, and set things in motion. You can assign it to JACoB for some AI magic or loop in one of your team's developers.</p>
             <a href="${actionLink}" class="btn">Check it out</a>

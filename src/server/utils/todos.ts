@@ -7,6 +7,7 @@ import { cloneRepo } from "~/server/git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
 import { getOrGeneratePlan } from "./plan";
 import { getRepoSettings, type RepoSettings } from "./settings";
+import { sendTransactionalEmail } from "./email";
 
 const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
@@ -114,6 +115,20 @@ export const getOrCreateTodo = async ({
     }
 
     console.log(`Created new todo for issue #${issue.number}`);
+
+    // Send transactional email with updated parameters
+    const project = await db.projects.findBy({ id: projectId });
+    if (project) {
+      await sendTransactionalEmail(
+        project.userEmail,
+        newTodo,
+        repoOwner,
+        repoName,
+        projectId,
+        issue.number,
+      );
+    }
+
     return newTodo;
   } catch (error) {
     console.error(
