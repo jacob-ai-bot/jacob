@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { setLastUsedRepoCookie } from "~/app/actions";
 import { getServerAuthSession } from "~/server/auth";
+import { refreshGitHubAccessToken } from "~/server/github/tokens";
 import { api } from "~/trpc/server";
 
 export async function GET(request: Request) {
   const { user } = (await getServerAuthSession()) ?? {};
+
+  // Refresh the access token if the token is expired
+  if (user?.expires && Date.parse(user.expires) < Date.now()) {
+    const userId = parseInt(user.id);
+    await refreshGitHubAccessToken(userId);
+  }
 
   const { searchParams } = new URL(request.url);
   const org = searchParams.get("org");

@@ -10,12 +10,17 @@ interface JiraOAuthProps {
 export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const projectId = searchParams?.get("projectId");
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const initiateOAuth = () => {
-      const state = Math.random().toString(36).substring(7);
+      const state = `jiraOAuthState-${Math.random().toString(36).substring(7)}-${projectId}`;
+
       sessionStorage.setItem("jiraOAuthState", state);
+      if (projectId) {
+        sessionStorage.setItem("jiraProjectId", projectId);
+      }
 
       const authUrl = new URL("https://auth.atlassian.com/authorize");
       authUrl.searchParams.append("audience", "api.atlassian.com");
@@ -23,7 +28,10 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
         "client_id",
         process.env.NEXT_PUBLIC_JIRA_CLIENT_ID!,
       );
-      authUrl.searchParams.append("scope", "read:jira-work");
+      authUrl.searchParams.append(
+        "scope",
+        "read:jira-work read:board-scope:jira-software read:issue-details:jira read:me offline_access",
+      );
       authUrl.searchParams.append("redirect_uri", redirectURI);
       authUrl.searchParams.append("state", state);
       authUrl.searchParams.append("response_type", "code");
@@ -65,7 +73,7 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
     } else {
       void initiateOAuth();
     }
-  }, [router, redirectURI, searchParams]);
+  }, [router, redirectURI, searchParams, projectId]);
 
   if (error) {
     return <div>Error: {error.message}</div>;

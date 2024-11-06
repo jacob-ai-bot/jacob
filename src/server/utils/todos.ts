@@ -50,13 +50,12 @@ export const getOrCreateTodo = async ({
     return existingTodo;
   }
 
-  // Fetch the specific issue
+  // Fetch the specific issue from GitHub
   const { data: issue } = await getIssue(
     { name: repoName, owner: { login: repoOwner } },
     accessToken,
     issueNumber,
   );
-
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = `${issue.title}${issueBody}`;
 
@@ -82,7 +81,7 @@ export const getOrCreateTodo = async ({
 
     const newTodo = await db.todos.create({
       projectId: projectId,
-      description: `${issue.title}\n\n${issueBody}`,
+      description: issueText,
       name: extractedIssue.commitTitle ?? issue.title ?? "New Todo",
       status: TodoStatus.TODO,
       issueId: issue.number,

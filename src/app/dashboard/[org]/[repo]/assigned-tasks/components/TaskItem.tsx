@@ -77,7 +77,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <div className="flex items-center space-x-4">
           {task.issueId && !task.pullRequest && (
             <a
-              href={`https://github.com/${org}/${repo}/issues/${task.issueId}`}
+              href={
+                task.issue?.link ??
+                `https://github.com/${org}/${repo}/issues/${task.issueId}`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center text-aurora-600 hover:text-aurora-700 dark:text-slate-400 dark:hover:text-slate-300"

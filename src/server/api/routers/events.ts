@@ -357,7 +357,13 @@ export const eventsRouter = createTRPCRouter({
     }),
 });
 
-const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
+const createEnhancedTask = (
+  task: Task,
+  events: Event[],
+  repo: string,
+  issueUrl?: string | null,
+  issueSource?: string | null,
+) => {
   const issueId = task.issueId;
 
   // Each issue should have a single pull request. Get the most recent pull request for this specific issue
@@ -421,7 +427,8 @@ const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
     author: "",
     assignee: "",
     status: "open",
-    link: "",
+    link: issueUrl ?? "",
+    issueSource,
   };
 
   return {

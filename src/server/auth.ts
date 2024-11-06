@@ -92,15 +92,18 @@ export const authOptions: NextAuthOptions = {
             id_token,
             scope,
             session_state,
+            refresh_token_expires_in,
           } = account;
           await db.accounts.find(dbAccount.id).update({
             access_token,
-            expires_at: `${expires_at}`,
+            expires_at: `${expires_at ?? new Date(Date.now() + 3600 * 8000).getTime()}`, // Default to 8 hours if not provided
             refresh_token,
             token_type,
             id_token,
             scope,
             session_state,
+            refresh_token_expires_in:
+              (refresh_token_expires_in as number) ?? null,
           });
         }
       }
@@ -138,6 +141,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           scope: "read:user user:email read:org repo admin:org",
+          access_type: "offline",
         },
       },
       profile(profile: GithubProfile) {
