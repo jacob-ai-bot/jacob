@@ -45,8 +45,6 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
 
     if (code && state) {
       const storedState = sessionStorage.getItem("jiraOAuthState");
-      console.log(`Stored state: ${storedState}`);
-      console.log(`State: ${state}`);
       if (state !== storedState) {
         setError(new Error("Invalid state parameter"));
         return;
@@ -60,7 +58,6 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
               "Content-Type": "application/json",
             },
           });
-          console.log(`Response: ${JSON.stringify(response)}`);
 
           if (!response.ok) {
             throw new Error("Failed to exchange code for token");

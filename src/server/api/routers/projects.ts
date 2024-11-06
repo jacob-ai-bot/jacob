@@ -7,9 +7,6 @@ export const projectsRouter = createTRPCRouter({
     .input(z.object({ org: z.string(), repo: z.string() }))
     .query(async ({ input }) => {
       try {
-        console.log(
-          `Getting project by org and repo: ${input.org}/${input.repo}`,
-        );
         return db.projects.findBy({
           repoFullName: `${input.org}/${input.repo}`,
         });

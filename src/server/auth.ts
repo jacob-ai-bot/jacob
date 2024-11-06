@@ -96,7 +96,7 @@ export const authOptions: NextAuthOptions = {
           } = account;
           await db.accounts.find(dbAccount.id).update({
             access_token,
-            expires_at: `${expires_at ?? new Date(Date.now() + 3600 * 24000 * 30).getTime()}`, // Default to 30 days if not provided
+            expires_at: `${expires_at ?? new Date(Date.now() + 3600 * 8000).getTime()}`, // Default to 8 hours if not provided
             refresh_token,
             token_type,
             id_token,

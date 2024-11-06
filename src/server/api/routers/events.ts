@@ -193,7 +193,6 @@ export const eventsRouter = createTRPCRouter({
           .order({
             createdAt: "DESC",
           });
-        console.log(`Events: ${JSON.stringify(events)}`);
 
         // Extract unique issue IDs
         const uniqueIssueIds = [

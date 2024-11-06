@@ -94,7 +94,6 @@ export async function syncJiraBoard(
   }
 
   const boardData: JiraBoard = await boardResponse.json();
-  console.log(`Board data: ${JSON.stringify(boardData)}`);
 
   // first check if the board already exists
   const existingBoard = await db.issueBoards.findByOptional({
@@ -120,7 +119,6 @@ export async function syncJiraBoard(
     });
   }
 
-  console.log(`Fetching new Jira issues for board ${boardId}`);
   await fetchNewJiraIssues({
     jiraAccessToken,
     cloudId,
@@ -144,7 +142,6 @@ export async function fetchAllNewJiraIssues() {
     console.error(`Error fetching issue boards: ${error.message}`);
     return;
   }
-  console.log(`Found ${issueBoards.length} issue boards`);
 
   for (const issueBoard of issueBoards) {
     try {
@@ -180,7 +177,6 @@ export async function fetchAllNewJiraIssues() {
         userId: account.userId,
         githubAccessToken,
       });
-      console.log(`Fetched issues for board ${issueBoard.id}`);
     } catch (error) {
       console.error(
         `Error fetching Jira issues for board ${issueBoard.id}:`,
@@ -210,8 +206,6 @@ export async function fetchNewJiraIssues({
   if (numAttempts > 3) {
     throw new Error("Failed to fetch Jira issues");
   }
-
-  console.log(`Fetching new Jira issues for board ${boardId}`);
   const issueBoard = await db.issueBoards.findBy({
     projectId,
     issueSource: IssueBoardSource.JIRA,
@@ -349,7 +343,6 @@ export async function getJiraCloudIdResources(accessToken: string) {
   if (resourcesData.length === 0) {
     throw new Error("No accessible resources found");
   }
-  console.log(`Resources data: ${JSON.stringify(resourcesData)}`);
   return resourcesData;
 }
 

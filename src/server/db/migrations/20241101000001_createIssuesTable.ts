@@ -25,12 +25,6 @@ change(async (db, up) => {
     issueBoardId: t.integer().foreignKey("issue_boards", "id", {
       onDelete: "CASCADE",
     }),
-    todoId: t
-      .integer()
-      .foreignKey("todos", "id", {
-        onDelete: "CASCADE",
-      })
-      .nullable(),
     issueId: t.varchar(255),
     title: t.text().nullable(),
     ...t.timestamps(),
