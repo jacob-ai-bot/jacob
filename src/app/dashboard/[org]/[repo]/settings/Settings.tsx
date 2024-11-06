@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { type JiraBoard } from "~/types";
+import { toast } from "react-toastify";
 
 interface SettingsProps {
   org: string;
@@ -33,12 +34,22 @@ export default function Settings({
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
   const [selectedBoard, setSelectedBoard] = useState<string>("");
 
-  const { mutate: syncBoard } = api.jira.syncBoard.useMutation();
+  const { mutate: syncBoard, isPending: isSyncingBoard } =
+    api.jira.syncBoard.useMutation({
+      onSuccess: () => {
+        toast.success("Jira board synced");
+      },
+      onError: (error) => {
+        toast.error("Error syncing Jira board");
+        console.error("Error syncing Jira board:", error);
+      },
+    });
   const {
     data: isUserConnectedToJira,
     isLoading: isLoadingIsUserConnectedToJira,
+    error: isUserConnectedToJiraError,
   } = api.jira.isUserConnectedToJira.useQuery();
-  const { data: jiraCloudIdResources } =
+  const { data: jiraCloudIdResources, error: jiraCloudIdResourcesError } =
     api.jira.getJiraCloudIdResources.useQuery();
   const {
     data: boards,
@@ -50,11 +61,20 @@ export default function Settings({
     onSuccess: () => {
       void refetchBoards();
     },
+    onError: (error) => {
+      toast.error("Error saving Jira cloud ID");
+      console.error("Error saving Jira cloud ID:", error);
+    },
   });
 
   useEffect(() => {
     if (boards) {
       setJiraBoards(boards);
+      if (boards.length === 0) {
+        toast.info("No boards found for this Jira cloud ID");
+      } else if (boards[0]) {
+        setSelectedBoard(boards[0].id);
+      }
     }
   }, [boards]);
 
@@ -161,15 +181,26 @@ export default function Settings({
             </select>
             <button
               onClick={handleSyncBoard}
-              disabled={!selectedBoard}
+              disabled={!selectedBoard || isSyncingBoard}
               className="flex items-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-400"
             >
               <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
-              Sync Board
+              {isSyncingBoard ? "Syncing..." : "Sync Board"}
             </button>
           </div>
         )}
       {isLoadingIsUserConnectedToJira && <div>Loading Jira Settings...</div>}
+      {isUserConnectedToJiraError && (
+        <div>
+          Error loading Jira settings: {isUserConnectedToJiraError.message}
+        </div>
+      )}
+      {jiraCloudIdResourcesError && (
+        <div>
+          Error loading Jira cloud ID resources:{" "}
+          {jiraCloudIdResourcesError.message}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { db } from "~/server/db/db";
 import { TaskStatus, TaskType, TodoStatus } from "~/server/db/enums";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
-import { type Language } from "~/types";
+import { IssueBoardSource, type Language } from "~/types";
 import { getSnapshotUrl } from "~/app/utils";
 
 import { observable } from "@trpc/server/observable";
@@ -193,6 +193,7 @@ export const eventsRouter = createTRPCRouter({
           .order({
             createdAt: "DESC",
           });
+        console.log(`Events: ${JSON.stringify(events)}`);
 
         // Extract unique issue IDs
         const uniqueIssueIds = [
@@ -357,7 +358,13 @@ export const eventsRouter = createTRPCRouter({
     }),
 });
 
-const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
+const createEnhancedTask = (
+  task: Task,
+  events: Event[],
+  repo: string,
+  issueUrl?: string | null,
+  issueSource?: string | null,
+) => {
   const issueId = task.issueId;
 
   // Each issue should have a single pull request. Get the most recent pull request for this specific issue
@@ -421,7 +428,8 @@ const createEnhancedTask = (task: Task, events: Event[], repo: string) => {
     author: "",
     assignee: "",
     status: "open",
-    link: "",
+    link: issueUrl ?? "",
+    issueSource,
   };
 
   return {

@@ -186,6 +186,14 @@ export interface JiraAccessibleResource {
   avatarUrl: string;
 }
 
+export interface JiraIssue {
+  id: string;
+  url: string;
+  number: number;
+  title: string;
+  description: string;
+}
+
 export enum EvaluationMode {
   FASTER = "Faster Evaluation",
   DETAILED = "Detailed Evaluation",

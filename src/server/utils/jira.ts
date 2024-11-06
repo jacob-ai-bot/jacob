@@ -3,14 +3,19 @@ import { env } from "~/env";
 import { getOrCreateTodo } from "./todos";
 import {
   IssueBoardSource,
+  JiraIssue,
   type JiraAccessibleResource,
   type JiraBoard,
 } from "~/types";
 import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
+import { refreshGitHubAccessToken } from "../github/tokens";
+import { createGitHubIssue } from "../github/issue";
 
-export async function refreshJiraAccessToken(userId: number): Promise<string> {
-  const user = await db.users.findBy({ id: userId });
-  if (!user.jiraRefreshToken) {
+export async function refreshJiraAccessToken(
+  accountId: number,
+): Promise<string> {
+  const account = await db.accounts.find(accountId);
+  if (!account?.jiraRefreshToken) {
     throw new Error("No refresh token available");
   }
 
@@ -23,7 +28,7 @@ export async function refreshJiraAccessToken(userId: number): Promise<string> {
       grant_type: "refresh_token",
       client_id: env.JIRA_CLIENT_ID,
       client_secret: env.JIRA_CLIENT_SECRET,
-      refresh_token: user.jiraRefreshToken,
+      refresh_token: account.jiraRefreshToken,
     }),
   });
 
@@ -32,8 +37,8 @@ export async function refreshJiraAccessToken(userId: number): Promise<string> {
   }
 
   const data = await response.json();
-  await db.users.find(userId).update({
-    jiraToken: data.access_token,
+  await db.accounts.find(accountId).update({
+    jiraAccessToken: data.access_token,
     jiraRefreshToken: data.refresh_token,
   });
 
@@ -62,18 +67,19 @@ export async function fetchJiraProjects(accessToken: string, cloudId: string) {
 }
 
 export async function syncJiraBoard(
-  accessToken: string,
+  jiraAccessToken: string,
   cloudId: string,
   projectId: number,
   boardId: string,
   userId: number,
+  githubAccessToken: string,
 ) {
   console.log(`Syncing Jira board ${boardId} for project ${projectId}`);
   const boardResponse = await fetch(
     `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/project/${boardId}`,
     {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${jiraAccessToken}`,
         Accept: "application/json",
       },
     },
@@ -116,11 +122,12 @@ export async function syncJiraBoard(
 
   console.log(`Fetching new Jira issues for board ${boardId}`);
   await fetchNewJiraIssues({
-    accessToken,
+    jiraAccessToken,
     cloudId,
     projectId,
     boardId,
     userId,
+    githubAccessToken,
   });
   console.log(`Successfully synced Jira board ${boardId}`);
 
@@ -142,20 +149,36 @@ export async function fetchAllNewJiraIssues() {
   for (const issueBoard of issueBoards) {
     try {
       // get the user from the issue board
-      const user = await db.users.findBy({ id: issueBoard.createdBy });
-      if (!user?.jiraToken) {
+      const account = await db.accounts.findBy({
+        userId: issueBoard.createdBy,
+      });
+      if (!account?.jiraAccessToken) {
         throw new Error("User not found");
       }
+
       const project = await db.projects.findBy({ id: issueBoard.projectId });
       if (!project?.jiraCloudId) {
         throw new Error("Project not found");
       }
+      // check to see if the account's token is expired
+      // account.expires_at is a unix timestamp in seconds
+      let githubAccessToken: string | undefined = account.access_token;
+      if (
+        account.expires_at &&
+        Date.now() > (account.expires_at as unknown as number) * 1000
+      ) {
+        githubAccessToken = await refreshGitHubAccessToken(account.userId);
+      }
+      if (!githubAccessToken) {
+        throw new Error("Failed to refresh GitHub access token");
+      }
       await fetchNewJiraIssues({
-        accessToken: user.jiraToken,
+        jiraAccessToken: account.jiraAccessToken,
         cloudId: project.jiraCloudId,
         projectId: issueBoard.projectId,
         boardId: issueBoard.originalBoardId,
-        userId: user.id,
+        userId: account.userId,
+        githubAccessToken,
       });
       console.log(`Fetched issues for board ${issueBoard.id}`);
     } catch (error) {
@@ -168,18 +191,20 @@ export async function fetchAllNewJiraIssues() {
 }
 
 export async function fetchNewJiraIssues({
-  accessToken,
+  jiraAccessToken,
   cloudId,
   projectId,
   boardId,
   userId,
+  githubAccessToken,
   numAttempts = 0,
 }: {
-  accessToken: string;
+  jiraAccessToken: string;
   cloudId: string;
   projectId: number;
   boardId: string;
   userId: number;
+  githubAccessToken: string;
   numAttempts?: number;
 }) {
   if (numAttempts > 3) {
@@ -196,13 +221,14 @@ export async function fetchNewJiraIssues({
   const project = await db.projects.findBy({ id: projectId });
 
   try {
-    const jql = `project=${boardId} AND created>=-12h`;
+    const jql = `project=${boardId} AND created>=-24h`;
+    const fields = "id,self,summary,description";
 
     const response = await fetch(
-      `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}`,
+      `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fields)}`,
       {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${jiraAccessToken}`,
           Accept: "application/json",
         },
       },
@@ -211,13 +237,14 @@ export async function fetchNewJiraIssues({
     if (response.status === 401) {
       console.log("Jira access token expired, refreshing...");
       // get the user from the issue board
-      accessToken = await refreshJiraAccessToken(userId);
+      jiraAccessToken = await refreshJiraAccessToken(userId);
       return fetchNewJiraIssues({
-        accessToken,
+        jiraAccessToken,
         cloudId,
         projectId,
         boardId,
         userId,
+        githubAccessToken,
         numAttempts: numAttempts + 1,
       });
     }
@@ -227,17 +254,25 @@ export async function fetchNewJiraIssues({
       console.error("Error details:", errorDetails);
       throw new Error(`Failed to fetch Jira issues: ${response.statusText}`);
     }
-
-    type JiraIssue = {
+    type OriginalJiraIssue = {
       id: string;
       fields: {
-        summary: string; // similar to title
-        description: string;
+        summary: string;
+        description: any;
       };
+      self: string;
     };
 
     const data = await response.json();
-    const issues: JiraIssue[] = data.issues;
+    console.log(`Data: ${JSON.stringify(data)}`);
+    const issues: JiraIssue[] = data.issues.map((issue: OriginalJiraIssue) => ({
+      id: issue.id,
+      url: issue.self,
+      number: parseInt(issue.id),
+      title: issue.fields.summary,
+      description: extractTextFromADF(issue.fields.description),
+    }));
+    console.log(`Issues: ${JSON.stringify(issues)}`);
     for (const issue of issues) {
       // first check if the issue already exists
       const existingIssue = await db.issues.findByOptional({
@@ -246,6 +281,9 @@ export async function fetchNewJiraIssues({
       });
 
       if (existingIssue) {
+        console.log(
+          `Repo ${project.repoFullName}: Jira issue ${issue.id} already exists`,
+        );
         continue;
       }
 
@@ -253,29 +291,28 @@ export async function fetchNewJiraIssues({
         `Repo ${project.repoFullName}: Creating new Jira issue ${issue.id}`,
       );
       // create a new issue in the database
-      const dbIssue = await db.issues.create({
+      await db.issues.create({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
-        title: issue.fields.summary,
+        title: issue.title,
       });
-
-      const todo = await getOrCreateTodo({
-        repo: project.repoFullName,
-        projectId: project.id,
-        issueNumber: parseInt(issue.id),
-        jiraIssue: issue,
-      });
-      if (todo) {
-        // update the issue with the todo id
-        await db.issues.find(dbIssue.id).update({
-          todoId: todo.id,
-        });
-        console.log(
-          `Repo ${project.repoFullName}: Created todo ${todo.id} for Jira issue ${issue.id}`,
-        );
-      } else {
-        throw new Error(`Failed to create todo for issue ${issue.id}`);
+      const owner = project.repoFullName.split("/")[0];
+      const repo = project.repoFullName.split("/")[1];
+      if (!owner || !repo) {
+        throw new Error("Invalid repo full name");
       }
+      // create a new GitHub issue - there is a listener for this in the queue that will create a todo
+      const githubIssue = await createGitHubIssue(
+        owner,
+        repo,
+        issue.title,
+        issue.description,
+        githubAccessToken,
+      );
+
+      console.log(
+        `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data.number} for Jira issue ${issue.id}`,
+      );
     }
   } catch (error) {
     console.error(`Error fetching Jira issues for board ${boardId}:`, error);
@@ -307,4 +344,24 @@ export async function getJiraCloudIdResources(accessToken: string) {
   }
   console.log(`Resources data: ${JSON.stringify(resourcesData)}`);
   return resourcesData;
+}
+
+// https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/
+// Jira issues are stored in ADF format, need to extract the text from it
+export function extractTextFromADF(adfNode: any): string {
+  let text = "";
+
+  if (Array.isArray(adfNode)) {
+    for (const node of adfNode) {
+      text += extractTextFromADF(node);
+    }
+  } else if (adfNode && typeof adfNode === "object") {
+    if (adfNode.type === "text" && typeof adfNode.text === "string") {
+      text += adfNode.text;
+    } else if (adfNode.content) {
+      text += extractTextFromADF(adfNode.content);
+    }
+  }
+
+  return text;
 }

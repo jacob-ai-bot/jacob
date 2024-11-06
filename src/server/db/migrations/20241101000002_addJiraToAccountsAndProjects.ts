@@ -1,7 +1,9 @@
 import { change } from "../dbScript";
 
 change(async (db) => {
-  await db.changeTable("users", (t) => ({
+  await db.changeTable("accounts", (t) => ({
+    refresh_token_expires_in: t.integer().nullable(),
+    jiraAccessToken: t.text().nullable(),
     jiraRefreshToken: t.text().nullable(),
   }));
 });

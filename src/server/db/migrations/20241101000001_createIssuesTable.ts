@@ -35,6 +35,7 @@ change(async (db, up) => {
     title: t.text().nullable(),
     ...t.timestamps(),
   }));
+
   if (!up) {
     await db.dropEnum("issue_source", issueSourceValues);
   }

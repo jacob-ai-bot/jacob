@@ -4,6 +4,7 @@ import { db } from "~/server/db/db";
 import {
   fetchJiraProjects,
   getJiraCloudIdResources,
+  refreshJiraAccessToken,
   syncJiraBoard,
 } from "~/server/utils/jira";
 
@@ -14,10 +15,10 @@ export const jiraRouter = createTRPCRouter({
         session: { user },
       },
     }) => {
-      const databaseUser = await db.users.findBy({
-        id: parseInt(user.id),
+      const databaseUser = await db.accounts.findBy({
+        userId: parseInt(user.id),
       });
-      return !!databaseUser?.jiraToken;
+      return !!databaseUser?.jiraAccessToken;
     },
   ),
   getBoards: protectedProcedure
@@ -37,12 +38,16 @@ export const jiraRouter = createTRPCRouter({
           if (!jiraCloudId) {
             throw new Error("Jira cloud ID is required");
           }
-          const databaseUser = await db.users.findBy({ id: parseInt(user.id) });
+          const account = await db.accounts.findBy({
+            userId: parseInt(user.id),
+          });
 
-          if (!databaseUser?.jiraToken || !jiraCloudId) {
+          if (!account?.jiraAccessToken || !jiraCloudId) {
             throw new Error("User not connected to Jira");
           }
-          return fetchJiraProjects(databaseUser.jiraToken, jiraCloudId);
+
+          const newAccessToken = await refreshJiraAccessToken(account.id);
+          return fetchJiraProjects(newAccessToken, jiraCloudId);
         } catch (error) {
           console.error("Error fetching Jira projects:", error);
           throw error;
@@ -61,7 +66,7 @@ export const jiraRouter = createTRPCRouter({
     .mutation(
       async ({
         ctx: {
-          session: { user },
+          session: { user, accessToken: githubAccessToken },
         },
         input: { jiraCloudId, projectId, boardId },
       }) => {
@@ -69,19 +74,20 @@ export const jiraRouter = createTRPCRouter({
           throw new Error("Board ID and project ID are required");
         }
         try {
-          const databaseUser = await db.users.findBy({
-            id: parseInt(user.id),
+          const account = await db.accounts.findBy({
+            userId: parseInt(user.id),
           });
 
-          if (!databaseUser?.jiraToken || !jiraCloudId) {
+          if (!account?.jiraAccessToken || !jiraCloudId) {
             throw new Error("User not connected to Jira");
           }
           return syncJiraBoard(
-            databaseUser.jiraToken,
+            account.jiraAccessToken,
             jiraCloudId,
             projectId,
             boardId,
-            databaseUser.id,
+            account.userId,
+            githubAccessToken,
           );
         } catch (error) {
           console.error("Error syncing Jira board:", error);
@@ -95,13 +101,19 @@ export const jiraRouter = createTRPCRouter({
         session: { user },
       },
     }) => {
-      const databaseUser = await db.users.findBy({
-        id: parseInt(user.id),
+      const account = await db.accounts.findBy({
+        userId: parseInt(user.id),
       });
-      if (!databaseUser?.jiraToken) {
+      if (!account?.jiraAccessToken) {
         throw new Error("User not connected to Jira");
       }
-      return getJiraCloudIdResources(databaseUser.jiraToken);
+      try {
+        const newAccessToken = await refreshJiraAccessToken(account.id);
+        return getJiraCloudIdResources(newAccessToken);
+      } catch (error) {
+        console.error("Error fetching Jira cloud ID resources:", error);
+        throw error;
+      }
     },
   ),
   saveJiraCloudId: protectedProcedure
@@ -118,10 +130,10 @@ export const jiraRouter = createTRPCRouter({
         },
         input: { jiraCloudId, projectId },
       }) => {
-        const databaseUser = await db.users.findBy({
-          id: parseInt(user.id),
+        const account = await db.accounts.findBy({
+          userId: parseInt(user.id),
         });
-        if (!databaseUser?.jiraToken) {
+        if (!account?.jiraAccessToken) {
           throw new Error("User not connected to Jira");
         }
         await db.projects.find(projectId).update({

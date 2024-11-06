@@ -69,8 +69,8 @@ export async function GET(req: NextRequest) {
 
     const userId = parseInt(session.user.id);
 
-    await db.users.find(userId).update({
-      jiraToken: accessToken,
+    await db.accounts.where({ userId }).update({
+      jiraAccessToken: accessToken,
       jiraRefreshToken: refreshToken,
     });
 

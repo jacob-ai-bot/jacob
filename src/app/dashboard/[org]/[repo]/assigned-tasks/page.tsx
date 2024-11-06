@@ -3,6 +3,7 @@ import { getServerAuthSession } from "~/server/auth";
 
 import TasksPage from "./TasksPage";
 import { Suspense } from "react";
+import LoadingIndicator from "../components/LoadingIndicator";
 interface PageProps {
   params: {
     org: string;
@@ -22,7 +23,7 @@ export default async function LivePageRoute({ params }: PageProps) {
   const { org, repo } = params;
 
   return (
-    <Suspense>
+    <Suspense fallback={<LoadingIndicator />}>
       <TasksPage org={org} repo={repo} />
     </Suspense>
   );

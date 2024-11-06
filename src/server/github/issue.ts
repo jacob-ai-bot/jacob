@@ -114,3 +114,24 @@ export async function createRepoInstalledIssue(
     assignee,
   });
 }
+
+export async function createGitHubIssue(
+  owner: string,
+  repo: string,
+  title: string,
+  body: string,
+  token: string,
+) {
+  const octokit = new Octokit({
+    auth: token,
+    log: console,
+    userAgent: "jacob",
+  });
+
+  return octokit.issues.create({
+    owner,
+    repo,
+    title,
+    body,
+  });
+}
