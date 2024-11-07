@@ -131,9 +131,9 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
 
   return (
     <>
-      <div className="mb-6 flex flex-col flex-nowrap items-center justify-between gap-1 overflow-clip md:flex-row md:gap-4">
-        <div className="flex w-full flex-row flex-nowrap items-center space-x-2">
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 md:text-xl">
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 overflow-hidden md:flex-row md:items-center">
+        <div className="flex w-full flex-col items-start space-y-2 md:w-auto md:flex-row md:items-center md:space-x-2 md:space-y-0">
+          <h2 className="break-words text-base font-bold text-gray-800 dark:text-gray-100 md:text-xl">
             {selectedIssue.title}
           </h2>
           <div
@@ -145,12 +145,12 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
                   : selectedTodo.status === TodoStatus.ERROR
                     ? "bg-error-100 text-error-800 dark:bg-error-800 dark:text-error-100"
                     : "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100"
-            } whitespace-nowrap rounded-full px-2 py-1`}
+            } rounded-full px-2 py-1`}
           >
             {getTodoLabel(selectedTodo.status)}
           </div>
         </div>
-        <div className="flex w-full flex-row items-center justify-between space-x-2 md:w-0 md:justify-end">
+        <div className="flex w-full flex-row items-center justify-between space-x-2 md:w-auto md:justify-end">
           {selectedTodo.status === TodoStatus.TODO && (
             <div className="flex items-center space-x-4 ">
               <label className="flex items-center space-x-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
