@@ -52,9 +52,9 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (todos && todos.length > 0) {
-      if (todos[0]) {
-        setSelectedTodo(todos[0]);
-      }
+      setSelectedTodo(todos[0]);
+    } else {
+      setSelectedTodo(null);
     }
   }, [todos]);
 
@@ -102,8 +102,10 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
       setSelectedTodo(null);
     }
     // select the first todo
-    if (filteredTodos.length > 0) {
-      setSelectedTodo(filteredTodos[0] ?? null);
+    if (filteredTodos.length > 1) {
+      setSelectedTodo(filteredTodos.find((todo) => todo.id !== id) ?? null);
+    } else {
+      setSelectedTodo(null);
     }
     void refetchTodos();
   };
