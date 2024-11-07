@@ -34,6 +34,7 @@ const CONTEXT_WINDOW = {
   "claude-3-haiku-20240307": 200000,
   "claude-3-5-sonnet-20240620": 200000,
   "claude-3-5-sonnet-20241022": 200000,
+  "claude-3-5-haiku-20241022": 200000,
   "llama-3.1-sonar-large-128k-online": 127072,
   "llama-3.1-sonar-small-128k-online": 127072,
   "llama3-70b-8192": 8192, // Limited to 8K during preview, will be 128K in the future
@@ -58,6 +59,7 @@ export const MAX_OUTPUT = {
   "claude-3-haiku-20240307": 4096,
   "claude-3-5-sonnet-20240620": 8192,
   "claude-3-5-sonnet-20241022": 8192,
+  "claude-3-5-haiku-20241022": 4096,
   "llama-3.1-sonar-large-128k-online": 4096,
   "llama-3.1-sonar-small-128k-online": 4096,
   "llama3-70b-8192": 4096,
@@ -83,6 +85,7 @@ const INPUT_TOKEN_COSTS = {
   "claude-3-haiku-20240307": 0.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 3 / ONE_MILLION,
   "claude-3-5-sonnet-20241022": 3 / ONE_MILLION,
+  "claude-3-5-haiku-20241022": 1 / ONE_MILLION,
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
   "llama3-70b-8192": 0.59 / ONE_MILLION,
@@ -106,6 +109,7 @@ const OUTPUT_TOKEN_COSTS = {
   "claude-3-haiku-20240307": 1.25 / ONE_MILLION,
   "claude-3-5-sonnet-20240620": 15 / ONE_MILLION,
   "claude-3-5-sonnet-20241022": 15 / ONE_MILLION,
+  "claude-3-5-haiku-20241022": 5 / ONE_MILLION,
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
   "llama3-70b-8192": 0.79 / ONE_MILLION,
@@ -129,6 +133,7 @@ const PORTKEY_VIRTUAL_KEYS = {
   "claude-3-haiku-20240307": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-5-sonnet-20240620": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-5-sonnet-20241022": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
+  "claude-3-5-haiku-20241022": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "llama-3.1-sonar-large-128k-online":
     process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3.1-sonar-small-128k-online":
@@ -173,8 +178,8 @@ export const sendGptRequest = async (
   model: Model = "claude-3-5-sonnet-20241022",
   isJSONMode = false,
 ): Promise<string | null> => {
-  // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
-  // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
+  console.log("\n\n --- User Prompt --- \n\n", userPrompt);
+  console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
     const isO1Model =
@@ -193,8 +198,12 @@ export const sendGptRequest = async (
       }
     }
 
-    // For now, if we get a request to use Sonnet 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
-    if (model === "claude-3-5-sonnet-20241022" && !isJSONMode) {
+    // For now, if we get a request to use Sonnet 3.5 or Haiku 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
+    if (
+      (model === "claude-3-5-sonnet-20241022" ||
+        model === "claude-3-5-haiku-20241022") &&
+      !isJSONMode
+    ) {
       return sendAnthropicRequest(
         userPrompt,
         systemPrompt,
