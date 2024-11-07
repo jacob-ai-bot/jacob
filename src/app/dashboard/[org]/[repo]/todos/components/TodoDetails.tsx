@@ -38,6 +38,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
 
   const [isGeneratingResearch, setIsGeneratingResearch] = useState(false);
   const [isStartingWork, setIsStartingWork] = useState(false);
+  const [isRestartingTask, setIsRestartingTask] = useState(false);
   const [runBuild, setRunBuild] = useState(false);
 
   const { mutateAsync: researchIssue } = api.todos.researchIssue.useMutation();
@@ -89,6 +90,28 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       toast.error("Failed to start work on the issue.");
     } finally {
       setIsStartingWork(false);
+    }
+  };
+
+  const handleRestartTask = async () => {
+    setIsRestartingTask(true);
+    try {
+      const currentBody = selectedIssue?.body ?? "";
+      const updatedBody = currentBody.replace(/@jacob-ai-bot.*/, "");
+
+      await updateIssue({
+        repo: `${org}/${repo}`,
+        id: selectedTodo?.issueId ?? 0,
+        title: selectedIssue?.title ?? "",
+        body: updatedBody,
+      });
+
+      await handleStartWork();
+    } catch (error) {
+      console.error("Error restarting task:", error);
+      toast.error("Failed to restart the task.");
+    } finally {
+      setIsRestartingTask(false);
     }
   };
 
@@ -151,6 +174,20 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
                 {isStartingWork ? "Starting Work..." : "Start Work"}
               </button>
             </div>
+          )}
+          {(selectedTodo.status === TodoStatus.IN_PROGRESS ||
+            selectedTodo.status === TodoStatus.ERROR) && (
+            <button
+              onClick={handleRestartTask}
+              disabled={isRestartingTask}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-white ${
+                isRestartingTask
+                  ? "cursor-not-allowed bg-gray-400"
+                  : "bg-sunset-500 hover:bg-sunset-600 dark:bg-purple-700 dark:hover:bg-purple-600"
+              }`}
+            >
+              {isRestartingTask ? "Restarting..." : "Restart Task"}
+            </button>
           )}
         </div>
       </div>
