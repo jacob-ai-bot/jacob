@@ -7,7 +7,8 @@ export const ExtractedIssueDetails: React.FC<{
   feedback: string | null;
   rewrittenIssue: string | null;
   onUpdateIssue: (issueBody: string) => void;
-}> = ({ feedback, rewrittenIssue, onUpdateIssue }) => {
+  isEvaluating: boolean;
+}> = ({ feedback, rewrittenIssue, onUpdateIssue, isEvaluating }) => {
   const phrases = useMemo(
     () => [
       "Gathering Codebase Context...",
@@ -27,16 +28,23 @@ export const ExtractedIssueDetails: React.FC<{
   const [currentPhrase, setCurrentPhrase] = useState(phrases[0]);
 
   useEffect(() => {
-    const interval = setInterval(
-      () => {
-        const randomIndex = Math.floor(Math.random() * phrases.length);
-        setCurrentPhrase(phrases[randomIndex]);
-      },
-      Math.random() * (10000 - 5000) + 5000,
-    );
+    let interval: NodeJS.Timeout | null = null;
+    if (isEvaluating) {
+      interval = setInterval(
+        () => {
+          const randomIndex = Math.floor(Math.random() * phrases.length);
+          setCurrentPhrase(phrases[randomIndex]);
+        },
+        Math.random() * (10000 - 5000) + 5000,
+      );
+    }
 
-    return () => clearInterval(interval);
-  }, [phrases]);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isEvaluating, phrases]);
 
   return (
     <div className="hide-scrollbar h-full overflow-hidden overflow-y-auto rounded-md bg-white/80 px-6 shadow-sm dark:bg-slate-800">
@@ -73,7 +81,7 @@ export const ExtractedIssueDetails: React.FC<{
           Update Issue Draft
         </button>
       </div>
-      {rewrittenIssue && (
+      {isEvaluating && (
         <div className="mt-6 flex items-center justify-center">
           <div className="text-lg font-semibold text-gray-700 dark:text-gray-300">
             {currentPhrase}
