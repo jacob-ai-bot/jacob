@@ -402,6 +402,7 @@ Please update the \`${fileName}\` file to address the following:
             feedback={feedback}
             rewrittenIssue={rewrittenIssue}
             onUpdateIssue={handleUpdateIssue}
+            isEvaluating={isEvaluating}
           />
         </div>
       )}
