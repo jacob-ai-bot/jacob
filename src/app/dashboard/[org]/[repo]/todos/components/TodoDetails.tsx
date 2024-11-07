@@ -97,8 +97,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     setIsRestartingTask(true);
     try {
       const currentBody = selectedIssue?.body ?? "";
-      const updatedBody =
-        currentBody.replace(/@jacob-ai-bot.*/, "") + "\n@jacob-ai-bot";
+      const updatedBody = currentBody.replace(/@jacob-ai-bot.*/, "");
 
       await updateIssue({
         repo: `${org}/${repo}`,
@@ -107,17 +106,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
         body: updatedBody,
       });
 
-      await updateTodo({
-        id: selectedTodo.id,
-        status: TodoStatus.IN_PROGRESS,
-      });
-
-      onTodoUpdate({
-        ...selectedTodo,
-        status: TodoStatus.IN_PROGRESS,
-      });
-
-      toast.success("Task restarted successfully!");
+      await handleStartWork();
     } catch (error) {
       console.error("Error restarting task:", error);
       toast.error("Failed to restart the task.");
