@@ -12,6 +12,7 @@ import IssueComponent from "./Issue";
 import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
+import DetailsPlaceholder from "~/app/_components/DetailsPlaceholder";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -119,7 +120,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     return <LoadingIndicator />;
   }
   if (!selectedIssue || !selectedTodo) {
-    return <div>No issue found</div>;
+    return <DetailsPlaceholder />;
   }
 
   const userQuestions = research?.filter(

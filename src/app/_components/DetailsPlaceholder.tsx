@@ -25,8 +25,16 @@ const TodoDetailsPlaceholder: React.FC = () => {
       <img
         className="w-1/2 dark:mix-blend-multiply"
         src={`/images/illustrations/${illustration}`}
-        alt="Todo Details"
+        alt="No Todos"
       />
+      <div className="absolute left-1/2 top-16 z-10 -translate-x-1/2 text-center">
+        <h2 className="mb-4 text-2xl font-bold text-gray-800 dark:text-gray-200">
+          All todos completed!
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400">
+          Time to relax and recharge.
+        </p>
+      </div>
     </div>
   );
 };
