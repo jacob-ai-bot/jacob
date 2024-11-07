@@ -82,7 +82,6 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
     initialMessages: savedMessages,
     onResponse: async (response) => {
       console.log("onResponse", response);
-      // turn off the loading indicator
       setHasStartedStreaming(true);
     },
     onError: (error) => {
@@ -104,6 +103,7 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
       setArtifactFileName(fileName);
       setArtifactLanguage(language);
       setArtifactFilePath(filePath);
+      setIsCreatingArtifact(true);
     },
     onFinish: () => {
       setHasStartedStreaming(false);
@@ -112,22 +112,20 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
   });
 
   useEffect(() => {
-    if (messages.length === 0) return;
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage) return;
-    if (lastMessage.role === "assistant" && lastMessage.content.length > 0) {
-      // this is a workaround, but if the last message is an assistant message and there is
-      // more than a 1000ms gap between the last message and the onFinished call, then we know
-      // that the system is creating an artifact and we should show the loading card
-      setIsCreatingArtifact(true);
+    if (isCreatingArtifact) {
+      const timer = setTimeout(() => {
+        setShowLoadingCard(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowLoadingCard(false);
     }
-  }, [messages]);
+  }, [isCreatingArtifact]);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (model) {
-      // when the model changes, move the messages from the previous model to the new model
       setSavedMessages(messages);
     }
   }, [model, messages]);
@@ -141,17 +139,6 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    if (isCreatingArtifact) {
-      const timer = setTimeout(() => {
-        setShowLoadingCard(true);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowLoadingCard(false);
-    }
-  }, [isCreatingArtifact]);
 
   useEffect(() => {
     if (codeContent) {
