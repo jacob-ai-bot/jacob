@@ -26,7 +26,7 @@ export async function sendTransactionalEmail(
 
   // Process markdown content first
   const processedResearch = await Promise.all(
-    (researchDetails || []).map(async (research) => ({
+    (researchDetails ?? []).map(async (research) => ({
       ...research,
       answer: research.answer
         ? await marked(research.answer, { breaks: true })
@@ -35,7 +35,7 @@ export async function sendTransactionalEmail(
   );
 
   const processedPlanSteps = await Promise.all(
-    (planSteps || []).map(async (step) => ({
+    (planSteps ?? []).map(async (step) => ({
       ...step,
       instructions: await marked(step.instructions, { breaks: true }),
     })),
