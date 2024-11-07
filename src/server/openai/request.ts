@@ -172,6 +172,7 @@ export const sendGptRequest = async (
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
   model: Model = "claude-3-5-sonnet-20241022",
   isJSONMode = false,
+  isCodeEditing = false,
 ): Promise<string | null> => {
   // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
   // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
@@ -274,6 +275,15 @@ export const sendGptRequest = async (
         model,
       };
     }
+
+    // Add Predicted Outputs configuration for code editing scenarios
+    if (isCodeEditing && model.startsWith("gpt-4")) {
+      options.predicted_outputs = {
+        enabled: true,
+        max_tokens: Math.min(max_tokens, 1000), // Limit predicted outputs to 1000 tokens or max_tokens, whichever is smaller
+      };
+    }
+
     let response;
     if (model.startsWith("llama3.1")) {
       response = await cerebrasClient.chat.completions.create({
@@ -352,6 +362,7 @@ export const sendGptRequest = async (
             imagePrompt,
             model,
             isJSONMode,
+            isCodeEditing,
           )
             .then(resolve)
             .catch(reject);
@@ -534,6 +545,7 @@ export const OpenAIStream = async (
   messages: Message[],
   systemPrompt = "You are a helpful friendly assistant.",
   temperature = 1,
+  isCodeEditing = false,
 ): Promise<Stream<ChatCompletionChunk>> => {
   try {
     const openai = new OpenAI({
@@ -566,6 +578,14 @@ export const OpenAIStream = async (
       stream: true,
     };
 
+    // Add Predicted Outputs configuration for code editing scenarios
+    if (isCodeEditing && model.startsWith("gpt-4")) {
+      chatCompletionParams.predicted_outputs = {
+        enabled: true,
+        max_tokens: Math.min(max_tokens, 1000), // Limit predicted outputs to 1000 tokens or max_tokens, whichever is smaller
+      };
+    }
+
     // Start the streaming session with OpenAI
     return openai.chat.completions.create(chatCompletionParams);
   } catch (error) {
@@ -584,6 +604,7 @@ export const sendGptToolRequest = async (
   model: Model = "gpt-4-turbo-2024-04-09",
   toolChoice: ChatCompletionToolChoiceOption = "auto",
   parallelToolCalls = false,
+  isCodeEditing = false,
 ): Promise<OpenAI.Chat.ChatCompletion> => {
   const openai = new OpenAI({
     apiKey: "using-virtual-portkey-key",
@@ -605,7 +626,7 @@ export const sendGptToolRequest = async (
     );
     const startTime = Date.now();
 
-    const response = await openai.chat.completions.create({
+    const chatCompletionParams: OpenAI.Chat.ChatCompletionCreateParams = {
       model,
       messages,
       max_tokens,
@@ -613,7 +634,17 @@ export const sendGptToolRequest = async (
       tools,
       tool_choice: toolChoice,
       ...(parallelToolCalls ? { parallel_tool_calls: true } : {}),
-    });
+    };
+
+    // Add Predicted Outputs configuration for code editing scenarios
+    if (isCodeEditing && model.startsWith("gpt-4")) {
+      chatCompletionParams.predicted_outputs = {
+        enabled: true,
+        max_tokens: Math.min(max_tokens, 1000), // Limit predicted outputs to 1000 tokens or max_tokens, whichever is smaller
+      };
+    }
+
+    const response = await openai.chat.completions.create(chatCompletionParams);
 
     const endTime = Date.now();
     const duration = endTime - startTime;
@@ -637,45 +668,4 @@ export const sendGptToolRequest = async (
         model,
         requestPrompts: messages.map((message) => ({
           promptType: (message.role?.toUpperCase() ?? "User") as
-            | "User"
-            | "System"
-            | "Assistant",
-          prompt:
-            typeof message.content === "string"
-              ? message.content
-              : JSON.stringify(message.content),
-        })),
-        responsePrompt: JSON.stringify(response.choices[0]?.message),
-      });
-    }
-
-    return response;
-  } catch (error) {
-    if (
-      retries === 0 ||
-      !(error instanceof Error) ||
-      (error as { response?: Response })?.response?.status !== 429
-    ) {
-      console.error(
-        `Error in GPT tool request: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      throw error;
-    } else {
-      console.log(
-        `Received 429, retries remaining: ${retries}. Retrying in ${delay} ms...`,
-      );
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return sendGptToolRequest(
-        messages,
-        tools,
-        temperature,
-        baseEventData,
-        retries - 1,
-        delay * 2,
-        model,
-        toolChoice,
-        parallelToolCalls,
-      );
-    }
-  }
-};
+            
