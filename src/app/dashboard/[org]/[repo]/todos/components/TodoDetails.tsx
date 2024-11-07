@@ -175,7 +175,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
               </button>
             </div>
           )}
-          {(selectedTodo.status === TodoStatus.IN_PROGRESS ||
+          {(selectedTodo.status === TodoStatus.DONE ||
             selectedTodo.status === TodoStatus.ERROR) && (
             <button
               onClick={handleRestartTask}
