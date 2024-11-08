@@ -19,6 +19,7 @@ export class ProjectsTable extends BaseTable {
     lastBuildAt: t.timestamp().nullable(),
     buildError: t.text(0, 65535).nullable(),
     jiraCloudId: t.text().nullable(),
+    linearBoardId: t.text().nullable(),
     ...t.timestamps(),
   }));
 }

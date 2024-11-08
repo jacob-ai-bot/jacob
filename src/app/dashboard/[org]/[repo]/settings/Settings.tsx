@@ -112,6 +112,77 @@ export default function Settings({
     }
   };
 
+  // Linear integration
+  const {
+    data: isUserConnectedToLinear,
+    isLoading: isLoadingIsUserConnectedToLinear,
+    error: isUserConnectedToLinearError,
+  } = api.linear.isUserConnectedToLinear.useQuery();
+
+  const {
+    data: linearBoards,
+    isLoading: isLoadingLinearBoards,
+    refetch: refetchLinearBoards,
+  } = api.linear.getBoards.useQuery(
+    { projectId },
+    {
+      enabled: !!isUserConnectedToLinear,
+    },
+  );
+
+  const [selectedLinearBoard, setSelectedLinearBoard] = useState<string>("");
+
+  const { mutate: saveLinearBoardId } =
+    api.linear.saveLinearBoardId.useMutation({
+      onSuccess: () => {
+        toast.success("Linear board saved");
+        void refetchLinearBoards();
+      },
+      onError: (error) => {
+        toast.error("Error saving Linear board");
+        console.error("Error saving Linear board:", error);
+      },
+    });
+
+  const { mutate: syncLinearBoard, isPending: isSyncingLinearBoard } =
+    api.linear.syncBoard.useMutation({
+      onSuccess: () => {
+        toast.success("Linear board synced");
+      },
+      onError: (error) => {
+        toast.error("Error syncing Linear board");
+        console.error("Error syncing Linear board:", error);
+      },
+    });
+
+  useEffect(() => {
+    if (linearBoards && linearBoards.length > 0) {
+      setSelectedLinearBoard(linearBoards[0].id);
+    }
+  }, [linearBoards]);
+
+  const handleConnectToLinear = () => {
+    router.push(`/api/auth/linear/callback?projectId=${projectId}`);
+  };
+
+  const handleSaveLinearBoard = () => {
+    if (selectedLinearBoard && projectId) {
+      saveLinearBoardId({
+        projectId,
+        boardId: selectedLinearBoard,
+      });
+    }
+  };
+
+  const handleSyncLinearBoard = () => {
+    if (selectedLinearBoard && projectId) {
+      syncLinearBoard({
+        projectId,
+        boardId: selectedLinearBoard,
+      });
+    }
+  };
+
   return (
     <div className="relative h-full w-full text-left">
       <div className="absolute right-4 top-4">
@@ -215,6 +286,58 @@ export default function Settings({
         <div>
           Error loading Jira cloud ID resources:{" "}
           {jiraCloudIdResourcesError.message}
+        </div>
+      )}
+
+      {/* Linear Integration */}
+      {!isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
+        <button
+          onClick={handleConnectToLinear}
+          className="mt-4 flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+        >
+          <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
+          Connect to Linear
+        </button>
+      )}
+      {isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
+        <div className="mt-6">
+          <h2 className="mb-2 text-xl font-semibold">Sync Linear Board</h2>
+          <select
+            value={selectedLinearBoard}
+            onChange={(e) => setSelectedLinearBoard(e.target.value)}
+            className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
+            disabled={isLoadingLinearBoards}
+          >
+            <option value="">Select a Linear Board</option>
+            {linearBoards?.map((board) => (
+              <option key={board.id} value={board.id}>
+                {board.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleSaveLinearBoard}
+            disabled={!selectedLinearBoard}
+            className="mr-2 flex items-center rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:bg-gray-400"
+          >
+            Save Board
+          </button>
+          <button
+            onClick={handleSyncLinearBoard}
+            disabled={!selectedLinearBoard || isSyncingLinearBoard}
+            className="flex items-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-400"
+          >
+            <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
+            {isSyncingLinearBoard ? "Syncing..." : "Sync Board"}
+          </button>
+        </div>
+      )}
+      {isLoadingIsUserConnectedToLinear && (
+        <div>Loading Linear Settings...</div>
+      )}
+      {isUserConnectedToLinearError && (
+        <div>
+          Error loading Linear settings: {isUserConnectedToLinearError.message}
         </div>
       )}
     </div>

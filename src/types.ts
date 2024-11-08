@@ -202,4 +202,5 @@ export enum EvaluationMode {
 export enum IssueBoardSource {
   GITHUB = "GitHub",
   JIRA = "Jira",
+  LINEAR = "Linear",
 }
