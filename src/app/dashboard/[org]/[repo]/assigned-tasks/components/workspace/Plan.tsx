@@ -90,7 +90,9 @@ export const PlanComponent: React.FC<ComponentProps> = ({
         <Textarea
           placeholder="Provide feedback on the current plan..."
           value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            setFeedback(e.target.value)
+          }
           className="mt-2 w-full"
         />
         <Button
@@ -158,28 +160,28 @@ export const PlanComponent: React.FC<ComponentProps> = ({
             <Input
               placeholder="Title"
               value={newStep.title}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setNewStep({ ...newStep, title: e.target.value })
               }
             />
             <Textarea
               placeholder="Instructions"
               value={newStep.instructions}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setNewStep({ ...newStep, instructions: e.target.value })
               }
             />
             <Input
               placeholder="File Path"
               value={newStep.filePath}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setNewStep({ ...newStep, filePath: e.target.value })
               }
             />
             <Input
               placeholder="Exit Criteria"
               value={newStep.exitCriteria}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setNewStep({ ...newStep, exitCriteria: e.target.value })
               }
             />
