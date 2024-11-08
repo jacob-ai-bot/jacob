@@ -28,11 +28,14 @@ export default function Settings({
   repo,
   projectId,
   userLogin,
-  jiraCloudId,
+  jiraCloudId: initialJiraCloudId,
 }: SettingsProps) {
   const router = useRouter();
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
   const [selectedBoard, setSelectedBoard] = useState<string>("");
+  const [jiraCloudIdState, setJiraCloudIdState] = useState<string | undefined>(
+    initialJiraCloudId,
+  );
 
   const { mutate: syncBoard, isPending: isSyncingBoard } =
     api.jira.syncBoard.useMutation({
@@ -55,11 +58,24 @@ export default function Settings({
     data: boards,
     isLoading: isLoadingBoards,
     refetch: refetchBoards,
-  } = api.jira.getBoards.useQuery({ jiraCloudId });
+  } = api.jira.getBoards.useQuery(
+    { jiraCloudId: jiraCloudIdState },
+    {
+      enabled: !!jiraCloudIdState,
+    },
+  );
 
   const { mutate: saveJiraCloudId } = api.jira.saveJiraCloudId.useMutation({
-    onSuccess: () => {
-      void refetchBoards();
+    onSuccess: (savedJiraCloudId) => {
+      if (typeof savedJiraCloudId === "string") {
+        setJiraCloudIdState(savedJiraCloudId);
+        void refetchBoards();
+      } else {
+        console.error(
+          "Unexpected response from saveJiraCloudId:",
+          savedJiraCloudId,
+        );
+      }
     },
     onError: (error) => {
       toast.error("Error saving Jira cloud ID");
@@ -87,10 +103,10 @@ export default function Settings({
   };
 
   const handleSyncBoard = () => {
-    if (selectedBoard && jiraCloudId && projectId) {
+    if (selectedBoard && jiraCloudIdState && projectId) {
       syncBoard({
         projectId,
-        jiraCloudId,
+        jiraCloudId: jiraCloudIdState,
         boardId: selectedBoard,
       });
     }
@@ -127,7 +143,7 @@ export default function Settings({
         </button>
       )}
       {isUserConnectedToJira &&
-        !jiraCloudId &&
+        !jiraCloudIdState &&
         !isLoadingIsUserConnectedToJira && (
           <div className="mt-6">
             <h2 className="mb-4 text-xl font-semibold">
@@ -162,7 +178,7 @@ export default function Settings({
           </div>
         )}
       {isUserConnectedToJira &&
-        jiraCloudId &&
+        jiraCloudIdState &&
         !isLoadingIsUserConnectedToJira && (
           <div className="mt-6">
             <h2 className="mb-2 text-xl font-semibold">Sync Jira Board</h2>
