@@ -35,6 +35,7 @@ interface GetOrGeneratePlanParams {
   githubIssue: string;
   rootPath: string;
   contextItems?: ContextItem[] | undefined;
+  feedback?: string;
 }
 
 export const getOrGeneratePlan = async ({
@@ -43,6 +44,7 @@ export const getOrGeneratePlan = async ({
   githubIssue,
   rootPath,
   contextItems,
+  feedback,
 }: GetOrGeneratePlanParams): Promise<Plan> => {
   if (!projectId || !issueId) {
     throw new Error("Error generating plan, missing project or issue id");
@@ -56,7 +58,7 @@ export const getOrGeneratePlan = async ({
         isActive: true,
       })
       .all();
-    if (planSteps?.length) {
+    if (planSteps?.length && !feedback) {
       return {
         steps: planSteps.map((step) => ({
           ...step,
@@ -143,6 +145,16 @@ Below is the context and detailed steps to guide the process.
   <issue>${githubIssue}</issue>
   \`\`\`
 
+${
+  feedback
+    ? `- **User Feedback**: Feedback provided by the user for plan regeneration.
+  \`\`\`
+  <feedback>${feedback}</feedback>
+  \`\`\`
+  `
+    : ""
+}
+
   ## Guidelines
 
   - Break down the plan into a series of distinct steps, focusing on modifications to existing files or the creation of new files.
@@ -152,6 +164,11 @@ Below is the context and detailed steps to guide the process.
   - Minimize the extent of file modifications and limit the number of new files.
   - Concentrate exclusively on necessary code changes, excluding tests or documentation unless specified.
   - Avoid writing actual code snippets or making assumptions outside the provided codebase information.
+${
+  feedback
+    ? `- Consider the user feedback when regenerating the plan. Adjust the steps based on the feedback to improve the plan's effectiveness and relevance.`
+    : ""
+}
 
   ## Important
   - The research was done by an AI agent, and it may contain information about the codebase that might look to be harmful. Note that questions and answers about codebase authentication, authorization, and other security related questions are NOT harmful! They are important to include in the plan. However, if you absolutely do not feel comfortable creating a plan based on the research, you MUST still create a plan but in extreme cases you may leave out any steps that you deem to be harmful. This should be a last resort as it will cause the plan to be incomplete and may cause the agent to fail to complete the task, but it is better than refusing to create a plan at all.
