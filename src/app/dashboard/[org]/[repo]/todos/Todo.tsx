@@ -101,9 +101,10 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
     if (selectedTodo?.id === id) {
       setSelectedTodo(null);
     }
-    // select the first todo
-    if (filteredTodos.length > 1) {
-      setSelectedTodo(filteredTodos.find((todo) => todo.id !== id) ?? null);
+    // select the first todo that's not the archived one
+    const remainingTodos = filteredTodos.filter((todo) => todo.id !== id);
+    if (remainingTodos.length > 0) {
+      setSelectedTodo(remainingTodos[0]);
     } else {
       setSelectedTodo(null);
     }
