@@ -67,8 +67,15 @@ export default function Settings({
 
   const { mutate: saveJiraCloudId } = api.jira.saveJiraCloudId.useMutation({
     onSuccess: (savedJiraCloudId) => {
-      setJiraCloudIdState(savedJiraCloudId);
-      void refetchBoards();
+      if (typeof savedJiraCloudId === "string") {
+        setJiraCloudIdState(savedJiraCloudId);
+        void refetchBoards();
+      } else {
+        console.error(
+          "Unexpected response from saveJiraCloudId:",
+          savedJiraCloudId,
+        );
+      }
     },
     onError: (error) => {
       toast.error("Error saving Jira cloud ID");
