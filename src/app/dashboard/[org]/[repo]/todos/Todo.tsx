@@ -52,7 +52,7 @@ const Todo: React.FC<TodoProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (todos && todos.length > 0) {
-      setSelectedTodo(todos[0]);
+      setSelectedTodo(todos[0] ?? null);
     } else {
       setSelectedTodo(null);
     }
