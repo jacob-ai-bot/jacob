@@ -130,6 +130,9 @@ export function standardizePath(filePath: string): StandardizedPath {
     return "" as StandardizedPath;
   }
   let cleanPath = filePath.replace(/^\.\//, "");
+  if (!cleanPath) {
+    return "" as StandardizedPath;
+  }
 
   if (!cleanPath.startsWith("/")) {
     cleanPath = "/" + cleanPath;
@@ -232,6 +235,7 @@ export function getLanguageFromFile(fileName: string): string {
 }
 
 export function startsWithIgnoreCase(str: string, prefix: string): boolean {
+  if (!str || !prefix) return false;
   return str.toLowerCase().startsWith(prefix.toLowerCase());
 }
 

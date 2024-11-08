@@ -70,7 +70,8 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
     });
 
   const { messages, input, handleInputChange, append, isLoading } = useChat({
-    streamProtocol: model.modelName.startsWith("o1") ? "text" : "data",
+    streamProtocol:
+      model.modelName?.startsWith("o1") ?? false ? "text" : "data",
     api: `/api/chat/${model.provider}`,
     body: {
       model,

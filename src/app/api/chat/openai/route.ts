@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return new Response("No context items provided", { status: 200 });
     }
 
-    const isO1 = model.modelName.startsWith("o1");
+    const isO1 = model.modelName?.startsWith("o1") ?? false;
 
     const context = contextItems
       .map((c) => `${c.file}: ${c.overview} \n\n ${c.text}`)
