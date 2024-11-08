@@ -239,6 +239,10 @@ export function startsWithIgnoreCase(str: string, prefix: string): boolean {
   return str.toLowerCase().startsWith(prefix.toLowerCase());
 }
 
-export function includesIgnoreCase(str: string, searchString: string): boolean {
+export function includesIgnoreCase(
+  str: string | null | undefined,
+  searchString: string,
+): boolean {
+  if (!str || !searchString) return false;
   return str.toLowerCase().includes(searchString.toLowerCase());
 }
