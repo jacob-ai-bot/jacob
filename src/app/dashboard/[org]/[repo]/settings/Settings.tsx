@@ -102,12 +102,61 @@ export default function Settings({
     router.push(`/auth/jira?projectId=${projectId}`);
   };
 
+  const handleConnectToLinear = () => {
+    router.push(`/auth/linear?projectId=${projectId}`);
+  };
+
   const handleSyncBoard = () => {
     if (selectedBoard && jiraCloudIdState && projectId) {
       syncBoard({
         projectId,
         jiraCloudId: jiraCloudIdState,
         boardId: selectedBoard,
+      });
+    }
+  };
+
+  const {
+    data: isUserConnectedToLinear,
+    isLoading: isLoadingIsUserConnectedToLinear,
+    error: isUserConnectedToLinearError,
+  } = api.linear.isUserConnectedToLinear.useQuery();
+
+  const {
+    data: linearBoards,
+    isLoading: isLoadingLinearBoards,
+    refetch: refetchLinearBoards,
+  } = api.linear.getBoards.useQuery(
+    { projectId },
+    {
+      enabled: !!isUserConnectedToLinear,
+    },
+  );
+
+  const [selectedLinearBoard, setSelectedLinearBoard] = useState<string>("");
+
+  const { mutate: syncLinearBoard, isPending: isSyncingLinearBoard } =
+    api.linear.syncBoard.useMutation({
+      onSuccess: () => {
+        toast.success("Linear board synced");
+      },
+      onError: (error) => {
+        toast.error("Error syncing Linear board");
+        console.error("Error syncing Linear board:", error);
+      },
+    });
+
+  useEffect(() => {
+    if (linearBoards && linearBoards.length > 0) {
+      setSelectedLinearBoard(linearBoards[0].id);
+    }
+  }, [linearBoards]);
+
+  const handleSyncLinearBoard = () => {
+    if (selectedLinearBoard && projectId) {
+      syncLinearBoard({
+        projectId,
+        boardId: selectedLinearBoard,
       });
     }
   };
@@ -140,6 +189,15 @@ export default function Settings({
         >
           <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
           Connect to Jira
+        </button>
+      )}
+      {!isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
+        <button
+          onClick={handleConnectToLinear}
+          className="mt-4 flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+        >
+          <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
+          Connect to Linear
         </button>
       )}
       {isUserConnectedToJira &&
@@ -205,6 +263,32 @@ export default function Settings({
             </button>
           </div>
         )}
+      {isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
+        <div className="mt-6">
+          <h2 className="mb-2 text-xl font-semibold">Sync Linear Board</h2>
+          <select
+            value={selectedLinearBoard}
+            onChange={(e) => setSelectedLinearBoard(e.target.value)}
+            className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
+            disabled={isLoadingLinearBoards}
+          >
+            <option value="">Select a Linear Board</option>
+            {linearBoards?.map((board) => (
+              <option key={board.id} value={board.id}>
+                {board.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleSyncLinearBoard}
+            disabled={!selectedLinearBoard || isSyncingLinearBoard}
+            className="flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:bg-gray-400"
+          >
+            <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
+            {isSyncingLinearBoard ? "Syncing..." : "Sync Linear Board"}
+          </button>
+        </div>
+      )}
       {isLoadingIsUserConnectedToJira && <div>Loading Jira Settings...</div>}
       {isUserConnectedToJiraError && (
         <div>
@@ -215,6 +299,14 @@ export default function Settings({
         <div>
           Error loading Jira cloud ID resources:{" "}
           {jiraCloudIdResourcesError.message}
+        </div>
+      )}
+      {isLoadingIsUserConnectedToLinear && (
+        <div>Loading Linear Settings...</div>
+      )}
+      {isUserConnectedToLinearError && (
+        <div>
+          Error loading Linear settings: {isUserConnectedToLinearError.message}
         </div>
       )}
     </div>
