@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
-import { type JiraBoard } from "~/types";
+import { type JiraBoard, type LinearProject, type LinearBoard } from "~/types";
 import { toast } from "react-toastify";
 
 interface SettingsProps {
@@ -32,12 +32,17 @@ export default function Settings({
 }: SettingsProps) {
   const router = useRouter();
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
-  const [selectedBoard, setSelectedBoard] = useState<string>("");
+  const [selectedJiraBoard, setSelectedJiraBoard] = useState<string>("");
   const [jiraCloudIdState, setJiraCloudIdState] = useState<string | undefined>(
     initialJiraCloudId,
   );
+  const [linearProjects, setLinearProjects] = useState<LinearProject[]>([]);
+  const [selectedLinearProject, setSelectedLinearProject] =
+    useState<string>("");
+  const [linearBoards, setLinearBoards] = useState<LinearBoard[]>([]);
+  const [selectedLinearBoard, setSelectedLinearBoard] = useState<string>("");
 
-  const { mutate: syncBoard, isPending: isSyncingBoard } =
+  const { mutate: syncJiraBoard, isPending: isSyncingJiraBoard } =
     api.jira.syncBoard.useMutation({
       onSuccess: () => {
         toast.success("Jira board synced");
@@ -47,17 +52,37 @@ export default function Settings({
         console.error("Error syncing Jira board:", error);
       },
     });
+
+  const { mutate: syncLinearBoard, isPending: isSyncingLinearBoard } =
+    api.linear.syncBoard.useMutation({
+      onSuccess: () => {
+        toast.success("Linear board synced");
+      },
+      onError: (error) => {
+        toast.error("Error syncing Linear board");
+        console.error("Error syncing Linear board:", error);
+      },
+    });
+
   const {
     data: isUserConnectedToJira,
     isLoading: isLoadingIsUserConnectedToJira,
     error: isUserConnectedToJiraError,
   } = api.jira.isUserConnectedToJira.useQuery();
+
+  const {
+    data: isUserConnectedToLinear,
+    isLoading: isLoadingIsUserConnectedToLinear,
+    error: isUserConnectedToLinearError,
+  } = api.linear.isUserConnectedToLinear.useQuery();
+
   const { data: jiraCloudIdResources, error: jiraCloudIdResourcesError } =
     api.jira.getJiraCloudIdResources.useQuery();
+
   const {
-    data: boards,
-    isLoading: isLoadingBoards,
-    refetch: refetchBoards,
+    data: jiraBoards,
+    isLoading: isLoadingJiraBoards,
+    refetch: refetchJiraBoards,
   } = api.jira.getBoards.useQuery(
     { jiraCloudId: jiraCloudIdState },
     {
@@ -65,11 +90,28 @@ export default function Settings({
     },
   );
 
+  const {
+    data: linearProjects,
+    isLoading: isLoadingLinearProjects,
+    refetch: refetchLinearProjects,
+  } = api.linear.getProjects.useQuery();
+
+  const {
+    data: linearBoards,
+    isLoading: isLoadingLinearBoards,
+    refetch: refetchLinearBoards,
+  } = api.linear.getBoards.useQuery(
+    { projectId: selectedLinearProject },
+    {
+      enabled: !!selectedLinearProject,
+    },
+  );
+
   const { mutate: saveJiraCloudId } = api.jira.saveJiraCloudId.useMutation({
     onSuccess: (savedJiraCloudId) => {
       if (typeof savedJiraCloudId === "string") {
         setJiraCloudIdState(savedJiraCloudId);
-        void refetchBoards();
+        void refetchJiraBoards();
       } else {
         console.error(
           "Unexpected response from saveJiraCloudId:",
@@ -83,16 +125,50 @@ export default function Settings({
     },
   });
 
+  const { mutate: saveLinearProjectId } =
+    api.linear.saveLinearProjectId.useMutation({
+      onSuccess: () => {
+        toast.success("Linear project saved");
+        void refetchLinearBoards();
+      },
+      onError: (error) => {
+        toast.error("Error saving Linear project");
+        console.error("Error saving Linear project:", error);
+      },
+    });
+
   useEffect(() => {
-    if (boards) {
-      setJiraBoards(boards);
-      if (boards.length === 0) {
-        toast.info("No boards found for this Jira cloud ID");
-      } else if (boards[0]) {
-        setSelectedBoard(boards[0].id);
+    if (jiraBoards) {
+      setJiraBoards(jiraBoards);
+      if (jiraBoards.length === 0) {
+        toast.info("No Jira boards found for this cloud ID");
+      } else if (jiraBoards[0]) {
+        setSelectedJiraBoard(jiraBoards[0].id);
       }
     }
-  }, [boards]);
+  }, [jiraBoards]);
+
+  useEffect(() => {
+    if (linearProjects) {
+      setLinearProjects(linearProjects);
+      if (linearProjects.length === 0) {
+        toast.info("No Linear projects found");
+      } else if (linearProjects[0]) {
+        setSelectedLinearProject(linearProjects[0].id);
+      }
+    }
+  }, [linearProjects]);
+
+  useEffect(() => {
+    if (linearBoards) {
+      setLinearBoards(linearBoards);
+      if (linearBoards.length === 0) {
+        toast.info("No Linear boards found for this project");
+      } else if (linearBoards[0]) {
+        setSelectedLinearBoard(linearBoards[0].id);
+      }
+    }
+  }, [linearBoards]);
 
   const handleChangeSetup = () => {
     router.push(`/setup/${userLogin}/${org}/${repo}/setup`);
@@ -102,12 +178,25 @@ export default function Settings({
     router.push(`/auth/jira?projectId=${projectId}`);
   };
 
-  const handleSyncBoard = () => {
-    if (selectedBoard && jiraCloudIdState && projectId) {
-      syncBoard({
+  const handleConnectToLinear = () => {
+    router.push(`/auth/linear?projectId=${projectId}`);
+  };
+
+  const handleSyncJiraBoard = () => {
+    if (selectedJiraBoard && jiraCloudIdState && projectId) {
+      syncJiraBoard({
         projectId,
         jiraCloudId: jiraCloudIdState,
-        boardId: selectedBoard,
+        boardId: selectedJiraBoard,
+      });
+    }
+  };
+
+  const handleSyncLinearBoard = () => {
+    if (selectedLinearBoard && projectId) {
+      syncLinearBoard({
+        projectId,
+        boardId: selectedLinearBoard,
       });
     }
   };
@@ -140,6 +229,15 @@ export default function Settings({
         >
           <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
           Connect to Jira
+        </button>
+      )}
+      {!isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
+        <button
+          onClick={handleConnectToLinear}
+          className="mt-4 flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+        >
+          <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
+          Connect to Linear
         </button>
       )}
       {isUserConnectedToJira &&
@@ -183,32 +281,87 @@ export default function Settings({
           <div className="mt-6">
             <h2 className="mb-2 text-xl font-semibold">Sync Jira Board</h2>
             <select
-              value={selectedBoard}
-              onChange={(e) => setSelectedBoard(e.target.value)}
+              value={selectedJiraBoard}
+              onChange={(e) => setSelectedJiraBoard(e.target.value)}
               className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
-              disabled={isLoadingBoards}
+              disabled={isLoadingJiraBoards}
             >
               <option value="">Select a Jira Board</option>
-              {jiraBoards.map((board) => (
+              {jiraBoards?.map((board) => (
                 <option key={board.id} value={board.id}>
                   {board.name} ({board.key})
                 </option>
               ))}
             </select>
             <button
-              onClick={handleSyncBoard}
-              disabled={!selectedBoard || isSyncingBoard}
+              onClick={handleSyncJiraBoard}
+              disabled={!selectedJiraBoard || isSyncingJiraBoard}
               className="flex items-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-400"
             >
               <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
-              {isSyncingBoard ? "Syncing..." : "Sync Board"}
+              {isSyncingJiraBoard ? "Syncing..." : "Sync Jira Board"}
             </button>
           </div>
         )}
+      {isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
+        <div className="mt-6">
+          <h2 className="mb-2 text-xl font-semibold">Sync Linear Board</h2>
+          <select
+            value={selectedLinearProject}
+            onChange={(e) => {
+              setSelectedLinearProject(e.target.value);
+              saveLinearProjectId({
+                linearProjectId: e.target.value,
+                projectId,
+              });
+            }}
+            className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
+            disabled={isLoadingLinearProjects}
+          >
+            <option value="">Select a Linear Project</option>
+            {linearProjects?.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          {selectedLinearProject && (
+            <select
+              value={selectedLinearBoard}
+              onChange={(e) => setSelectedLinearBoard(e.target.value)}
+              className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
+              disabled={isLoadingLinearBoards}
+            >
+              <option value="">Select a Linear Board</option>
+              {linearBoards?.map((board) => (
+                <option key={board.id} value={board.id}>
+                  {board.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            onClick={handleSyncLinearBoard}
+            disabled={!selectedLinearBoard || isSyncingLinearBoard}
+            className="flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:bg-gray-400"
+          >
+            <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
+            {isSyncingLinearBoard ? "Syncing..." : "Sync Linear Board"}
+          </button>
+        </div>
+      )}
       {isLoadingIsUserConnectedToJira && <div>Loading Jira Settings...</div>}
+      {isLoadingIsUserConnectedToLinear && (
+        <div>Loading Linear Settings...</div>
+      )}
       {isUserConnectedToJiraError && (
         <div>
           Error loading Jira settings: {isUserConnectedToJiraError.message}
+        </div>
+      )}
+      {isUserConnectedToLinearError && (
+        <div>
+          Error loading Linear settings: {isUserConnectedToLinearError.message}
         </div>
       )}
       {jiraCloudIdResourcesError && (

@@ -17,6 +17,8 @@ export class AccountsTable extends BaseTable {
     token_type: t.text(0, Infinity),
     jiraAccessToken: t.text(0, Infinity).nullable(),
     jiraRefreshToken: t.text(0, Infinity).nullable(),
+    linearAccessToken: t.text(0, Infinity).nullable(),
+    linearRefreshToken: t.text(0, Infinity).nullable(),
     refresh_token_expires_in: t.integer().nullable(),
   }));
 }
