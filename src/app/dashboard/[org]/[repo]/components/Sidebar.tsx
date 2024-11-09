@@ -14,6 +14,7 @@ import {
   faPencil,
   faRobot,
   faBars,
+  faFlowchart,
 } from "@fortawesome/free-solid-svg-icons";
 import { debounce } from "lodash";
 import { usePathname } from "next/navigation";
@@ -25,6 +26,7 @@ const navItems = [
   { name: "Issue Writer", icon: faPencil },
   { name: "Code Visualizer", icon: faCode },
   { name: "Design", icon: faPaintBrush },
+  { name: "Playbook Builder", icon: faFlowchart },
 ];
 
 export default function Sidebar({ org, repo }: { org: string; repo: string }) {
