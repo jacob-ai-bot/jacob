@@ -377,7 +377,7 @@ export async function editFiles(params: EditFilesParams) {
     repoSettings,
     commitMessage: `fix: ${issue.title}`,
     issue,
-    existingPr: null,
+    existingPr: undefined,
     newPrTitle: `Fix for ${issue.title}`,
     newPrBody: `This PR addresses the issue: ${issue.title}`,
     newPrReviewers: [],
@@ -390,5 +390,8 @@ export async function editFiles(params: EditFilesParams) {
     fileName: "",
     filePath: "",
     codeBlock: updatedCode,
+    projectId: baseEventData.projectId,
+    repoFullName: baseEventData.repoFullName,
+    userId: baseEventData.userId,
   });
 }

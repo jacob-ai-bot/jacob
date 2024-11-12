@@ -8,7 +8,7 @@ import {
   getOrCreateCodebaseContext,
 } from "./codebaseContext";
 
-import { standardizePath, isValidPath } from "~/app/utils";
+import { standardizePath } from "~/app/utils";
 import { traverseCodebase } from "~/server/analyze/traverse";
 import { getFiles } from "./files";
 import { z } from "zod";
