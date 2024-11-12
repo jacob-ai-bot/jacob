@@ -4,6 +4,7 @@ import { initRabbitMQ } from "./queue";
 import { purgeEvents } from "~/server/utils/events";
 import { purgeTokens } from "~/server/utils/tokens";
 import { fetchAllNewJiraIssues } from "~/server/utils/jira";
+import { fetchAllNewLinearIssues } from "~/server/utils/linear";
 
 void initRabbitMQ({ listener: true });
 
@@ -26,6 +27,16 @@ CronJob.from({
   onTick: async () => {
     console.log("Cron job: Fetching new Jira issues");
     await fetchAllNewJiraIssues();
+  },
+  start: true,
+});
+
+// Fetch new Linear issues every hour
+CronJob.from({
+  cronTime: "5 * * * *",
+  onTick: async () => {
+    console.log("Cron job: Fetching new Linear issues");
+    await fetchAllNewLinearIssues();
   },
   start: true,
 });

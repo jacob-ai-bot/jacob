@@ -194,6 +194,38 @@ export interface JiraIssue {
   description: string;
 }
 
+export interface LinearTeam {
+  id: string;
+  name: string;
+}
+
+export interface LinearIssue {
+  id: string;
+  url: string;
+  number: number;
+  title: string;
+  description: string;
+  status: string;
+}
+
+export interface LinearIssueData {
+  id: string;
+  title: string;
+  description?: string;
+  teamId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LinearWebhookPayload {
+  action: "create" | "update" | "remove";
+  type: string;
+  data: LinearIssueData;
+  url: string;
+  webhookTimestamp: number;
+  webhookId: string;
+}
+
 export enum EvaluationMode {
   FASTER = "Faster Evaluation",
   DETAILED = "Detailed Evaluation",
@@ -202,4 +234,5 @@ export enum EvaluationMode {
 export enum IssueBoardSource {
   GITHUB = "GitHub",
   JIRA = "Jira",
+  LINEAR = "Linear",
 }

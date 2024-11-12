@@ -3,7 +3,6 @@ import { getServerAuthSession } from "~/server/auth";
 
 import TasksPage from "./TasksPage";
 import { Suspense } from "react";
-import LoadingIndicator from "../components/LoadingIndicator";
 interface PageProps {
   params: {
     org: string;

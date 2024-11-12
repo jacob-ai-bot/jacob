@@ -5,7 +5,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-
 env:
   OPENAI_API_KEY: open-ai-key
   POSTHOG_API_KEY: posthog-key
@@ -23,6 +22,10 @@ env:
   NEXT_PUBLIC_JIRA_CLIENT_ID: sample-client-id
   JIRA_CLIENT_ID: sample-client-id
   JIRA_CLIENT_SECRET: sample-client-secret
+  LINEAR_CLIENT_ID: linear-client-id
+  LINEAR_CLIENT_SECRET: linear-client-secret
+  LINEAR_WEBHOOK_SECRET: linear-webhook-secret
+  NEXT_PUBLIC_LINEAR_CLIENT_ID: linear-client-id
 
 jobs:
   build:

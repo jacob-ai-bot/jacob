@@ -8,6 +8,7 @@ import { chatRouter } from "./routers/chat";
 import { planStepsRouter } from "./routers/planSteps";
 import { projectsRouter } from "./routers/projects";
 import { jiraRouter } from "./routers/jira";
+import { linearRouter } from "./routers/linear";
 /**
  * This is the primary router for your server.
  *
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
   planSteps: planStepsRouter,
   projects: projectsRouter,
   jira: jiraRouter,
+  linear: linearRouter,
 });
 
 // export type definition of API

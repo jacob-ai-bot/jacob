@@ -14,7 +14,7 @@ const config = {
       /node_modules\/@ts-morph\/common\/dist\/typescript.js/;
     if (isServer) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      config.externals.push("tree-sitter");
+      config.externals.push("tree-sitter", "encoding");
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return config;
