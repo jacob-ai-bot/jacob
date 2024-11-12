@@ -341,41 +341,4 @@ export async function editFiles(params: EditFilesParams) {
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
     console.log(`[${repository.full_name}] code`, code);
     console.log(`[${repository.full_name}] No code generated. Exiting...`);
-    throw new Error("No code generated");
-  }
-  const newBranch = generateJacobBranchName(issue.number);
-
-  if (dryRun) {
-    console.log("\n***** DRY RUN: UPDATED CODE *****\n\n");
-    console.log(updatedCode);
-    console.log("\n\n***** END DRY RUN *****\n");
-  } else {
-    await setNewBranch({
-      ...baseEventData,
-      rootPath,
-      branchName: newBranch,
-    });
-
-    const files = reconstructFiles(updatedCode, rootPath);
-    await Promise.all(
-      files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
-    );
-
-    await checkAndCommit({
-      ...baseEventData,
-      repository,
-      token,
-      rootPath,
-      baseBranch,
-      branch: newBranch,
-      repoSettings,
-      commitMessage: `JACoB PR for Issue ${issue.title}`,
-      issue,
-      newPrTitle: `JACoB PR for Issue ${issue.title}`,
-      newPrBody: `## Summary:\n\n${issue.body}\n\n## Plan:\n\n${
-        detailedMarkdownPlanFromSteps ?? ""
-      }`,
-      newPrReviewers: issue.assignees?.map((assignee) => assignee.login) ?? [],
-    });
-  }
-}
+    throw new Error("No
