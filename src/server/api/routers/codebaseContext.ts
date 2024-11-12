@@ -147,7 +147,7 @@ const searchCodebase = async (
     return items
       .filter((item) => {
         const fileName = path.basename(item.file).toLowerCase();
-        return fileName.startsWith(normalizedQuery);
+        return fileName?.startsWith(normalizedQuery) ?? false;
       })
       .sort((a, b) => {
         const fileNameA = path.basename(a.file).toLowerCase();

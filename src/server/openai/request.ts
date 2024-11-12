@@ -215,7 +215,7 @@ export const sendGptRequest = async (
     }
 
     let openai: OpenAI;
-    if (model.startsWith("llama3.1")) {
+    if (model?.startsWith("llama3.1")) {
       // This is a Cerebras API call
       openai = new OpenAI({
         apiKey: process.env.CEREBRAS_API_KEY,
@@ -283,7 +283,7 @@ export const sendGptRequest = async (
       };
     }
     let response;
-    if (model.startsWith("llama3.1")) {
+    if (model?.startsWith("llama3.1")) {
       response = await cerebrasClient.chat.completions.create({
         messages: options.messages.map((message) => ({
           role: message.role as "system" | "user" | "assistant",

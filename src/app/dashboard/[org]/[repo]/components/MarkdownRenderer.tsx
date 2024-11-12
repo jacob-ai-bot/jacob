@@ -80,7 +80,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         const pathCheck = Array.isArray(children) ? "" : children;
 
         const isCodeFile =
-          pathCheck.startsWith("/") &&
+          pathCheck?.startsWith("/") &&
           /\.(js|ts|jsx|tsx|py|rb|go|java|cpp|h|cs|php|swift|kt|rs|scala|elm|hs|lua|r|m|f|sql)$/i.test(
             pathCheck,
           );

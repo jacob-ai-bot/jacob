@@ -433,7 +433,7 @@ export function standardizePath(filePath: string): StandardizedPath {
   }
   let cleanPath = filePath.replace(/^\.\//, "");
 
-  if (!cleanPath.startsWith("/")) {
+  if (!cleanPath?.startsWith("/")) {
     cleanPath = "/" + cleanPath;
   }
 
