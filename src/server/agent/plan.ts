@@ -105,6 +105,7 @@ export const createPlan = async function (
   research: string,
   codePatch: string,
   buildErrors: string,
+  feedback?: string,
 ): Promise<Plan | undefined> {
   const hasExistingPlan = codePatch?.length || buildErrors?.length;
   // If there was a previous plan, we need the new plan to reflect the changes made in the code patch
@@ -125,8 +126,8 @@ export const createPlan = async function (
   ];
   const { userPrompt, systemPrompt } =
     codePatch?.length || buildErrors
-      ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue)
-      : getPromptsForNewPlan(githubIssue, context, research, files);
+      ? getPromptsForUpdatedPlan(codePatch, buildErrors, githubIssue, feedback)
+      : getPromptsForNewPlan(githubIssue, context, research, files, feedback);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
@@ -214,6 +215,7 @@ const getPromptsForNewPlan = (
   research: string,
   files: string,
   context: string,
+  feedback?: string,
 ) => {
   console.log("Creating new plan with prompts:");
   // Now create a plan to address the issue based on the identified files
@@ -221,6 +223,7 @@ const getPromptsForNewPlan = (
   
       ${context?.length ? `Here are details about the source code for the repository you are working with: <source_map>${context}</source_map>` : ""}    
       ${research?.length ? `Here is some research about the codebase and this issue: <research>${research}</research>` : ""}
+      ${feedback?.length ? `Here is some feedback from the user about the current plan: <feedback>${feedback}</feedback>` : ""}
 
       Key Responsibilities:
           1. Review the provided list of files to modify or create based on the GitHub issue. Each step should include detailed instructions on how to modify or create one or more of the specific files from the code respository.
@@ -307,10 +310,13 @@ const getPromptsForUpdatedPlan = (
   codePatch: string,
   buildErrors: string,
   githubIssue: string,
+  feedback?: string,
 ) => {
   // Now create a plan to address the issue based on the identified files
   const systemPrompt = `You are an AI code review assistant specializing in identifying and resolving issues that arise from sequential code changes. Your task is to analyze a given code patch and create a concise plan to address any inconsistencies or errors that may have been introduced due to the order of changes. Focus only on critical issues that affect the functionality or integrity of the code.
   
+  ${feedback?.length ? `Here is some feedback from the user about the current plan: <feedback>${feedback}</feedback>` : ""}
+
   Key Responsibilities:
   1. Analyze the provided code patch carefully.
   2. Review the output of the build process to identify any errors or inconsistencies.

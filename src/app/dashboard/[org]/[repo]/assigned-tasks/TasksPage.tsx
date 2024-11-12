@@ -12,6 +12,8 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import StepNavigation from "./components/StepNavigation";
 import { Switch } from "@headlessui/react";
 import TaskHeader from "./components/TaskHeader";
+import FeedbackInput from "./components/FeedbackInput";
+import AddPlanStepModal from "./components/AddPlanStepModal";
 
 interface TasksPageProps {
   org: string;
@@ -29,6 +31,8 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
   const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState<boolean>(true);
   const [showAllTasks, setShowAllTasks] = useState(false);
+  const [feedback, setFeedback] = useState<string>("");
+  const [isAddPlanStepModalOpen, setIsAddPlanStepModalOpen] = useState(false);
 
   const {
     data: tasks,
@@ -137,6 +141,24 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     }
   };
 
+  const handleRedoPlan = async () => {
+    try {
+      await api.planSteps.regeneratePlan.mutateAsync({
+        org,
+        repo,
+        feedback,
+      });
+      await refetchTasks();
+      setFeedback("");
+    } catch (error) {
+      console.error("Failed to redo plan:", error);
+    }
+  };
+
+  const handleAddPlanStep = () => {
+    setIsAddPlanStepModalOpen(true);
+  };
+
   if (loadingTasks || loadingProject || !tasks || !project) {
     return <LoadingIndicator />;
   }
@@ -208,6 +230,21 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           events={events}
           currentEventIndex={currentEventIndex}
         />
+        <div className="p-4">
+          <FeedbackInput feedback={feedback} setFeedback={setFeedback} />
+          <button
+            onClick={handleRedoPlan}
+            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            Redo Plan
+          </button>
+          <button
+            onClick={handleAddPlanStep}
+            className="ml-2 mt-4 rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+          >
+            Add Plan Step
+          </button>
+        </div>
         <div className="sticky bottom-0 flex  h-12 w-full justify-center bg-white dark:bg-gray-800">
           <StepNavigation
             onRestart={handleRestart}
@@ -222,6 +259,12 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           />
         </div>
       </div>
+      <AddPlanStepModal
+        isOpen={isAddPlanStepModalOpen}
+        onClose={() => setIsAddPlanStepModalOpen(false)}
+        org={org}
+        repo={repo}
+      />
     </div>
   );
 };

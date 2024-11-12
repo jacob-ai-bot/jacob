@@ -35,6 +35,7 @@ interface GetOrGeneratePlanParams {
   githubIssue: string;
   rootPath: string;
   contextItems?: ContextItem[] | undefined;
+  feedback?: string;
 }
 
 export const getOrGeneratePlan = async ({
@@ -43,6 +44,7 @@ export const getOrGeneratePlan = async ({
   githubIssue,
   rootPath,
   contextItems,
+  feedback,
 }: GetOrGeneratePlanParams): Promise<Plan> => {
   if (!projectId || !issueId) {
     throw new Error("Error generating plan, missing project or issue id");
@@ -142,6 +144,15 @@ Below is the context and detailed steps to guide the process.
   \`\`\`
   <issue>${githubIssue}</issue>
   \`\`\`
+
+  ${
+    feedback?.length
+      ? `- **User Feedback**: Feedback from the user about the current plan.
+  \`\`\`
+  <feedback>${feedback}</feedback>
+  \`\`\``
+      : ""
+  }
 
   ## Guidelines
 
