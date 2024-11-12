@@ -13,6 +13,13 @@
     "GITHUB_PRIVATE_KEY": "github-private-key",
     "GITHUB_WEBHOOK_SECRET": "github-webhook-secret",
     "PUBSUB_REDIS_URL": "redis://localhost:6379/0",
-    "PUBSUB_REDIS_TEST_URL": "redis://localhost:6379/1"
+    "PUBSUB_REDIS_TEST_URL": "redis://localhost:6379/1",
+    "LINEAR_CLIENT_ID": "linear-client-id",
+    "LINEAR_CLIENT_SECRET": "linear-client-secret",
+    "LINEAR_WEBHOOK_SECRET": "linear-webhook-secret",
+    "NEXT_PUBLIC_LINEAR_CLIENT_ID": "linear-client-id",
+    "NEXT_PUBLIC_JIRA_CLIENT_ID": "jira-client-id",
+    "JIRA_CLIENT_ID": "jira-client-id",
+    "JIRA_CLIENT_SECRET": "jira-client-secret"
   }
 }
