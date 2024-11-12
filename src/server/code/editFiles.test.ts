@@ -60,6 +60,8 @@ const mockedFiles = vi.hoisted(() => ({
     code: "concatenated-code",
     lineLengthMap: { "file.txt": 1 },
   }),
+  isValidExistingFile: vi.fn().mockReturnValue(true),
+  isValidNewFileName: vi.fn().mockReturnValue(true),
   reconstructFiles: vi.fn().mockReturnValue([
     {
       fileName: "file.txt",

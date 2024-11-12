@@ -4,6 +4,8 @@ import { evaluate } from "~/server/openai/utils";
 import { PlanningAgentActionType } from "~/server/db/enums";
 import { findFiles } from "~/server/agent/files";
 import { type StandardizedPath, standardizePath } from "../utils/files";
+import fs from "fs";
+import path from "path";
 
 export interface PlanStep {
   type: PlanningAgentActionType;
@@ -196,6 +198,14 @@ export const createPlanFromToolCalls = async (
 
     const { title, filePath, instructions, exitCriteria, dependencies } = args;
     const standardizedPath = standardizePath(filePath);
+
+    // Check if the path is a directory
+    const fullPath = path.join(process.cwd(), standardizedPath);
+    if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+      console.error(`Skipping directory path: ${standardizedPath}`);
+      continue;
+    }
+
     const step = {
       type: functionName,
       title,

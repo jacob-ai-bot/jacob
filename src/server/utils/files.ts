@@ -427,10 +427,6 @@ export const removeLineNumbers = (numberedContent: string): string => {
 
 export type StandardizedPath = string & { __brand: "StandardizedPath" };
 
-function isValidPath(path: string): boolean {
-  return /^\/[a-zA-Z0-9_\-./[\]...]+$/.test(path);
-}
-
 export function standardizePath(filePath: string): StandardizedPath {
   if (!filePath) {
     return "" as StandardizedPath;
@@ -451,4 +447,47 @@ export function standardizePath(filePath: string): StandardizedPath {
   }
 
   return cleanPath as StandardizedPath;
+}
+
+export function isValidPath(path: string): boolean {
+  return /^\/[a-zA-Z0-9_\-./[\]...]+$/.test(path);
+}
+
+export function isValidExistingFile(
+  filePath: StandardizedPath,
+  rootPath: string,
+): boolean {
+  try {
+    // Normalize paths to handle different OS formats
+    const normalizedPath = path.normalize(filePath);
+    const normalizedRootPath = path.normalize(rootPath);
+    const fullPath = path.join(normalizedRootPath, normalizedPath);
+
+    // Verify file exists and is actually a file (not a directory)
+    const stats = fs.statSync(fullPath);
+    return stats.isFile();
+  } catch (error) {
+    // Handle any filesystem errors (e.g., permissions, non-existent files)
+    console.error(`Error validating file ${filePath}:`, error);
+    return false;
+  }
+}
+
+export function isValidNewFileName(fileName: StandardizedPath): boolean {
+  try {
+    // Basic validation for file name format
+    if (!isValidPath(fileName)) {
+      return false;
+    }
+
+    // Get the base name and extension
+    const baseName = path.basename(fileName);
+    const extension = path.extname(fileName);
+
+    // Ensure it has both a name and extension
+    return baseName.length > 0 && extension.length > 1; // extension includes the dot
+  } catch (error) {
+    console.error(`Error validating new file name ${fileName}:`, error);
+    return false;
+  }
 }

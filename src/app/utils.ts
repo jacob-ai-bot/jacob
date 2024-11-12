@@ -121,7 +121,7 @@ export const getPlanForTaskSubType = (taskSubType: TaskSubType) => {
   return plan;
 };
 
-function isValidPath(path: string): boolean {
+export function isValidPath(path: string): boolean {
   return /^\/[a-zA-Z0-9_\-./[\]...]+$/.test(path);
 }
 

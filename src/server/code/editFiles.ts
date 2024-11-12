@@ -17,7 +17,12 @@ import {
 } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
-import { concatenateFiles, reconstructFiles } from "../utils/files";
+import {
+  concatenateFiles,
+  isValidExistingFile,
+  isValidNewFileName,
+  reconstructFiles,
+} from "../utils/files";
 import { emitCodeEvent } from "../utils/events";
 import { getSnapshotUrl } from "~/app/utils";
 import { db } from "../db/db";
@@ -205,9 +210,11 @@ export async function editFiles(params: EditFilesParams) {
 
   const filesToUpdate = planSteps
     .filter((step) => step.type === PlanningAgentActionType.EditExistingCode)
+    .filter((step) => isValidExistingFile(step.filePath, rootPath))
     .map((step) => step.filePath);
   const filesToCreate = planSteps
     .filter((step) => step.type === PlanningAgentActionType.CreateNewCode)
+    .filter((step) => isValidNewFileName(step.filePath))
     .map((step) => step.filePath);
 
   console.log(`[${repository.full_name}] Files to update:`, filesToUpdate);
@@ -300,7 +307,7 @@ export async function editFiles(params: EditFilesParams) {
   if (codeTokenCount > MAX_OUTPUT[model]) {
     model = "gpt-4o-64k-output-alpha";
   }
-  if (codeTokenCount > MAX_OUTPUT[model] * 0.8) {
+  if (codeTokenCount > MAX_OUTPUT[model] * 0.7) {
     // if the estimated output token count is too close to the model's limit, process each step individually to prevent responses getting truncated
     const results = await Promise.all(
       planSteps
