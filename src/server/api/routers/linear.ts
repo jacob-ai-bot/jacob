@@ -2,80 +2,77 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { db } from "~/server/db/db";
 import { TRPCError } from "@trpc/server";
-import {
-  fetchLinearProjects,
-  fetchLinearBoards,
-  syncLinearBoard,
-  refreshLinearAccessToken,
-} from "~/server/utils/linear";
+import { fetchLinearTeams, syncLinearTeam } from "~/server/utils/linear";
 
 export const linearRouter = createTRPCRouter({
-  isUserConnectedToLinear: protectedProcedure.query(async ({ ctx }) => {
-    const account = await db.accounts.findBy({ userId: ctx.session.user.id });
-    return !!account?.linearAccessToken;
-  }),
-
-  getProjects: protectedProcedure.query(async ({ ctx }) => {
-    const account = await db.accounts.findBy({ userId: ctx.session.user.id });
-    if (!account?.linearAccessToken) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "User not connected to Linear",
+  isUserConnectedToLinear: protectedProcedure.query(
+    async ({
+      ctx: {
+        session: { user },
+      },
+    }) => {
+      const databaseUser = await db.accounts.findBy({
+        userId: parseInt(user.id),
       });
-    }
+      return !!databaseUser?.linearAccessToken;
+    },
+  ),
 
-    let accessToken = account.linearAccessToken;
-    if (account.expires_at && Date.now() > account.expires_at) {
-      accessToken = await refreshLinearAccessToken(ctx.session.user.id);
-    }
-
-    return fetchLinearProjects(accessToken);
-  }),
-
-  getBoards: protectedProcedure
-    .input(z.object({ projectId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const account = await db.accounts.findBy({ userId: ctx.session.user.id });
-      if (!account?.linearAccessToken) {
+  getTeams: protectedProcedure.query(
+    async ({
+      ctx: {
+        session: { user },
+      },
+    }) => {
+      const databaseUser = await db.accounts.findBy({
+        userId: parseInt(user.id),
+      });
+      if (!databaseUser?.linearAccessToken) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "User not connected to Linear",
         });
       }
 
-      let accessToken = account.linearAccessToken;
-      if (account.expires_at && Date.now() > account.expires_at) {
-        accessToken = await refreshLinearAccessToken(ctx.session.user.id);
-      }
+      return fetchLinearTeams(databaseUser.id);
+    },
+  ),
 
-      return fetchLinearBoards(accessToken, input.projectId);
-    }),
-
-  syncBoard: protectedProcedure
-    .input(z.object({ projectId: z.number(), boardId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const account = await db.accounts.findBy({ userId: ctx.session.user.id });
-      if (!account?.linearAccessToken) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "User not connected to Linear",
+  syncTeam: protectedProcedure
+    .input(z.object({ projectId: z.number(), teamId: z.string() }))
+    .mutation(
+      async ({
+        ctx: {
+          session: { user, accessToken },
+        },
+        input,
+      }) => {
+        const databaseUser = await db.accounts.findBy({
+          userId: parseInt(user.id),
         });
-      }
+        if (!databaseUser?.linearAccessToken) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User not connected to Linear",
+          });
+        }
 
-      let accessToken = account.linearAccessToken;
-      if (account.expires_at && Date.now() > account.expires_at) {
-        accessToken = await refreshLinearAccessToken(ctx.session.user.id);
-      }
-
-      return syncLinearBoard(accessToken, input.projectId, input.boardId);
-    }),
+        return syncLinearTeam(
+          databaseUser.linearAccessToken,
+          input.projectId,
+          input.teamId,
+          parseInt(user.id),
+          accessToken,
+        );
+      },
+    ),
 
   saveLinearProjectId: protectedProcedure
-    .input(z.object({ linearProjectId: z.string(), projectId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
+    .input(z.object({ linearTeamId: z.string(), projectId: z.number() }))
+    .mutation(async ({ input }) => {
       await db.projects
         .where({ id: input.projectId })
-        .update({ linearProjectId: input.linearProjectId });
+        .update({ linearTeamId: input.linearTeamId });
       return { success: true };
     }),
 });

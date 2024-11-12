@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
-import { type JiraBoard, type LinearProject, type LinearBoard } from "~/types";
+import { type JiraBoard, type LinearTeam } from "~/types";
 import { toast } from "react-toastify";
 
 interface SettingsProps {
@@ -36,11 +36,8 @@ export default function Settings({
   const [jiraCloudIdState, setJiraCloudIdState] = useState<string | undefined>(
     initialJiraCloudId,
   );
-  const [linearProjects, setLinearProjects] = useState<LinearProject[]>([]);
-  const [selectedLinearProject, setSelectedLinearProject] =
-    useState<string>("");
-  const [linearBoards, setLinearBoards] = useState<LinearBoard[]>([]);
-  const [selectedLinearBoard, setSelectedLinearBoard] = useState<string>("");
+  const [linearTeams, setLinearTeams] = useState<LinearTeam[]>([]);
+  const [selectedLinearTeam, setSelectedLinearTeam] = useState<string>("");
 
   const { mutate: syncJiraBoard, isPending: isSyncingJiraBoard } =
     api.jira.syncBoard.useMutation({
@@ -53,14 +50,14 @@ export default function Settings({
       },
     });
 
-  const { mutate: syncLinearBoard, isPending: isSyncingLinearBoard } =
-    api.linear.syncBoard.useMutation({
+  const { mutate: syncLinearTeam, isPending: isSyncingLinearTeam } =
+    api.linear.syncTeam.useMutation({
       onSuccess: () => {
-        toast.success("Linear board synced");
+        toast.success("Linear team synced");
       },
       onError: (error) => {
-        toast.error("Error syncing Linear board");
-        console.error("Error syncing Linear board:", error);
+        toast.error("Error syncing Linear team");
+        console.error("Error syncing Linear team:", error);
       },
     });
 
@@ -80,7 +77,7 @@ export default function Settings({
     api.jira.getJiraCloudIdResources.useQuery();
 
   const {
-    data: jiraBoards,
+    data: boards,
     isLoading: isLoadingJiraBoards,
     refetch: refetchJiraBoards,
   } = api.jira.getBoards.useQuery(
@@ -91,21 +88,10 @@ export default function Settings({
   );
 
   const {
-    data: linearProjects,
-    isLoading: isLoadingLinearProjects,
-    refetch: refetchLinearProjects,
-  } = api.linear.getProjects.useQuery();
-
-  const {
-    data: linearBoards,
-    isLoading: isLoadingLinearBoards,
-    refetch: refetchLinearBoards,
-  } = api.linear.getBoards.useQuery(
-    { projectId: selectedLinearProject },
-    {
-      enabled: !!selectedLinearProject,
-    },
-  );
+    data: teams,
+    isLoading: isLoadingLinearTeams,
+    refetch: refetchLinearTeams,
+  } = api.linear.getTeams.useQuery();
 
   const { mutate: saveJiraCloudId } = api.jira.saveJiraCloudId.useMutation({
     onSuccess: (savedJiraCloudId) => {
@@ -129,7 +115,7 @@ export default function Settings({
     api.linear.saveLinearProjectId.useMutation({
       onSuccess: () => {
         toast.success("Linear project saved");
-        void refetchLinearBoards();
+        void refetchLinearTeams();
       },
       onError: (error) => {
         toast.error("Error saving Linear project");
@@ -138,37 +124,26 @@ export default function Settings({
     });
 
   useEffect(() => {
-    if (jiraBoards) {
-      setJiraBoards(jiraBoards);
-      if (jiraBoards.length === 0) {
+    if (boards) {
+      setJiraBoards(boards);
+      if (boards.length === 0) {
         toast.info("No Jira boards found for this cloud ID");
-      } else if (jiraBoards[0]) {
-        setSelectedJiraBoard(jiraBoards[0].id);
+      } else if (boards[0]) {
+        setSelectedJiraBoard(boards[0].id);
       }
     }
-  }, [jiraBoards]);
+  }, [boards]);
 
   useEffect(() => {
-    if (linearProjects) {
-      setLinearProjects(linearProjects);
-      if (linearProjects.length === 0) {
+    if (teams) {
+      setLinearTeams(teams);
+      if (teams.length === 0) {
         toast.info("No Linear projects found");
-      } else if (linearProjects[0]) {
-        setSelectedLinearProject(linearProjects[0].id);
+      } else if (teams[0]) {
+        setSelectedLinearTeam(teams[0].id);
       }
     }
-  }, [linearProjects]);
-
-  useEffect(() => {
-    if (linearBoards) {
-      setLinearBoards(linearBoards);
-      if (linearBoards.length === 0) {
-        toast.info("No Linear boards found for this project");
-      } else if (linearBoards[0]) {
-        setSelectedLinearBoard(linearBoards[0].id);
-      }
-    }
-  }, [linearBoards]);
+  }, [teams]);
 
   const handleChangeSetup = () => {
     router.push(`/setup/${userLogin}/${org}/${repo}/setup`);
@@ -192,11 +167,11 @@ export default function Settings({
     }
   };
 
-  const handleSyncLinearBoard = () => {
-    if (selectedLinearBoard && projectId) {
-      syncLinearBoard({
+  const handleSyncLinearTeam = () => {
+    if (selectedLinearTeam && projectId) {
+      syncLinearTeam({
         projectId,
-        boardId: selectedLinearBoard,
+        teamId: selectedLinearTeam,
       });
     }
   };
@@ -305,49 +280,36 @@ export default function Settings({
         )}
       {isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
         <div className="mt-6">
-          <h2 className="mb-2 text-xl font-semibold">Sync Linear Board</h2>
+          <h2 className="mb-2 text-xl font-semibold">Sync Linear Team</h2>
           <select
-            value={selectedLinearProject}
+            value={selectedLinearTeam}
             onChange={(e) => {
-              setSelectedLinearProject(e.target.value);
+              setSelectedLinearTeam(e.target.value);
               saveLinearProjectId({
-                linearProjectId: e.target.value,
+                linearTeamId: e.target.value,
                 projectId,
               });
             }}
             className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
-            disabled={isLoadingLinearProjects}
+            disabled={isLoadingLinearTeams}
           >
-            <option value="">Select a Linear Project</option>
-            {linearProjects?.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
+            <option value="">Select a Linear Team</option>
+            {linearTeams?.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
               </option>
             ))}
           </select>
-          {selectedLinearProject && (
-            <select
-              value={selectedLinearBoard}
-              onChange={(e) => setSelectedLinearBoard(e.target.value)}
-              className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
-              disabled={isLoadingLinearBoards}
+          {selectedLinearTeam && (
+            <button
+              onClick={handleSyncLinearTeam}
+              disabled={!selectedLinearTeam || isSyncingLinearTeam}
+              className="flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:bg-gray-400"
             >
-              <option value="">Select a Linear Board</option>
-              {linearBoards?.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </select>
+              <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
+              {isSyncingLinearTeam ? "Syncing..." : "Sync Linear Team"}
+            </button>
           )}
-          <button
-            onClick={handleSyncLinearBoard}
-            disabled={!selectedLinearBoard || isSyncingLinearBoard}
-            className="flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:bg-gray-400"
-          >
-            <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
-            {isSyncingLinearBoard ? "Syncing..." : "Sync Linear Board"}
-          </button>
         </div>
       )}
       {isLoadingIsUserConnectedToJira && <div>Loading Jira Settings...</div>}

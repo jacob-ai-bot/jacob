@@ -194,6 +194,20 @@ export interface JiraIssue {
   description: string;
 }
 
+export interface LinearTeam {
+  id: string;
+  name: string;
+}
+
+export interface LinearIssue {
+  id: string;
+  url: string;
+  number: number;
+  title: string;
+  description: string;
+  status: string;
+}
+
 export enum EvaluationMode {
   FASTER = "Faster Evaluation",
   DETAILED = "Detailed Evaluation",
@@ -202,4 +216,5 @@ export enum EvaluationMode {
 export enum IssueBoardSource {
   GITHUB = "GitHub",
   JIRA = "Jira",
+  LINEAR = "Linear",
 }

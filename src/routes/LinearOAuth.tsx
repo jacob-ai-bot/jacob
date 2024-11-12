@@ -1,3 +1,6 @@
+"use client";
+
+import { useSearchParams } from "next/navigation";
 import React from "react";
 import { env } from "~/env";
 
@@ -6,8 +9,10 @@ interface LinearOAuthProps {
 }
 
 export function LinearOAuth({ redirectURI }: LinearOAuthProps) {
+  const searchParams = useSearchParams();
+  const projectId = searchParams?.get("projectId");
   React.useEffect(() => {
-    const state = `linear-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    const state = `linear-${Math.random().toString(36).substring(2, 15)}-${projectId}`;
     localStorage.setItem("linearOAuthState", state);
 
     const authUrl = new URL("https://linear.app/oauth/authorize");

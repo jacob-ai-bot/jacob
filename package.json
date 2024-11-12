@@ -41,6 +41,7 @@
     "@headlessui/react": "^1.7.19",
     "@hello-pangea/dnd": "^16.6.0",
     "@heroicons/react": "^2.1.5",
+    "@linear/sdk": "^32.0.0",
     "@monaco-editor/react": "^4.6.0",
     "@nanostores/react": "github:ai/react",
     "@octokit/app": "^14.0.1",

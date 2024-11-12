@@ -9,6 +9,14 @@ change(async (db) => {
 
 change(async (db) => {
   await db.changeTable("projects", (t) => ({
-    linearProjectId: t.text().nullable(),
+    linearTeamId: t.text().nullable(),
   }));
+});
+
+change(async (db, up) => {
+  if (up) {
+    await db.adapter.query(
+      `ALTER TYPE issue_source ADD VALUE IF NOT EXISTS 'Linear' AFTER 'Jira'`,
+    );
+  }
 });

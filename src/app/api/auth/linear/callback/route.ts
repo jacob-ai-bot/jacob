@@ -15,22 +15,27 @@ export async function GET(req: NextRequest) {
         { status: 400 },
       );
     }
+    console.log("state", state);
 
     const projectIdString = state?.split("-")[2];
-    const projectId = parseInt(projectIdString);
+    const projectId = parseInt(projectIdString ?? "");
+    console.log("projectId", projectId);
+    console.log("code", code);
+    const body = {
+      grant_type: "authorization_code",
+      client_id: env.LINEAR_CLIENT_ID,
+      client_secret: env.LINEAR_CLIENT_SECRET,
+      code: code,
+      redirect_uri: `${env.NEXTAUTH_URL}/api/auth/linear/callback`,
+    };
+    console.log("body", body);
 
     const tokenResponse = await fetch("https://api.linear.app/oauth/token", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        client_id: env.LINEAR_CLIENT_ID,
-        client_secret: env.LINEAR_CLIENT_SECRET,
-        code: code,
-        redirect_uri: `${env.NEXTAUTH_URL}/api/auth/linear/callback`,
-      }),
+      body: new URLSearchParams(body).toString(),
     });
 
     if (!tokenResponse.ok) {
@@ -38,6 +43,7 @@ export async function GET(req: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
+    console.log("tokenData", tokenData);
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token;
 
@@ -50,6 +56,7 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = parseInt(session.user.id);
+    console.log("userId", userId);
 
     await db.accounts.where({ userId }).update({
       linearAccessToken: accessToken,
@@ -57,6 +64,7 @@ export async function GET(req: NextRequest) {
     });
 
     const project = await db.projects.find(projectId);
+    console.log("project", project);
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
