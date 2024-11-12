@@ -8,13 +8,15 @@ import {
   getOrCreateCodebaseContext,
 } from "./codebaseContext";
 
-import { standardizePath, isValidPath } from "~/app/utils";
+import {
+  standardizePath,
+  isValidExistingFile,
+  isValidNewFileName,
+} from "~/server/utils/files";
 import { traverseCodebase } from "~/server/analyze/traverse";
 import { getFiles } from "./files";
 import { z } from "zod";
 import { PlanningAgentActionType } from "~/server/db/enums";
-import fs from "fs";
-import path from "path";
 
 const PlanStepSchema = z.object({
   type: z.nativeEnum(PlanningAgentActionType),
@@ -150,7 +152,7 @@ Below is the context and detailed steps to guide the process.
   - Break down the plan into a series of distinct steps, focusing on modifications to existing files or the creation of new files.
   - Each step should be a clear and concise instruction to modify an existing file or create a new file. NEVER include a step that involves modifying multiple files.
   - All modifications to a file should be specified in a single step. NEVER include multiple modification steps for a single file.
-  - Clearly identify exact files to modify or specify relative file paths and names with extensions for new files to be created.
+  - Clearly identify exact files to modify or specify relative file paths and names with extensions for new files to be created. NEVER specify a directory path. For new files, the file path must not already exist in the codebase. For existing files, the file path must be a valid existing file.
   - Minimize the extent of file modifications and limit the number of new files.
   - Concentrate exclusively on necessary code changes, excluding tests or documentation unless specified.
   - Avoid writing actual code snippets or making assumptions outside the provided codebase information.
@@ -289,11 +291,22 @@ Below is the context and detailed steps to guide the process.
           return false;
         }
 
-        // Check if the path is a directory
-        const fullPath = path.join(process.cwd(), standardizedPath);
-        if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-          console.error(`Skipping directory path: ${standardizedPath}`);
-          return false;
+        // If the step is to edit an existing file, check that it is a valid existing file
+        if (step.type === PlanningAgentActionType.EditExistingCode) {
+          if (!isValidExistingFile(standardizedPath, rootPath)) {
+            return false;
+          }
+        }
+
+        // If the step is to create a new file, check that it is a valid new file name
+        if (step.type === PlanningAgentActionType.CreateNewCode) {
+          if (!isValidNewFileName(standardizedPath)) {
+            return false;
+          }
+          // check that the file does not already exist, if it does change the type to EditExistingCode
+          if (isValidExistingFile(standardizedPath, rootPath)) {
+            step.type = PlanningAgentActionType.EditExistingCode;
+          }
         }
 
         return true;

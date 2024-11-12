@@ -14,7 +14,7 @@ JACoB: Just Another Coding Bot. Empowering Developers to Automate with AI.
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/jacob-ai-bot/jacob/blob/main/LICENSE)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label&color=blue)](https://discord.gg/sSDbPR4BUH)
 
-## Table of Contents 
+## Table of Contents
 
 - [Overview](#overview)
 - [Videos](#videos)
@@ -35,6 +35,7 @@ AI is already changing the way software is written and these changes are only go
 ## Videos
 
 ### One Minute
+
 Here's a high-level overview to see how JACoB works. This video shows the Figma and GitHub integration, along with a preview of the real-time web portal. [Watch on YouTube](https://www.youtube.com/watch?v=9Hdk2o27NaY)
 
 [![Overview](http://img.youtube.com/vi/9Hdk2o27NaY/0.jpg)](https://www.youtube.com/watch?v=9Hdk2o27NaY "JACoB Overview")
@@ -54,11 +55,13 @@ The JACoB web portal has a feature where users can view tasks assigned to them i
 [![Existing Task](http://img.youtube.com/vi/AcQsKkz8jdc/0.jpg)](https://www.youtube.com/watch?v=AcQsKkz8jdc "JACoB Existing Task")
 
 ### Half Hour
-Here's a working session where I recorded myself using JACoB for a real-world task. For this scenario, I had several pages of onboarding screens that I needed to create for the JACoB setup process (starting at https://jacb.ai/signup). This video shows the process I used to convert these designs into code, including time that I spent correcting a few minor errors and ultimately creating the pages that are live on the site today.  [Watch on YouTube](https://www.youtube.com/watch?v=5QWvnUQ3mXk)
+
+Here's a working session where I recorded myself using JACoB for a real-world task. For this scenario, I had several pages of onboarding screens that I needed to create for the JACoB setup process (starting at https://jacb.ai/signup). This video shows the process I used to convert these designs into code, including time that I spent correcting a few minor errors and ultimately creating the pages that are live on the site today. [Watch on YouTube](https://www.youtube.com/watch?v=5QWvnUQ3mXk)
 
 [![JACoB Setup](http://img.youtube.com/vi/5QWvnUQ3mXk/0.jpg)](https://www.youtube.com/watch?v=5QWvnUQ3mXk "JACoB Setup")
 
 ### One Hour
+
 I've personally used JACoB to save myself a ton of time over the past year. Chris and I weren't just trying to beat benchmarks, we built JACoB to make our real-life production-level tasks faster, easier, and way more fun. To see JACoB being used to build the jacb.ai site in about an hour, watch our [demo video](https://www.youtube.com/watch?v=OfRUaehTcEM)
 
 [![JACoB Website](http://img.youtube.com/vi/OfRUaehTcEM/0.jpg)](http://www.youtube.com/watch?v=OfRUaehTcEM "JACoB Website")
@@ -74,6 +77,7 @@ To evaluate JACoB, we recruited a wide variety of developers to visit the [JACoB
 ## Limitations
 
 Our approach for building JACoB was to start with a set of narrowly-defined tasks that the current generation of AI models are capable of today, with the hope of inspiring the JACoB community to contribute to additional languages and frameworks over time. We also acknowledge that limitations in context window sizes and overall model intelligence means that JACoB is focused on smaller, more descrete tasks. While JACoB has the potential to work across any codebase, we've focused initially on a limited number of languages and frameworks. Specficially, JACoB currently works best with:
+
 - TypeScript or JavaScript
 - NextJS applications
 - Tailwind
@@ -108,7 +112,7 @@ JACoB learns your coding style and preferences, generating consistent, high-qual
 
 ## Built for Privacy and Security
 
-JACoB works via a GitHub app and the local version does not store your codebase. We rely on commercial or open-source LLMs and do not train on any data. The hosted version contains logs that will have code snippets, which will be retained for 14 days. Our GitHub app tokens have an 8-hour expiration and are not saved in our database. The hosted version uses the OpenAI API, you can read their [API data privacy policy here](https://openai.com/enterprise-privacy). The self-hosted version can be run on your own infrastructure and using your own OpenAI API key or local language models via Ollama.
+We rely on commercial or open-source LLMs and do not train on any data. The hosted version contains logs that will have code snippets. Our GitHub app tokens have an 8-hour expiration. The hosted version uses the OpenAI API, you can read their [API data privacy policy here](https://openai.com/enterprise-privacy). The self-hosted version can be run on your own infrastructure and using your own OpenAI API key or local language models via Ollama.
 
 ## Getting Started
 
@@ -213,6 +217,7 @@ After setting up your environment and JACoB's core components, perform the follo
    - Visit http://localhost:3000 and ensure you can successfully sign in using GitHub. This step verifies the OAuth flow is correctly set up between your GitHub app and JACoB.
 
 3. **Verify Webhook Functionality**
+
    - Create or comment on an issue in the repository where JACoB is installed. Check your local server logs to confirm that these events trigger the expected activities in JACoB. This step is essential to confirm that webhooks are properly set up and that JACoB is responding to GitHub events as expected.
 
 4. **Verify Dashboard Functionality**
@@ -233,6 +238,7 @@ After you've set up your local JACoB environment and configured the GitHub app, 
 5. **Iterate as Needed**: If the behavior isn’t what you anticipated, make the necessary adjustments to your JACoB configuration or code, and use the replay feature again to test the changes. This cycle can be repeated as many times as needed to achieve the desired outcome.
 
 ## Contributing
+
 We welcome contributions! From language support to framework integrations, there's always room for new features and improvements. Join our [Discord](https://discord.gg/sSDbPR4BUH) community for discussions and support.
 
 ## Additional Resources

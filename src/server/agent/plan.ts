@@ -3,11 +3,7 @@ import { sendGptToolRequest, type Model } from "~/server/openai/request";
 import { evaluate } from "~/server/openai/utils";
 import { PlanningAgentActionType } from "~/server/db/enums";
 import { findFiles } from "~/server/agent/files";
-import {
-  type StandardizedPath,
-  standardizePath,
-  isValidPath,
-} from "../utils/files";
+import { type StandardizedPath, standardizePath } from "../utils/files";
 import fs from "fs";
 import path from "path";
 

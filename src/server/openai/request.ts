@@ -230,7 +230,6 @@ export const sendGptRequest = async (
           "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
           "x-portkey-cache": "simple",
           "x-portkey-retry-count": "3",
-          "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
         },
       });
     }
