@@ -406,10 +406,7 @@ export async function createLinearWebhook(
     const client = new LinearClient({ accessToken: linearAccessToken });
     const data = await client.createWebhook({
       teamId,
-      url:
-        process.env.NODE_ENV === "production"
-          ? `${env.NEXTAUTH_URL}/api/linear/webhooks`
-          : `https://smee.io/YooywG1PK7j5VFpe`,
+      url: `${env.NEXTAUTH_URL}/api/linear/webhooks`,
       resourceTypes: ["Issue"],
     });
 
