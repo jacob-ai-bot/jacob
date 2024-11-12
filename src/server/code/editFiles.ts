@@ -341,4 +341,54 @@ export async function editFiles(params: EditFilesParams) {
   if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
     console.log(`[${repository.full_name}] code`, code);
     console.log(`[${repository.full_name}] No code generated. Exiting...`);
-    throw new Error("No
+    throw new Error("No code generated");
+  }
+
+  const reconstructedFiles = reconstructFiles(updatedCode);
+  if (!reconstructedFiles?.length) {
+    console.log(`[${repository.full_name}] No files reconstructed. Exiting...`);
+    throw new Error("No files reconstructed");
+  }
+
+  if (dryRun) {
+    console.log(`[${repository.full_name}] Dry run enabled. Exiting...`);
+    return;
+  }
+
+  const branchName = generateJacobBranchName(issue.number);
+  await setNewBranch({
+    rootPath,
+    branchName,
+    ...baseEventData,
+  });
+
+  for (const file of reconstructedFiles) {
+    const fullPath = path.join(rootPath, file.filePath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, file.codeBlock);
+  }
+
+  await checkAndCommit({
+    repository,
+    token,
+    rootPath,
+    branch: branchName,
+    baseBranch,
+    repoSettings,
+    commitMessage: `fix: ${issue.title}`,
+    issue,
+    existingPr: null,
+    newPrTitle: `Fix for ${issue.title}`,
+    newPrBody: `This PR addresses the issue: ${issue.title}`,
+    newPrReviewers: [],
+    creatingStory: false,
+    buildErrorAttemptNumber: 0,
+    ...baseEventData,
+  });
+
+  await emitCodeEvent({
+    fileName: "",
+    filePath: "",
+    codeBlock: updatedCode,
+  });
+}
