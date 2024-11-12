@@ -1,5 +1,5 @@
 import { Dialog, Transition } from "@headlessui/react";
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { formatDistanceToNow } from "date-fns";
@@ -26,12 +26,25 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
     setIsPanelOpen(false);
   };
 
+  const totalSpending = useMemo(() => {
+    if (!promptDetailsArray) return 0;
+    return promptDetailsArray.reduce(
+      (total, prompt) => total + (prompt.metadata.cost || 0),
+      0,
+    );
+  }, [promptDetailsArray]);
+
   return (
     <div className="flex flex-col rounded-lg bg-gradient-to-b from-aurora-50/70 to-30% px-6 pb-6 pt-2 shadow-md transition-all dark:from-aurora-800/80 dark:to-aurora-800/20 dark:shadow-blueGray-800/80">
       <div className="mb-3 flex w-full items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
           Prompts
         </h2>
+      </div>
+      <div className="mb-4 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
+        <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          Total Spending: ${totalSpending.toFixed(2)}
+        </p>
       </div>
       <div className="overflow-hidden rounded-lg border border-aurora-500/30 bg-neutral-50  dark:border-aurora-600/30 dark:bg-gray-800">
         <div className="hide-scrollbar overflow-auto">
