@@ -69,4 +69,51 @@ export const planStepsRouter = createTRPCRouter({
     .mutation(({ input }) =>
       db.planSteps.find(input).update({ isActive: false }),
     ),
+
+  redoPlan: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int(),
+        issueNumber: z.number().int(),
+        feedback: z.string(),
+      }),
+    )
+    .mutation(async ({ input: { projectId, issueNumber, feedback } }) => {
+      // Deactivate existing plan steps
+      await db.planSteps
+        .where({ projectId, issueNumber, isActive: true })
+        .update({ isActive: false });
+
+      // TODO: Implement logic to generate new plan steps based on feedback
+      // This is a placeholder implementation
+      const newPlanSteps = [
+        {
+          projectId,
+          issueNumber,
+          type: PlanningAgentActionType.EditExistingCode,
+          title: "New Step 1",
+          filePath: "/path/to/file1",
+          instructions: "Instructions for new step 1",
+          exitCriteria: "Exit criteria for new step 1",
+          dependencies: null,
+        },
+        {
+          projectId,
+          issueNumber,
+          type: PlanningAgentActionType.CreateNewCode,
+          title: "New Step 2",
+          filePath: "/path/to/file2",
+          instructions: "Instructions for new step 2",
+          exitCriteria: "Exit criteria for new step 2",
+          dependencies: null,
+        },
+      ];
+
+      // Create new plan steps
+      for (const step of newPlanSteps) {
+        await db.planSteps.create(step);
+      }
+
+      return newPlanSteps;
+    }),
 });
