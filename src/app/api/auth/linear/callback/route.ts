@@ -3,6 +3,8 @@ import { env } from "~/env";
 import { db } from "~/server/db/db";
 import { getServerAuthSession } from "~/server/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);

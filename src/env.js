@@ -32,6 +32,7 @@ export const env = createEnv({
     JIRA_CLIENT_SECRET: z.string(),
     LINEAR_CLIENT_ID: z.string(),
     LINEAR_CLIENT_SECRET: z.string(),
+    LINEAR_WEBHOOK_SECRET: z.string(),
   },
 
   /**
@@ -60,6 +61,7 @@ export const env = createEnv({
     JIRA_CLIENT_SECRET: process.env.JIRA_CLIENT_SECRET,
     LINEAR_CLIENT_ID: process.env.LINEAR_CLIENT_ID,
     LINEAR_CLIENT_SECRET: process.env.LINEAR_CLIENT_SECRET,
+    LINEAR_WEBHOOK_SECRET: process.env.LINEAR_WEBHOOK_SECRET,
     NEXT_PUBLIC_JIRA_CLIENT_ID: process.env.NEXT_PUBLIC_JIRA_CLIENT_ID,
     NEXT_PUBLIC_LINEAR_CLIENT_ID: process.env.NEXT_PUBLIC_LINEAR_CLIENT_ID,
   },

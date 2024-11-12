@@ -1,10 +1,15 @@
-import { LinearClient } from "@linear/sdk";
+import { LinearClient, type Issue } from "@linear/sdk";
 import { db } from "~/server/db/db";
 import { env } from "~/env";
-import { IssueBoardSource, EvaluationMode } from "~/types";
+import {
+  IssueBoardSource,
+  EvaluationMode,
+  type LinearWebhookPayload,
+} from "~/types";
 import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
+import { type Project } from "~/server/db/tables/projects.table";
 
 export async function refreshLinearAccessToken(
   accountId: number,
@@ -96,6 +101,16 @@ export async function syncLinearTeam(
     });
   }
 
+  // check if the webhook exists
+  const webhook = await db.webhooks.findByOptional({
+    projectId,
+    issueSource: IssueBoardSource.LINEAR,
+    webhookId: teamId,
+  });
+  if (!webhook) {
+    await createLinearWebhook(teamId, linearAccessToken, userId, projectId);
+  }
+
   await fetchNewLinearIssues({
     linearAccessToken,
     projectId,
@@ -161,6 +176,55 @@ export async function fetchAllNewLinearIssues() {
   }
 }
 
+async function createIssueFromLinear({
+  issue,
+  issueBoard,
+  project,
+  githubAccessToken,
+}: {
+  issue: Issue;
+  issueBoard: IssueBoard;
+  project: Project;
+  githubAccessToken: string;
+}) {
+  // Create a new issue in the database
+  await db.issues.create({
+    issueBoardId: issueBoard.id,
+    issueId: issue.id,
+    title: issue.title,
+  });
+
+  const owner = project.repoFullName.split("/")[0];
+  const repo = project.repoFullName.split("/")[1];
+  if (!owner || !repo) {
+    throw new Error("Invalid repo full name");
+  }
+
+  // Use AI to generate a more detailed GitHub issue description
+  const githubIssueDescription = await rewriteGitHubIssue(
+    githubAccessToken,
+    owner,
+    repo,
+    issue.title ?? "",
+    issue.description ?? "",
+    EvaluationMode.DETAILED,
+  );
+  const githubIssueBody = githubIssueDescription.rewrittenIssue;
+
+  // Create a new GitHub issue
+  const githubIssue = await createGitHubIssue(
+    owner,
+    repo,
+    issue.title ?? "",
+    githubIssueBody,
+    githubAccessToken,
+  );
+
+  console.log(
+    `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data.number} for Linear issue ${issue.id}`,
+  );
+}
+
 export async function fetchNewLinearIssues({
   linearAccessToken,
   projectId,
@@ -219,42 +283,12 @@ export async function fetchNewLinearIssues({
         `Repo ${project.repoFullName}: Creating new Linear issue ${issue.id}`,
       );
 
-      // Create a new issue in the database
-      await db.issues.create({
-        issueBoardId: issueBoard.id,
-        issueId: issue.id,
-        title: issue.title,
+      await createIssueFromLinear({
+        issue,
+        issueBoard,
+        project,
+        githubAccessToken,
       });
-
-      const owner = project.repoFullName.split("/")[0];
-      const repo = project.repoFullName.split("/")[1];
-      if (!owner || !repo) {
-        throw new Error("Invalid repo full name");
-      }
-
-      // Use AI to generate a more detailed GitHub issue description
-      const githubIssueDescription = await rewriteGitHubIssue(
-        githubAccessToken,
-        owner,
-        repo,
-        issue.title ?? "",
-        issue.description ?? "",
-        EvaluationMode.DETAILED,
-      );
-      const githubIssueBody = githubIssueDescription.rewrittenIssue;
-
-      // Create a new GitHub issue
-      const githubIssue = await createGitHubIssue(
-        owner,
-        repo,
-        issue.title ?? "",
-        githubIssueBody,
-        githubAccessToken,
-      );
-
-      console.log(
-        `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data.number} for Linear issue ${issue.id}`,
-      );
     }
 
     await db.projects.where({ id: project.id }).update({
@@ -274,5 +308,128 @@ export async function fetchNewLinearIssues({
         numAttempts: numAttempts + 1,
       });
     }
+  }
+}
+
+export async function handleLinearWebhook(webhookData: LinearWebhookPayload) {
+  try {
+    // Only process new issue creation events
+    if (webhookData.type !== "Issue" || webhookData.action !== "create") {
+      console.log(
+        `Skipping webhook: ${webhookData.type} ${webhookData.action}`,
+      );
+      return;
+    }
+    const webhook = await db.webhooks.findByOptional({
+      webhookId: webhookData.webhookId,
+    });
+    if (!webhook) {
+      throw new Error("No webhook found");
+    }
+
+    const teamId = webhookData.data.teamId;
+    if (!teamId) {
+      throw new Error("No team ID found in webhook payload");
+    }
+
+    // Get the project
+    const project = await db.projects.findBy({ id: webhook.projectId });
+    if (!project) {
+      throw new Error(`Project not found: ${webhook.projectId}`);
+    }
+
+    // get the userId from the webhook
+    const userId = webhook.createdBy;
+
+    // get the issueBoard
+    const issueBoard = await db.issueBoards.findBy({
+      projectId: webhook.projectId,
+      issueSource: IssueBoardSource.LINEAR,
+      originalBoardId: teamId,
+    });
+
+    // Check if we've already processed this issue
+    const existingIssue = await db.issues.findByOptional({
+      issueBoardId: issueBoard.id,
+      issueId: webhookData.data.id,
+    });
+
+    if (existingIssue) {
+      console.log(
+        `Repo ${project.repoFullName}: Linear issue ${webhookData.data.id} already exists`,
+      );
+      return;
+    }
+
+    // Get GitHub token
+    const account = await db.accounts.findBy({ userId });
+    if (!account?.access_token) {
+      throw new Error("User not found or no GitHub access token");
+    }
+
+    // Refresh GitHub token if needed
+    let githubAccessToken: string | undefined = account.access_token;
+    if (
+      account.expires_at &&
+      Date.now() > (account.expires_at as unknown as number) * 1000
+    ) {
+      githubAccessToken = await refreshGitHubAccessToken(account.userId);
+    }
+    if (!githubAccessToken) {
+      throw new Error("Failed to refresh GitHub access token");
+    }
+
+    // Create the issue using the webhook payload data
+    await createIssueFromLinear({
+      issue: webhookData.data as unknown as Issue,
+      issueBoard,
+      project,
+      githubAccessToken,
+    });
+
+    console.log(
+      `Successfully processed webhook for issue ${webhookData.data.id}`,
+    );
+  } catch (error) {
+    console.error("Error processing Linear webhook:", error);
+    throw error;
+  }
+}
+
+export async function createLinearWebhook(
+  teamId: string,
+  linearAccessToken: string,
+  userId: number,
+  projectId: number,
+) {
+  try {
+    const client = new LinearClient({ accessToken: linearAccessToken });
+    const data = await client.createWebhook({
+      teamId,
+      url:
+        process.env.NODE_ENV === "production"
+          ? `${env.NEXTAUTH_URL}/api/linear/webhooks`
+          : `https://smee.io/YooywG1PK7j5VFpe`,
+      resourceTypes: ["Issue"],
+    });
+
+    const webhook = await data.webhook;
+    const webhookId = webhook?.id;
+    if (!webhookId) {
+      throw new Error("No webhook ID found");
+    }
+
+    await db.webhooks.create({
+      issueSource: IssueBoardSource.LINEAR,
+      projectId,
+      webhookId: webhook.id,
+      createdBy: userId,
+    });
+    console.log(`Project ${projectId}: Created Linear webhook ${webhook.id}`);
+
+    return webhook;
+  } catch (error: any) {
+    console.error(`Error creating Linear webhook: ${error.message}`);
+    throw error;
   }
 }

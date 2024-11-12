@@ -11,6 +11,7 @@ import { CodebaseContextTable } from "./tables/codebaseContext.table";
 import { PlanStepsTable } from "./tables/planSteps.table";
 import { IssuesTable } from "./tables/issues.table";
 import { IssueBoardsTable } from "./tables/issueBoards.table";
+import { WebhooksTable } from "./tables/webhooks.table";
 
 export const db = orchidORM(config.database, {
   projects: ProjectsTable,
@@ -24,4 +25,5 @@ export const db = orchidORM(config.database, {
   planSteps: PlanStepsTable,
   issues: IssuesTable,
   issueBoards: IssueBoardsTable,
+  webhooks: WebhooksTable,
 });

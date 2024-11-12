@@ -33,7 +33,7 @@ CronJob.from({
 
 // Fetch new Linear issues every hour
 CronJob.from({
-  cronTime: "0 * * * *",
+  cronTime: "5 * * * *",
   onTick: async () => {
     console.log("Cron job: Fetching new Linear issues");
     await fetchAllNewLinearIssues();

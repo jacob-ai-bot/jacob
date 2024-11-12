@@ -12,6 +12,9 @@ export function LinearOAuth({ redirectURI }: LinearOAuthProps) {
   const searchParams = useSearchParams();
   const projectId = searchParams?.get("projectId");
   React.useEffect(() => {
+    if (!projectId) {
+      return;
+    }
     const state = `linear-${Math.random().toString(36).substring(2, 15)}-${projectId}`;
     localStorage.setItem("linearOAuthState", state);
 
@@ -23,7 +26,7 @@ export function LinearOAuth({ redirectURI }: LinearOAuthProps) {
     authUrl.searchParams.append("scope", "read,write");
 
     window.location.href = authUrl.toString();
-  }, [redirectURI]);
+  }, [redirectURI, projectId]);
 
   return <div>Redirecting to Linear for authentication...</div>;
 }
