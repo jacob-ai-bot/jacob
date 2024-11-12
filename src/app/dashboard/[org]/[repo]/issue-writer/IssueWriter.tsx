@@ -263,7 +263,7 @@ Please update the \`${fileName}\` file to address the following:
             className="rounded-full bg-sunset-400 px-4 py-2 text-white transition-colors hover:bg-sunset-500 dark:bg-sunset-600 dark:hover:bg-sunset-500"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            New Issue
+            {isEditing ? "Clear Issue" : "New Issue"}
           </button>
         </div>
         {isEditing ? (
