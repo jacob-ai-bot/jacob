@@ -8,11 +8,13 @@ import {
   getOrCreateCodebaseContext,
 } from "./codebaseContext";
 
-import { standardizePath } from "~/app/utils";
+import { standardizePath, isValidPath } from "~/app/utils";
 import { traverseCodebase } from "~/server/analyze/traverse";
 import { getFiles } from "./files";
 import { z } from "zod";
 import { PlanningAgentActionType } from "~/server/db/enums";
+import fs from "fs";
+import path from "path";
 
 const PlanStepSchema = z.object({
   type: z.nativeEnum(PlanningAgentActionType),
@@ -286,6 +288,14 @@ Below is the context and detailed steps to guide the process.
         if (standardizedPath === "") {
           return false;
         }
+
+        // Check if the path is a directory
+        const fullPath = path.join(process.cwd(), standardizedPath);
+        if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+          console.error(`Skipping directory path: ${standardizedPath}`);
+          return false;
+        }
+
         return true;
       })
       .map((step) => {

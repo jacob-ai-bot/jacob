@@ -28,6 +28,8 @@ import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
 import { PlanningAgentActionType } from "../db/enums";
 import { type PlanStep } from "../agent/plan";
+import fs from "fs";
+import path from "path";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
