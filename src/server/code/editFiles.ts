@@ -143,7 +143,6 @@ async function processStepIndividually(
     baseEventData,
     3,
     60000,
-    undefined,
     model,
   );
 }
@@ -333,7 +332,6 @@ export async function editFiles(params: EditFilesParams) {
       baseEventData,
       3,
       60000,
-      undefined,
       model,
     ))!;
   }
