@@ -143,7 +143,7 @@ async function processStepIndividually(
     baseEventData,
     3,
     60000,
-    model,
+    model as unknown as string,
   );
 }
 
@@ -332,7 +332,7 @@ export async function editFiles(params: EditFilesParams) {
       baseEventData,
       3,
       60000,
-      model,
+      model as unknown as string,
     ))!;
   }
 
@@ -342,7 +342,7 @@ export async function editFiles(params: EditFilesParams) {
     throw new Error("No code generated");
   }
 
-  const reconstructedFiles = reconstructFiles(updatedCode);
+  const reconstructedFiles = reconstructFiles(updatedCode, rootPath);
   if (!reconstructedFiles?.length) {
     console.log(`[${repository.full_name}] No files reconstructed. Exiting...`);
     throw new Error("No files reconstructed");
