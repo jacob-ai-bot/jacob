@@ -32,6 +32,8 @@ export async function refreshGitHubAccessToken(
     const refreshedTokens = await response.json();
 
     if (!response.ok) {
+      console.error("Error refreshing access token", refreshedTokens);
+      console.error(response);
       throw refreshedTokens;
     }
     // update the account with the new access token

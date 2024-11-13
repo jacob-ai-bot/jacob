@@ -131,6 +131,16 @@ export const codebaseContextRouter = createTRPCRouter({
         );
       },
     ),
+  getAllFiles: protectedProcedure
+    .input(z.object({ projectId: z.number() }))
+    .query(async ({ input: { projectId } }): Promise<string[]> => {
+      // get all the files from the codebase context
+      const codebaseContext = await db.codebaseContext
+        .where({ projectId })
+        .order({ filePath: "ASC" })
+        .all();
+      return codebaseContext.map((context) => context.filePath);
+    }),
 });
 
 const searchCodebase = async (

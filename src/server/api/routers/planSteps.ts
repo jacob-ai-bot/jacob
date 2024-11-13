@@ -1,8 +1,11 @@
+import { Octokit } from "@octokit/rest";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db/db";
 import { PlanningAgentActionType } from "~/server/db/enums";
 import { type PlanStep } from "~/server/db/tables/planSteps.table";
+import { cloneRepo } from "~/server/git/clone";
+import { getOrGeneratePlan } from "~/server/utils/plan";
 
 export const planStepsRouter = createTRPCRouter({
   create: protectedProcedure
@@ -14,7 +17,7 @@ export const planStepsRouter = createTRPCRouter({
         title: z.string(),
         filePath: z.string(),
         instructions: z.string(),
-        exitCriteria: z.string(),
+        exitCriteria: z.string().nullable(),
         dependencies: z.string().nullable(),
       }),
     )
@@ -68,5 +71,73 @@ export const planStepsRouter = createTRPCRouter({
     .input(z.number().int())
     .mutation(({ input }) =>
       db.planSteps.find(input).update({ isActive: false }),
+    ),
+
+  redoPlan: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int(),
+        issueNumber: z.number().int(),
+        feedback: z.string(),
+      }),
+    )
+    .mutation(
+      async ({
+        input: { projectId, issueNumber, feedback },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        // Deactivate existing plan steps
+        await db.planSteps
+          .where({ projectId, issueNumber, isActive: true })
+          .update({ isActive: false });
+
+        // get the project
+        const project = await db.projects.find(projectId);
+        if (!project) {
+          throw new Error("Project not found");
+        }
+
+        let cleanupClone: (() => Promise<void>) | undefined;
+        try {
+          // get the Issue from GitHub
+          console.log("Getting issue", issueNumber);
+          const octokit = new Octokit({ auth: accessToken });
+          const repoFullName = project.repoFullName;
+          const [org, repo] = repoFullName.split("/");
+          if (!org || !repo) {
+            throw new Error("Invalid repo");
+          }
+
+          const { data: issue } = await octokit.issues.get({
+            owner: org,
+            repo,
+            issue_number: issueNumber,
+          });
+
+          const githubIssue = `${issue.title}\n\n${issue.body}`;
+
+          const { path: rootPath, cleanup } = await cloneRepo({
+            repoName: project.repoFullName,
+            token: accessToken,
+          });
+          cleanupClone = cleanup;
+          // Run the plan again
+          const newPlanSteps = await getOrGeneratePlan({
+            projectId,
+            issueId: issueNumber,
+            githubIssue,
+            rootPath,
+            feedback,
+          });
+
+          return newPlanSteps;
+        } catch (error) {
+          console.error(error);
+        } finally {
+          await cleanupClone?.();
+        }
+      },
     ),
 });
