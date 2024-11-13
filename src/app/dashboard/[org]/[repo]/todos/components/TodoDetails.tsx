@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type Todo from "../Todo";
 import { type Issue } from "../Todo";
 import LoadingIndicator from "../../components/LoadingIndicator";
@@ -12,6 +12,9 @@ import IssueComponent from "./Issue";
 import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
+import Link from "next/link";
+import Modal from "react-modal";
+import { useRouter } from "next/navigation";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -40,10 +43,19 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
   const [isStartingWork, setIsStartingWork] = useState(false);
   const [isRestartingTask, setIsRestartingTask] = useState(false);
   const [runBuild, setRunBuild] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  const router = useRouter();
 
   const { mutateAsync: researchIssue } = api.todos.researchIssue.useMutation();
   const { mutateAsync: updateTodo } = api.todos.update.useMutation();
   const { mutateAsync: updateIssue } = api.github.updateIssue.useMutation();
+
+  useEffect(() => {
+    if (selectedTodo.status === TodoStatus.IN_PROGRESS) {
+      setShowModal(true);
+    }
+  }, [selectedTodo.status]);
 
   const handleResearchIssue = async () => {
     try {
@@ -85,6 +97,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
         status: TodoStatus.IN_PROGRESS,
       });
       toast.success("Work started and issue updated!");
+      setShowModal(true);
     } catch (error) {
       console.error("Error starting work:", error);
       toast.error("Failed to start work on the issue.");
@@ -113,6 +126,35 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     } finally {
       setIsRestartingTask(false);
     }
+  };
+
+  const handleViewTask = () => {
+    setShowModal(false);
+    router.push(
+      `/dashboard/${org}/${repo}/assigned-tasks?issueId=${selectedTodo.issueId}`,
+    );
+  };
+
+  const customStyles = {
+    content: {
+      top: "50%",
+      left: "50%",
+      right: "auto",
+      bottom: "auto",
+      marginRight: "-50%",
+      transform: "translate(-50%, -50%)",
+      maxWidth: "80%",
+      maxHeight: "80%",
+      padding: "20px",
+      borderRadius: "8px",
+      border: "none",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      zIndex: 99999,
+    },
+    overlay: {
+      backgroundColor: "rgba(0, 0, 0, 0.75)",
+      zIndex: 9999,
+    },
   };
 
   if (isLoadingIssue) {
@@ -189,6 +231,12 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
               {isRestartingTask ? "Restarting..." : "Restart Task"}
             </button>
           )}
+          <Link
+            href={`/dashboard/${org}/${repo}/assigned-tasks?issueId=${selectedTodo.issueId}`}
+            className="whitespace-nowrap rounded-full bg-aurora-500 px-4 py-2 text-white hover:bg-aurora-600 dark:bg-sky-700 dark:hover:bg-sky-600"
+          >
+            View Assigned Task
+          </Link>
         </div>
       </div>
 
@@ -300,6 +348,31 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
           )}
         </motion.div>
       </div>
+
+      <Modal
+        isOpen={showModal}
+        onRequestClose={() => setShowModal(false)}
+        style={customStyles}
+        contentLabel="View Assigned Task"
+        ariaHideApp={false}
+      >
+        <h2 className="mb-4 text-xl font-bold">View Assigned Task</h2>
+        <p className="mb-6">Would you like to view the assigned task now?</p>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={() => setShowModal(false)}
+            className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleViewTask}
+            className="rounded-md bg-aurora-500 px-4 py-2 text-white hover:bg-aurora-600"
+          >
+            View Task
+          </button>
+        </div>
+      </Modal>
     </>
   );
 };
