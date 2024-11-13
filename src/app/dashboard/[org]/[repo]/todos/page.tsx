@@ -2,10 +2,9 @@ import { redirect } from "next/navigation";
 
 import Todo from "./Todo";
 import { getServerAuthSession } from "~/server/auth";
+import { getDashboardUsers } from "~/app/utils";
 
-const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
-  .toLowerCase()
-  .split(",");
+const dashboardUsers = getDashboardUsers();
 
 const TodoPage = async ({
   params,

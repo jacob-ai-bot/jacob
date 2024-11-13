@@ -3,10 +3,9 @@ import { redirect } from "next/navigation";
 import { api } from "~/trpc/server";
 import { getServerAuthSession } from "~/server/auth";
 import Setup from "./Setup";
+import { getDashboardUsers } from "~/app/utils";
 
-const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
-  .toLowerCase()
-  .split(",");
+const dashboardUsers = getDashboardUsers();
 
 const SetupPage = async ({
   params,

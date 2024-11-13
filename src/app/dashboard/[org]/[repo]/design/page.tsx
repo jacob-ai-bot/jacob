@@ -2,10 +2,9 @@ import { redirect } from "next/navigation";
 import { getServerAuthSession } from "~/server/auth";
 import Design from "./Design";
 import { Suspense } from "react";
+import { getDashboardUsers } from "~/app/utils";
 
-const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
-  .toLowerCase()
-  .split(",");
+const dashboardUsers = getDashboardUsers();
 
 const DesignPage = async ({
   params,
