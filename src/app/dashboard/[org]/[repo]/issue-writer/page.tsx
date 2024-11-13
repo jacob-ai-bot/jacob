@@ -3,10 +3,9 @@ import { redirect } from "next/navigation";
 import IssueWriter from "./IssueWriter";
 import { getServerAuthSession } from "~/server/auth";
 import { Suspense } from "react";
+import { getDashboardUsers } from "~/app/utils";
 
-const dashboardUsers = (process.env.DASHBOARD_USERS ?? "")
-  .toLowerCase()
-  .split(",");
+const dashboardUsers = getDashboardUsers();
 
 const IssueWriterPage = async ({
   params,
