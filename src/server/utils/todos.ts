@@ -7,6 +7,7 @@ import { cloneRepo } from "~/server/git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
 import { getOrGeneratePlan } from "./plan";
 import { getRepoSettings, type RepoSettings } from "./settings";
+import { sendTransactionalEmail } from "./email";
 
 const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
@@ -39,7 +40,6 @@ export const getOrCreateTodo = async ({
     throw new Error("Access token is required");
   }
 
-  // Check if a todo for this issue already exists
   const existingTodo = await db.todos.findByOptional({
     projectId: projectId,
     issueId: issueNumber,
@@ -50,7 +50,6 @@ export const getOrCreateTodo = async ({
     return existingTodo;
   }
 
-  // Fetch the specific issue from GitHub
   const { data: issue } = await getIssue(
     { name: repoName, owner: { login: repoOwner } },
     accessToken,
@@ -88,8 +87,6 @@ export const getOrCreateTodo = async ({
       position: issue.number,
     });
 
-    // Only research issues and create plans for agent repos for now
-    // TODO: only research issues for premium accounts
     if (agentRepos.includes(repo?.trim())) {
       await researchIssue({
         githubIssue: issueText,
@@ -112,13 +109,24 @@ export const getOrCreateTodo = async ({
       );
     }
 
+    const project = await db.projects.findBy({ id: projectId });
+    if (project) {
+      await sendTransactionalEmail(
+        project.userEmail,
+        newTodo,
+        repoOwner,
+        repoName,
+        projectId,
+        issue.number,
+      );
+    }
+
     console.log(`Created new todo for issue #${issue.number}`);
     return newTodo;
   } catch (error) {
     console.error(
       `Error while creating todo for issue #${issue.number}: ${String(error)}`,
     );
-    // Consider more specific error handling here
   } finally {
     if (cleanupClone) {
       await cleanupClone();
@@ -140,6 +148,5 @@ export const archiveTodosByIssueId = async (
     console.error(
       `Error while archiving todos for issue #${issueId}: ${String(error)}`,
     );
-    // Consider more specific error handling here
   }
 };

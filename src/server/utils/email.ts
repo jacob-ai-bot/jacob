@@ -2,6 +2,7 @@ import AWS from "aws-sdk";
 import { type PlanStep } from "../db/tables/planSteps.table";
 import { type Research } from "~/types";
 import { marked } from "marked";
+import { db } from "~/server/db/db";
 
 const ses = new AWS.SES({
   apiVersion: "2010-12-01",
@@ -19,14 +20,21 @@ export async function sendTransactionalEmail(
   todoItem: TodoItem,
   githubOrg: string,
   githubRepo: string,
-  planSteps?: PlanStep[],
-  researchDetails?: Research[],
+  projectId: number,
+  issueNumber: number,
 ): Promise<void> {
   const actionLink = `https://app.jacb.ai/dashboard/${githubOrg}/${githubRepo}/todos/${todoItem.id}`;
 
-  // Process markdown content first
+  const planSteps = await db.planSteps.findMany({
+    where: { projectId, issueNumber },
+  });
+
+  const researchDetails = await db.research.findMany({
+    where: { todoId: todoItem.id, issueId: issueNumber },
+  });
+
   const processedResearch = await Promise.all(
-    (researchDetails ?? []).map(async (research) => ({
+    researchDetails.map(async (research) => ({
       ...research,
       answer: research.answer
         ? await marked(research.answer, { breaks: true })
@@ -35,7 +43,7 @@ export async function sendTransactionalEmail(
   );
 
   const processedPlanSteps = await Promise.all(
-    (planSteps ?? []).map(async (step) => ({
+    planSteps.map(async (step) => ({
       ...step,
       instructions: await marked(step.instructions, { breaks: true }),
     })),
