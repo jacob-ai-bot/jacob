@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import type Todo from "../Todo";
 import { type Issue } from "../Todo";
 import LoadingIndicator from "../../components/LoadingIndicator";
@@ -13,7 +13,6 @@ import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -42,8 +41,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
   const [isStartingWork, setIsStartingWork] = useState(false);
   const [isRestartingTask, setIsRestartingTask] = useState(false);
   const [runBuild, setRunBuild] = useState(false);
-
-  const router = useRouter();
 
   const { mutateAsync: researchIssue } = api.todos.researchIssue.useMutation();
   const { mutateAsync: updateTodo } = api.todos.update.useMutation();
@@ -193,12 +190,14 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
               {isRestartingTask ? "Restarting..." : "Restart Task"}
             </button>
           )}
-          <Link
-            href={`/dashboard/${org}/${repo}/assigned-tasks?issueId=${selectedTodo.issueId}`}
-            className="whitespace-nowrap rounded-full bg-aurora-500 px-4 py-2 text-white hover:bg-aurora-600 hover:text-white dark:bg-sky-700 dark:hover:bg-sky-600"
-          >
-            View Assigned Task
-          </Link>
+          {selectedTodo.status !== TodoStatus.TODO && (
+            <Link
+              href={`/dashboard/${org}/${repo}/assigned-tasks?issueId=${selectedTodo.issueId}`}
+              className="whitespace-nowrap rounded-full bg-aurora-500 px-4 py-2 text-white hover:bg-aurora-600 hover:text-white dark:bg-sky-700 dark:hover:bg-sky-600"
+            >
+              View Assigned Task
+            </Link>
+          )}
         </div>
       </div>
 
