@@ -12,6 +12,7 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import StepNavigation from "./components/StepNavigation";
 import { Switch } from "@headlessui/react";
 import TaskHeader from "./components/TaskHeader";
+import { useSearchParams } from "next/navigation";
 
 interface TasksPageProps {
   org: string;
@@ -29,6 +30,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
   const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState<boolean>(true);
   const [showAllTasks, setShowAllTasks] = useState(false);
+
+  const searchParams = useSearchParams();
+  const issueId = searchParams.get("issueId");
 
   const {
     data: tasks,
@@ -62,9 +66,18 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
 
   useEffect(() => {
     if (tasks && tasks.length > 0) {
-      setSelectedTask(tasks[0]);
+      if (issueId) {
+        const task = tasks.find((t) => t.issueId === Number(issueId));
+        if (task) {
+          setSelectedTask(task);
+        } else {
+          setSelectedTask(tasks[0]);
+        }
+      } else {
+        setSelectedTask(tasks[0]);
+      }
     }
-  }, [tasks]);
+  }, [tasks, issueId]);
 
   useEffect(() => {
     if (tasks) {
