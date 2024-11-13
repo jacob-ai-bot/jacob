@@ -148,27 +148,8 @@ const Setup: React.FC<SetupProps> = ({
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
-    const { name, value, type } = e.target;
-    const isCheckbox = type === "checkbox";
-    const newValue = isCheckbox
-      ? (e.target as HTMLInputElement).checked
-      : value;
-
-    setSettings((prev) => {
-      const newSettings = { ...prev };
-      const keys = name.split(".");
-      let current: any = newSettings;
-
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]]) {
-          current[keys[i]] = {};
-        }
-        current = current[keys[i]];
-      }
-
-      current[keys[keys.length - 1]] = newValue;
-      return newSettings;
-    });
+    const { name, value } = e.target;
+    setSettings((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleValidateSettings = async () => {

@@ -5,6 +5,8 @@ import {
   faChevronDown,
   faEdit,
   faArchive,
+  faPlus,
+  faRedo,
 } from "@fortawesome/free-solid-svg-icons";
 import { AnimatePresence, motion } from "framer-motion";
 import { api } from "~/trpc/react";
@@ -18,6 +20,7 @@ interface PlanStepProps {
   onUpdate: () => void;
   onDelete: () => void;
   isLastItem: boolean;
+  allFiles?: string[] | undefined;
 }
 
 const PlanStepComponent: React.FC<PlanStepProps> = ({
@@ -25,6 +28,7 @@ const PlanStepComponent: React.FC<PlanStepProps> = ({
   onUpdate,
   onDelete,
   isLastItem,
+  allFiles,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -149,16 +153,41 @@ const PlanStepComponent: React.FC<PlanStepProps> = ({
                   >
                     File Path
                   </label>
-                  <input
-                    id="filePath"
-                    type="text"
-                    value={editedStep.filePath}
-                    onChange={(e) =>
-                      setEditedStep({ ...editedStep, filePath: e.target.value })
-                    }
-                    className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
-                    placeholder="File Path"
-                  />
+                  {editedStep.type ===
+                  PlanningAgentActionType.EditExistingCode ? (
+                    <select
+                      id="filePath"
+                      value={editedStep.filePath}
+                      onChange={(e) =>
+                        setEditedStep({
+                          ...editedStep,
+                          filePath: e.target.value,
+                        })
+                      }
+                      className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+                    >
+                      <option value="">Select a file...</option>
+                      {allFiles?.map((file) => (
+                        <option key={file} value={file}>
+                          {file}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id="filePath"
+                      type="text"
+                      value={editedStep.filePath}
+                      onChange={(e) =>
+                        setEditedStep({
+                          ...editedStep,
+                          filePath: e.target.value,
+                        })
+                      }
+                      className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+                      placeholder="File Path"
+                    />
+                  )}
                 </div>
                 <div>
                   <label
@@ -334,6 +363,21 @@ interface PlanProps {
 }
 
 const Plan: React.FC<PlanProps> = ({ projectId, issueNumber }) => {
+  const [feedback, setFeedback] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAddingStep, setIsAddingStep] = useState(false);
+  const [newStep, setNewStep] = useState<Partial<PlanStep>>({
+    projectId,
+    issueNumber,
+    type: PlanningAgentActionType.EditExistingCode,
+    title: "",
+    filePath: "",
+    instructions: "",
+    exitCriteria: "",
+    dependencies: "",
+  });
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
   const {
     data: planSteps,
     isLoading,
@@ -343,12 +387,52 @@ const Plan: React.FC<PlanProps> = ({ projectId, issueNumber }) => {
     issueNumber,
   });
 
+  const { data: allFiles } = api.codebaseContext.getAllFiles.useQuery({
+    projectId,
+  });
+
+  const { mutateAsync: createPlanStep } = api.planSteps.create.useMutation();
+  const { mutateAsync: redoPlan } = api.planSteps.redoPlan.useMutation();
+
+  const handleRedoPlan = async () => {
+    try {
+      setIsRegenerating(true);
+      await redoPlan({ projectId, issueNumber, feedback });
+      setFeedback("");
+      await refetch();
+      toast.success("Plan has been regenerated successfully!");
+    } catch (error) {
+      console.error("Error regenerating plan:", error);
+      toast.error("Failed to regenerate the plan.");
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleAddStep = async () => {
+    try {
+      await createPlanStep(newStep as PlanStep);
+      setIsAddingStep(false);
+      setNewStep({
+        projectId,
+        issueNumber,
+        type: PlanningAgentActionType.EditExistingCode,
+        title: "",
+        filePath: "",
+        instructions: "",
+        exitCriteria: "",
+        dependencies: "",
+      });
+      await refetch();
+      toast.success("New plan step added successfully!");
+    } catch (error) {
+      console.error("Error adding new plan step:", error);
+      toast.error("Failed to add new plan step.");
+    }
+  };
+
   if (isLoading) {
     return <div>Loading plan...</div>;
-  }
-
-  if (!planSteps || planSteps.length === 0) {
-    return <div>No plan steps found.</div>;
   }
 
   return (
@@ -367,38 +451,254 @@ const Plan: React.FC<PlanProps> = ({ projectId, issueNumber }) => {
             this carefully and make any changes as needed.
           </p>
         </div>
-      </div>
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: { opacity: 0 },
-          visible: {
-            opacity: 1,
-            transition: {
-              staggerChildren: 0.1,
-            },
-          },
-        }}
-        className="space-y-4"
-      >
-        {planSteps.map((step, index) => (
-          <motion.div
-            key={step.id}
-            variants={{
-              hidden: { y: 20, opacity: 0 },
-              visible: { y: 0, opacity: 1 },
-            }}
+        {!isEditing && !isRegenerating && (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="text-xl text-meadow-900/80 transition-colors hover:text-meadow-800/80 dark:text-meadow-300/70 dark:hover:text-meadow-200/70"
           >
-            <PlanStepComponent
-              step={step}
-              onUpdate={refetch}
-              onDelete={refetch}
-              isLastItem={index === planSteps.length - 1}
+            <FontAwesomeIcon icon={faEdit} className="mr-1" />
+          </button>
+        )}
+        {isEditing && !isRegenerating && (
+          <button
+            onClick={handleRedoPlan}
+            className="rounded-md bg-aurora-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-aurora-600 dark:bg-sky-600/30 dark:hover:bg-sky-500/30"
+          >
+            <FontAwesomeIcon icon={faRedo} className="mr-2" />
+            Redo Plan
+          </button>
+        )}
+        {isRegenerating && (
+          <button
+            disabled
+            className="rounded-md bg-aurora-500/50 px-4 py-2 text-sm font-medium text-white dark:bg-sky-600/20"
+          >
+            <FontAwesomeIcon icon={faRedo} className="mr-2 animate-spin" />
+            Creating Plan...
+          </button>
+        )}
+      </div>
+      {isEditing && !isRegenerating && (
+        <div className="mb-6">
+          <label
+            htmlFor="feedback"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Feedback
+          </label>
+          <textarea
+            id="feedback"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            className="mt-1 h-32 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+            placeholder="Enter your feedback on the current plan here..."
+          />
+        </div>
+      )}
+      {!isRegenerating ? (
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.1,
+              },
+            },
+          }}
+          className="space-y-4"
+        >
+          {planSteps && planSteps.length > 0 ? (
+            planSteps.map((step, index) => (
+              <motion.div
+                key={step.id}
+                variants={{
+                  hidden: { y: 20, opacity: 0 },
+                  visible: { y: 0, opacity: 1 },
+                }}
+              >
+                <PlanStepComponent
+                  step={step}
+                  onUpdate={refetch}
+                  onDelete={refetch}
+                  isLastItem={index === planSteps.length - 1}
+                  allFiles={allFiles}
+                />
+              </motion.div>
+            ))
+          ) : (
+            <div>No plan steps found.</div>
+          )}
+        </motion.div>
+      ) : (
+        <div className="text-center text-slate-600 dark:text-slate-400">
+          Regenerating plan...
+        </div>
+      )}
+      {isAddingStep && !isRegenerating ? (
+        <div className="mt-6 space-y-4">
+          <div>
+            <label
+              htmlFor="newStepTitle"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Title
+            </label>
+            <input
+              id="newStepTitle"
+              type="text"
+              value={newStep.title}
+              onChange={(e) =>
+                setNewStep({ ...newStep, title: e.target.value })
+              }
+              className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
             />
-          </motion.div>
-        ))}
-      </motion.div>
+          </div>
+          <div>
+            <label
+              htmlFor="newStepType"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Type
+            </label>
+            <select
+              id="newStepType"
+              value={newStep.type}
+              onChange={(e) =>
+                setNewStep({
+                  ...newStep,
+                  type: e.target.value as PlanningAgentActionType,
+                })
+              }
+              className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+            >
+              {Object.values(PlanningAgentActionType).map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="newStepFilePath"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              File Path
+            </label>
+            {newStep.type === PlanningAgentActionType.EditExistingCode ? (
+              <select
+                id="newStepFilePath"
+                value={newStep.filePath}
+                onChange={(e) =>
+                  setNewStep({ ...newStep, filePath: e.target.value })
+                }
+                className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+              >
+                <option value="">Select a file...</option>
+                {allFiles?.map((file) => (
+                  <option key={file} value={file}>
+                    {file}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="newStepFilePath"
+                type="text"
+                value={newStep.filePath}
+                onChange={(e) =>
+                  setNewStep({ ...newStep, filePath: e.target.value })
+                }
+                className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+                placeholder="File Path"
+              />
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="newStepInstructions"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Instructions
+            </label>
+            <textarea
+              id="newStepInstructions"
+              value={newStep.instructions}
+              onChange={(e) =>
+                setNewStep({ ...newStep, instructions: e.target.value })
+              }
+              className="mt-1 h-32 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="newStepExitCriteria"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Exit Criteria
+            </label>
+            <textarea
+              id="newStepExitCriteria"
+              value={newStep.exitCriteria ?? ""}
+              onChange={(e) =>
+                setNewStep({
+                  ...newStep,
+                  exitCriteria: e.target.value,
+                })
+              }
+              className="mt-1 h-32 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="newStepDependencies"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Dependencies
+            </label>
+            <input
+              id="newStepDependencies"
+              type="text"
+              value={newStep.dependencies ?? ""}
+              onChange={(e) =>
+                setNewStep({
+                  ...newStep,
+                  dependencies: e.target.value,
+                })
+              }
+              className="mt-1 w-full rounded-md border border-slate-300 p-2 dark:border-slate-600 dark:bg-slate-800"
+            />
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => setIsAddingStep(false)}
+              className="rounded-md bg-slate-100 px-4 py-2 text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddStep}
+              className="rounded-md bg-slate-800 px-4 py-2 text-white transition-colors hover:bg-slate-900 dark:bg-slate-600 dark:hover:bg-slate-500"
+            >
+              Add Step
+            </button>
+          </div>
+        </div>
+      ) : (
+        isEditing &&
+        !isRegenerating && (
+          <button
+            onClick={() => setIsAddingStep(true)}
+            className="mt-6 flex items-center rounded-md bg-meadow-800/70 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-meadow-900/70 dark:bg-meadow-700/50 dark:hover:bg-meadow-800/60"
+          >
+            <FontAwesomeIcon icon={faPlus} className="mr-2" />
+            Add New Step
+          </button>
+        )
+      )}
     </motion.div>
   );
 };

@@ -39,6 +39,7 @@ interface GetOrGeneratePlanParams {
   githubIssue: string;
   rootPath: string;
   contextItems?: ContextItem[] | undefined;
+  feedback?: string | undefined;
 }
 
 export const getOrGeneratePlan = async ({
@@ -47,6 +48,7 @@ export const getOrGeneratePlan = async ({
   githubIssue,
   rootPath,
   contextItems,
+  feedback,
 }: GetOrGeneratePlanParams): Promise<Plan> => {
   if (!projectId || !issueId) {
     throw new Error("Error generating plan, missing project or issue id");
@@ -101,8 +103,10 @@ export const getOrGeneratePlan = async ({
       );
     }
 
+    // If feedback is provided, the user was not happy with the previous plan,
+    // so we'll provide more details in the codebase context to help generate a better (but more expensive) plan.
     const codebaseContext = contextItems
-      ?.map((item) => `${item.file}: ${item.text}`)
+      ?.map((item) => `${item.file}: ${feedback ? item.text : item.overview}`)
       .join("\n");
 
     // find all the files that are mentioned in the research and get the full code for those files
@@ -146,12 +150,19 @@ Below is the context and detailed steps to guide the process.
   \`\`\`
   <issue>${githubIssue}</issue>
   \`\`\`
-
+  ${
+    feedback?.length
+      ? `- **User Feedback**: An invalid plan was previously generated and rejected. Here is important feedback from the user about the plan that was rejected. You MUST NOT make the same mistake again. This feedback must be taken into account when generating the plan.
+  \`\`\`
+  <feedback>${feedback}</feedback>
+  \`\`\``
+      : ""
+  }
   ## Guidelines
 
   - Break down the plan into a series of distinct steps, focusing on modifications to existing files or the creation of new files.
   - Each step should be a clear and concise instruction to modify an existing file or create a new file. NEVER include a step that involves modifying multiple files.
-  - All modifications to a file should be specified in a single step. NEVER include multiple modification steps for a single file.
+  - All modifications to a file should be specified in a single step. NEVER include multiple steps with the same file path. Just put all the modifications for a single file in a single step.
   - Clearly identify exact files to modify or specify relative file paths and names with extensions for new files to be created. NEVER specify a directory path. For new files, the file path must not already exist in the codebase. For existing files, the file path must be a valid existing file.
   - Minimize the extent of file modifications and limit the number of new files.
   - Concentrate exclusively on necessary code changes, excluding tests or documentation unless specified.
