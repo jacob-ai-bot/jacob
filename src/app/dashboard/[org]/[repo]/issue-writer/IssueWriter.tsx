@@ -19,6 +19,7 @@ import SpeechToTextArea, {
 } from "../components/SpeechToTextArea";
 import { useSearchParams } from "next/navigation";
 import { EvaluationMode } from "~/types";
+import Link from "next/link";
 
 interface IssueWriterProps {
   org: string;
@@ -45,6 +46,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
   const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(
     null,
   );
+  const [createdTodoId, setCreatedTodoId] = useState<number | null>(null);
   const [isLoadingCreatedIssue, setIsLoadingCreatedIssue] = useState(false);
   const [createdIssue, setCreatedIssue] = useState<{
     title: string;
@@ -80,6 +82,10 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     });
   const createIssueMutation = api.github.createIssue.useMutation();
   const rewriteIssueMutation = api.github.rewriteIssue.useMutation();
+  const getByIssueIdQuery = api.todos.getByIssueId.useQuery(
+    { issueId: createdIssueNumber ?? 0 },
+    { enabled: !!createdIssueNumber },
+  );
 
   useEffect(() => {
     if (isEditing) {
@@ -119,6 +125,12 @@ Please update the \`${fileName}\` file to address the following:
       localStorage.setItem(`evaluationMode-${org}-${repo}`, evaluationMode);
     }
   }, [evaluationMode, org, repo]);
+
+  useEffect(() => {
+    if (createdIssueNumber && getByIssueIdQuery.data) {
+      setCreatedTodoId(getByIssueIdQuery.data.id);
+    }
+  }, [createdIssueNumber, getByIssueIdQuery.data]);
 
   const handleCreateIssue = async () => {
     if (!issueTitle.trim()) {
@@ -175,6 +187,7 @@ Please update the \`${fileName}\` file to address the following:
     setIssueTitle("");
     setIssueBody("");
     setCreatedIssueNumber(null);
+    setCreatedTodoId(null);
     setIsEditing(true);
     setTitleError(false);
     if (typeof window !== "undefined") {
@@ -258,13 +271,23 @@ Please update the \`${fileName}\` file to address the following:
           <h2 className="text-2xl font-bold text-aurora-700 dark:text-aurora-300">
             Issue Creator
           </h2>
-          <button
-            onClick={handleNewIssue}
-            className="rounded-full bg-sunset-400 px-4 py-2 text-white transition-colors hover:bg-sunset-500 dark:bg-sunset-600 dark:hover:bg-sunset-500"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            {isEditing ? "Clear Issue" : "New Issue"}
-          </button>
+          <div className="flex space-x-2">
+            {!isEditing && createdTodoId && (
+              <Link
+                href={`/dashboard/${org}/${repo}/todos/${createdTodoId}`}
+                className="rounded-full bg-blossom-500 px-4 py-2 text-white transition-colors hover:bg-blossom-700 dark:bg-blossom-600 dark:hover:bg-blossom-500"
+              >
+                View Issue
+              </Link>
+            )}
+            <button
+              onClick={handleNewIssue}
+              className="rounded-full bg-sunset-400 px-4 py-2 text-white transition-colors hover:bg-sunset-500 dark:bg-sunset-600 dark:hover:bg-sunset-500"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              {isEditing ? "Clear Issue" : "New Issue"}
+            </button>
+          </div>
         </div>
         {isEditing ? (
           <div className="flex w-full flex-1 flex-col space-y-4">
