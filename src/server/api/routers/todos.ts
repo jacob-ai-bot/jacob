@@ -38,8 +38,8 @@ export const todoRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { issueId } }): Promise<Todo | null> => {
-      const todo = await db.todos.findOptional({ issueId });
-      return todo;
+      const todo = await db.todos.findOne({ issueId });
+      return todo ?? null;
     }),
 
   create: protectedProcedure
