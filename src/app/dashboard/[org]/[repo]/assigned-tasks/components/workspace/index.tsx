@@ -141,7 +141,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
       </div>
       <button
         onClick={toggleSidebar}
-        className="fixed bottom-4 right-4 z-50 rounded-full bg-aurora-600 p-3 text-white shadow-lg sm:hidden"
+        className="fixed bottom-3 right-4 z-50 rounded-full bg-aurora-600 px-3 py-1 text-white shadow-lg sm:hidden"
       >
         Menu
       </button>
@@ -151,7 +151,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           onClick={toggleSidebar}
         >
           <div
-            className="absolute bottom-0 right-0 h-1/2 w-48 bg-white dark:bg-gray-800"
+            className="absolute bottom-0 right-0 h-screen w-16 bg-white dark:bg-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
             <Sidebar selectedIcon={selectedIcon} onIconClick={onIconClick} />

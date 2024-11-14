@@ -8,7 +8,10 @@ import { type Task, type Event } from "~/server/api/routers/events";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
 import TaskItem from "./components/TaskItem";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import StepNavigation from "./components/StepNavigation";
 import { Switch } from "@headlessui/react";
 import TaskHeader from "./components/TaskHeader";
@@ -152,6 +155,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const handleSelectTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsSidebarOpen(false);
+  };
+
   if (loadingTasks || loadingProject || !tasks || !project) {
     return <LoadingIndicator />;
   }
@@ -204,7 +212,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
               key={task.id}
               index={index}
               task={task}
-              onSelect={() => setSelectedTask(task)}
+              onSelect={() => handleSelectTask(task)}
               selected={selectedTask?.id === task.id}
               org={org}
               repo={repo}
@@ -215,14 +223,14 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
 
       <div className="h-[calc(100vh-117px)] w-full bg-white dark:bg-gray-800 lg:w-2/3">
         <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700 lg:hidden">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            Task Details
-          </h2>
           <button
             onClick={toggleSidebar}
-            className="rounded-md bg-gray-200 p-2 text-gray-600 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            className={`items-center space-x-2 rounded-md pb-1 text-sm text-sunset-600 hover:bg-sunset-50 hover:text-sunset-700 dark:text-purple-400 dark:hover:bg-purple-900/50 dark:hover:text-purple-300 md:px-3 md:py-2 md:pb-2 ${
+              isSidebarOpen ? "hidden" : "inline-flex "
+            }`}
           >
-            {isSidebarOpen ? "Close Sidebar" : "Open Sidebar"}
+            <ArrowLeftIcon className="h-4 w-4" />
+            <span>Back to Tasks</span>
           </button>
         </div>
         <TaskHeader selectedTask={selectedTask} />
