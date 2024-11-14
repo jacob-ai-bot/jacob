@@ -13,6 +13,7 @@ import Plan from "./Plan";
 import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
 import Link from "next/link";
+import Evaluation from "./Evaluation";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -35,6 +36,11 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     api.events.getResearch.useQuery({
       todoId: selectedTodo.id,
       issueId: selectedTodo.issueId ?? 0,
+    });
+
+  const { data: evaluation, isLoading: isLoadingEvaluation } =
+    api.todos.getEvaluation.useQuery({
+      todoId: selectedTodo.id,
     });
 
   const [isGeneratingResearch, setIsGeneratingResearch] = useState(false);
@@ -202,6 +208,22 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       </div>
 
       <div className="space-y-8">
+        {/* Evaluation Section */}
+        {isLoadingEvaluation ? (
+          <LoadingIndicator />
+        ) : (
+          evaluation && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="rounded-lg bg-gradient-to-b from-blossom-50/70 to-50% p-6 shadow-lg transition-all dark:from-blossom-800/30 dark:to-blossom-800/10"
+            >
+              <Evaluation evaluation={evaluation} />
+            </motion.div>
+          )
+        )}
+
         {/* Issue Section */}
         <IssueComponent
           org={org}
