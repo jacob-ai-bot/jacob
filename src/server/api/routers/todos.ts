@@ -217,6 +217,10 @@ export const todoRouter = createTRPCRouter({
         const planSteps = (await db.planSteps
           .where({ issueNumber: todo.issueId ?? 0 })
           .all()) as PlanStep[];
+        if (!planSteps.length) {
+          // this is fine, we will evaluate the issue later when the plan steps are created
+          return null;
+        }
 
         const research = await db.research
           .where({ todoId: todo.id, issueId: todo.issueId ?? 0 })
