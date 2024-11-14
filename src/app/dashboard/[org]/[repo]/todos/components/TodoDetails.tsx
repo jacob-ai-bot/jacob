@@ -41,6 +41,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
   const { data: evaluation, isLoading: isLoadingEvaluation } =
     api.todos.getEvaluation.useQuery({
       todoId: selectedTodo.id,
+      githubIssue: selectedIssue?.body ?? "",
     });
 
   const [isGeneratingResearch, setIsGeneratingResearch] = useState(false);

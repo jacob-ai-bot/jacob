@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { sendGptRequestWithSchema } from "../openai/request";
 import type { BaseEventData } from "../utils";
-import { standardizePath } from "../utils/files";
 
 const EvaluationSchema = z.object({
   confidenceScore: z.number().min(0).max(5),

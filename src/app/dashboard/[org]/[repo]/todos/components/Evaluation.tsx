@@ -25,7 +25,7 @@ const Evaluation: React.FC<EvaluationProps> = ({ evaluation }) => {
   };
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow-md dark:bg-gray-800">
+    <div className="">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between text-left"

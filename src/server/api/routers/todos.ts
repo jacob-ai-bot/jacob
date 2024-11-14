@@ -6,6 +6,7 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
 import { cloneRepo } from "~/server/git/clone";
 import { evaluateIssue } from "~/server/utils/evaluateIssue";
+import { getCodebaseContext } from "../utils";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -180,44 +181,56 @@ export const todoRouter = createTRPCRouter({
     .input(
       z.object({
         todoId: z.number(),
+        githubIssue: z.string(),
       }),
     )
-    .query(async ({ input: { todoId } }) => {
-      const todo = await db.todos.findOptional(todoId);
-      if (!todo) {
-        throw new Error("Todo not found");
-      }
+    .query(
+      async ({
+        input: { todoId, githubIssue },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        const todo = await db.todos.findOptional(todoId);
+        if (!todo) {
+          throw new Error("Todo not found");
+        }
 
-      const issue = await db.issues.findOptional(todo.issueId ?? 0);
-      if (!issue) {
-        throw new Error("Issue not found");
-      }
+        const planSteps = await db.planSteps
+          .where({ issueNumber: todo.issueId ?? 0 })
+          .all();
+        const planDetails = planSteps
+          .map((step) => step.instructions)
+          .join("\n");
 
-      const planSteps = await db.planSteps
-        .where({ issueId: todo.issueId ?? 0 })
-        .all();
-      const planDetails = planSteps.map((step) => step.instructions).join("\n");
+        const research = await db.research
+          .where({ todoId: todo.id, issueId: todo.issueId ?? 0 })
+          .all();
+        const researchDetails = research
+          .map((item) => `${item.question}\n${item.answer}`)
+          .join("\n\n");
 
-      const research = await db.research
-        .where({ todoId: todo.id, issueId: todo.issueId ?? 0 })
-        .all();
-      const researchDetails = research
-        .map((item) => `${item.question}\n${item.answer}`)
-        .join("\n\n");
+        const project = await db.projects.findOptional(todo.projectId);
+        if (!project) {
+          throw new Error("Project not found");
+        }
 
-      const project = await db.projects.findOptional(todo.projectId);
-      if (!project) {
-        throw new Error("Project not found");
-      }
+        const [repoOwner, repoName] = project.repoFullName.split("/");
+        const context = await getCodebaseContext(
+          repoOwner ?? "",
+          repoName ?? "",
+          accessToken,
+        );
 
-      const evaluation = await evaluateIssue(
-        issue.body,
-        planDetails,
-        researchDetails,
-        project.totalFiles ?? 0,
-        project.affectedFiles ?? 0,
-      );
+        const evaluation = await evaluateIssue(
+          githubIssue,
+          planDetails,
+          researchDetails,
+          context?.length ?? 0,
+          planSteps.length ?? 0,
+        );
 
-      return evaluation;
-    }),
+        return evaluation;
+      },
+    ),
 });
