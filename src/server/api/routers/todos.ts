@@ -31,6 +31,21 @@ export const todoRouter = createTRPCRouter({
       return todo;
     }),
 
+  getByIssueId: protectedProcedure
+    .input(
+      z.object({
+        issueId: z.number(),
+      }),
+    )
+    .query(async ({ input: { issueId } }): Promise<Todo | null> => {
+      const todo = await db.todos.findByOptional({ issueId });
+      if (!todo) {
+        console.error("Todo not found for issueId", issueId);
+        return null;
+      }
+      return todo;
+    }),
+
   create: protectedProcedure
     .input(
       z.object({
