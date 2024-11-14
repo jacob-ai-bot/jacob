@@ -102,7 +102,6 @@ const Evaluation: React.FC<EvaluationProps> = ({ evaluation }) => {
                   <li>
                     Story Points: {evaluation.estimatedEffort.storyPoints}
                   </li>
-                  <li>Time: {evaluation.estimatedEffort.time}</li>
                   <li>
                     Required Skill Level:{" "}
                     {evaluation.estimatedEffort.requiredSkillLevel}

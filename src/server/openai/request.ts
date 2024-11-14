@@ -14,7 +14,7 @@ import {
   type ChatCompletionToolChoiceOption,
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
-import { sendAnthropicRequest } from "../anthropic/request";
+// import { sendAnthropicRequest } from "../anthropic/request";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 import { encode } from "gpt-tokenizer";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
@@ -199,20 +199,20 @@ export const sendGptRequest = async (
     }
 
     // For now, if we get a request to use Sonnet 3.5 or Haiku 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
-    if (
-      (model === "claude-3-5-sonnet-20241022" ||
-        model === "claude-3-5-haiku-20241022") &&
-      !isJSONMode
-    ) {
-      return sendAnthropicRequest(
-        userPrompt,
-        systemPrompt,
-        temperature,
-        baseEventData,
-        retries,
-        delay,
-      );
-    }
+    // if (
+    //   (model === "claude-3-5-sonnet-20241022" ||
+    //     model === "claude-3-5-haiku-20241022") &&
+    //   !isJSONMode
+    // ) {
+    //   return sendAnthropicRequest(
+    //     userPrompt,
+    //     systemPrompt,
+    //     temperature,
+    //     baseEventData,
+    //     retries,
+    //     delay,
+    //   );
+    // }
 
     let openai: OpenAI;
     if (model?.startsWith("llama3.1")) {

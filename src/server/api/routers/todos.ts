@@ -7,6 +7,9 @@ import { type Todo } from "./events";
 import { cloneRepo } from "~/server/git/clone";
 import { evaluateIssue } from "~/server/utils/evaluateIssue";
 import { getCodebaseContext } from "../utils";
+import { type ContextItem } from "~/server/utils/codebaseContext";
+import { type PlanStep } from "~/server/db/tables/planSteps.table";
+import { type BaseEventData } from "~/server/utils";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -188,7 +191,7 @@ export const todoRouter = createTRPCRouter({
       async ({
         input: { todoId, githubIssue },
         ctx: {
-          session: { accessToken },
+          session: { accessToken, user },
         },
       }) => {
         const todo = await db.todos.findOptional(todoId);
@@ -196,12 +199,9 @@ export const todoRouter = createTRPCRouter({
           throw new Error("Todo not found");
         }
 
-        const planSteps = await db.planSteps
+        const planSteps = (await db.planSteps
           .where({ issueNumber: todo.issueId ?? 0 })
-          .all();
-        const planDetails = planSteps
-          .map((step) => step.instructions)
-          .join("\n");
+          .all()) as PlanStep[];
 
         const research = await db.research
           .where({ todoId: todo.id, issueId: todo.issueId ?? 0 })
@@ -216,19 +216,27 @@ export const todoRouter = createTRPCRouter({
         }
 
         const [repoOwner, repoName] = project.repoFullName.split("/");
-        const context = await getCodebaseContext(
+        const context = (await getCodebaseContext(
           repoOwner ?? "",
           repoName ?? "",
           accessToken,
-        );
+        )) as unknown as ContextItem[];
 
-        const evaluation = await evaluateIssue(
+        const baseEventData: BaseEventData = {
+          projectId: project.id,
+          repoFullName: project.repoFullName,
+          userId: user.id,
+          issueId: todo.issueId ?? 0,
+        };
+
+        const evaluation = await evaluateIssue({
           githubIssue,
-          planDetails,
-          researchDetails,
-          context?.length ?? 0,
-          planSteps.length ?? 0,
-        );
+          planSteps,
+          research: researchDetails,
+          contextItems: context,
+          totalFiles: context.length,
+          baseEventData,
+        });
 
         return evaluation;
       },
