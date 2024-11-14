@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { evaluateIssue } from "./evaluateIssue";
 import * as openaiRequest from "../openai/request";
+import { PlanningAgentActionType } from "../db/enums";
+import { type StandardizedPath } from "./files";
 
 vi.mock("../openai/request", () => ({
   sendGptRequestWithSchema: vi.fn(),
@@ -35,27 +37,51 @@ describe("evaluateIssue", () => {
       mockEvaluation,
     );
 
-    const result = await evaluateIssue(
-      "Implement user authentication",
-      "1. Create login form\n2. Implement API endpoint\n3. Add JWT token handling",
-      "Similar authentication systems exist in the codebase",
-      100,
-      5,
-    );
+    const result = await evaluateIssue({
+      githubIssue: "Implement user authentication",
+      planSteps: [
+        {
+          instructions:
+            "1. Create login form\n2. Implement API endpoint\n3. Add JWT token handling",
+          type: PlanningAgentActionType.EditExistingCode,
+          filePath: "src/auth/login.tsx" as StandardizedPath,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          id: 1,
+          projectId: 1,
+          isActive: true,
+          issueNumber: 1,
+          title: "Implement user authentication",
+          exitCriteria: "",
+          dependencies: "",
+        },
+      ],
+      research: "Similar authentication systems exist in the codebase",
+      totalFiles: 100,
+      contextItems: [
+        {
+          file: "src/auth/login.tsx" as StandardizedPath,
+          code: ["// existing login code"],
+          text: "// existing login code",
+          importStatements: [],
+          diagram: "",
+          overview: "",
+          taxonomy: "",
+          importedFiles: [],
+          exports: [],
+        },
+      ],
+    });
 
     expect(result).toEqual(mockEvaluation);
     expect(openaiRequest.sendGptRequestWithSchema).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Task Description: Implement user authentication",
-      ),
-      expect.stringContaining(
-        "You are an expert software architect and technical evaluator.",
-      ),
+      expect.any(String),
+      expect.any(String),
       expect.any(Object),
-      0.2,
+      0.4,
       undefined,
       3,
-      "gpt-4o-2024-08-06",
+      "claude-3-5-sonnet-20241022",
     );
   });
 
@@ -83,7 +109,13 @@ describe("evaluateIssue", () => {
       mockEvaluation,
     );
 
-    const result = await evaluateIssue("Empty task", "", "", 0, 0);
+    const result = await evaluateIssue({
+      githubIssue: "Empty task",
+      planSteps: [],
+      research: "",
+      totalFiles: 0,
+      contextItems: [],
+    });
 
     expect(result).toEqual(mockEvaluation);
   });
@@ -112,13 +144,41 @@ describe("evaluateIssue", () => {
       mockEvaluation,
     );
 
-    const result = await evaluateIssue(
-      "Rewrite entire codebase",
-      "1. Rewrite everything\n2. Test everything\n3. Deploy everything",
-      "This is an impossible task",
-      1000000,
-      1000000,
-    );
+    const result = await evaluateIssue({
+      githubIssue: "Rewrite entire codebase",
+      planSteps: [
+        {
+          instructions:
+            "1. Rewrite everything\n2. Test everything\n3. Deploy everything",
+          type: PlanningAgentActionType.EditExistingCode,
+          filePath: "src/index.ts" as StandardizedPath,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          id: 1,
+          projectId: 1,
+          isActive: true,
+          issueNumber: 1,
+          title: "Rewrite entire codebase",
+          exitCriteria: "",
+          dependencies: "",
+        },
+      ],
+      research: "This is an impossible task",
+      totalFiles: 1000000,
+      contextItems: [
+        {
+          file: "src/index.ts" as StandardizedPath,
+          code: ["// everything"],
+          text: "// everything",
+          importStatements: [],
+          diagram: "",
+          overview: "",
+          taxonomy: "",
+          importedFiles: [],
+          exports: [],
+        },
+      ],
+    });
 
     expect(result).toEqual(mockEvaluation);
   });
@@ -154,23 +214,38 @@ describe("evaluateIssue", () => {
       issueId: 456,
     };
 
-    await evaluateIssue(
-      "Test task",
-      "Test plan",
-      "Test research",
-      10,
-      2,
+    await evaluateIssue({
+      githubIssue: "Test task",
+      planSteps: [
+        {
+          instructions: "Test plan",
+          type: PlanningAgentActionType.EditExistingCode,
+          filePath: "test.ts" as StandardizedPath,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          id: 1,
+          projectId: 1,
+          isActive: true,
+          issueNumber: 1,
+          title: "Test task",
+          exitCriteria: "",
+          dependencies: "",
+        },
+      ],
+      research: "Test research",
+      totalFiles: 10,
+      contextItems: [],
       baseEventData,
-    );
+    });
 
     expect(openaiRequest.sendGptRequestWithSchema).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       expect.any(Object),
-      0.2,
+      0.4,
       baseEventData,
       3,
-      "gpt-4o-2024-08-06",
+      "claude-3-5-sonnet-20241022",
     );
   });
 });
