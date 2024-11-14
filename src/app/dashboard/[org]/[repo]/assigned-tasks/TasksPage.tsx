@@ -8,7 +8,10 @@ import { type Task, type Event } from "~/server/api/routers/events";
 import { api } from "~/trpc/react";
 import LoadingIndicator from "../components/LoadingIndicator";
 import TaskItem from "./components/TaskItem";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import StepNavigation from "./components/StepNavigation";
 import { Switch } from "@headlessui/react";
 import TaskHeader from "./components/TaskHeader";
@@ -30,6 +33,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
   const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState<boolean>(true);
   const [showAllTasks, setShowAllTasks] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const searchParams = useSearchParams();
   const issueId = searchParams.get("issueId");
@@ -83,12 +87,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     if (tasks) {
       let filtered = tasks;
 
-      // Apply status filter if not showing all tasks
       if (!showAllTasks) {
         filtered = filtered.filter((task) => task.status !== TaskStatus.CLOSED);
       }
 
-      // Apply search filter
       filtered = filtered.filter(
         (task) =>
           task.name?.toLowerCase().includes(searchQuery.toLowerCase()) ??
@@ -97,7 +99,6 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
 
       setFilteredTasks(filtered);
 
-      // If filtered tasks are empty but there are tasks, show all tasks
       if (filtered.length === 0 && tasks.length > 0 && !showAllTasks) {
         setShowAllTasks(true);
       }
@@ -150,13 +151,24 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleSelectTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsSidebarOpen(false);
+  };
+
   if (loadingTasks || loadingProject || !tasks || !project) {
     return <LoadingIndicator />;
   }
 
   return (
     <div className="flex h-full w-full flex-col overflow-clip rounded-md dark:bg-gray-900 lg:flex-row">
-      <div className="w-1/3 border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800">
+      <div
+        className={`w-full border-b border-gray-200 bg-white/80 dark:border-gray-700 dark:bg-gray-800 lg:w-1/3 ${isSidebarOpen ? "block" : "hidden lg:block"}`}
+      >
         <div className="border-b border-r border-gray-200 p-4 dark:border-gray-700">
           <div className="mb-4 flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -200,7 +212,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
               key={task.id}
               index={index}
               task={task}
-              onSelect={() => setSelectedTask(task)}
+              onSelect={() => handleSelectTask(task)}
               selected={selectedTask?.id === task.id}
               org={org}
               repo={repo}
@@ -209,7 +221,18 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-117px)] w-2/3 bg-white dark:bg-gray-800 ">
+      <div className="h-[calc(100vh-117px)] w-full bg-white dark:bg-gray-800 lg:w-2/3">
+        <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700 lg:hidden">
+          <button
+            onClick={toggleSidebar}
+            className={`items-center space-x-2 rounded-md pb-1 text-sm text-sunset-600 hover:bg-sunset-50 hover:text-sunset-700 dark:text-purple-400 dark:hover:bg-purple-900/50 dark:hover:text-purple-300 md:px-3 md:py-2 md:pb-2 ${
+              isSidebarOpen ? "hidden" : "inline-flex "
+            }`}
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            <span>Back to Tasks</span>
+          </button>
+        </div>
         <TaskHeader selectedTask={selectedTask} />
         <Workspace
           selectedIcon={selectedIcon}
@@ -221,7 +244,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           events={events}
           currentEventIndex={currentEventIndex}
         />
-        <div className="sticky bottom-0 flex  h-12 w-full justify-center bg-white dark:bg-gray-800">
+        <div className="sticky bottom-0 flex h-12 w-full justify-center bg-white dark:bg-gray-800">
           <StepNavigation
             onRestart={handleRestart}
             onStepBackward={handleStepBackward}

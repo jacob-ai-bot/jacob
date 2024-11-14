@@ -8,14 +8,14 @@ interface TaskHeaderProps {
 
 export const TaskHeader = ({ selectedTask }: TaskHeaderProps) => {
   return (
-    <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-6 pb-2 backdrop-blur-lg dark:bg-gray-800">
-      <div className="flex flex-row items-center space-x-2">
+    <div className="sticky top-0 flex flex-col justify-center space-y-2 bg-white/80 p-6 pb-2 backdrop-blur-lg dark:bg-gray-800 md:z-50 md:flex-row md:items-center md:justify-between md:space-y-0">
+      <div className="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-2 md:space-y-0">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {selectedTask?.name ?? ""}
         </h2>
         {selectedTask && (
           <div
-            className={`inline-flex items-center text-center text-sm font-medium ${getTaskStatusColor(
+            className={`hidden items-center text-center text-sm font-medium md:inline-flex ${getTaskStatusColor(
               selectedTask.status,
             )} whitespace-nowrap rounded-full px-2 py-1`}
           >

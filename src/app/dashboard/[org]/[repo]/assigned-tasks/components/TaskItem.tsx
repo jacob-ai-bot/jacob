@@ -42,14 +42,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div
-      className={`relative cursor-pointer px-4 pb-2 pt-1 transition-all ${getBackgroundColor(
+      className={`relative cursor-pointer px-2 py-2 transition-all sm:px-4 sm:pb-2 sm:pt-1 ${getBackgroundColor(
         index,
         selected,
       )}`}
       onClick={onSelect}
     >
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="mb-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100 sm:mb-0">
           {task.name}
         </h3>
         <div className="flex items-center space-x-1">
@@ -62,19 +62,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </span>
         </div>
       </div>
-      <p className="line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400">
+      <p className="mt-1 line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400 sm:mt-0">
         {task.description}
       </p>
-      <div className="mt-2 flex items-center justify-between text-xs">
+      <div className="mt-2 flex flex-col text-xs sm:flex-row sm:items-center sm:justify-between">
         {task?.issue?.createdAt && (
-          <span className="text-[8pt] text-neutral-400 dark:text-neutral-400">
+          <span className="mb-1 text-[8pt] text-neutral-400 dark:text-neutral-400 sm:mb-0">
             Created{" "}
             {formatDistanceToNow(new Date(task.issue?.createdAt), {
               addSuffix: true,
             })}
           </span>
         )}
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center space-x-2 sm:space-x-4">
           {task.issueId && !task.pullRequest && (
             <a
               href={

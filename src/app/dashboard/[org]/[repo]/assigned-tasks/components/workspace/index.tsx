@@ -40,10 +40,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
     selectedTask?.commands ?? [],
   );
   const [prompts, setPrompts] = useState<Prompt[]>(selectedTask?.prompts ?? []);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   useEffect(() => {
     if (!selectedTask) return;
-    // filter out the commands and prompts that are before the currentEventIndex
     setCommands(
       selectedTask?.commands?.filter(
         (c) => c.eventIndex <= currentEventIndex + 1,
@@ -123,19 +123,41 @@ const Workspace: React.FC<WorkspaceProps> = ({
   const onIconClick = (icon: SidebarIcon) => {
     setSelectedIcon(icon);
     topRef.current?.scrollIntoView({ behavior: "instant" });
+    setIsSidebarVisible(false);
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarVisible(!isSidebarVisible);
   };
 
   return (
     <div className="flex flex-grow flex-row overflow-hidden">
-      {/* Main Content Area */}
       <div className="hide-scrollbar relative h-[calc(100vh-116px)] w-full overflow-y-scroll">
         <div ref={topRef} />
-        <div className="p-6 pt-4">{renderComponent(selectedTask)}</div>
+        <div className="p-4 pt-4 sm:p-6">{renderComponent(selectedTask)}</div>
       </div>
-      {/* Sidebar */}
-      <div className="border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div className="hidden border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 sm:block">
         <Sidebar selectedIcon={selectedIcon} onIconClick={onIconClick} />
       </div>
+      <button
+        onClick={toggleSidebar}
+        className="fixed bottom-3 right-4 z-50 rounded-full bg-aurora-600 px-3 py-1 text-white shadow-lg sm:hidden"
+      >
+        Menu
+      </button>
+      {isSidebarVisible && (
+        <div
+          className="fixed inset-0 z-50 bg-black bg-opacity-50 sm:hidden"
+          onClick={toggleSidebar}
+        >
+          <div
+            className="absolute bottom-0 right-0 h-screen w-16 bg-white dark:bg-gray-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Sidebar selectedIcon={selectedIcon} onIconClick={onIconClick} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

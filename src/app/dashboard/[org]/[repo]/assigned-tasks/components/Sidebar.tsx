@@ -30,9 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedIcon, onIconClick }) => {
   ];
 
   return (
-    <div className="flex h-full w-16 flex-col items-center space-y-2 bg-gradient-to-b from-aurora-50/30 to-aurora-50/50 p-2 text-white transition-all duration-300 ease-in-out dark:from-gray-900/95 dark:to-gray-900/80">
+    <div className="flex h-full w-16 flex-col items-center space-y-2 bg-gradient-to-b from-aurora-50/30 to-aurora-50/50 p-2 text-white transition-all duration-300 ease-in-out dark:from-gray-900/95 dark:to-gray-900/80 sm:w-20">
       {icons.map(({ icon, name, label }) => (
-        //  bg-aurora-100 p-2 text-aurora-800 hover:bg-aurora-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600
         <div
           className={`group relative w-full rounded-lg transition-all duration-300 ease-in-out ${
             selectedIcon === name
@@ -52,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedIcon, onIconClick }) => {
             data-tooltip-content={label}
           >
             <FontAwesomeIcon icon={icon} size="lg" />
-            <span className="mt-1 text-[10px] font-medium opacity-80">
+            <span className="mt-1 hidden text-[10px] font-medium opacity-80 sm:inline">
               {label}
             </span>
           </button>
