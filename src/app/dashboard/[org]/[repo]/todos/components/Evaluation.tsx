@@ -1,8 +1,19 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import {
+  faChevronDown,
+  faChevronUp,
+  faCode,
+  faLightbulb,
+  faExclamationTriangle,
+  faClock,
+  faListCheck,
+  faComments,
+} from "@fortawesome/free-solid-svg-icons";
 import type { Evaluation as EvaluationType } from "~/server/utils/evaluateIssue";
+import { BorderBeam } from "~/app/_components/magicui/border-beam";
+import { AnimatedShinyText } from "~/app/_components/magicui/animated-shiny-text";
 
 interface EvaluationProps {
   evaluation: EvaluationType;
@@ -24,8 +35,25 @@ const Evaluation: React.FC<EvaluationProps> = ({ evaluation }) => {
     }
   };
 
+  const renderProgressBar = (value: number, max = 5) => {
+    const percentage = (value / max) * 100;
+    return (
+      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+        <div
+          className="h-full rounded-full bg-aurora-500 transition-all duration-500 ease-out dark:bg-aurora-400"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    );
+  };
+
   return (
-    <div className="">
+    <div className="relative rounded-lg bg-white p-4 shadow-lg transition-all dark:bg-gray-800">
+      <BorderBeam
+        className="absolute inset-0 opacity-50"
+        colorFrom="#00C8FF"
+        colorTo="#FF3390"
+      />
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between text-left"
@@ -41,9 +69,9 @@ const Evaluation: React.FC<EvaluationProps> = ({ evaluation }) => {
           </h3>
         </div>
         <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <AnimatedShinyText className="text-sm font-medium">
             Confidence Score: {evaluation.confidenceScore}/5
-          </span>
+          </AnimatedShinyText>
           <FontAwesomeIcon
             icon={isOpen ? faChevronUp : faChevronDown}
             className="text-gray-500 transition-transform dark:text-gray-400"
@@ -63,70 +91,125 @@ const Evaluation: React.FC<EvaluationProps> = ({ evaluation }) => {
             }}
             transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
           >
-            <div className="space-y-4">
-              <div>
-                <h4 className="mb-2 font-semibold text-gray-700 dark:text-gray-300">
-                  Complexity Factors
-                </h4>
-                <ul className="list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                  <li>
-                    Code Complexity:{" "}
-                    {evaluation.complexityFactors.codeComplexity}
-                  </li>
-                  <li>
-                    Context Understanding:{" "}
-                    {evaluation.complexityFactors.contextUnderstanding}
-                  </li>
-                  <li>
-                    Risk Factors: {evaluation.complexityFactors.riskFactors}
-                  </li>
-                </ul>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon
+                    icon={faCode}
+                    className="text-aurora-500 dark:text-aurora-400"
+                  />
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Complexity Factors
+                  </h4>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span>Code Complexity</span>
+                      <span className="text-aurora-600 dark:text-aurora-400">
+                        {evaluation.complexityFactors.codeComplexity}
+                      </span>
+                    </div>
+                    {renderProgressBar(
+                      parseInt(evaluation.complexityFactors.codeComplexity),
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span>Context Understanding</span>
+                      <span className="text-aurora-600 dark:text-aurora-400">
+                        {evaluation.complexityFactors.contextUnderstanding}
+                      </span>
+                    </div>
+                    {renderProgressBar(
+                      parseInt(
+                        evaluation.complexityFactors.contextUnderstanding,
+                      ),
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <h4 className="mb-2 font-semibold text-gray-700 dark:text-gray-300">
-                  Specific Risk Areas
-                </h4>
-                <ul className="list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <div className="space-y-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon
+                    icon={faExclamationTriangle}
+                    className="text-sunset-500 dark:text-sunset-400"
+                  />
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Risk Areas
+                  </h4>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                   {evaluation.specificRiskAreas.map((risk, index) => (
-                    <li key={index}>{risk}</li>
+                    <li key={index} className="flex items-start space-x-2">
+                      <span className="mt-1 block h-1.5 w-1.5 rounded-full bg-sunset-500" />
+                      <span>{risk}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
 
-              <div>
-                <h4 className="mb-2 font-semibold text-gray-700 dark:text-gray-300">
-                  Estimated Effort
-                </h4>
-                <ul className="list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                  <li>
-                    Story Points: {evaluation.estimatedEffort.storyPoints}
-                  </li>
-                  <li>
-                    Required Skill Level:{" "}
-                    {evaluation.estimatedEffort.requiredSkillLevel}
-                  </li>
-                  <li>
-                    Skillset: {evaluation.estimatedEffort.skillset.join(", ")}
-                  </li>
-                </ul>
+              <div className="space-y-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon
+                    icon={faClock}
+                    className="text-meadow-500 dark:text-meadow-400"
+                  />
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Estimated Effort
+                  </h4>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Story Points
+                    </div>
+                    <div className="text-xl font-bold text-meadow-500 dark:text-meadow-400">
+                      {evaluation.estimatedEffort.storyPoints}
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Skill Level
+                    </div>
+                    <div className="text-xl font-bold text-meadow-500 dark:text-meadow-400">
+                      {evaluation.estimatedEffort.requiredSkillLevel}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <h4 className="mb-2 font-semibold text-gray-700 dark:text-gray-300">
-                  Recommendations
-                </h4>
-                <ul className="list-inside list-disc space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <div className="space-y-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon
+                    icon={faLightbulb}
+                    className="text-blossom-500 dark:text-blossom-400"
+                  />
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Recommendations
+                  </h4>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                   {evaluation.recommendations.map((recommendation, index) => (
-                    <li key={index}>{recommendation}</li>
+                    <li key={index} className="flex items-start space-x-2">
+                      <span className="mt-1 block h-1.5 w-1.5 rounded-full bg-blossom-500" />
+                      <span>{recommendation}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
 
-              <div>
-                <h4 className="mb-2 font-semibold text-gray-700 dark:text-gray-300">
-                  Feedback
-                </h4>
+              <div className="col-span-2 space-y-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon
+                    icon={faComments}
+                    className="text-aurora-500 dark:text-aurora-400"
+                  />
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Feedback
+                  </h4>
+                </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {evaluation.feedback}
                 </p>
