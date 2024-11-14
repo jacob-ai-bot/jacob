@@ -5,6 +5,11 @@ import { researchIssue } from "~/server/agent/research";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
 import { cloneRepo } from "~/server/git/clone";
+import { evaluateIssue } from "~/server/utils/evaluateIssue";
+import { getCodebaseContext } from "../utils";
+import { type ContextItem } from "~/server/utils/codebaseContext";
+import { type PlanStep } from "~/server/db/tables/planSteps.table";
+import { type BaseEventData } from "~/server/utils";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -187,6 +192,68 @@ export const todoRouter = createTRPCRouter({
             .where({ id: parseInt(questionId), todoId, issueId })
             .update({ answer });
         }
+      },
+    ),
+
+  getEvaluation: protectedProcedure
+    .input(
+      z.object({
+        todoId: z.number(),
+        githubIssue: z.string(),
+      }),
+    )
+    .query(
+      async ({
+        input: { todoId, githubIssue },
+        ctx: {
+          session: { accessToken, user },
+        },
+      }) => {
+        const todo = await db.todos.findOptional(todoId);
+        if (!todo) {
+          throw new Error("Todo not found");
+        }
+
+        const planSteps = (await db.planSteps
+          .where({ issueNumber: todo.issueId ?? 0 })
+          .all()) as PlanStep[];
+
+        const research = await db.research
+          .where({ todoId: todo.id, issueId: todo.issueId ?? 0 })
+          .all();
+        const researchDetails = research
+          .map((item) => `${item.question}\n${item.answer}`)
+          .join("\n\n");
+
+        const project = await db.projects.findOptional(todo.projectId);
+        if (!project) {
+          throw new Error("Project not found");
+        }
+
+        const [repoOwner, repoName] = project.repoFullName.split("/");
+        const context = (await getCodebaseContext(
+          repoOwner ?? "",
+          repoName ?? "",
+          accessToken,
+        )) as unknown as ContextItem[];
+
+        const baseEventData: BaseEventData = {
+          projectId: project.id,
+          repoFullName: project.repoFullName,
+          userId: user.id,
+          issueId: todo.issueId ?? 0,
+        };
+
+        const evaluation = await evaluateIssue({
+          githubIssue,
+          planSteps,
+          research: researchDetails,
+          contextItems: context,
+          totalFiles: context.length,
+          baseEventData,
+        });
+
+        return evaluation;
       },
     ),
 });
