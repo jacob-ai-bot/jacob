@@ -11,6 +11,8 @@ import {
   systemPrompt,
 } from "../prompts";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { getContextOverview } from "../utils";
+import { type Model } from "~/server/openai/request";
 
 export const maxDuration = 120;
 
@@ -38,9 +40,8 @@ export async function POST(req: NextRequest) {
 
     const isO1 = model.modelName?.startsWith("o1") ?? false;
 
-    const context = contextItems
-      .map((c) => `${c.file}: ${c.overview} \n\n ${c.text}`)
-      .join("\n");
+    const modelName = model.modelName as Model;
+    const context = getContextOverview(contextItems, modelName);
 
     const prompts: {
       type: "text";

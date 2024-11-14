@@ -153,6 +153,15 @@ export function countTokens(text: string): number {
   return encode(text).length;
 }
 
+export function isTextTooLongForContextWindow(
+  text: string,
+  model: Model,
+  buffer = 0.95,
+): boolean {
+  const totalTokens = countTokens(text);
+  return totalTokens > buffer * CONTEXT_WINDOW[model];
+}
+
 const cerebrasClient = new Cerebras({
   apiKey: process.env.CEREBRAS_API_KEY ?? "",
 });

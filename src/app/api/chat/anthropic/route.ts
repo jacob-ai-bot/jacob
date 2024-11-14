@@ -4,9 +4,12 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { convertToCoreMessages, streamText } from "ai";
 import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/ModelSelector";
 import { type ContextItem } from "~/server/utils/codebaseContext";
-import { getCodebasePrompt, systemPrompt } from "../prompts";
+import { systemPrompt } from "../prompts";
 import { tools } from "../tools";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { getContextOverview } from "../utils";
+import { type Model } from "~/server/openai/request";
+
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
@@ -30,13 +33,8 @@ export async function POST(req: NextRequest) {
     if (!contextItems) {
       return new Response("No context items provided", { status: 200 });
     }
-
-    const context = contextItems
-      .map((c) => `${c.file}: ${c.overview} \n\n ${c.text}`)
-      .join("\n");
-
-    const codebasePrompt = getCodebasePrompt(context);
-
+    const modelName = model.modelName as Model;
+    const codebasePrompt = getContextOverview(contextItems, modelName);
     const cachedPrompts: {
       type: "text";
       text: string;
@@ -52,7 +50,6 @@ export async function POST(req: NextRequest) {
     ];
 
     // create a new user message with the full codeFiles content
-
     if (codeContent && codeContent.length > 0) {
       const codeFilesContent = codeContent
         .map(
