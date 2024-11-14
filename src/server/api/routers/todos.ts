@@ -38,7 +38,11 @@ export const todoRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { issueId } }): Promise<Todo | null> => {
-      const todo = await db.todos.where({ issueId }).first();
+      const todo = await db.todos.findByOptional({ issueId });
+      if (!todo) {
+        console.error("Todo not found for issueId", issueId);
+        return null;
+      }
       return todo;
     }),
 
