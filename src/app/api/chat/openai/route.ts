@@ -11,6 +11,7 @@ import {
   systemPrompt,
 } from "../prompts";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { countTokens, getModelTokenLimit } from "~/server/openai/request";
 
 export const maxDuration = 120;
 
@@ -73,7 +74,6 @@ export async function POST(req: NextRequest) {
       text: codebasePrompt,
     });
 
-    // find the first user message. Add the code context and file details to it.
     const userMessage = messages.find((m) => m.role === Role.USER);
     if (!userMessage) {
       return new Response("User message is required", { status: 400 });
@@ -83,13 +83,11 @@ export async function POST(req: NextRequest) {
       text: userMessage.content,
     });
 
-    // now add the codebase context to the existing user message
     const newUserMessage = {
       ...userMessage,
       content: prompts,
     };
 
-    // replace the first user message with the new user message. ONLY replace the first one.
     let hasReplacedMessage = false;
     const newMessages = [];
     for (const m of messages) {
@@ -101,7 +99,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // BUGBUG remove any toolInvocations values from the messages
     const messagesWithoutToolInvocations = newMessages.map((m) => {
       return {
         role: m.role,
@@ -112,7 +109,19 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // For O1 models, change any role that's not 'user' or 'assistant' to 'user'
+    const totalTokens = messagesWithoutToolInvocations.reduce(
+      (acc, msg) => acc + countTokens(msg.content, model.modelName),
+      0,
+    );
+    const tokenLimit = getModelTokenLimit(model.modelName);
+
+    if (totalTokens > tokenLimit) {
+      return new Response(
+        "The combined length of your message and context exceeds the token limit. Please shorten your message or context.",
+        { status: 400 },
+      );
+    }
+
     const adjustedMessages = isO1
       ? messagesWithoutToolInvocations.map((m) => ({
           ...m,
@@ -143,7 +152,6 @@ export async function POST(req: NextRequest) {
       const result = await generateText(o1Options);
       return new Response(result.text);
     } else {
-      // Initialize the stream using @ai-sdk/openai
       const result = await streamText(gptOptions);
       return result.toDataStreamResponse();
     }

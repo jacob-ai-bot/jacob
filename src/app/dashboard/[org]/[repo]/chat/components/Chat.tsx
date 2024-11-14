@@ -1,4 +1,3 @@
-// components/Chat.tsx
 import { useState, useEffect, useRef } from "react";
 import { type Message, useChat } from "ai/react";
 import { type Project } from "~/server/db/tables/projects.table";
@@ -87,7 +86,13 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
     },
     onError: (error) => {
       console.error("Error in chat", error);
-      toast.error(`Error in chat: ${error.message}`);
+      if (error.message.includes("exceeds the token limit")) {
+        toast.error(
+          "Your message or the conversation context is too long. Please shorten your message or context.",
+        );
+      } else {
+        toast.error(`Error in chat: ${error.message}`);
+      }
     },
     onToolCall: async ({ toolCall }) => {
       const toolCallArgs = toolCall.args as {

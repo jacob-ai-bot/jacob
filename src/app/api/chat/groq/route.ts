@@ -7,6 +7,7 @@ import { type ContextItem } from "~/server/utils/codebaseContext";
 import { getCodebasePrompt, systemPrompt } from "../prompts";
 import { simplifiedTools } from "../tools";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
+import { countTokens, getModelTokenLimit } from "~/server/openai/request";
 
 export const maxDuration = 120;
 
@@ -32,11 +33,6 @@ export async function POST(req: NextRequest) {
       return new Response("No context items provided", { status: 200 });
     }
 
-    // Groq has very limited context window and rate limits
-    // const context = contextItems
-    //   .map((c) => `${c.file}: ${c.overview}`)
-    //   .join("\n");
-
     const prompts: {
       type: "text";
       text: string;
@@ -53,7 +49,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // find the first user message. Add the codebase context to it and cache it. Here is an example
     const userMessage = messages.find((m) => m.role === Role.USER);
     if (!userMessage) {
       return new Response("User message is required", { status: 400 });
@@ -63,13 +58,11 @@ export async function POST(req: NextRequest) {
       text: userMessage.content,
     });
 
-    // now add the codebase context to the existing user message
     const newUserMessage = {
       ...userMessage,
       content: prompts,
     };
 
-    // replace the first user message with the new user message. ONLY replace the first one.
     let hasReplacedMessage = false;
     const newMessages = [];
     for (const m of messages) {
@@ -81,7 +74,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // BUGBUG remove any toolInvocations values from the messages
     const messagesWithoutToolInvocations = newMessages.map((m) => {
       return {
         role: m.role,
@@ -92,6 +84,19 @@ export async function POST(req: NextRequest) {
       };
     });
 
+    const totalTokens = messagesWithoutToolInvocations.reduce(
+      (acc, msg) => acc + countTokens(msg.content, model.modelName),
+      0,
+    );
+    const tokenLimit = getModelTokenLimit(model.modelName);
+
+    if (totalTokens > tokenLimit) {
+      return new Response(
+        "The combined length of your message and context exceeds the token limit. Please shorten your message or context.",
+        { status: 400 },
+      );
+    }
+
     const groq = createOpenAI({
       baseURL: "https://api.groq.com/openai/v1",
       apiKey: process.env.GROQ_API_KEY ?? "",
@@ -100,7 +105,7 @@ export async function POST(req: NextRequest) {
     const coreMessages = convertToCoreMessages(
       messagesWithoutToolInvocations as Message[],
     );
-    // Initialize the stream using @ai-sdk/anthropic
+
     const result = await streamText({
       model: groq(model.modelName),
       messages: coreMessages,
@@ -113,7 +118,6 @@ export async function POST(req: NextRequest) {
     return result.toDataStreamResponse();
   } catch (error) {
     console.error("Error with chat endpoint");
-    // console.log(JSON.stringify(error));
     return new Response("Error with chat endpoint", { status: 500 });
   }
 }
