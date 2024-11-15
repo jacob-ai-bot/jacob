@@ -80,18 +80,14 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         const [githubOrg, githubRepo] = repository.full_name.split("/");
 
         try {
-          console.log(
-            `[${repository.full_name}] Fetching repository collaborators for issue #${payload.issue.number}`,
-          );
-
           const octokit = new Octokit({
             auth: installationAuthentication?.token,
           });
 
           const { data: collaborators } = await octokit.repos.listCollaborators(
             {
-              owner: githubOrg,
-              repo: githubRepo,
+              owner: githubOrg ?? "",
+              repo: githubRepo ?? "",
               affiliation: "all",
             },
           );
@@ -99,10 +95,7 @@ ghApp.webhooks.on("issues.opened", async (event) => {
           const collaboratorLogins = collaborators.map((c) => c.login);
 
           const jacobUsers = await db.users
-            .where({
-              login: collaboratorLogins,
-              emailVerified: { not: null },
-            })
+            .whereIn("login", collaboratorLogins)
             .all();
 
           const planSteps = await db.planSteps
@@ -116,13 +109,13 @@ ghApp.webhooks.on("issues.opened", async (event) => {
 
           const researchDetails = await db.research
             .where({
-              todoId: todo.id,
+              todoId: todo?.id ?? 0,
               issueId: payload.issue.number,
             })
             .all();
 
           for (const user of jacobUsers) {
-            if (user.email) {
+            if (user.email && todo) {
               try {
                 console.log(
                   `[${repository.full_name}] Sending transactional email to ${user.email} for issue #${payload.issue.number}`,
