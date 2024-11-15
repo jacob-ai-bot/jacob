@@ -1,9 +1,6 @@
-import { OpenAI } from "openai";
-// import { encode } from "gpt-tokenizer";
-import type { SafeParseSuccess, ZodSchema } from "zod";
+import { type OpenAI } from "openai";
 import { parse } from "jsonc-parser";
 import { type Message } from "~/types";
-
 import { removeMarkdownCodeblocks } from "~/app/utils";
 import { parseTemplate, type BaseEventData } from "../utils";
 import { emitPromptEvent } from "../utils/events";
@@ -14,10 +11,9 @@ import {
   type ChatCompletionToolChoiceOption,
 } from "openai/resources/chat/completions";
 import { type Stream } from "openai/streaming";
-// import { sendAnthropicRequest } from "../anthropic/request";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 import { encode } from "gpt-tokenizer";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
+import { Portkey } from "portkey-ai";
 
 const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
 
@@ -37,7 +33,7 @@ const CONTEXT_WINDOW = {
   "claude-3-5-haiku-20241022": 200000,
   "llama-3.1-sonar-large-128k-online": 127072,
   "llama-3.1-sonar-small-128k-online": 127072,
-  "llama3-70b-8192": 8192, // Limited to 8K during preview, will be 128K in the future
+  "llama3-70b-8192": 8192,
   "llama-3-sonar-large-32k-online": 32768,
   "llama-3-sonar-small-32k-online": 32768,
   "llama3.1-8b": 8207,
@@ -166,14 +162,13 @@ const cerebrasClient = new Cerebras({
   apiKey: process.env.CEREBRAS_API_KEY ?? "",
 });
 
-// Function to check if the prompt fits within the model's context window
 export function isPromptWithinContextWindow(
   userPrompt: string,
   systemPrompt: string,
   model: Model,
 ): boolean {
   const totalTokens = countTokens(userPrompt) + countTokens(systemPrompt);
-  return totalTokens <= 0.95 * CONTEXT_WINDOW[model]; // give a 5% buffer to account for variations in tokenization between models
+  return totalTokens <= 0.95 * CONTEXT_WINDOW[model];
 }
 
 export const sendGptRequest = async (
@@ -182,7 +177,7 @@ export const sendGptRequest = async (
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
   retries = 10,
-  delay = 60000, // rate limit is 40K tokens per minute, so by default start with 60 seconds
+  delay = 60000,
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
   model: Model = "claude-3-5-sonnet-20241022",
   isJSONMode = false,
@@ -193,9 +188,7 @@ export const sendGptRequest = async (
   try {
     const isO1Model =
       model === "o1-mini-2024-09-12" || model === "o1-preview-2024-09-12";
-    // Check if the prompt fits within the context window
     if (!isPromptWithinContextWindow(userPrompt, systemPrompt, model)) {
-      // If it doesn't fit, try with the largest model
       const largestModel: Model = "gemini-1.5-pro-latest";
       if (isPromptWithinContextWindow(userPrompt, systemPrompt, largestModel)) {
         console.log(
@@ -207,41 +200,16 @@ export const sendGptRequest = async (
       }
     }
 
-    // For now, if we get a request to use Sonnet 3.5 or Haiku 3.5, we will call the anthropic SDK directly. This is because the portkey gateway does not support several features for the claude model yet.
-    // if (
-    //   (model === "claude-3-5-sonnet-20241022" ||
-    //     model === "claude-3-5-haiku-20241022") &&
-    //   !isJSONMode
-    // ) {
-    //   return sendAnthropicRequest(
-    //     userPrompt,
-    //     systemPrompt,
-    //     temperature,
-    //     baseEventData,
-    //     retries,
-    //     delay,
-    //   );
-    // }
-
-    let openai: OpenAI;
-    if (model?.startsWith("llama3.1")) {
-      // This is a Cerebras API call
-      openai = new OpenAI({
-        apiKey: process.env.CEREBRAS_API_KEY,
-        baseURL: "https://api.cerebras.ai/v1",
-      });
-    } else {
-      openai = new OpenAI({
-        apiKey: "using-virtual-portkey-key",
-        baseURL: PORTKEY_GATEWAY_URL,
-        defaultHeaders: {
-          "x-portkey-api-key": process.env.PORTKEY_API_KEY,
-          "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
-          "x-portkey-cache": "simple",
-          "x-portkey-retry-count": "3",
-        },
-      });
-    }
+    const portkey = new Portkey({
+      apiKey: process.env.PORTKEY_API_KEY,
+      baseURL: PORTKEY_GATEWAY_URL,
+      defaultHeaders: {
+        "x-portkey-api-key": process.env.PORTKEY_API_KEY,
+        "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
+        "x-portkey-cache": "simple",
+        "x-portkey-retry-count": "3",
+      },
+    });
 
     const max_tokens = MAX_OUTPUT[model];
 
@@ -254,7 +222,6 @@ export const sendGptRequest = async (
       messages.unshift(imagePrompt);
     }
 
-    // Temp fix, portkey doesn't currently support json mode for claude
     const needsJsonHelper = isJSONMode && model.includes("claude");
 
     if (needsJsonHelper) {
@@ -265,9 +232,7 @@ export const sendGptRequest = async (
       });
     }
 
-    // if it's JSON mode, we need to ensure the word JSON is in the system prompt
     if (isJSONMode && !systemPrompt.includes("JSON")) {
-      // append a request to only respond in JSON
       systemPrompt +=
         "\n You must only respond in JSON with no other text. If you do not respond ONLY in JSON, the user will be unable to parse your response.";
     }
@@ -282,7 +247,6 @@ export const sendGptRequest = async (
       response_format: isJSONMode ? { type: "json_object" } : undefined,
     } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
 
-    // since o1-mini and o1-preview don't support system prompts, we need to add the system prompt to the user message and remove the system message
     if (isO1Model) {
       options = {
         messages: [
@@ -291,29 +255,15 @@ export const sendGptRequest = async (
         model,
       };
     }
-    let response;
-    if (model?.startsWith("llama3.1")) {
-      response = await cerebrasClient.chat.completions.create({
-        messages: options.messages.map((message) => ({
-          role: message.role as "system" | "user" | "assistant",
-          content: message.content,
-        })) as { role: "system" | "user" | "assistant"; content: string }[],
-        model: options.model,
-        max_tokens: options.max_tokens,
-        temperature: options.temperature,
-      });
-    } else {
-      response = await openai.chat.completions.create(options);
-    }
+    const response = await portkey.chat.completions.create(options);
     const endTime = Date.now();
     const duration = endTime - startTime;
     console.log(`\n +++ ${model} Response time ${duration} ms`);
 
     const gptResponse = response.choices[0]?.message;
-    // console.log("\n\n --- GPT Response --- \n\n", gptResponse);
     let content = gptResponse?.content ?? "";
     if (needsJsonHelper) {
-      content = `{${content}`; // add the starting bracket back to the JSON response
+      content = `{${content}`;
     }
 
     const inputTokens = response.usage?.prompt_tokens ?? 0;
@@ -323,8 +273,6 @@ export const sendGptRequest = async (
       inputTokens * INPUT_TOKEN_COSTS[model] +
       outputTokens * OUTPUT_TOKEN_COSTS[model];
     if (baseEventData) {
-      // send an internal event to track the prompts, timestamp, cost, tokens, and other data
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await emitPromptEvent({
         ...baseEventData,
         cost,
@@ -378,25 +326,20 @@ export const sendGptRequest = async (
   }
 };
 
-// Return type should be a ZodSchema or an array of ZodSchema objects
 export const sendGptRequestWithSchema = async (
   userPrompt: string,
   systemPrompt: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   zodSchema: ZodSchema<any>,
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
   retries = 3,
   model: Model = "claude-3-5-sonnet-20241022",
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   let extractedInfo;
-  let retryCount = 0; // Initialize a retry counter
+  let retryCount = 0;
 
-  // Loop until a valid response is received or the maxRetries limit is reached
   while (retryCount < retries) {
     let gptResponse: string | null = null;
-    // if retries is greater than 0, slightly modify the system prompt to avoid hitting the same issue via cache
     if (retryCount > 0) {
       systemPrompt = `Attempt #${retryCount + 1} - ${systemPrompt}`;
     }
@@ -405,7 +348,7 @@ export const sendGptRequestWithSchema = async (
       gptResponse = await sendGptRequest(
         userPrompt,
         systemPrompt,
-        temperature, // Use a lower temperature for retries
+        temperature,
         baseEventData,
         0,
         60000,
@@ -417,18 +360,12 @@ export const sendGptRequestWithSchema = async (
       if (!gptResponse) {
         throw new Error("/n/n/n/n **** Empty response from GPT **** /n/n/n/n");
       }
-      // console.log("GPT Response: ", gptResponse);
-      // Remove any code blocks from the response prior to attempting to parse it
       gptResponse = removeMarkdownCodeblocks(gptResponse);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       extractedInfo = parse(gptResponse);
-      // console.log("Extracted Info: ", extractedInfo);
-      // if the response is an array of objects, validate each object individually and return the full array if successful
       if (Array.isArray(extractedInfo)) {
-        const validatedInfo = extractedInfo.map(
-          (info) => zodSchema.safeParse(info), // as SafeParseReturnType<any, any>,
+        const validatedInfo = extractedInfo.map((info) =>
+          zodSchema.safeParse(info),
         );
-        // console.log("validatedInfo: ", validatedInfo);
         const failedValidations = validatedInfo.filter(
           (result) => result.success === false,
         );
@@ -444,27 +381,19 @@ export const sendGptRequestWithSchema = async (
           );
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
         return (validatedInfo as SafeParseSuccess<any>[]).map(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           (result) => result.data,
         );
       }
 
-      // if the response is a single object, validate it and return it if successful
-      const validationResult = zodSchema.safeParse(
-        extractedInfo,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      );
+      const validationResult = zodSchema.safeParse(extractedInfo);
 
       if (validationResult.success) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return validationResult.data;
       }
 
       throw new Error(
         `Invalid response from GPT - object is not able to be parsed using the provided schema: ${JSON.stringify(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           validationResult.error,
         )}`,
       );
@@ -495,7 +424,6 @@ export const sendGptVisionRequest = async (
   const model: Model = "gpt-4o-2024-08-06";
 
   if (!snapshotUrl?.length) {
-    // TODO: change this to sendSelfConsistencyChainOfThoughtGptRequest(
     return sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
@@ -509,12 +437,6 @@ export const sendGptVisionRequest = async (
   let imagePrompt = null;
   if (snapshotUrl?.length > 0) {
     const prompt = parseTemplate("dev", "vision", "user", {});
-
-    // download the image data if needed
-    // const url = await fetchImageAsBase64(snapshotUrl);
-    // if (!url) {
-    //   throw new Error("Failed to download image data");
-    // }
 
     imagePrompt = {
       role: "user",
@@ -553,8 +475,8 @@ export const OpenAIStream = async (
   temperature = 1,
 ): Promise<Stream<ChatCompletionChunk>> => {
   try {
-    const openai = new OpenAI({
-      apiKey: "using-virtual-portkey-key",
+    const portkey = new Portkey({
+      apiKey: process.env.PORTKEY_API_KEY,
       baseURL: PORTKEY_GATEWAY_URL,
       defaultHeaders: {
         "x-portkey-api-key": process.env.PORTKEY_API_KEY,
@@ -583,8 +505,7 @@ export const OpenAIStream = async (
       stream: true,
     };
 
-    // Start the streaming session with OpenAI
-    return openai.chat.completions.create(chatCompletionParams);
+    return portkey.chat.completions.create(chatCompletionParams);
   } catch (error) {
     console.error("Error creating chat completion:", error);
     throw error;
@@ -602,8 +523,8 @@ export const sendGptToolRequest = async (
   toolChoice: ChatCompletionToolChoiceOption = "auto",
   parallelToolCalls = false,
 ): Promise<OpenAI.Chat.ChatCompletion> => {
-  const openai = new OpenAI({
-    apiKey: "using-virtual-portkey-key",
+  const portkey = new Portkey({
+    apiKey: process.env.PORTKEY_API_KEY,
     baseURL: PORTKEY_GATEWAY_URL,
     defaultHeaders: {
       "x-portkey-api-key": process.env.PORTKEY_API_KEY,
@@ -622,7 +543,7 @@ export const sendGptToolRequest = async (
     );
     const startTime = Date.now();
 
-    const response = await openai.chat.completions.create({
+    const response = await portkey.chat.completions.create({
       model,
       messages,
       max_tokens,
