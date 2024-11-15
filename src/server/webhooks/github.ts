@@ -1,5 +1,6 @@
 import { App } from "@octokit/app";
 import * as dotenv from "dotenv";
+import { Octokit } from "@octokit/rest";
 
 import {
   authInstallation,
@@ -77,46 +78,77 @@ ghApp.webhooks.on("issues.opened", async (event) => {
           `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
         );
         const [githubOrg, githubRepo] = repository.full_name.split("/");
-        const user = await db.users.findBy({ login: payload.issue.user.login });
-        const userEmail = user?.email;
 
-        if (userEmail && todo) {
-          try {
-            console.log(
-              `[${repository.full_name}] Sending transactional email for issue #${payload.issue.number}`,
-            );
-            const planSteps = await db.planSteps
-              .where({
-                projectId: project.id,
-                issueNumber: payload.issue.number,
-                isActive: true,
-              })
-              .all()
-              .order("createdAt");
+        try {
+          console.log(
+            `[${repository.full_name}] Fetching repository collaborators for issue #${payload.issue.number}`,
+          );
 
-            const researchDetails = await db.research
-              .where({
-                todoId: todo.id,
-                issueId: payload.issue.number,
-              })
-              .all();
+          const octokit = new Octokit({
+            auth: installationAuthentication?.token,
+          });
 
-            await sendTransactionalEmail(
-              userEmail,
-              todo,
-              githubOrg ?? "",
-              githubRepo ?? "",
-              planSteps,
-              researchDetails,
-            );
-            console.log(
-              `[${repository.full_name}] Sent transactional email for issue #${payload.issue.number}`,
-            );
-          } catch (error) {
-            console.error(
-              `[${repository.full_name}] Error sending transactional email for issue #${payload.issue.number}: ${String(error)}`,
-            );
+          const { data: collaborators } = await octokit.repos.listCollaborators(
+            {
+              owner: githubOrg,
+              repo: githubRepo,
+              affiliation: "all",
+            },
+          );
+
+          const collaboratorLogins = collaborators.map((c) => c.login);
+
+          const jacobUsers = await db.users
+            .where({
+              login: collaboratorLogins,
+              emailVerified: { not: null },
+            })
+            .all();
+
+          const planSteps = await db.planSteps
+            .where({
+              projectId: project.id,
+              issueNumber: payload.issue.number,
+              isActive: true,
+            })
+            .all()
+            .order("createdAt");
+
+          const researchDetails = await db.research
+            .where({
+              todoId: todo.id,
+              issueId: payload.issue.number,
+            })
+            .all();
+
+          for (const user of jacobUsers) {
+            if (user.email) {
+              try {
+                console.log(
+                  `[${repository.full_name}] Sending transactional email to ${user.email} for issue #${payload.issue.number}`,
+                );
+                await sendTransactionalEmail(
+                  user.email,
+                  todo,
+                  githubOrg ?? "",
+                  githubRepo ?? "",
+                  planSteps,
+                  researchDetails,
+                );
+                console.log(
+                  `[${repository.full_name}] Sent transactional email to ${user.email} for issue #${payload.issue.number}`,
+                );
+              } catch (error) {
+                console.error(
+                  `[${repository.full_name}] Error sending transactional email to ${user.email} for issue #${payload.issue.number}: ${String(error)}`,
+                );
+              }
+            }
           }
+        } catch (error) {
+          console.error(
+            `[${repository.full_name}] Error fetching collaborators or sending emails for issue #${payload.issue.number}: ${String(error)}`,
+          );
         }
       }
     } catch (error) {
