@@ -8,12 +8,11 @@ import {
   faLightbulb,
   faExclamationTriangle,
   faClock,
-  faListCheck,
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import type { Evaluation as EvaluationType } from "~/server/utils/evaluateIssue";
 import { BorderBeam } from "~/app/_components/magicui/border-beam";
-import { AnimatedShinyText } from "~/app/_components/magicui/animated-shiny-text";
+import AnimatedShinyText from "~/app/_components/magicui/animated-shiny-text";
 
 interface EvaluationProps {
   evaluation: EvaluationType;
