@@ -177,14 +177,14 @@ export default function Settings({
   };
 
   return (
-    <div className="relative h-full w-full text-left">
+    <div className="relative h-full w-full text-left dark:bg-slate-900 dark:text-white">
       <div className="absolute right-4 top-4">
         <SignOutButton callbackUrl="/" />
       </div>
-      <h1 className="mb-4 text-2xl font-bold">Settings</h1>
+      <h1 className="mb-4 text-2xl font-bold dark:text-white">Settings</h1>
       <button
         onClick={handleChangeSetup}
-        className="mt-6 flex items-center rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        className="mt-6 flex items-center rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400"
         aria-label="Change Setup"
       >
         <FontAwesomeIcon icon={faCog} className="mr-2" />
@@ -192,7 +192,7 @@ export default function Settings({
       </button>
       <Link
         href={`/setup/${org}`}
-        className="mt-4 inline-flex items-center rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+        className="mt-4 inline-flex items-center rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-400"
       >
         <FontAwesomeIcon icon={faPlus} className="mr-2 h-5 w-5" />
         Add New Repo
@@ -200,7 +200,7 @@ export default function Settings({
       {!isUserConnectedToJira && !isLoadingIsUserConnectedToJira && (
         <button
           onClick={handleConnectToJira}
-          className="mt-4 flex items-center rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
+          className="mt-4 flex items-center rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-400"
         >
           <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
           Connect to Jira
@@ -209,7 +209,7 @@ export default function Settings({
       {!isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
         <button
           onClick={handleConnectToLinear}
-          className="mt-4 flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+          className="mt-4 flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-400"
         >
           <FontAwesomeIcon icon={faLink} className="mr-2 h-5 w-5" />
           Connect to Linear
@@ -219,7 +219,7 @@ export default function Settings({
         !jiraCloudIdState &&
         !isLoadingIsUserConnectedToJira && (
           <div className="mt-6">
-            <h2 className="mb-4 text-xl font-semibold">
+            <h2 className="mb-4 text-xl font-semibold dark:text-white">
               Choose a Jira Cloud ID
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -229,7 +229,7 @@ export default function Settings({
                   onClick={() =>
                     saveJiraCloudId({ jiraCloudId: resource.id, projectId })
                   }
-                  className="group relative flex flex-col items-start rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-blue-500 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                  className="group relative flex flex-col items-start rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-blue-500 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-400"
                 >
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                     {resource.name}
@@ -254,11 +254,13 @@ export default function Settings({
         jiraCloudIdState &&
         !isLoadingIsUserConnectedToJira && (
           <div className="mt-6">
-            <h2 className="mb-2 text-xl font-semibold">Sync Jira Board</h2>
+            <h2 className="mb-2 text-xl font-semibold dark:text-white">
+              Sync Jira Board
+            </h2>
             <select
               value={selectedJiraBoard}
               onChange={(e) => setSelectedJiraBoard(e.target.value)}
-              className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
+              className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2 text-sm shadow-sm backdrop-blur-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-300"
               disabled={isLoadingJiraBoards}
             >
               <option value="">Select a Jira Board</option>
@@ -271,7 +273,7 @@ export default function Settings({
             <button
               onClick={handleSyncJiraBoard}
               disabled={!selectedJiraBoard || isSyncingJiraBoard}
-              className="flex items-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-400"
+              className="flex items-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400 dark:disabled:bg-gray-600"
             >
               <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
               {isSyncingJiraBoard ? "Syncing..." : "Sync Jira Board"}
@@ -280,7 +282,9 @@ export default function Settings({
         )}
       {isUserConnectedToLinear && !isLoadingIsUserConnectedToLinear && (
         <div className="mt-6">
-          <h2 className="mb-2 text-xl font-semibold">Sync Linear Team</h2>
+          <h2 className="mb-2 text-xl font-semibold dark:text-white">
+            Sync Linear Team
+          </h2>
           <select
             value={selectedLinearTeam}
             onChange={(e) => {
@@ -290,7 +294,7 @@ export default function Settings({
                 projectId,
               });
             }}
-            className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2"
+            className="mb-2 inline-block w-full max-w-lg rounded-md border border-gray-300 p-2 text-sm shadow-sm backdrop-blur-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-300"
             disabled={isLoadingLinearTeams}
           >
             <option value="">Select a Linear Team</option>
@@ -304,7 +308,7 @@ export default function Settings({
             <button
               onClick={handleSyncLinearTeam}
               disabled={!selectedLinearTeam || isSyncingLinearTeam}
-              className="flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:bg-gray-400"
+              className="flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:bg-gray-400 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-400 dark:disabled:bg-gray-600"
             >
               <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
               {isSyncingLinearTeam ? "Syncing..." : "Sync Linear Team"}
@@ -312,22 +316,24 @@ export default function Settings({
           )}
         </div>
       )}
-      {isLoadingIsUserConnectedToJira && <div>Loading Jira Settings...</div>}
+      {isLoadingIsUserConnectedToJira && (
+        <div className="dark:text-gray-300">Loading Jira Settings...</div>
+      )}
       {isLoadingIsUserConnectedToLinear && (
-        <div>Loading Linear Settings...</div>
+        <div className="dark:text-gray-300">Loading Linear Settings...</div>
       )}
       {isUserConnectedToJiraError && (
-        <div>
+        <div className="text-red-600 dark:text-red-400">
           Error loading Jira settings: {isUserConnectedToJiraError.message}
         </div>
       )}
       {isUserConnectedToLinearError && (
-        <div>
+        <div className="text-red-600 dark:text-red-400">
           Error loading Linear settings: {isUserConnectedToLinearError.message}
         </div>
       )}
       {jiraCloudIdResourcesError && (
-        <div>
+        <div className="text-red-600 dark:text-red-400">
           Error loading Jira cloud ID resources:{" "}
           {jiraCloudIdResourcesError.message}
         </div>
