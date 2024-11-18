@@ -1,4 +1,4 @@
-import { type Research } from "@/types";
+import { type Research } from "~/types";
 import { sendGptRequest } from "../openai/request";
 import { type BaseEventData } from "../utils";
 
