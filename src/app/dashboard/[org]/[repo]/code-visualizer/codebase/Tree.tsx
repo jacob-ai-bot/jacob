@@ -1,9 +1,3 @@
-// Note: this code is adopted from the GitHub Next repo visualization tool.
-// It is MIT licensed and can be found here: https://github.com/githubocto/repo-visualizer
-// We are ignoring build issues for this file since it is not part of the main application code.
-// @ts-nocheck
-/* eslint-disable */
-
 import React, { useMemo, useRef, useState } from "react";
 import {
   extent,
@@ -24,12 +18,12 @@ import maxBy from "lodash/maxBy";
 import entries from "lodash/entries";
 import uniqBy from "lodash/uniqBy";
 import flatten from "lodash/flatten";
-// file colors are from the github/linguist repo
 import defaultFileColors from "./language-colors.json";
 import { CircleText } from "./CircleText";
 import { keepBetween, keepCircleInsideCircle, truncateString } from "./utils";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { standardizePath } from "~/app/utils";
+
 type Props = {
   data: FileType;
   filesChanged: string[];
@@ -43,7 +37,9 @@ type Props = {
   selectedFolder?: string | null;
   viewMode: "folder" | "taxonomy";
   theme: "light" | "dark";
+  scalingMode: "size" | "importance";
 };
+
 type ExtendedFileType = {
   extension?: string;
   pathWithoutExtension?: string;
@@ -53,6 +49,7 @@ type ExtendedFileType = {
   sortOrder?: number;
   fileColors?: Record<string, string>;
 } & FileType;
+
 type ProcessedDataItem = {
   data: ExtendedFileType;
   depth: number;
@@ -63,10 +60,17 @@ type ProcessedDataItem = {
   parent: ProcessedDataItem | null;
   children: Array<ProcessedDataItem>;
 };
+
 const looseFilesId = "__structure_loose_file__";
 const maxChildren = 9000;
 const lastCommitAccessor = (d) => new Date(d.commits?.[0]?.date + "0");
 const numberOfCommitsAccessor = (d) => d?.commits?.length || 0;
+
+const getWeightedCircleSize = (textLength: number, importance: number) => {
+  const sizeFromLength = Math.floor(textLength / 50);
+  return sizeFromLength + importance;
+};
+
 export const Tree = ({
   data,
   filesChanged = [],
@@ -80,6 +84,7 @@ export const Tree = ({
   selectedFolder = null,
   viewMode = "folder",
   theme = "light",
+  scalingMode = "size",
 }: Props) => {
   const fileColors = { ...defaultFileColors, ...customFileColors };
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -92,7 +97,6 @@ export const Tree = ({
       return d.children ? flatten(d.children.map(flattenTree)) : d;
     };
     const items = flattenTree(data);
-    // @ts-ignore
     const flatTree =
       colorEncoding === "last-change"
         ? items
@@ -104,19 +108,11 @@ export const Tree = ({
             .sort((a, b) => b - a)
             .slice(2, -2);
     const colorExtent = extent(flatTree);
-
-    // const valueScale = scaleLog()
-    //   .domain(colorExtent)
-    //   .range([0, 1])
-    //   .clamp(true);
-    // const colorScale = scaleSequential((d) => interpolateBuPu(valueScale(d)));
     const colors = [
       "#f4f4f4",
       "#f4f4f4",
       "#f4f4f4",
-      // @ts-ignore
       colorEncoding === "last-change" ? "#C7ECEE" : "#FEEAA7",
-      // @ts-ignore
       colorEncoding === "number-of-changes" ? "#3C40C6" : "#823471",
     ];
     const colorScale = scaleLinear()
@@ -134,24 +130,22 @@ export const Tree = ({
 
   const generateColorByDepth = (filePath: string) => {
     const blueGrayPalette = [
-      "#E0F2F1", // Very light teal
-      "#FFCCBC", // Light deep orange
-      "#D1C4E9", // Light purple
-      "#C5CAE9", // Light indigo
-      "#BBDEFB", // Light blue
-      "#B2EBF2", // Light cyan
-      "#B2DFDB", // Light teal
-      "#E0E7FF", // Light indigo
-      "#D7E3FC", // Very light purple
+      "#E0F2F1",
+      "#FFCCBC",
+      "#D1C4E9",
+      "#C5CAE9",
+      "#BBDEFB",
+      "#B2EBF2",
+      "#B2DFDB",
+      "#E0E7FF",
+      "#D7E3FC",
     ];
 
-    // Split the file path into parts
-    const parts = (filePath ?? "").split("/").filter(Boolean); // filter(Boolean) removes empty strings
-
+    const parts = (filePath ?? "").split("/").filter(Boolean);
     const lastFolder = parts.length > 1 ? parts[parts.length - 2] : parts[0];
-    // return a random color but keep it the same for each filePath so it's stable, mod on the length of the file path
     return blueGrayPalette[(lastFolder ?? "").length % blueGrayPalette.length];
   };
+
   const getColor = (d) => {
     return generateColorByDepth(d.path ?? d.taxonomy);
     if (colorEncoding === "type") {
@@ -179,18 +173,12 @@ export const Tree = ({
         0,
         fileColors,
         viewMode,
+        scalingMode,
       ),
     )
       .sum((d) => d.value)
       .sort((a, b) => {
         if (b.data?.path?.startsWith("src/fonts")) {
-          //   a.data.sortOrder,
-          //   b.data.sortOrder,
-          //   (b.data.sortOrder - a.data.sortOrder) ||
-          //     (b.data.name > a.data.name ? 1 : -1),
-          //   a,
-          //   b,
-          // );
         }
         return (
           b.data.sortOrder - a.data.sortOrder ||
@@ -199,16 +187,13 @@ export const Tree = ({
       });
 
     const packedTree = pack()
-      .size([width, height * 1.3]) // we'll reflow the tree to be more horizontal, but we want larger bubbles (.pack() sizes the bubbles to fit the space)
+      .size([width, height * 1.3])
       .padding((d) => {
         if (d.depth <= 0) return 0;
         const hasChildWithNoChildren =
           d.children.filter((d) => !d.children?.length).length > 1;
         if (hasChildWithNoChildren) return 5;
         return 13;
-        // const hasChildren = !!d.children?.find((d) => d?.children?.length);
-        // return hasChildren ? 60 : 8;
-        // return [60, 20, 12][d.depth] || 5;
       })(hierarchicalData);
     packedTree.children = reflowSiblings(
       packedTree.children,
@@ -233,7 +218,7 @@ export const Tree = ({
     });
 
     return children.slice(0, maxChildren);
-  }, [data, fileColors, viewMode]);
+  }, [data, fileColors, viewMode, scalingMode]);
 
   const selectedNode =
     selectedNodeId && packedData.find((d) => d.data.path === selectedNodeId);
@@ -255,8 +240,6 @@ export const Tree = ({
       }}
       xmlns="http://www.w3.org/2000/svg"
       onClick={(e) => {
-        // if there's a selected node, grab the parent node and call onNodeClick with the parent node's path
-        // otherwise, call onNodeClick with null to deselect the node
         const parent = selectedFolder?.split("/").slice(0, -1).join("/");
         onNodeClick && parent ? onNodeClick(parent) : null;
       }}
@@ -276,8 +259,13 @@ export const Tree = ({
         if (depth > maxDepth) return null;
         const isOutOfDepth = depth >= maxDepth;
         const isParent = !!children;
-        const runningR = r;
-        // if (depth <= 1 && !children) runningR *= 3;
+        const runningR =
+          scalingMode === "importance"
+            ? getWeightedCircleSize(
+                data.text?.length ?? 0,
+                data.importance ?? 0,
+              )
+            : r;
         if (data.path === looseFilesId) return null;
         const isHighlighted =
           viewMode === "folder"
@@ -298,11 +286,6 @@ export const Tree = ({
             strokeWidth={5}
             transform={`translate(${x}, ${y})`}
             onClick={(e) => {
-              console.log("clicked", data.path);
-              console.log(
-                "calling onNodeClick",
-                viewMode === "folder" ? data.path : data.taxonomy,
-              );
               e.stopPropagation();
               onNodeClick?.(viewMode === "folder" ? data.path : data.taxonomy);
             }}
@@ -322,7 +305,6 @@ export const Tree = ({
             ) : (
               <circle
                 style={{
-                  // filter: isHighlighted ? "url(#glow)" : undefined, // Remove glow for now
                   transition: "all 0.5s ease-out",
                 }}
                 r={runningR}
@@ -333,7 +315,7 @@ export const Tree = ({
                     : theme === "dark"
                       ? "#290819"
                       : "#29081922"
-                } // We can change this to be a different color when highlighted
+                }
               />
             )}
           </g>
@@ -392,7 +374,6 @@ export const Tree = ({
         if (depth <= 0) return null;
         if (depth > maxDepth) return null;
         const isParent = !!children;
-        // if (depth <= 1 && !children) runningR *= 3;
         if (data.path === looseFilesId) return null;
         const isHighlighted =
           viewMode === "folder"
@@ -420,10 +401,6 @@ export const Tree = ({
             transform={`translate(${x}, ${y})`}
             onClick={(e) => {
               e.stopPropagation();
-              console.log("clicked");
-              console.log("viewMode", viewMode);
-              console.log("data.path", data.path);
-              console.log("data.taxonomy", data.taxonomy);
               onNodeClick?.(viewMode === "folder" ? data.path : data.taxonomy);
             }}
           >
@@ -475,22 +452,6 @@ export const Tree = ({
           </g>
         );
       })}
-
-      {/* {!filesChanged.length && colorEncoding === "type" && (
-        <Legend
-          fileTypes={fileTypes}
-          fileColors={fileColors}
-          width={width}
-          height={height}
-        />
-      )} */}
-      {/* {!filesChanged.length && colorEncoding !== "type" && (
-        <ColorLegend
-          scale={colorScale}
-          extent={colorExtent}
-          colorEncoding={colorEncoding}
-        />
-      )} */}
     </svg>
   );
 };
@@ -502,7 +463,6 @@ const ColorLegend = ({ scale, extent, colorEncoding }) => {
   return (
     <g transform={`translate(${width - 160}, ${height - 90})`}>
       <text x={50} y="-5" fontSize="10" textAnchor="middle">
-        {/* @ts-ignore */}
         {colorEncoding === "number-of-changes"
           ? "Number of changes"
           : "Last change date"}
@@ -538,16 +498,24 @@ const processChild = (
   i = 0,
   fileColors,
   viewMode,
+  scalingMode,
 ): ExtendedFileType => {
   if (!child) return;
   const isRoot = !child.path;
   let name = child.name;
   let path = viewMode === "folder" ? child.path : child.taxonomy;
   let children = child?.children?.map((c, i) =>
-    processChild(c, getColor, cachedOrders, i, fileColors, viewMode),
+    processChild(
+      c,
+      getColor,
+      cachedOrders,
+      i,
+      fileColors,
+      viewMode,
+      scalingMode,
+    ),
   );
 
-  // Modify this condition to prevent collapsing when the only child is a file
   if (children?.length === 1 && children[0].children?.length > 0) {
     name = `${name}/${children[0].name}`;
     path = children[0].path;
@@ -577,21 +545,28 @@ const processChild = (
     label: name,
     extension,
     pathWithoutExtension,
-
     size:
-      (["woff", "woff2", "ttf", "otf", "png", "jpg", "svg"].includes(extension)
-        ? 100
-        : Math.min(
-            15000,
-            hasExtension ? child.size : Math.min(child.size, 9000),
-          )) + i, // stupid hack to stabilize circle order/position
+      scalingMode === "importance"
+        ? getWeightedCircleSize(child.size, child.importance ?? 0)
+        : (["woff", "woff2", "ttf", "otf", "png", "jpg", "svg"].includes(
+            extension,
+          )
+            ? 100
+            : Math.min(
+                15000,
+                hasExtension ? child.size : Math.min(child.size, 9000),
+              )) + i,
     value:
-      (["woff", "woff2", "ttf", "otf", "png", "jpg", "svg"].includes(extension)
-        ? 100
-        : Math.min(
-            15000,
-            hasExtension ? child.size : Math.min(child.size, 9000),
-          )) + i, // stupid hack to stabilize circle order/position
+      scalingMode === "importance"
+        ? getWeightedCircleSize(child.size, child.importance ?? 0)
+        : (["woff", "woff2", "ttf", "otf", "png", "jpg", "svg"].includes(
+            extension,
+          )
+            ? 100
+            : Math.min(
+                15000,
+                hasExtension ? child.size : Math.min(child.size, 9000),
+              )) + i,
     color: "#fff",
     children,
   };
@@ -674,7 +649,6 @@ const reflowSiblings = (
       d.y = keepBetween(d.r, d.y, height - d.r);
 
       if (parentPosition && parentRadius) {
-        // keep within radius
         const containedPosition = keepCircleInsideCircle(
           parentRadius,
           parentPosition,
@@ -687,7 +661,6 @@ const reflowSiblings = (
       }
     });
   }
-  // setTimeout(() => simulation.stop(), 100);
   const repositionChildren = (d, xDiff, yDiff) => {
     const newD = { ...d };
     newD.x += xDiff;
@@ -719,7 +692,6 @@ const reflowSiblings = (
       if (item.children.length > 4) {
         if (item.depth > maxDepth) return;
         item.children.forEach((child) => {
-          // move cached positions with the parent
           const childCachedPosition =
             repositionedCachedPositions[child.data.path];
           if (childCachedPosition) {
@@ -728,7 +700,6 @@ const reflowSiblings = (
               childCachedPosition[1] + itemPositionDiffFromCached[1],
             ];
           } else {
-            // const diff = getPositionFromAngleAndDistance(100, item.r);
             repositionedCachedPositions[child.data.path] = [child.x, child.y];
           }
         });
@@ -753,11 +724,5 @@ const getSortOrder = (item: ExtendedFileType, cachedOrders, i = 0) => {
     return -100000000;
   }
   if (item.name === "public") return -1000000;
-  // if (item.depth <= 1 && !item.children) {
-  //   // item.value *= 0.33;
-  //   return item.value  * 100;
-  // }
-  // if (item.depth <= 1) return -10;
   return item.value + -i;
-  // return b.value - a.value;
 };
