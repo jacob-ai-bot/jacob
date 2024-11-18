@@ -1,5 +1,13 @@
 import React, { useEffect, useRef } from "react";
 import mermaid from "mermaid";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faExpand,
+  faCompress,
+  faCopy,
+} from "@fortawesome/free-solid-svg-icons";
+import { toast } from "react-toastify";
+import Modal from "react-modal";
 
 interface MermaidProps {
   chart: string;
@@ -9,6 +17,7 @@ interface MermaidProps {
 const Mermaid: React.FC<MermaidProps> = ({ chart, theme }) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [hideDiagram, setHideDiagram] = React.useState(false);
+  const [isFullScreen, setIsFullScreen] = React.useState(false);
 
   useEffect(() => {
     setHideDiagram(false);
@@ -50,7 +59,6 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, theme }) => {
             mermaidRef.current.innerHTML = svg;
           } else {
             console.error("Invalid Mermaid diagram");
-
             setHideDiagram(true);
           }
         } catch (error) {
@@ -70,14 +78,84 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, theme }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chart]);
 
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(chart);
+      toast.success("Copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      toast.error("Failed to copy to clipboard");
+    }
+  };
+
+  const customStyles = {
+    content: {
+      top: "50%",
+      left: "50%",
+      right: "auto",
+      bottom: "auto",
+      marginRight: "-50%",
+      transform: "translate(-50%, -50%)",
+      maxWidth: "90%",
+      maxHeight: "90%",
+      width: "90vw",
+      height: "90vh",
+      padding: "20px",
+      borderRadius: "8px",
+      border: "none",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      zIndex: 99999,
+      backgroundColor: theme === "light" ? "white" : "#1f2937",
+    },
+    overlay: {
+      backgroundColor: "rgba(0, 0, 0, 0.75)",
+      zIndex: 9999,
+    },
+  };
+
   if (hideDiagram) {
     return null;
   }
-  return (
-    <div
-      ref={mermaidRef}
-      className="rounded bg-white p-2 text-xs shadow-sm dark:bg-gray-800"
-    />
+
+  const containerClasses = `relative rounded bg-white p-2 text-xs shadow-sm dark:bg-gray-800 ${
+    !isFullScreen ? "w-full" : ""
+  }`;
+
+  const buttonClasses =
+    "absolute top-2 p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 rounded";
+
+  const renderContent = () => (
+    <div className={containerClasses}>
+      <button
+        onClick={() => setIsFullScreen(!isFullScreen)}
+        className={`${buttonClasses} right-12`}
+        title={isFullScreen ? "Exit full screen" : "Full screen"}
+      >
+        <FontAwesomeIcon icon={isFullScreen ? faCompress : faExpand} />
+      </button>
+      <button
+        onClick={copyToClipboard}
+        className={`${buttonClasses} right-2`}
+        title="Copy Mermaid code"
+      >
+        <FontAwesomeIcon icon={faCopy} />
+      </button>
+      <div ref={mermaidRef} />
+    </div>
+  );
+
+  return isFullScreen ? (
+    <Modal
+      isOpen={isFullScreen}
+      onRequestClose={() => setIsFullScreen(false)}
+      style={customStyles}
+      contentLabel="Mermaid Diagram"
+      ariaHideApp={false}
+    >
+      {renderContent()}
+    </Modal>
+  ) : (
+    renderContent()
   );
 };
 
