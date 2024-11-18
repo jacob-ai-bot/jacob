@@ -20,6 +20,17 @@ const HEADER_HEIGHT = 100;
 const SIDEBAR_WIDTH = 64;
 const DETAILS_WIDTH = 30;
 
+const calculateImportance = (item: ContextItem): number => {
+  let importance = 0;
+
+  // Example logic for calculating importance
+  if (item.file?.includes("index")) importance += 10; // Entry point
+  if (item.imports && item.imports.length > 5) importance += 5; // Highly connected file
+  if (item.commits && item.commits.length > 10) importance += 3; // Frequently modified
+
+  return importance;
+};
+
 export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   contextItems,
   theme,
@@ -33,6 +44,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   const [detailsWidth, setDetailsWidth] = useState(DETAILS_WIDTH);
   const [allFiles, setAllFiles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"folder" | "taxonomy">("folder");
+  const [scalingMode, setScalingMode] = useState<"size" | "importance">("size");
 
   useEffect(() => {
     setIsMounted(true);
@@ -54,71 +66,80 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     setAllFiles(files);
   }, [contextItems]);
 
+  const contextItemsWithImportance = useMemo(() => {
+    return contextItems.map((item) => ({
+      ...item,
+      importance: calculateImportance(item),
+    }));
+  }, [contextItems]);
+
   const filteredContextItems = useMemo(() => {
     const prefix = "/" + currentPath.slice(1).join("/");
-    return contextItems.filter((item) => {
+    return contextItemsWithImportance.filter((item) => {
       return viewMode === "folder"
         ? startsWithIgnoreCase(item.file, prefix)
         : startsWithIgnoreCase(item.taxonomy!, prefix);
     });
-  }, [contextItems, currentPath, viewMode]);
+  }, [contextItemsWithImportance, currentPath, viewMode]);
 
   const treeData = useMemo(() => {
     return processContextItems(filteredContextItems, currentPath, viewMode);
   }, [filteredContextItems, currentPath, viewMode]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handleNodeClick = (path: string) => {
-    if (viewMode === "folder") {
-      const folder = path
-        .split("/")
-        .filter(Boolean)
-        .find((part) => !part.includes("."));
-      if (folder) {
-        setCurrentPath([...path.split("/").filter(Boolean)]);
-      }
-
-      const item = contextItems.find((item) =>
-        includesIgnoreCase(item.file, path),
-      );
-      if (item) {
-        setSelectedItem(item);
-        const parts = ["root", ...path.split("/").filter(Boolean)];
-        if (item.file?.includes(".")) {
-          parts.pop();
+  const handleNodeClick = useCallback(
+    (path: string) => {
+      if (viewMode === "folder") {
+        const folder = path
+          .split("/")
+          .filter(Boolean)
+          .find((part) => !part.includes("."));
+        if (folder) {
+          setCurrentPath([...path.split("/").filter(Boolean)]);
         }
-        setCurrentPath(parts);
-      } else {
-        console.error("Item not found for path", path);
-      }
-    } else {
-      const folder = path
-        .split("/")
-        .filter(Boolean)
-        .find((part) => !part.includes("."));
-      if (folder) {
-        setCurrentPath([...path.split("/").filter(Boolean)]);
-      }
-      const item = contextItems.find((item) => {
-        const taxonomy =
-          item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
-        return includesIgnoreCase(taxonomy, path);
-      });
-      if (item) {
-        setSelectedItem(item);
-        const taxonomy =
-          item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
-        const parts = ["root", ...taxonomy.split("/").filter(Boolean)];
 
-        if (item.file?.includes(".")) {
-          parts.pop();
+        const item = contextItemsWithImportance.find((item) =>
+          includesIgnoreCase(item.file, path),
+        );
+        if (item) {
+          setSelectedItem(item);
+          const parts = ["root", ...path.split("/").filter(Boolean)];
+          if (item.file?.includes(".")) {
+            parts.pop();
+          }
+          setCurrentPath(parts);
+        } else {
+          console.error("Item not found for path", path);
         }
-        setCurrentPath(parts);
       } else {
-        console.error("Item not found for taxonomy path", path);
+        const folder = path
+          .split("/")
+          .filter(Boolean)
+          .find((part) => !part.includes("."));
+        if (folder) {
+          setCurrentPath([...path.split("/").filter(Boolean)]);
+        }
+        const item = contextItemsWithImportance.find((item) => {
+          const taxonomy =
+            item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
+          return includesIgnoreCase(taxonomy, path);
+        });
+        if (item) {
+          setSelectedItem(item);
+          const taxonomy =
+            item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
+          const parts = ["root", ...taxonomy.split("/").filter(Boolean)];
+
+          if (item.file?.includes(".")) {
+            parts.pop();
+          }
+          setCurrentPath(parts);
+        } else {
+          console.error("Item not found for taxonomy path", path);
+        }
       }
-    }
-  };
+    },
+    [contextItemsWithImportance, viewMode],
+  );
 
   const handleBreadcrumbClick = (index: number) => {
     setCurrentPath(currentPath.slice(0, index + 1));
@@ -129,6 +150,10 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     setViewMode(mode);
     setCurrentPath(["root"]);
     setSelectedItem(null);
+  };
+
+  const handleScalingModeChange = (mode: "size" | "importance") => {
+    setScalingMode(mode);
   };
 
   const handleCloseDetails = () => {
@@ -173,7 +198,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
 
             <div className="relative mr-6 flex items-center justify-end">
               <SearchBar
-                codebaseContext={contextItems}
+                codebaseContext={contextItemsWithImportance}
                 onSelectResult={handleSearchResultSelect}
                 isDetailsExpanded={detailsWidth !== DETAILS_WIDTH}
               />
@@ -198,6 +223,26 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 onClick={() => handleViewModeChange("taxonomy")}
               >
                 Architecture
+              </button>
+              <button
+                className={`rounded px-3 py-1 text-sm ${
+                  scalingMode === "size"
+                    ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                }`}
+                onClick={() => handleScalingModeChange("size")}
+              >
+                Size
+              </button>
+              <button
+                className={`rounded px-3 py-1 text-sm ${
+                  scalingMode === "importance"
+                    ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                }`}
+                onClick={() => handleScalingModeChange("importance")}
+              >
+                Importance
               </button>
             </div>
           </div>
@@ -228,6 +273,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               selectedFolder={"/" + currentPath?.join("/")}
               viewMode={viewMode}
               theme={theme}
+              scalingMode={scalingMode}
             />
           </motion.div>
         </div>
@@ -282,7 +328,6 @@ function processContextItems(
   };
 
   contextItems.forEach((item) => {
-    // set the taxonomy to be the taxonomy string + the file (just the actual file name, not the path!)
     const taxonomy = item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
     const parts =
       viewMode === "folder"
@@ -314,6 +359,7 @@ function processContextItems(
           file: item.file,
           taxonomy: taxonomy,
           children: [],
+          importance: item.importance ?? 0,
         };
         if (currentNode.children) {
           currentNode.children.push(child);
