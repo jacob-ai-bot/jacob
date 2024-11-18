@@ -21,7 +21,9 @@ const IssueWriterPage = async ({
 
   return (
     <Suspense>
-      <IssueWriter org={org} repo={repo} />
+      <div className="h-full w-full overflow-hidden p-2 sm:p-4 md:p-6">
+        <IssueWriter org={org} repo={repo} />
+      </div>
     </Suspense>
   );
 };

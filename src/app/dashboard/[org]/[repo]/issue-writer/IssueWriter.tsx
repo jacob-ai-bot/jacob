@@ -230,7 +230,6 @@ Please update the \`${fileName}\` file to address the following:
       toast.error("Please provide a body for the issue.");
       return;
     }
-    // If the first line of the issue is a h1 title (starting with #), remove it and make it the title (remove the #)
     if (body.startsWith("#") && body.split("\n")[0]?.trim().startsWith("#")) {
       setIssueTitle(body.split("\n")[0]!.trim().replace("#", ""));
       setIssueBody(body.slice(body.indexOf("\n") + 1).trim());
@@ -259,30 +258,24 @@ Please update the \`${fileName}\` file to address the following:
   }
 
   return (
-    <div
-      className={`hide-scrollbar mx-auto flex h-full w-full flex-row space-x-4 overflow-hidden ${
-        rewrittenIssue ? "max-w-[100rem]" : "max-w-4xl"
-      }`}
-    >
-      <div
-        className={`hide-scrollbar h-[calc(100vh-119px)] flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 pb-8 shadow-sm dark:bg-slate-800`}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-aurora-700 dark:text-aurora-300">
+    <div className="hide-scrollbar mx-auto flex h-full w-full flex-col space-y-4 overflow-hidden p-4 md:flex-row md:space-x-4 md:space-y-0">
+      <div className="hide-scrollbar h-[calc(100vh-119px)] w-full flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 pb-8 shadow-sm dark:bg-slate-800 md:max-w-2xl">
+        <div className="mb-4 flex flex-col items-start justify-between space-y-2 sm:flex-row sm:items-center sm:space-y-0">
+          <h2 className="text-xl font-bold text-aurora-700 dark:text-aurora-300 md:text-2xl">
             Issue Creator
           </h2>
-          <div className="flex space-x-2">
+          <div className="flex w-full flex-col space-y-2 sm:w-auto sm:flex-row sm:space-x-2 sm:space-y-0">
             {!isEditing && createdTodoId && (
               <Link
                 href={`/dashboard/${org}/${repo}/todos/${createdTodoId}`}
-                className="rounded-full bg-blossom-500 px-4 py-2 text-white transition-colors hover:bg-blossom-700 dark:bg-blossom-600 dark:hover:bg-blossom-500"
+                className="flex items-center justify-center rounded-full bg-blossom-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blossom-700 dark:bg-blossom-600 dark:hover:bg-blossom-500 md:text-base"
               >
                 View Issue
               </Link>
             )}
             <button
               onClick={handleNewIssue}
-              className="rounded-full bg-sunset-400 px-4 py-2 text-white transition-colors hover:bg-sunset-500 dark:bg-sunset-600 dark:hover:bg-sunset-500"
+              className="flex items-center justify-center rounded-full bg-sunset-400 px-4 py-2 text-sm text-white transition-colors hover:bg-sunset-500 dark:bg-sunset-600 dark:hover:bg-sunset-500 md:text-base"
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />
               {isEditing ? "Clear Issue" : "New Issue"}
@@ -296,7 +289,7 @@ Please update the \`${fileName}\` file to address the following:
               type="text"
               value={issueTitle}
               onChange={handleTitleChange}
-              className={`w-full rounded-md border p-2 text-lg font-semibold focus:outline-none focus:ring-2 ${
+              className={`w-full rounded-md border p-2 text-base font-semibold focus:outline-none focus:ring-2 md:text-lg ${
                 titleError
                   ? "border-red-500 focus:border-red-500 focus:ring-red-200"
                   : "border-gray-300 focus:border-aurora-400 focus:ring-aurora-200"
@@ -314,7 +307,7 @@ Please update the \`${fileName}\` file to address the following:
                 shouldSubmitOnEnter={false}
               />
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
               <div className="flex items-center space-x-3">
                 <div className="relative inline-flex items-center">
                   <div
@@ -351,11 +344,11 @@ Please update the \`${fileName}\` file to address the following:
                     : "Faster Evaluation"}
                 </span>
               </div>
-              <div className="flex justify-end space-x-2">
+              <div className="flex w-full justify-end space-x-2 sm:w-auto">
                 <button
                   onClick={handleEvaluateIssue}
                   disabled={isEvaluating}
-                  className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
+                  className={`flex min-w-[100px] items-center justify-center rounded-md px-4 py-2 text-sm text-white transition-colors md:text-base ${
                     isEvaluating
                       ? "cursor-not-allowed bg-gray-400"
                       : "bg-yellow-400 hover:bg-yellow-500 dark:bg-yellow-600 dark:hover:bg-yellow-500"
@@ -367,7 +360,7 @@ Please update the \`${fileName}\` file to address the following:
                 <button
                   onClick={handleCreateIssue}
                   disabled={isCreating || !rewrittenIssue}
-                  className={`flex items-center rounded-md px-4 py-2 text-white transition-colors ${
+                  className={`flex min-w-[100px] items-center justify-center rounded-md px-4 py-2 text-sm text-white transition-colors md:text-base ${
                     isCreating || !rewrittenIssue
                       ? "cursor-not-allowed bg-gray-400"
                       : "bg-aurora-400 hover:bg-aurora-500 dark:bg-aurora-600 dark:hover:bg-aurora-500"
@@ -380,10 +373,10 @@ Please update the \`${fileName}\` file to address the following:
             </div>
           </div>
         ) : createdIssue ? (
-          <div className="hide-scrollbar h-full space-y-4 overflow-hidden overflow-y-scroll rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="hide-scrollbar h-full space-y-4 overflow-hidden overflow-y-scroll rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
             <div className="flex flex-col items-start justify-between space-y-2 sm:flex-row sm:items-center sm:space-y-0">
               <div className="flex items-center space-x-4">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white md:text-xl">
                   {createdIssue.title}
                 </h3>
               </div>
@@ -408,7 +401,7 @@ Please update the \`${fileName}\` file to address the following:
           </div>
         ) : isCreating || isLoadingCreatedIssue ? (
           <div className="flex flex-col items-center justify-center">
-            <div className="mb-8 text-center text-2xl font-bold text-gray-500 dark:text-gray-400">
+            <div className="mb-8 text-center text-xl font-bold text-gray-500 dark:text-gray-400 md:text-2xl">
               Creating issue...
             </div>
             <LoadingIndicator />
@@ -420,7 +413,7 @@ Please update the \`${fileName}\` file to address the following:
         )}
       </div>
       {rewrittenIssue && (
-        <div className="h-full w-1/2 pb-1">
+        <div className="h-full w-full md:w-1/2">
           <ExtractedIssueDetails
             feedback={feedback}
             rewrittenIssue={rewrittenIssue}
