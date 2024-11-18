@@ -53,6 +53,7 @@ const IssueWriter: React.FC<IssueWriterProps> = ({ org, repo }) => {
     body: string;
   } | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [hasEvaluated, setHasEvaluated] = useState(false);
   const [titleError, setTitleError] = useState(false);
 
   const [rewrittenIssue, setRewrittenIssue] = useState<string | null>(null);
@@ -168,10 +169,13 @@ Please update the \`${fileName}\` file to address the following:
       setIsEditing(false);
       setRewrittenIssue(null);
       setFeedback(null);
+      setHasEvaluated(false);
 
       if (typeof window !== "undefined") {
         localStorage.removeItem(`issueTitle-${org}-${repo}`);
         localStorage.removeItem(`issueBody-${org}-${repo}`);
+        // scroll to the top of the page
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
       setIssueTitle("");
       setIssueBody("");
@@ -190,6 +194,9 @@ Please update the \`${fileName}\` file to address the following:
     setCreatedTodoId(null);
     setIsEditing(true);
     setTitleError(false);
+    setHasEvaluated(false);
+    setRewrittenIssue(null);
+    setFeedback(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(`issueTitle-${org}-${repo}`);
       localStorage.removeItem(`issueBody-${org}-${repo}`);
@@ -222,6 +229,7 @@ Please update the \`${fileName}\` file to address the following:
       toast.error("Failed to evaluate the issue.");
     } finally {
       setIsEvaluating(false);
+      setHasEvaluated(true);
     }
   };
 
@@ -237,6 +245,7 @@ Please update the \`${fileName}\` file to address the following:
       setIssueBody(body);
     }
     setRewrittenIssue(null);
+    setFeedback(null);
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,8 +268,12 @@ Please update the \`${fileName}\` file to address the following:
   }
 
   return (
-    <div className="hide-scrollbar mx-auto flex h-full w-full flex-col space-y-4 overflow-hidden px-4 md:flex-row md:space-x-4 md:space-y-0 md:px-0">
-      <div className="hide-scrollbar h-[calc(100vh-119px)] w-full flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 pb-8 shadow-sm dark:bg-slate-800 md:max-w-4xl">
+    <div
+      className={`hide-scrollbar mx-auto flex h-full w-full flex-row space-x-4 overflow-hidden ${
+        rewrittenIssue ? "max-w-[100rem]" : "max-w-4xl"
+      }`}
+    >
+      <div className="hide-scrollbar h-[calc(100vh-112px)] w-full flex-1 overflow-hidden overflow-y-scroll rounded-md bg-white/50 p-4 pb-8 shadow-sm dark:bg-slate-800 sm:max-w-5xl md:h-[calc(100vh-119px)]">
         <div className="mb-4 flex flex-col items-start justify-between space-y-4 sm:flex-row sm:items-center sm:space-y-0">
           <h2 className="text-xl font-bold text-aurora-700 dark:text-aurora-300 md:text-2xl">
             Issue Creator
@@ -360,9 +373,9 @@ Please update the \`${fileName}\` file to address the following:
                 </button>
                 <button
                   onClick={handleCreateIssue}
-                  disabled={isCreating || !rewrittenIssue}
+                  disabled={(isCreating || !rewrittenIssue) && !hasEvaluated}
                   className={`flex w-full items-center justify-center rounded-md px-4 py-2 text-white transition-colors sm:w-auto ${
-                    isCreating || !rewrittenIssue
+                    (isCreating || !rewrittenIssue) && !hasEvaluated
                       ? "cursor-not-allowed bg-gray-400"
                       : "bg-aurora-400 hover:bg-aurora-500 dark:bg-aurora-600 dark:hover:bg-aurora-500"
                   }`}
