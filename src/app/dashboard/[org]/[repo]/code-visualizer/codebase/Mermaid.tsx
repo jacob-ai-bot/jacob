@@ -42,6 +42,15 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, theme }) => {
           return `${p1} ${fixedName} `;
         },
       );
+      // If the chart doesn't start with classDiagram but contains classDiagram, remove beginning of string until classDiagram
+      if (
+        !cleanedChart.startsWith("classDiagram") &&
+        cleanedChart.includes("classDiagram")
+      ) {
+        cleanedChart = cleanedChart.substring(
+          cleanedChart.indexOf("classDiagram"),
+        );
+      }
 
       return cleanedChart;
     };
@@ -93,7 +102,7 @@ const Mermaid: React.FC<MermaidProps> = ({ chart, theme }) => {
   }
 
   const containerClasses = isFullScreen
-    ? "fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-800"
+    ? "fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-800 -translate-y-4"
     : "relative rounded bg-white p-2 text-xs shadow-sm dark:bg-gray-800";
 
   return (

@@ -155,21 +155,21 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
   return (
     <div className="details hide-scrollbar h-full overflow-scroll bg-white text-left text-sm text-gray-800 dark:bg-gray-900 dark:text-white">
       <div className="sticky top-0 z-10 flex h-12 items-center justify-between bg-gradient-to-r from-aurora-50 to-aurora-100/70 px-4 shadow-sm dark:from-gray-800 dark:to-gray-700">
-        <div className="flex items-center space-x-3">
+        <div className="flex min-w-0 flex-1 items-center space-x-3">
           <button
             onClick={onToggleWidth}
-            className="text-aurora-500 transition-colors hover:text-aurora-600 dark:text-gray-400 dark:hover:text-white"
+            className="flex-shrink-0 text-aurora-500 transition-colors hover:text-aurora-600 dark:text-gray-400 dark:hover:text-white"
           >
             <FontAwesomeIcon
               icon={isExpanded ? faChevronRight : faChevronLeft}
               size="lg"
             />
           </button>
-          <h2 className="truncate text-lg font-semibold text-gray-800 dark:text-blueGray-200">
+          <h2 className="min-w-0 flex-1 truncate text-lg font-semibold text-gray-800 dark:text-blueGray-200">
             {path.basename(item.file)}
           </h2>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-shrink-0 items-center space-x-2">
           <button
             onClick={handleCopy}
             className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
@@ -178,7 +178,7 @@ const CodebaseDetails: React.FC<CodebaseDetailsProps> = ({
           </button>
           <button
             onClick={onClose}
-            className=" text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
+            className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-white"
           >
             <FontAwesomeIcon icon={faTimes} size="lg" />
           </button>
