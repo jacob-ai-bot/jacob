@@ -178,6 +178,48 @@ async function callFunction(
       return "Function not found.";
   }
 }
+
+export async function researchProject(
+  sourceMap: string,
+  codebaseContext: ContextItem[],
+): Promise<Research[]> {
+  const researchQuestions = [
+    "Provide a comprehensive overview of the main functionalities and core features of this codebase.",
+    "Analyze the architectural patterns and design principles used throughout the codebase.",
+    "Identify the key dependencies and external integrations used in the project.",
+    "Describe the data flow and state management approaches implemented in the codebase.",
+    "Examine the testing strategy and coverage across different components.",
+    "Detail the error handling and logging mechanisms implemented in the codebase.",
+    "Analyze the security measures and authentication methods used in the project.",
+    "Evaluate the performance optimization techniques employed in the codebase.",
+    "Document the API structure and communication patterns between different services.",
+    "Identify potential areas for improvement or technical debt in the codebase.",
+  ];
+
+  const gatheredInformation: Research[] = [];
+
+  for (const question of researchQuestions) {
+    const answer = await researchCodebase(
+      question,
+      "Project Level Research",
+      sourceMap,
+      codebaseContext,
+    );
+
+    const research: Research = {
+      todoId: 0,
+      issueId: 0,
+      type: ResearchAgentActionType.ResearchCodebase,
+      question,
+      answer,
+    };
+    gatheredInformation.push(research);
+    await db.research.create(research);
+  }
+
+  return gatheredInformation;
+}
+
 export async function researchCodebase(
   query: string,
   githubIssue: string,
