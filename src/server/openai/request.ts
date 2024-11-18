@@ -18,8 +18,7 @@ import { type Stream } from "openai/streaming";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "./utils";
 import { encode } from "gpt-tokenizer";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
-
-const PORTKEY_GATEWAY_URL = "https://api.portkey.ai/v1";
+import { PORTKEY_GATEWAY_URL, createHeaders } from "portkey-ai";
 
 const CONTEXT_WINDOW = {
   "gpt-4-turbo-2024-04-09": 128000,
@@ -234,12 +233,14 @@ export const sendGptRequest = async (
       openai = new OpenAI({
         apiKey: "using-virtual-portkey-key",
         baseURL: PORTKEY_GATEWAY_URL,
-        defaultHeaders: {
-          "x-portkey-api-key": process.env.PORTKEY_API_KEY,
-          "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
-          "x-portkey-cache": "simple",
-          "x-portkey-retry-count": "3",
-        },
+        defaultHeaders: createHeaders({
+          apiKey: process.env.PORTKEY_API_KEY ?? "",
+          virtualKey: PORTKEY_VIRTUAL_KEYS[model],
+          config: {
+            cache: { mode: "simple" },
+            retry: { attempts: 3 },
+          },
+        }),
       });
     }
 
@@ -556,13 +557,14 @@ export const OpenAIStream = async (
     const openai = new OpenAI({
       apiKey: "using-virtual-portkey-key",
       baseURL: PORTKEY_GATEWAY_URL,
-      defaultHeaders: {
-        "x-portkey-api-key": process.env.PORTKEY_API_KEY,
-        "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
-        "x-portkey-cache": "simple",
-        "x-portkey-retry-count": "3",
-        "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
-      },
+      defaultHeaders: createHeaders({
+        apiKey: process.env.PORTKEY_API_KEY ?? "",
+        virtualKey: PORTKEY_VIRTUAL_KEYS[model],
+        config: {
+          cache: { mode: "simple" },
+          retry: { attempts: 3 },
+        },
+      }),
     });
 
     const max_tokens = MAX_OUTPUT[model];
@@ -605,13 +607,14 @@ export const sendGptToolRequest = async (
   const openai = new OpenAI({
     apiKey: "using-virtual-portkey-key",
     baseURL: PORTKEY_GATEWAY_URL,
-    defaultHeaders: {
-      "x-portkey-api-key": process.env.PORTKEY_API_KEY,
-      "x-portkey-virtual-key": PORTKEY_VIRTUAL_KEYS[model],
-      "x-portkey-cache": "simple",
-      "x-portkey-retry-count": "3",
-      "x-portkey-debug": `${process.env.NODE_ENV !== "production"}`,
-    },
+    defaultHeaders: createHeaders({
+      apiKey: process.env.PORTKEY_API_KEY ?? "",
+      virtualKey: PORTKEY_VIRTUAL_KEYS[model],
+      config: {
+        cache: { mode: "simple" },
+        retry: { attempts: 3 },
+      },
+    }),
   });
 
   try {
