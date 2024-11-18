@@ -137,6 +137,19 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     (item) => item.type !== ResearchAgentActionType.AskProjectOwner,
   );
 
+  const getEvaluationGradient = (indicator: string) => {
+    switch (indicator) {
+      case "Red":
+        return "bg-gradient-to-b from-blossom-50/70 to-50% dark:from-blossom-800/30 dark:to-blossom-800/10";
+      case "Yellow":
+        return "bg-gradient-to-b from-sunset-50/70 to-50% dark:from-sunset-800/30 dark:to-sunset-800/10";
+      case "Green":
+        return "bg-gradient-to-b from-meadow-50/70 to-50% dark:from-meadow-800/30 dark:to-meadow-800/10";
+      default:
+        return "bg-gradient-to-b from-blossom-50/70 to-50% dark:from-blossom-800/30 dark:to-blossom-800/10";
+    }
+  };
+
   return (
     <>
       <div className="mb-6 flex flex-col items-start justify-between gap-4 overflow-hidden md:flex-row md:items-center">
@@ -218,7 +231,9 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="rounded-lg bg-gradient-to-b from-blossom-50/70 to-50% p-6 shadow-lg transition-all dark:from-blossom-800/30 dark:to-blossom-800/10"
+              className={`rounded-lg ${getEvaluationGradient(
+                evaluation.overallIndicator,
+              )} p-6 shadow-lg transition-all`}
             >
               <Evaluation evaluation={evaluation} />
             </motion.div>
