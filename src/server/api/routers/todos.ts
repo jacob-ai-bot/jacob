@@ -257,6 +257,12 @@ export const todoRouter = createTRPCRouter({
           baseEventData,
         });
 
+        if (evaluation) {
+          await db.projects.find(project.id).update({
+            evaluationData: evaluation,
+          });
+        }
+
         return evaluation;
       },
     ),
