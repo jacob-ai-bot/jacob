@@ -232,7 +232,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className={`rounded-lg ${getEvaluationGradient(
-                evaluation.overallIndicator,
+                evaluation?.overallIndicator ?? "Green",
               )} p-6 shadow-lg transition-all`}
             >
               <Evaluation evaluation={evaluation} />
