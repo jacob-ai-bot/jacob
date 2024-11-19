@@ -23,6 +23,7 @@ export class TodosTable extends BaseTable {
     position: t.integer().default(0),
     issueId: t.integer().nullable(),
     branch: t.text().nullable(),
+    evaluationData: t.json().nullable(),
     isArchived: t.boolean().default(false),
     ...t.timestamps(),
   }));

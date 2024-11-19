@@ -213,6 +213,10 @@ export const todoRouter = createTRPCRouter({
         if (!todo) {
           throw new Error("Todo not found");
         }
+        // if we already have evaluation data, return it
+        if (todo.evaluationData) {
+          return todo.evaluationData;
+        }
 
         const planSteps = (await db.planSteps
           .where({ projectId: todo.projectId, issueNumber: todo.issueId ?? 0 })
@@ -258,7 +262,7 @@ export const todoRouter = createTRPCRouter({
         });
 
         if (evaluation) {
-          await db.projects.find(project.id).update({
+          await db.todos.find(todoId).update({
             evaluationData: evaluation,
           });
         }
