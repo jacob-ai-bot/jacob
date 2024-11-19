@@ -13,7 +13,7 @@ interface CodebaseParams {
 const Codebase: React.FC<CodebaseParams> = ({ org, repo }) => {
   const { resolvedTheme } = useTheme();
 
-  const { data: project } = api.projects.getByOrgRepo.useQuery({
+  const { data: project } = api.projects.getByOrgAndRepo.useQuery({
     org,
     repo,
   });

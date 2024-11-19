@@ -10,6 +10,7 @@ import SearchBar from "../../components/SearchBar";
 import { startsWithIgnoreCase, includesIgnoreCase } from "~/app/utils";
 import { api } from "~/trpc/react";
 import Research from "../../todos/components/Research";
+import LoadingIndicator from "../../components/LoadingIndicator";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
@@ -42,7 +43,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
 
   const { data: researchItems, isLoading: isLoadingResearch } =
     api.todos.getProjectResearch.useQuery(
-      { projectId: projectId ?? 0 },
+      { projectId: projectId ?? 0, org, repo },
       { enabled: viewMode === "research" && !!projectId },
     );
 
@@ -164,7 +165,13 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-md border border-aurora-100/50 bg-transparent  shadow-lg dark:border-blueGray-900 dark:bg-blueGray-700">
-      <div className="flex w-full flex-1 flex-row overflow-hidden">
+      <div
+        className={`flex w-full flex-1 flex-row  ${
+          viewMode === "research"
+            ? "hide-scrollbar overflow-scroll"
+            : "overflow-hidden"
+        }`}
+      >
         <div className="flex w-full flex-col">
           <div className="flex h-12 w-full flex-row items-center justify-between bg-aurora-100/50 p-2 text-left dark:bg-blueGray-900/30">
             <div className="flex flex-grow items-center">
@@ -237,13 +244,21 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
             transition={{ duration: 0.3 }}
           >
             {viewMode === "research" ? (
-              <div className="mx-auto max-w-5xl">
+              <div className=" mx-auto max-w-5xl">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="rounded-lg bg-gradient-to-b from-meadow-50/70 to-50% p-6 shadow-md transition-all dark:from-meadow-800/30 dark:to-meadow-800/10"
+                  className="rounded-lg bg-gradient-to-b from-sunset-50/70 to-50% p-6 shadow-md transition-all dark:from-sunset-800/30 dark:to-sunset-800/10"
                 >
+                  <h1 className="text-2xl font-bold">Research</h1>
+                  <p className="mb-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    JACoB dives into your codebase, analyzing structure, style,
+                    and patterns to deliver smarter suggestions and tailor-made
+                    solutions. It’s like having a teammate who already knows the
+                    ropes. Explore the examples below and click any file name to
+                    view the code in action.
+                  </p>
                   {isLoadingResearch ? (
                     <div className="flex items-center justify-center py-8">
                       <LoadingIndicator />

@@ -276,21 +276,38 @@ export const todoRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.number(),
+        repo: z.string(),
+        org: z.string(),
       }),
     )
-    .query(async ({ input: { projectId } }) => {
-      const research = await db.research
-        .where({ todoId: 0, issueId: 0, projectId })
-        .all();
-
-      if (research.length === 0) {
-        const contextItems = await db.codebaseContext
-          .where({ projectId })
+    .query(
+      async ({
+        input: { projectId, repo, org },
+        ctx: {
+          session: { accessToken },
+        },
+      }) => {
+        const research = await db.research
+          .where({ todoId: 0, issueId: 0, projectId })
           .all();
 
-        void getOrCreateResearchForProject(projectId, contextItems, false);
-      }
+        if (research.length === 0) {
+          const codebaseContext = await getCodebaseContext(
+            org,
+            repo,
+            accessToken,
+          );
+          if (!codebaseContext.length) {
+            return [];
+          }
+          const contextItems = codebaseContext.map(
+            (item) => item.context as ContextItem,
+          );
 
-      return research;
-    }),
+          void getOrCreateResearchForProject(projectId, contextItems, false);
+        }
+
+        return research;
+      },
+    ),
 });
