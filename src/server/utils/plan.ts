@@ -17,6 +17,7 @@ import { traverseCodebase } from "~/server/analyze/traverse";
 import { getFiles } from "./files";
 import { z } from "zod";
 import { PlanningAgentActionType } from "~/server/db/enums";
+import { type Research, researchIssue } from "../agent/research";
 
 const PlanStepSchema = z.object({
   type: z.nativeEnum(PlanningAgentActionType),
@@ -80,10 +81,19 @@ export const getOrGeneratePlan = async ({
         `Error generating plan, no todo found for project ${projectId} and issue ${issueId}`,
       );
     }
-    const researchQuestions = await db.research
+    let researchQuestions = (await db.research
       .where({ issueId, todoId: todo.id })
-      .all();
+      .all()) as Research[];
 
+    if (!researchQuestions.length) {
+      researchQuestions = await researchIssue({
+        githubIssue,
+        todoId: todo.id,
+        issueId,
+        rootDir: rootPath,
+        projectId,
+      });
+    }
     if (!researchQuestions.length) {
       throw new Error(
         `Error generating plan, no research found for todo ${todo.id}`,
