@@ -53,7 +53,11 @@ export async function editFiles(params: EditFilesParams) {
     dryRun,
     ...baseEventData
   } = params;
-  const newBranch = generateJacobBranchName(issue.number);
+  const newBranch = await generateJacobBranchName(
+    issue.number,
+    issue.title,
+    issue.body ?? "",
+  );
   const snapshotUrl = getSnapshotUrl(issue.body);
   // Fallback to a source file list if we don't have a source map (e.g. JS projects)
   // When we start processing PRs, need to handle appending additionalComments

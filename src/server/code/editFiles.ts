@@ -348,7 +348,11 @@ export async function editFiles(params: EditFilesParams) {
     console.log(`[${repository.full_name}] No code generated. Exiting...`);
     throw new Error("No code generated");
   }
-  const newBranch = generateJacobBranchName(issue.number);
+  const newBranch = await generateJacobBranchName(
+    issue.number,
+    issue.title,
+    issue.body ?? "",
+  );
 
   if (dryRun) {
     console.log("\n***** DRY RUN: UPDATED CODE *****\n\n");

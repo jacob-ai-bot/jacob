@@ -139,7 +139,11 @@ vi.mock("../utils/codebaseContext", () => mockedContext);
 
 const mockedParseTemplate = vi.hoisted(() => ({
   parseTemplate: vi.fn().mockReturnValue("parsedTemplate"),
-  generateJacobBranchName: vi.fn().mockReturnValue("jacob-issue-1"),
+  generateJacobBranchName: vi
+    .fn()
+    .mockImplementation(async (issueNumber, issueTitle, issueBody) => {
+      return `jacob-issue-${issueNumber}-12345`;
+    }),
 }));
 vi.mock("../utils/index", async () => {
   const actual = await vi.importActual("../utils/index");
@@ -234,8 +238,7 @@ describe("editFiles", () => {
     expect(mockedBranch.setNewBranch).toHaveBeenCalledOnce();
     expect(mockedBranch.setNewBranch).toHaveBeenLastCalledWith({
       ...mockEventData,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      branchName: expect.stringContaining("jacob-issue-"),
+      branchName: "jacob-issue-49-12345",
       rootPath: editFilesParams.rootPath,
     });
 
@@ -280,8 +283,7 @@ describe("editFiles", () => {
       repository: editFilesParams.repository,
       token: editFilesParams.token,
       rootPath: editFilesParams.rootPath,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      branch: expect.stringContaining("jacob-issue-"),
+      branch: "jacob-issue-49-12345",
       commitMessage: `JACoB PR for Issue ${issue.title}`,
       issue,
       newPrTitle: `JACoB PR for Issue ${issue.title}`,
@@ -307,6 +309,11 @@ describe("editFiles", () => {
       `,
       newPrReviewers: issue.assignees.map((assignee) => assignee.login),
     });
+
+    expect(mockedParseTemplate.generateJacobBranchName).toHaveBeenCalledOnce();
+    expect(
+      mockedParseTemplate.generateJacobBranchName,
+    ).toHaveBeenLastCalledWith(issue.number, issue.title, issue.body);
   });
 
   test("editFiles succeess with local (non-LLM) applyCodePatch", async () => {
@@ -338,5 +345,10 @@ describe("editFiles", () => {
 
     expect(mockedCheck.runBuildCheck).toHaveBeenCalledOnce();
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledOnce();
+
+    expect(mockedParseTemplate.generateJacobBranchName).toHaveBeenCalledOnce();
+    expect(
+      mockedParseTemplate.generateJacobBranchName,
+    ).toHaveBeenLastCalledWith(issue.number, issue.title, issue.body);
   });
 });

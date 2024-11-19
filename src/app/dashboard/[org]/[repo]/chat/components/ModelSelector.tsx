@@ -21,7 +21,7 @@ export const ChatModels: ChatModel[] = [
   },
   {
     description: "Groq Llama 3.2 90b",
-    modelName: "llama-3.2-90b-text-preview",
+    modelName: "llama-3.2-90b-vision-preview",
     provider: "groq",
   },
   {
