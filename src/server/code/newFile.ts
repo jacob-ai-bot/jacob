@@ -122,7 +122,11 @@ export async function createNewFile(params: CreateNewFileParams) {
     throw new Error("No code generated");
   }
 
-  const newBranch = generateJacobBranchName(issue.number);
+  const newBranch = await generateJacobBranchName(
+    issue.number,
+    issue.title,
+    issue.body ?? "",
+  );
 
   await setNewBranch({
     ...baseEventData,

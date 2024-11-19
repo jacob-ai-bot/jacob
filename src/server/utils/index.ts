@@ -7,6 +7,8 @@ import { promisify } from "util";
 import { Language } from "~/types";
 import { type RepoSettings, Style } from "./settings";
 import { emitCommandEvent } from "./events";
+import { sendGptRequestWithSchema } from "../openai/request";
+import { z } from "zod";
 
 export { type RepoSettings, getRepoSettings } from "./settings";
 
@@ -209,6 +211,13 @@ export function getSanitizedEnv() {
   return baseEnv;
 }
 
+const BranchNameSchema = z.object({
+  branchName: z.string().regex(/^[a-z0-9-]+$/, {
+    message:
+      "Branch name must only contain lowercase letters, numbers, and dashes",
+  }),
+});
+
 export async function generateJacobBranchName(
   issueNumber: number,
   issueTitle?: string,
@@ -220,36 +229,31 @@ export async function generateJacobBranchName(
     try {
       const prompt = `Generate a short, descriptive git branch name (max 3-4 words) based on this issue title: "${issueTitle}"${issueBody ? ` and description: "${issueBody}"` : ""}. Use only lowercase letters, numbers and dashes. No special characters or spaces.`;
 
-      const response = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a helpful assistant that generates git branch names. Only respond with the branch name, no explanation or additional text.",
-              },
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-            temperature: 0.3,
-            max_tokens: 20,
-          }),
-        },
+      const systemPrompt = dedent`
+        You are a helpful assistant that generates git branch names.
+        You must respond with a JSON object containing a single "branchName" field.
+        Your response must match the following schema:
+        const BranchNameSchema = z.object({
+            branchName: z.string().regex(/^[a-z0-9-]+$/) // Branch name must be a valid git branch!
+        });
+        The branch name must:
+        - Only contain lowercase letters, numbers, and dashes
+        - Be descriptive but concise (3-4 words max)
+        - Not include any special characters or spaces
+      `;
+
+      const response = await sendGptRequestWithSchema(
+        prompt,
+        systemPrompt,
+        BranchNameSchema,
+        0.3,
+        undefined,
+        3,
+        "gpt-4o-mini-2024-07-18",
       );
 
-      const data = await response.json();
-      if (data.choices?.[0]?.message?.content) {
-        branchName = data.choices[0].message.content.trim();
+      if (response?.branchName) {
+        branchName = response.branchName;
       }
     } catch (error) {
       console.error("Error generating branch name with LLM:", error);
@@ -260,7 +264,7 @@ export async function generateJacobBranchName(
     branchName = "jacob-issue";
   }
 
-  const randomDigits = Math.floor(10000 + Math.random() * 90000);
+  const randomDigits = Math.floor(1000 + Math.random() * 9000);
   return `${branchName}-${issueNumber}-${randomDigits}`;
 }
 
