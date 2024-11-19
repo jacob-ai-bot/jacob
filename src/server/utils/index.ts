@@ -209,8 +209,59 @@ export function getSanitizedEnv() {
   return baseEnv;
 }
 
-export function generateJacobBranchName(issueNumber: number) {
-  return `jacob-issue-${issueNumber}-${Date.now()}`;
+export async function generateJacobBranchName(
+  issueNumber: number,
+  issueTitle?: string,
+  issueBody?: string,
+) {
+  let branchName = "";
+
+  if (issueTitle) {
+    try {
+      const prompt = `Generate a short, descriptive git branch name (max 3-4 words) based on this issue title: "${issueTitle}"${issueBody ? ` and description: "${issueBody}"` : ""}. Use only lowercase letters, numbers and dashes. No special characters or spaces.`;
+
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are a helpful assistant that generates git branch names. Only respond with the branch name, no explanation or additional text.",
+              },
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            temperature: 0.3,
+            max_tokens: 20,
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (data.choices?.[0]?.message?.content) {
+        branchName = data.choices[0].message.content.trim();
+      }
+    } catch (error) {
+      console.error("Error generating branch name with LLM:", error);
+    }
+  }
+
+  if (!branchName) {
+    branchName = "jacob-issue";
+  }
+
+  const randomDigits = Math.floor(10000 + Math.random() * 90000);
+  return `${branchName}-${issueNumber}-${randomDigits}`;
 }
 
 export function extractIssueNumberFromBranchName(branch: string) {
