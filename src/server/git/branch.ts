@@ -1,8 +1,42 @@
 import { executeWithLogRequiringSuccess, type BaseEventData } from "../utils";
+import { Configuration, OpenAIApi } from "openai";
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const openai = new OpenAIApi(configuration);
 
 export interface SetNewBranchParams extends BaseEventData {
   rootPath: string;
   branchName: string;
+}
+
+async function generateDescriptiveBranchName(
+  branchName: string,
+): Promise<string> {
+  try {
+    const response = await openai.createCompletion({
+      model: "gpt-3.5-turbo-instruct",
+      prompt: `Generate a short, descriptive git branch name (max 3-4 words) based on: ${branchName}. Use only lowercase letters, numbers and dashes. No special characters or spaces.`,
+      max_tokens: 20,
+      temperature: 0.3,
+    });
+
+    let generatedName =
+      response.data.choices[0]?.text?.trim().toLowerCase() || branchName;
+    generatedName = generatedName.replace(/[^a-z0-9-]/g, "-");
+    generatedName = generatedName.replace(/-+/g, "-");
+    generatedName = generatedName.replace(/^-|-$/g, "");
+
+    const randomSuffix = Math.floor(Math.random() * 100000)
+      .toString()
+      .padStart(5, "0");
+    return `${generatedName}-${randomSuffix}`;
+  } catch (error) {
+    console.error("Error generating descriptive branch name:", error);
+    return branchName;
+  }
 }
 
 export async function setNewBranch({
@@ -10,7 +44,8 @@ export async function setNewBranch({
   branchName,
   ...baseEventData
 }: SetNewBranchParams) {
-  // first check to see if we're already on that branch. If not, create it.
+  const descriptiveBranchName = await generateDescriptiveBranchName(branchName);
+
   const currentBranch = (
     await executeWithLogRequiringSuccess({
       ...baseEventData,
@@ -20,12 +55,11 @@ export async function setNewBranch({
   ).stdout
     .toString()
     .trim();
-  if (currentBranch === branchName) {
-    console.log("Already on branch: ", branchName);
+  if (currentBranch === descriptiveBranchName) {
+    console.log("Already on branch: ", descriptiveBranchName);
     return;
   }
 
-  // now check to see if the branch already exists
   const branches = (
     await executeWithLogRequiringSuccess({
       ...baseEventData,
@@ -35,21 +69,19 @@ export async function setNewBranch({
   ).stdout
     .toString()
     .trim();
-  if (branches.includes(branchName)) {
-    console.log("Branch already exists: ", branchName);
-    // Checkout the existing branch
+  if (branches.includes(descriptiveBranchName)) {
+    console.log("Branch already exists: ", descriptiveBranchName);
     return executeWithLogRequiringSuccess({
       ...baseEventData,
       directory: rootPath,
-      command: `git checkout ${branchName}`,
+      command: `git checkout ${descriptiveBranchName}`,
     });
   }
 
-  // Create a new branch
   return executeWithLogRequiringSuccess({
     ...baseEventData,
     directory: rootPath,
-    command: `git checkout -b ${branchName}`,
+    command: `git checkout -b ${descriptiveBranchName}`,
   });
 }
 

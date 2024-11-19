@@ -16,6 +16,43 @@ import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { type CodeFile } from "~/app/dashboard/[org]/[repo]/chat/components/Chat";
 import { EvaluationMode } from "~/types";
 
+async function generateDescriptiveBranchName(title: string, body: string) {
+  const BranchNameSchema = z.object({
+    branchName: z.string().regex(/^[a-z0-9-]+$/),
+  });
+
+  const userPrompt = `Generate a short, descriptive git branch name from this issue:
+  Title: ${title}
+  Body: ${body}
+  
+  The branch name must:
+  - Be lowercase
+  - Only use letters, numbers and dashes
+  - Be descriptive but concise
+  - Not include special characters
+  - Not include spaces (use dashes)
+  - Be git-compatible
+  - Be under 30 characters`;
+
+  const systemPrompt = `You are a branch name generator.
+  Your response must be a JSON object with a single "branchName" field.
+  The branch name must only contain lowercase letters, numbers and dashes.
+  Do not include any explanation, only return the JSON object.`;
+
+  const result = await sendGptRequestWithSchema(
+    userPrompt,
+    systemPrompt,
+    BranchNameSchema,
+    0.1
+  );
+
+  const randomId = Math.floor(Math.random() * 100000)
+    .toString()
+    .padStart(5, "0");
+
+  return `${result.branchName}-${randomId}`;
+}
+
 export async function fetchGithubFileContents(
   accessToken: string,
   org: string,
@@ -516,14 +553,21 @@ export const githubRouter = createTRPCRouter({
         repo: z.string(),
         branchName: z.string(),
         baseBranch: z.string(),
+        title: z.string().optional(),
+        body: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { org, repo, branchName, baseBranch } = input;
+      const { org, repo, branchName: inputBranchName, baseBranch, title, body } = input;
       const { accessToken } = ctx.session;
 
       try {
         const octokit = new Octokit({ auth: accessToken });
+
+        // Generate descriptive branch name if title and body are provided
+        const finalBranchName = title && body 
+          ? await generateDescriptiveBranchName(title, body)
+          : inputBranchName;
 
         // Get the SHA of the latest commit on the base branch
         const { data: baseRef } = await octokit.git.getRef({
@@ -536,11 +580,11 @@ export const githubRouter = createTRPCRouter({
         await octokit.git.createRef({
           owner: org,
           repo,
-          ref: `refs/heads/${branchName}`,
+          ref: `refs/heads/${finalBranchName}`,
           sha: baseRef.object.sha,
         });
 
-        return { success: true, message: "Branch created successfully" };
+        return { success: true, message: "Branch created successfully", branchName: finalBranchName };
       } catch (error) {
         console.error("Error creating branch:", error);
         if (error instanceof Error && error.message.includes("422")) {
@@ -556,3 +600,59 @@ export const githubRouter = createTRPCRouter({
       }
     }),
 });
+
+Based on the GitHub issue and requirements, I'll create a new file `/src/server/llm/branchNameGenerator.ts` to implement efficient branch name generation using a lightweight LLM. Here's the complete implementation:
+
+__FILEPATH__: /src/server/llm/branchNameGenerator.ts
+import { z } from "zod";
+import { env } from "@/env.mjs";
+import { Groq } from "groq-sdk";
+import { generateRandomString } from "@/server/utils/random";
+
+const groq = new Groq({
+  apiKey: env.GROQ_API_KEY,
+});
+
+const branchNameSchema = z.object({
+  descriptiveName: z.string().min(1).max(50),
+});
+
+export async function generateBranchName(context: string): Promise<string> {
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "You are a branch name generator. Generate a short, descriptive branch name using only lowercase letters, numbers and dashes. The name should be concise but meaningful, describing the purpose or content. Do not include special characters other than dashes. Format: descriptive-name",
+        },
+        {
+          role: "user",
+          content: `Generate a descriptive branch name for: ${context}`,
+        },
+      ],
+      model: "mixtral-8x7b-32768",
+      temperature: 0.3,
+      max_tokens: 20,
+      top_p: 0.9,
+      stream: false,
+    });
+
+    const suggestedName = completion.choices[0]?.message?.content?.trim() ?? "";
+    const validatedName = branchNameSchema.parse({
+      descriptiveName: suggestedName,
+    });
+
+    const randomSuffix = generateRandomString(5);
+    const branchName = `${validatedName.descriptiveName}-${randomSuffix}`
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    return branchName;
+  } catch (error) {
+    console.error("Error generating branch name:", error);
+    const fallbackName = `branch-${generateRandomString(10)}`;
+    return fallbackName;
+  }
+}

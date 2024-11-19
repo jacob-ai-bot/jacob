@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { Language } from "~/types";
 import { type RepoSettings, Style } from "./settings";
 import { emitCommandEvent } from "./events";
+import { OpenAI } from "openai";
 
 export { type RepoSettings, getRepoSettings } from "./settings";
 
@@ -209,8 +210,50 @@ export function getSanitizedEnv() {
   return baseEnv;
 }
 
-export function generateJacobBranchName(issueNumber: number) {
-  return `jacob-issue-${issueNumber}-${Date.now()}`;
+async function generateDescriptiveBranchName(
+  issueNumber: number,
+): Promise<string> {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Generate a short, descriptive branch name using only lowercase letters, numbers, and dashes. The name should be git-compatible and reflect the purpose of the issue.",
+        },
+        {
+          role: "user",
+          content: `Generate a branch name for issue #${issueNumber}`,
+        },
+      ],
+      max_tokens: 50,
+      temperature: 0.3,
+    });
+
+    const branchName = completion.choices[0]?.message?.content?.trim() ?? "";
+    return branchName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-");
+  } catch (error) {
+    console.error("Error generating branch name:", error);
+    return `issue-${issueNumber}`;
+  }
+}
+
+function generateRandomString(): string {
+  return Math.floor(10000 + Math.random() * 90000).toString();
+}
+
+export async function generateJacobBranchName(issueNumber: number) {
+  const descriptiveName = await generateDescriptiveBranchName(issueNumber);
+  const randomString = generateRandomString();
+  return `${descriptiveName}-${randomString}`;
 }
 
 export function extractIssueNumberFromBranchName(branch: string) {
