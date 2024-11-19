@@ -52,6 +52,7 @@ import {
   removeUnusedContextFiles,
 } from "../utils/codebaseContext";
 import { archiveTodosByIssueId } from "../utils/todos";
+import { getOrCreateResearchForProject } from "../agent/research";
 
 const QUEUE_NAME = "github_event_queue";
 
@@ -276,25 +277,47 @@ async function onReposAdded(
       const repoSettings = await getRepoSettings(path, repo.full_name);
 
       try {
-        if (isNodeRepo) {
-          await runBuildCheck({
-            ...baseEventData,
-            path,
-            afterModifications: false,
-            repoSettings,
-          });
-        } else {
+        if (
+          process.env.AGENT_REPOS?.split(",")
+            .map((repo) => repo.trim())
+            .includes(repo.full_name)
+        ) {
+          // for the agent repos, we will run the research codebase agent
+          const allFiles = traverseCodebase(path);
           console.log(
-            `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : not a Node.js project - skipping runBuildCheck`,
+            `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : running research codebase agent`,
+          );
+          const codebaseContext = await getOrCreateCodebaseContext(
+            project.id,
+            path,
+            allFiles ?? [],
+          );
+
+          await getOrCreateResearchForProject(project.id, codebaseContext);
+          console.log(
+            `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : research codebase agent complete`,
+          );
+        } else {
+          if (isNodeRepo) {
+            await runBuildCheck({
+              ...baseEventData,
+              path,
+              afterModifications: false,
+              repoSettings,
+            });
+          } else {
+            console.log(
+              `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : not a Node.js project - skipping runBuildCheck`,
+            );
+          }
+          // for all other repos, we will create a repo installed issue
+          await createRepoInstalledIssue(
+            repository,
+            installationAuthentication.token,
+            sender.login,
+            isNodeRepo,
           );
         }
-
-        await createRepoInstalledIssue(
-          repository,
-          installationAuthentication.token,
-          sender.login,
-          isNodeRepo,
-        );
         posthogClient.capture({
           distinctId,
           event: "Repo Installed Successfully",
@@ -308,6 +331,10 @@ async function onReposAdded(
       }
     } catch (error) {
       try {
+        console.error(
+          `[${repo.full_name}] onReposAdded: ${event.id} ${event.name} : ${String(error)}, original error:`,
+          error,
+        );
         await createRepoInstalledIssue(
           repository,
           installationAuthentication.token,
@@ -537,6 +564,13 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
       console.log(
         `[${repository.full_name}] Quietly ignoring PR closed event (not merged or no issueId)`,
       );
+      if (baseEventData.issueId) {
+        // Archive associated todos
+        await archiveTodosByIssueId(
+          baseEventData.issueId,
+          baseEventData.projectId,
+        );
+      }
     } else {
       const result = await getIssue(
         repository,

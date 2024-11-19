@@ -1,4 +1,17 @@
 export const researchQuestions = [
+  "How is the front-end component architecture organized? What are the naming conventions and directory structures for components?",
+  "What state management patterns are used on the front-end? How is state managed within components and across the application?",
+  "How is API communication handled? What HTTP clients or libraries are used for making API calls?",
+  "What does the backend framework and architecture look like? How are controllers, services, and models structured?",
+  "How is the ORM configured for database interaction? How are model definitions and common database operations handled?",
+  "What authentication and authorization mechanisms are implemented? How are login processes, token generation, and session management handled?",
+  "What coding standards and linting rules are followed? Are there specific style guides or linting configurations in use?",
+  "What are the error handling and logging practices? What libraries are used, and how are logs structured for debugging?",
+  "How are build scripts and deployment processes managed? What environment configurations exist for development, staging, and production?",
+  "What testing frameworks and practices are used? How are unit, integration, and end-to-end tests organized within the project?",
+];
+
+export const detailedResearchQuestions = [
   "For the front-end framework and component architecture, what are the component organization and naming conventions? How are components structured within the project directories? What are the naming conventions for files and components to maintain consistency?",
   "For the front-end framework and component architecture, what state management patterns are used? How is state managed within components and across the application? What are the best practices for data flow and state updates in the codebase?",
   "For the front-end framework and component architecture, what lifecycle methods or hooks are used? How are they employed to manage component behavior during different stages? What guidelines exist for using lifecycle methods or hooks in the codebase?",

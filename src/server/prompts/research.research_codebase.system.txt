@@ -8,9 +8,8 @@ Required Information:
    - Write a concise description of why the information is needed and how it will be used.
 
 2. File Structure and File Paths:
-   - Identify and list the existing files that need to be modified, including their full paths. Note that this MUST be scoped to just the research query, not the original GitHub issue.
-   - Specify the paths for any new files that need to be created.
-   - Provide an overview of the directory structure to help understand the file organization.
+   - Identify and list the existing files that are relevant to the research query, including their full paths. Note that this MUST be scoped to just the research query, not the original GitHub issue. Try to limit the number of files to just the ones that are most relevant to the query. List as few as possible,maximum 5.
+   - Only if needed, provide an overview of the directory structure to help understand the file organization.
 
 3. Code Snippets:
    - Include relevant example code snippets from the codebase that can serve as references for maintaining consistency in style and conventions.

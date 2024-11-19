@@ -2,11 +2,16 @@ import { getExtractedIssue } from "~/server/api/utils";
 import { getIssue } from "~/server/github/issue";
 import { db } from "~/server/db/db";
 import { TodoStatus } from "~/server/db/enums";
-import { researchIssue } from "~/server/agent/research";
+import {
+  getOrCreateResearchForProject,
+  researchIssue,
+} from "~/server/agent/research";
 import { cloneRepo } from "~/server/git/clone";
 import { getSourceMap } from "~/server/analyze/sourceMap";
 import { getOrGeneratePlan } from "./plan";
 import { getRepoSettings, type RepoSettings } from "./settings";
+import { getOrCreateCodebaseContext } from "./codebaseContext";
+import { traverseCodebase } from "../analyze/traverse";
 
 const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
@@ -91,6 +96,12 @@ export const getOrCreateTodo = async ({
     // Only research issues and create plans for agent repos for now
     // TODO: only research issues for premium accounts
     if (agentRepos.includes(repo?.trim())) {
+      const allFiles = traverseCodebase(rootPath);
+      const codebaseContext = await getOrCreateCodebaseContext(
+        projectId,
+        rootPath,
+        allFiles,
+      );
       await researchIssue({
         githubIssue: issueText,
         todoId: newTodo.id,
@@ -104,6 +115,7 @@ export const getOrCreateTodo = async ({
         githubIssue: issueText,
         rootPath,
       });
+      await getOrCreateResearchForProject(projectId, codebaseContext);
     } else {
       console.log(
         `Skipping research for repo ${repo} issue #${issue.number}. Agent repos are ${agentRepos.join(
