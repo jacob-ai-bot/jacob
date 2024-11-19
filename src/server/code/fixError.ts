@@ -22,6 +22,7 @@ import {
   type Model,
   sendGptRequest,
 } from "../openai/request";
+import { generateBugfixPlan } from "../utils/plan";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -37,6 +38,65 @@ export interface FixErrorParams extends BaseEventData {
   branch: string;
   existingPr: PullRequest;
   repoSettings?: RepoSettings;
+}
+
+async function processStepIndividually(
+  step: PlanStep,
+  params: {
+    code: string;
+    issueBody: string;
+    errorMessages: string;
+    sourceMap: string;
+    types: string;
+    images: string;
+    baseEventData: BaseEventData;
+    model: Model;
+  },
+) {
+  const {
+    code,
+    issueBody,
+    errorMessages,
+    sourceMap,
+    types,
+    images,
+    baseEventData,
+    model,
+  } = params;
+
+  const codeTemplateParams = {
+    code,
+    issueBody,
+    errorMessages,
+    sourceMap,
+    types,
+    images,
+    step,
+  };
+
+  const codeSystemPrompt = parseTemplate(
+    "dev",
+    "code_fix_error",
+    "system",
+    codeTemplateParams,
+  );
+  const codeUserPrompt = parseTemplate(
+    "dev",
+    "code_fix_error",
+    "user",
+    codeTemplateParams,
+  );
+
+  return sendGptRequest(
+    codeUserPrompt,
+    codeSystemPrompt,
+    0.2,
+    baseEventData,
+    3,
+    60000,
+    undefined,
+    model,
+  );
 }
 
 export async function fixError(params: FixErrorParams) {
@@ -87,18 +147,6 @@ export async function fixError(params: FixErrorParams) {
           ) ?? ""
         ).split(endOfErrorSectionMarker)[0] ?? "";
   console.log(`[${repository.full_name}] Errors:`, errors);
-  console.log(`here is what will be outputted:  afterHeadingIndex,
-    headingEndMarker,
-    restOfHeading,
-    attemptNumber,
-    endOfErrorSectionMarker`);
-  console.log(
-    afterHeadingIndex,
-    headingEndMarker,
-    restOfHeading,
-    attemptNumber,
-    endOfErrorSectionMarker,
-  );
 
   const sourceMap = getSourceMap(rootPath, repoSettings);
   const assessment = await assessBuildError({
@@ -153,67 +201,75 @@ export async function fixError(params: FixErrorParams) {
         )
         .join("\n");
 
-      // use o1-mini to generate a plan
-      const o1Prompt = `Here is some code that has a build error:\n
-  <code>${code}</code>\n
-  Here is the build error message:\n
-  <error>${errorMessages}</error>\n
-  Generate a very short explanation of the error or errors in the message. Then provide a very short, specific, and concise plan for how to fix it. Only address the errors provided, do not attempt to identify other potential issues in the provided code.`;
-
-      const o1BugFixPlan = await sendGptRequest(
-        o1Prompt,
-        "",
-        1,
-        undefined,
-        3,
-        60000,
-        null,
-        "o1-mini-2024-09-12",
-      );
-
-      const issueBody = `${issue?.body ?? ""}\n\nPlan:\n${o1BugFixPlan}`;
-
       const types = getTypes(rootPath, repoSettings);
       const images = await getImages(rootPath, repoSettings);
 
-      // Start with Claude, but if there is a lot of code, we need to use a model with a large output token limit
       let model: Model = "claude-3-5-sonnet-20241022";
-      const codeTokenCount = countTokens(code) * 1.05; // Leave a little room for bug fixes
+      const codeTokenCount = countTokens(code) * 1.05;
       if (codeTokenCount > MAX_OUTPUT[model]) {
         model = "gpt-4o-64k-output-alpha";
       }
 
-      const codeTemplateParams = {
-        code,
-        issueBody,
+      const plan = await generateBugfixPlan({
+        projectId: baseEventData.projectId,
+        issueId: issue?.number ?? 0,
+        githubIssue: issue?.body ?? "",
+        rootPath,
         errorMessages,
-        sourceMap,
-        types,
-        images,
-      };
+      });
 
-      const codeSystemPrompt = parseTemplate(
-        "dev",
-        "code_fix_error",
-        "system",
-        codeTemplateParams,
-      );
-      const codeUserPrompt = parseTemplate(
-        "dev",
-        "code_fix_error",
-        "user",
-        codeTemplateParams,
-      );
-      const updatedCode = (await sendGptRequest(
-        codeUserPrompt,
-        codeSystemPrompt,
-        0.2,
-        baseEventData,
-        3,
-        60000,
-        undefined,
-        model,
-      ))!;
+      let updatedCode: string;
+      if (codeTokenCount > MAX_OUTPUT[model] * 0.7) {
+        const results = await Promise.all(
+          plan.steps.map((step) =>
+            processStepIndividually(step, {
+              code,
+              issueBody: issue?.body ?? "",
+              errorMessages,
+              sourceMap,
+              types,
+              images,
+              baseEventData,
+              model,
+            }),
+          ),
+        );
+
+        updatedCode = results.filter(Boolean).join("\n\n");
+      } else {
+        const codeTemplateParams = {
+          code,
+          issueBody: issue?.body ?? "",
+          errorMessages,
+          sourceMap,
+          types,
+          images,
+        };
+
+        const codeSystemPrompt = parseTemplate(
+          "dev",
+          "code_fix_error",
+          "system",
+          codeTemplateParams,
+        );
+        const codeUserPrompt = parseTemplate(
+          "dev",
+          "code_fix_error",
+          "user",
+          codeTemplateParams,
+        );
+
+        updatedCode = (await sendGptRequest(
+          codeUserPrompt,
+          codeSystemPrompt,
+          0.2,
+          baseEventData,
+          3,
+          60000,
+          undefined,
+          model,
+        ))!;
+      }
 
       if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
         console.log(`[${repository.full_name}] code`, code);
