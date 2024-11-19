@@ -57,9 +57,9 @@ export const researchIssue = async function ({
   console.log("Researching issue...");
   // First get the context for the full codebase
   const allFiles = traverseCodebase(rootDir);
-  const query = `Based on the GitHub issue, your job is to find the most important files in this codebase.\n
+  const query = `Based on the GitHub issue, your job is to identify the most important files to review in this codebase.\n
   Here is the issue <issue>${githubIssue}</issue> \n
-  Based on the GitHub issue, what are the 100 most relevant files to resolving this GitHub issue in this codebase? Order them from most relevant to least relevant. After identifying the top 10 most relevant files, prioritize other files that are closely related to the most important files, such as other files in the same directory or files that implement the same interface or have similar functionality.`;
+  Based on the GitHub issue, what are the 5 most relevant files to review for understanding and researching this GitHub issue? Only select the minimum number of files necessary to answer the research question, up to a maximum of 5 files. Order them from most relevant to least relevant. Focus only on reviewing existing files, not files that need to be created or modified.`;
   const relevantFiles = await selectRelevantFiles(
     query,
     undefined,
