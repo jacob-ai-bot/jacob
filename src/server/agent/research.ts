@@ -14,6 +14,8 @@ import { traverseCodebase } from "../analyze/traverse";
 import { type StandardizedPath, standardizePath } from "../utils/files";
 import { z } from "zod";
 import { ResearchAgentActionType } from "~/types";
+import { researchQuestions } from "~/data/researchQuestions";
+import { TodoStatus } from "../db/enums";
 
 export interface Research {
   todoId: number;
@@ -21,6 +23,7 @@ export interface Research {
   type: ResearchAgentActionType;
   question: string;
   answer: string;
+  projectId?: number;
 }
 
 interface ResearchIssueParams {
@@ -163,12 +166,7 @@ async function callFunction(
 ): Promise<string> {
   switch (functionName) {
     case ResearchAgentActionType.ResearchCodebase:
-      return await researchCodebase(
-        question,
-        githubIssue,
-        sourceMap,
-        codebaseContext,
-      );
+      return await researchCodebase(question, githubIssue, codebaseContext);
     case ResearchAgentActionType.ResearchInternet:
       return await researchInternet(question);
     case ResearchAgentActionType.AskProjectOwner:
@@ -178,10 +176,10 @@ async function callFunction(
       return "Function not found.";
   }
 }
+
 export async function researchCodebase(
   query: string,
   githubIssue: string,
-  sourceMap: string,
   codebaseContext: ContextItem[],
 ): Promise<string> {
   const allFiles = codebaseContext.map((file) => standardizePath(file.file));
@@ -198,6 +196,9 @@ export async function researchCodebase(
   );
 
   const codebase = JSON.stringify(relevantContext, null, 2);
+  const sourceMap = codebaseContext
+    .map((c) => `${c.file}: ${c.overview}`)
+    .join("\n");
 
   const codeResearchTemplateParams = {
     codebase,
@@ -362,4 +363,72 @@ export async function researchInternet(query: string): Promise<string> {
   );
 
   return result ?? "No response from the AI model.";
+}
+
+export async function getOrCreateResearchForProject(
+  projectId: number,
+  codebaseContext: ContextItem[],
+  shouldRefresh = false,
+): Promise<Research[]> {
+  try {
+    const gatheredInformation: Research[] = [];
+    const research = (await db.research.where({
+      todoId: 0,
+      issueId: 0,
+      projectId,
+    })) as Research[];
+    if (research?.length > 0 && !shouldRefresh) {
+      return research;
+    }
+    // if there is no todo with id 0, create a new todo
+    const todo = await db.todos.findByOptional({ id: 0 });
+    if (!todo) {
+      // if there is no project with id 0, create a new project
+      const project = await db.projects.findByOptional({ id: 0 });
+      if (!project) {
+        await db.projects.create({
+          repoFullName: "",
+          repoNodeId: "",
+          repoName: "",
+          id: 0,
+          // @ts-expect-error bigint
+          repoId: 0,
+        });
+      }
+      await db.todos.create({
+        name: "Project Level Research",
+        description: "Research the project as a whole",
+        id: 0,
+        status: TodoStatus.TODO,
+        projectId: 0,
+      });
+    }
+
+    for (const question of researchQuestions) {
+      const answer = await researchCodebase(
+        question,
+        "Project Level Research",
+        codebaseContext,
+      );
+
+      const research: Research = {
+        todoId: 0, // project level research is not associated with a todo
+        issueId: 0, // project level research is not associated with a issue
+        type: ResearchAgentActionType.ResearchCodebase,
+        question,
+        answer,
+        projectId,
+      };
+      gatheredInformation.push(research);
+      await db.research.create(research);
+    }
+
+    return gatheredInformation;
+  } catch (error) {
+    console.error(
+      `Error getting or creating research for project ${projectId}:`,
+      error,
+    );
+    return [];
+  }
 }
