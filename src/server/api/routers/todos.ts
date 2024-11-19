@@ -10,6 +10,7 @@ import { getCodebaseContext } from "../utils";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { type PlanStep } from "~/server/db/tables/planSteps.table";
 import { type BaseEventData } from "~/server/utils";
+import { getOrCreateResearchForProject } from "~/server/agent/research";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -270,4 +271,26 @@ export const todoRouter = createTRPCRouter({
         return evaluation;
       },
     ),
+
+  getProjectResearch: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number(),
+      }),
+    )
+    .query(async ({ input: { projectId } }) => {
+      const research = await db.research
+        .where({ todoId: 0, issueId: 0, projectId })
+        .all();
+
+      if (research.length === 0) {
+        const contextItems = await db.codebaseContext
+          .where({ projectId })
+          .all();
+
+        void getOrCreateResearchForProject(projectId, contextItems, false);
+      }
+
+      return research;
+    }),
 });
