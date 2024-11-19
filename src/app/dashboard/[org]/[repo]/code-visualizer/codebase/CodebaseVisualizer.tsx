@@ -8,12 +8,16 @@ import { type ContextItem } from "~/server/utils/codebaseContext";
 import { type FileType } from "./types";
 import SearchBar from "../../components/SearchBar";
 import { startsWithIgnoreCase, includesIgnoreCase } from "~/app/utils";
+import { api } from "~/trpc/react";
+import Research from "../../todos/components/Research";
+import LoadingIndicator from "../../components/LoadingIndicator";
 
 interface CodebaseVisualizerProps {
   contextItems: ContextItem[];
   theme: "light" | "dark";
   org: string;
   repo: string;
+  projectId?: number;
 }
 
 const HEADER_HEIGHT = 100;
@@ -25,6 +29,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   theme,
   org,
   repo,
+  projectId,
 }) => {
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
   const [currentPath, setCurrentPath] = useState<string[]>(["root"]);
@@ -32,7 +37,15 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   const [isMounted, setIsMounted] = useState(false);
   const [detailsWidth, setDetailsWidth] = useState(DETAILS_WIDTH);
   const [allFiles, setAllFiles] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<"folder" | "taxonomy">("folder");
+  const [viewMode, setViewMode] = useState<"folder" | "taxonomy" | "research">(
+    "folder",
+  );
+
+  const { data: researchItems, isLoading: isLoadingResearch } =
+    api.todos.getProjectResearch.useQuery(
+      { projectId: projectId ?? 0, org, repo },
+      { enabled: viewMode === "research" && !!projectId },
+    );
 
   useEffect(() => {
     setIsMounted(true);
@@ -91,7 +104,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
       } else {
         console.error("Item not found for path", path);
       }
-    } else {
+    } else if (viewMode === "taxonomy") {
       const folder = path
         .split("/")
         .filter(Boolean)
@@ -125,7 +138,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     setSelectedItem(null);
   };
 
-  const handleViewModeChange = (mode: "folder" | "taxonomy") => {
+  const handleViewModeChange = (mode: "folder" | "taxonomy" | "research") => {
     setViewMode(mode);
     setCurrentPath(["root"]);
     setSelectedItem(null);
@@ -152,7 +165,13 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-md border border-aurora-100/50 bg-transparent  shadow-lg dark:border-blueGray-900 dark:bg-blueGray-700">
-      <div className="flex w-full flex-1 flex-row overflow-hidden">
+      <div
+        className={`flex w-full flex-1 flex-row  ${
+          viewMode === "research"
+            ? "hide-scrollbar overflow-scroll"
+            : "overflow-hidden"
+        }`}
+      >
         <div className="flex w-full flex-col">
           <div className="flex h-12 w-full flex-row items-center justify-between bg-aurora-100/50 p-2 text-left dark:bg-blueGray-900/30">
             <div className="flex flex-grow items-center">
@@ -172,11 +191,13 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
             </div>
 
             <div className="relative mr-6 flex items-center justify-end">
-              <SearchBar
-                codebaseContext={contextItems}
-                onSelectResult={handleSearchResultSelect}
-                isDetailsExpanded={detailsWidth !== DETAILS_WIDTH}
-              />
+              {viewMode !== "research" && (
+                <SearchBar
+                  codebaseContext={contextItems}
+                  onSelectResult={handleSearchResultSelect}
+                  isDetailsExpanded={detailsWidth !== DETAILS_WIDTH}
+                />
+              )}
             </div>
             <div className="flex space-x-2">
               <button
@@ -199,40 +220,91 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               >
                 Architecture
               </button>
+              <button
+                className={`rounded px-3 py-1 text-sm ${
+                  viewMode === "research"
+                    ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                    : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                }`}
+                onClick={() => handleViewModeChange("research")}
+              >
+                Research
+              </button>
             </div>
           </div>
           <motion.div
             className="w-full py-8"
             initial={{ width: dimensions.width }}
             animate={{
-              width: selectedItem
-                ? `${dimensions.width * ((100 - detailsWidth) / 100)}px`
-                : `${dimensions.width}px`,
+              width:
+                selectedItem && viewMode !== "research"
+                  ? `${dimensions.width * ((100 - detailsWidth) / 100)}px`
+                  : `${dimensions.width}px`,
             }}
             transition={{ duration: 0.3 }}
           >
-            <Tree
-              data={treeData}
-              maxDepth={12}
-              colorEncoding="type"
-              filesChanged={[]}
-              customFileColors={{}}
-              onNodeClick={handleNodeClick}
-              width={
-                selectedItem
-                  ? dimensions.width * ((100 - detailsWidth) / 100)
-                  : dimensions.width
-              }
-              height={dimensions.height}
-              selectedItem={selectedItem}
-              selectedFolder={"/" + currentPath?.join("/")}
-              viewMode={viewMode}
-              theme={theme}
-            />
+            {viewMode === "research" ? (
+              <div className=" mx-auto max-w-5xl">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="rounded-lg bg-gradient-to-b from-sunset-50/70 to-50% p-6 shadow-md transition-all dark:from-sunset-800/30 dark:to-sunset-800/10"
+                >
+                  <h1 className="text-2xl font-bold">Research</h1>
+                  <p className="mb-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    JACoB dives into your codebase, analyzing structure, style,
+                    and patterns to deliver smarter suggestions and tailor-made
+                    solutions. It’s like having a teammate who already knows the
+                    ropes. Explore the examples below and click any file name to
+                    view the code in action.
+                  </p>
+                  {isLoadingResearch ? (
+                    <div className="flex items-center justify-center py-8">
+                      <LoadingIndicator />
+                    </div>
+                  ) : researchItems && researchItems.length > 0 ? (
+                    researchItems.map((item, index) => (
+                      <Research
+                        key={item.id}
+                        item={item}
+                        isLastItem={index === researchItems.length - 1}
+                      />
+                    ))
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Research items are being generated. Please check again
+                        in a few minutes.
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            ) : (
+              <Tree
+                data={treeData}
+                maxDepth={12}
+                colorEncoding="type"
+                filesChanged={[]}
+                customFileColors={{}}
+                onNodeClick={handleNodeClick}
+                width={
+                  selectedItem
+                    ? dimensions.width * ((100 - detailsWidth) / 100)
+                    : dimensions.width
+                }
+                height={dimensions.height}
+                selectedItem={selectedItem}
+                selectedFolder={"/" + currentPath?.join("/")}
+                viewMode={viewMode}
+                theme={theme}
+              />
+            )}
           </motion.div>
         </div>
         <AnimatePresence>
-          {selectedItem && (
+          {selectedItem && viewMode !== "research" && (
             <motion.div
               className={`hide-scrollbar w-[${dimensions.width * (detailsWidth / 100)}px] overflow-hidden`}
               initial={{ width: 0, opacity: 0 }}
@@ -270,7 +342,7 @@ function getCircleSize(text: string) {
 function processContextItems(
   contextItems: ContextItem[],
   currentPath: string[],
-  viewMode: "folder" | "taxonomy",
+  viewMode: "folder" | "taxonomy" | "research",
 ): FileType {
   const root: FileType = {
     name: currentPath[currentPath.length - 1] ?? "root",

@@ -139,11 +139,9 @@ vi.mock("../utils/codebaseContext", () => mockedContext);
 
 const mockedParseTemplate = vi.hoisted(() => ({
   parseTemplate: vi.fn().mockReturnValue("parsedTemplate"),
-  generateJacobBranchName: vi
-    .fn()
-    .mockImplementation(async (issueNumber, issueTitle, issueBody) => {
-      return `jacob-issue-${issueNumber}-12345`;
-    }),
+  generateJacobBranchName: vi.fn().mockImplementation(async (issueNumber) => {
+    return `jacob-issue-${issueNumber}-12345`;
+  }),
 }));
 vi.mock("../utils/index", async () => {
   const actual = await vi.importActual("../utils/index");

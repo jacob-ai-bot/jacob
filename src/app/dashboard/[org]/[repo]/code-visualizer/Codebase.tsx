@@ -13,6 +13,11 @@ interface CodebaseParams {
 const Codebase: React.FC<CodebaseParams> = ({ org, repo }) => {
   const { resolvedTheme } = useTheme();
 
+  const { data: project } = api.projects.getByOrgAndRepo.useQuery({
+    org,
+    repo,
+  });
+
   const { data: contextItems, isLoading } = api.codebaseContext.getAll.useQuery(
     {
       org,
@@ -59,6 +64,7 @@ const Codebase: React.FC<CodebaseParams> = ({ org, repo }) => {
         repo={repo}
         contextItems={contextItems}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
+        projectId={project?.id}
       />
     </Suspense>
   );
