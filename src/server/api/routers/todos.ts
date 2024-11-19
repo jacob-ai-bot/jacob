@@ -5,7 +5,7 @@ import { researchIssue } from "~/server/agent/research";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { type Todo } from "./events";
 import { cloneRepo } from "~/server/git/clone";
-import { evaluateIssue } from "~/server/utils/evaluateIssue";
+import { evaluateIssue, type Evaluation } from "~/server/utils/evaluateIssue";
 import { getCodebaseContext } from "../utils";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { type PlanStep } from "~/server/db/tables/planSteps.table";
@@ -213,6 +213,10 @@ export const todoRouter = createTRPCRouter({
         if (!todo) {
           throw new Error("Todo not found");
         }
+        // if we already have evaluation data, return it
+        if (todo.evaluationData) {
+          return todo.evaluationData as Evaluation;
+        }
 
         const planSteps = (await db.planSteps
           .where({ projectId: todo.projectId, issueNumber: todo.issueId ?? 0 })
@@ -256,6 +260,12 @@ export const todoRouter = createTRPCRouter({
           totalFiles: context.length,
           baseEventData,
         });
+
+        if (evaluation) {
+          await db.todos.find(todoId).update({
+            evaluationData: evaluation,
+          });
+        }
 
         return evaluation;
       },

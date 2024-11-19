@@ -98,10 +98,10 @@ Provide a comprehensive evaluation including:
 
 - Overall confidence score that an AI can successfully complete the task (0-5) using the provided rubric.
 - Breakdown of complexity factors.
-- Specific risk areas.
+- Specific risk areas. Don't overcomplicate, keep it concise and focused on risks that are common in a medium-sized codebase with a small team. Don't mention every single risk, just the most common ones. If there are none, just say so.
 - Approximate number of story points for a human developer to complete this task, specifying the skill set needed.
-- Recommendations for improving success probability.
-- Several sentences of feedback on how to improve the plan to get a better confidence score
+- Recommendations for improving success probability. Keep the recommendations concise and actionable, don't overcomplicate.
+- Several sentences of feedback on how to improve the plan to get a better confidence score. Again, keep it concise and actionable but don't make it complicated. If the plan is already good, just say so.
 - Red/Yellow/Green high-level indicator of the overall score.
 
 Use the following AI Coding Confidence Score Rubric to guide your evaluation:
@@ -121,7 +121,7 @@ Complexity Factors:
 Please provide your evaluation in the following JSON format:
 
 {
-  "confidenceScore": number,
+  "confidenceScore": number, // use half-point increments i.e. [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
   "complexityFactors": {
     "codeComplexity": "Low" | "Medium" | "High",
     "contextUnderstanding": "Low" | "Medium" | "High",
