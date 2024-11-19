@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       messagesWithoutToolInvocations as Message[],
     );
     // Initialize the stream using @ai-sdk/anthropic
-    const result = await streamText({
+    const result = streamText({
       model: groq(model.modelName),
       messages: coreMessages,
       system: systemPrompt,

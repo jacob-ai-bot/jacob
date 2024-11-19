@@ -1,7 +1,7 @@
 import { Role, type Message } from "~/types";
 import { type NextRequest } from "next/server";
 import { openai } from "@ai-sdk/openai";
-import { convertToCoreMessages, streamText, generateText } from "ai";
+import { convertToCoreMessages, streamText } from "ai";
 import { type ChatModel } from "~/app/dashboard/[org]/[repo]/chat/components/ModelSelector";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import {
@@ -141,11 +141,11 @@ export async function POST(req: NextRequest) {
     };
 
     if (isO1) {
-      const result = await generateText(o1Options);
-      return new Response(result.text);
+      const result = streamText(o1Options);
+      return result.toDataStreamResponse();
     } else {
       // Initialize the stream using @ai-sdk/openai
-      const result = await streamText(gptOptions);
+      const result = streamText(gptOptions);
       return result.toDataStreamResponse();
     }
   } catch (error) {

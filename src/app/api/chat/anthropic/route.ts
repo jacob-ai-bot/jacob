@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Initialize the stream using @ai-sdk/anthropic
-    const result = await streamText({
+    const result = streamText({
       model: anthropic(model.modelName, {
         cacheControl: true,
       }),
