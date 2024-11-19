@@ -30,13 +30,7 @@ export interface CodeFile {
   content?: string;
 }
 
-type MessageRole =
-  | "system"
-  | "user"
-  | "assistant"
-  | "function"
-  | "data"
-  | "tool";
+type MessageRole = "system" | "user" | "assistant" | "data";
 
 const STARTING_MESSAGE = {
   id: "1",
@@ -194,7 +188,7 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
         </div>
         <div className="hide-scrollbar mb-4 flex-1 overflow-y-auto">
           {messages
-            .filter((m) => m.role !== "tool")
+            .filter((m) => m.role !== "data")
             .filter((m) => m.content.length > 0)
             .map((m: Message, index: number) => (
               <ChatMessage
