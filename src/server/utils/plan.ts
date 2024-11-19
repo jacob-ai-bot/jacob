@@ -54,7 +54,6 @@ export const getOrGeneratePlan = async ({
     throw new Error("Error generating plan, missing project or issue id");
   }
   try {
-    // Check to see if the plan has already been generated
     const planSteps = await db.planSteps
       .where({
         projectId,
@@ -73,7 +72,6 @@ export const getOrGeneratePlan = async ({
       };
     }
 
-    // Get research data
     const todo = await db.todos.findByOptional({ projectId, issueId });
     if (!todo) {
       throw new Error(
@@ -103,13 +101,10 @@ export const getOrGeneratePlan = async ({
       );
     }
 
-    // If feedback is provided, the user was not happy with the previous plan,
-    // so we'll provide more details in the codebase context to help generate a better (but more expensive) plan.
     const codebaseContext = contextItems
       ?.map((item) => `${item.file}: ${feedback ? item.text : item.overview}`)
       .join("\n");
 
-    // find all the files that are mentioned in the research and get the full code for those files
     const mentionedFiles = researchQuestions
       .map((item) => item.answer)
       .join("\n");
@@ -117,14 +112,12 @@ export const getOrGeneratePlan = async ({
       mentionedFiles.includes(item.file),
     );
 
-    // get the full code for the mentioned files
     const mentionedFilesCode = getFiles(
       rootPath,
       relevantCodebaseContext?.map((c) => c.file),
       true,
     );
 
-    // Generate a plan using o1-mini
     const o1Prompt = `Generate a plan for writing code to resolve the specified Github issue using the provided codebase information.
 
 Below is the context and detailed steps to guide the process.
@@ -239,7 +232,6 @@ Below is the context and detailed steps to guide the process.
   \`\`\`
   `;
     let o1Plan: string | null = null;
-    // plans have been getting flagged as harmful, so we'll try a few times with different models
     try {
       o1Plan = await sendGptRequest(
         o1Prompt,
@@ -255,7 +247,6 @@ Below is the context and detailed steps to guide the process.
     } catch (error) {
       console.error("Error generating plan:", error);
       try {
-        // try to generate the plan using claude
         o1Plan = await sendGptRequest(
           o1Prompt,
           `Generate a plan for the following issue: ${githubIssue}`,
@@ -268,7 +259,6 @@ Below is the context and detailed steps to guide the process.
         );
       } catch (error) {
         console.error("Error generating plan using claude:", error);
-        // if that fails, try to generate the plan using gemini
         o1Plan = await sendGptRequest(
           o1Prompt,
           `Generate a plan for the following issue: ${githubIssue}`,
@@ -293,8 +283,6 @@ Below is the context and detailed steps to guide the process.
       JSON.stringify(structuredPlan, null, 2),
       "\n\n\n\n\n",
     );
-    // review the plan and convert the filePath to a standardized path
-    // if the filePath is not a valid standardized path, skip the step
     const validSteps = structuredPlan.steps
       .filter((step) => {
         const standardizedPath = standardizePath(step.filePath);
@@ -302,19 +290,16 @@ Below is the context and detailed steps to guide the process.
           return false;
         }
 
-        // If the step is to edit an existing file, check that it is a valid existing file
         if (step.type === PlanningAgentActionType.EditExistingCode) {
           if (!isValidExistingFile(standardizedPath, rootPath)) {
             return false;
           }
         }
 
-        // If the step is to create a new file, check that it is a valid new file name
         if (step.type === PlanningAgentActionType.CreateNewCode) {
           if (!isValidNewFileName(standardizedPath)) {
             return false;
           }
-          // check that the file does not already exist, if it does change the type to EditExistingCode
           if (isValidExistingFile(standardizedPath, rootPath)) {
             step.type = PlanningAgentActionType.EditExistingCode;
           }
@@ -329,7 +314,6 @@ Below is the context and detailed steps to guide the process.
         };
       });
 
-    // Save the plan to the database
     for (const step of validSteps) {
       await db.planSteps.create({
         ...step,
@@ -346,7 +330,6 @@ Below is the context and detailed steps to guide the process.
   }
 };
 
-// Function to extract issue information
 const getStructuredPlan = async (o1Plan: string): Promise<Plan> => {
   const systemPrompt = `You are part of an advanced AI coding assistant designed to convert detailed plans for resolving Github issues into a structured plan object.
   
@@ -403,5 +386,168 @@ Your response MUST adhere EXACTLY to the PlanSchema schema provided.
   } catch (error) {
     console.error("Error creating structured plan:", error);
     return { steps: [] };
+  }
+};
+
+interface GenerateBugfixPlanParams {
+  githubIssue: string;
+  rootPath: string;
+  contextItems?: ContextItem[];
+  errors: string[];
+}
+
+export const generateBugfixPlan = async ({
+  githubIssue,
+  rootPath,
+  contextItems,
+  errors,
+}: GenerateBugfixPlanParams): Promise<Plan> => {
+  try {
+    if (!contextItems) {
+      const allFiles = traverseCodebase(rootPath);
+      contextItems = await getOrCreateCodebaseContext(0, rootPath, allFiles);
+    }
+
+    const codebaseContext = contextItems
+      ?.map((item) => `${item.file}: ${item.overview}`)
+      .join("\n");
+
+    const bugfixPrompt = `Generate a plan for fixing the specified errors in the codebase.
+
+Below is the context and error information to guide the process.
+
+## Context
+
+- **Codebase Context**: A collection of files and their relevant information to aid in understanding the approach and examples.
+  \`\`\`
+  <codebase-context>${codebaseContext}</codebase-context>
+  \`\`\`
+
+- **Errors**: The errors that need to be fixed in the codebase.
+  \`\`\`
+  <errors>${errors.join("\n")}</errors>
+  \`\`\`
+  
+- **Github Issue**: The issue that describes the errors and context.
+  \`\`\`
+  <issue>${githubIssue}</issue>
+  \`\`\`
+
+## Guidelines
+
+- Break down the plan into a series of distinct steps, focusing on fixing the identified errors.
+- Each step should be a clear and concise instruction to modify an existing file or create a new file to fix a specific error.
+- All modifications to a file should be specified in a single step.
+- Clearly identify exact files to modify or specify relative file paths and names with extensions for new files to be created.
+- Minimize the extent of file modifications and limit the number of new files.
+- Focus on fixing the errors while maintaining existing functionality.
+- Avoid writing actual code snippets or making assumptions outside the provided codebase information.
+
+# Output Format
+
+Produce a JSON formatted list where each step is defined as an object. Each object should adhere to one of two types of planned actions:
+
+Step 1. **EditExistingCode**:
+
+   \`\`\`json
+   {
+     "type": "EditExistingCode",
+     "title": "[Concise description of the error fix]",
+     "instructions": "[Clear detailed instructions for fixing the error]",
+     "filePath": "[Relative file path of the file to be modified]",
+     "exitCriteria": "[How to verify the error is fixed]"
+   }
+   \`\`\`
+
+Step 2. **CreateNewCode**:
+
+   \`\`\`json
+   {
+     "type": "CreateNewCode",
+     "title": "[Concise description of the new file needed]",
+     "instructions": "[Detailed instructions for the new file's functionality]",
+     "filePath": "[Relative file path for new file creation]",
+     "exitCriteria": "[How to verify the new file resolves the error]"
+   }
+   \`\`\``;
+
+    let bugfixPlan: string | null = null;
+    try {
+      bugfixPlan = await sendGptRequest(
+        bugfixPrompt,
+        "",
+        1,
+        undefined,
+        3,
+        60000,
+        null,
+        "o1-preview-2024-09-12",
+      );
+    } catch (error) {
+      console.error("Error generating bugfix plan:", error);
+      try {
+        bugfixPlan = await sendGptRequest(
+          bugfixPrompt,
+          `Generate a plan for fixing the following errors: ${errors.join("\n")}`,
+          1,
+          undefined,
+          3,
+          60000,
+          null,
+          "claude-3-5-sonnet-20241022",
+        );
+      } catch (error) {
+        console.error("Error generating bugfix plan using claude:", error);
+        bugfixPlan = await sendGptRequest(
+          bugfixPrompt,
+          `Generate a plan for fixing the following errors: ${errors.join("\n")}`,
+          1,
+          undefined,
+          3,
+          60000,
+          null,
+          "gemini-1.5-pro-latest",
+        );
+      }
+    }
+
+    if (!bugfixPlan) {
+      throw new Error("Error generating bugfix plan, no plan generated");
+    }
+
+    const structuredPlan = await getStructuredPlan(bugfixPlan);
+    const validSteps = structuredPlan.steps
+      .filter((step) => {
+        const standardizedPath = standardizePath(step.filePath);
+        if (standardizedPath === "") {
+          return false;
+        }
+
+        if (step.type === PlanningAgentActionType.EditExistingCode) {
+          if (!isValidExistingFile(standardizedPath, rootPath)) {
+            return false;
+          }
+        }
+
+        if (step.type === PlanningAgentActionType.CreateNewCode) {
+          if (!isValidNewFileName(standardizedPath)) {
+            return false;
+          }
+          if (isValidExistingFile(standardizedPath, rootPath)) {
+            step.type = PlanningAgentActionType.EditExistingCode;
+          }
+        }
+
+        return true;
+      })
+      .map((step) => ({
+        ...step,
+        filePath: standardizePath(step.filePath),
+      }));
+
+    return { steps: validSteps };
+  } catch (error) {
+    console.error("Error in generateBugfixPlan:", error);
+    throw error;
   }
 };

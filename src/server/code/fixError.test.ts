@@ -102,6 +102,21 @@ const mockedAssessBuildError = vi.hoisted(() => ({
 }));
 vi.mock("./assessBuildError", () => mockedAssessBuildError);
 
+const mockedPlan = vi.hoisted(() => ({
+  generateBugfixPlan: vi.fn().mockResolvedValue({
+    steps: [
+      {
+        type: "EditExistingCode",
+        title: "Fix error in file.txt",
+        instructions: "Update code to fix the error",
+        filePath: "src/file.txt",
+        exitCriteria: "Error should be resolved",
+      },
+    ],
+  }),
+}));
+vi.mock("../utils/plan", () => mockedPlan);
+
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
 describe("fixError", () => {
@@ -147,6 +162,16 @@ describe("fixError", () => {
       sourceMap: "source map",
     });
 
+    expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledTimes(1);
+    expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledWith({
+      projectId: mockEventData.projectId,
+      errors: "build-error-info\n\n",
+      sourceMap: "source map",
+      types: "types",
+      images: "images",
+      assessment: expect.any(Object),
+    });
+
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenLastCalledWith(
       "/rootpath",
@@ -158,18 +183,7 @@ describe("fixError", () => {
     );
 
     expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(2);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const systemPrompt = mockedRequest.sendGptRequest.mock.calls[1]![1];
-    expect(systemPrompt).toContain("## Types\ntypes\n");
-    expect(systemPrompt).toContain(
-      "## Source Map (this is a map of the codebase, you can use it to find the correct files/functions to import. It is NOT part of the task!)\nsource map\n## END Source Map\n",
-    );
-    expect(systemPrompt).toContain(
-      '## Code\nThe code that needs to be updated is a file called "code.txt":\n\n__FILEPATH__file.txt__\ncode-with-error\n',
-    );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const eventData = mockedRequest.sendGptRequest.mock.calls[1]![3];
-    expect(eventData).toEqual(mockEventData);
+    expect(mockedRequest.countTokens).toHaveBeenCalledTimes(1);
 
     expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
     expect(mockedFiles.reconstructFiles).toHaveBeenLastCalledWith(
@@ -188,11 +202,38 @@ describe("fixError", () => {
     expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
     const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
     const checkAndCommitOptions =
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       checkAndCommitCalls[0]![0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
       "JACoB fix error: something went wrong",
     );
     expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(2);
+  });
+
+  test("fixError handles lengthy plans", async () => {
+    const prIssue = issueCommentCreatedPRCommandFixErrorPayload.issue as Issue;
+    const mockEventData = {
+      projectId: 1,
+      repoFullName: "test-login/test-repo",
+      userId: "test-user",
+    };
+
+    mockedRequest.countTokens.mockResolvedValueOnce(90000);
+
+    await fixError({
+      ...mockEventData,
+      repository: {
+        owner: { login: "test-login" },
+        name: "test-repo",
+      } as Repository,
+      token: "token",
+      prIssue,
+      body: "## Error Message (Attempt Number 2):\n```\nbuild-error-info\n\n```\n## Something else\n\n",
+      rootPath: "/rootpath",
+      branch: "jacob-issue-48-test",
+      existingPr: { number: 48 } as PullRequest,
+    });
+
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(3);
+    expect(mockedRequest.countTokens).toHaveBeenCalledTimes(1);
   });
 });
