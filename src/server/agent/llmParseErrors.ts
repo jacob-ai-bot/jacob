@@ -1,5 +1,6 @@
 import { sendGptRequestWithSchema } from "~/server/openai/request";
 import { z } from "zod";
+import { standardizePath } from "~/app/utils";
 
 export type ErrorInfo = {
   filePath: string;
@@ -91,9 +92,16 @@ export async function parseBuildErrors(
       "gpt-4-turbo-2024-04-09",
     )) as ParsedErrors;
     const errors = parsedErrors.errors;
+    // convert the error files to standardize paths
+    const standardizedErrors = errors
+      .filter((error) => error.filePath !== null)
+      .map((error) => ({
+        ...error,
+        filePath: standardizePath(error.filePath ?? ""),
+      }));
 
     console.log("Parsed errors:", errors);
-    return errors as ErrorInfo[];
+    return standardizedErrors as ErrorInfo[];
   } catch (error) {
     console.error("Error parsing build errors:", error);
     return [];

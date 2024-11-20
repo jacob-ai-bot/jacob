@@ -91,7 +91,7 @@ type NpmAssessment = z.infer<typeof NpmAssessmentSchema>;
  * @param projectContext - The context of the project, including paths and settings.
  * @returns A boolean indicating whether any packages were installed.
  */
-async function assessAndInstallNpmPackages(
+export async function assessAndInstallNpmPackages(
   buildErrors: string,
   projectContext: ProjectContext,
 ): Promise<boolean> {
@@ -138,6 +138,39 @@ async function assessAndInstallNpmPackages(
   }
 
   return false;
+}
+
+/**
+ * Executes the build process and returns an array of build errors.
+ * If the build is successful, it returns an empty array.
+ *
+ * @param projectContext - The context of the project, including paths and settings.
+ * @returns An array of `ErrorInfo` objects representing the build errors.
+ */
+export async function getBuildErrors(
+  projectContext: ProjectContext,
+): Promise<ErrorInfo[]> {
+  console.log("Starting build process to capture errors");
+
+  const { rootPath, baseEventData, repoSettings } = projectContext;
+
+  try {
+    await runBuildCheck({
+      ...baseEventData,
+      path: rootPath,
+      afterModifications: true,
+      repoSettings,
+    });
+    console.log("Build successful, no errors to report");
+    return [];
+  } catch (error) {
+    const buildErrors = (error as Error).message;
+    console.log("Build failed with errors:", buildErrors);
+
+    // Parse the build errors into structured ErrorInfo objects
+    const errors = await parseBuildErrors(buildErrors);
+    return errors;
+  }
 }
 
 /**

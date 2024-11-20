@@ -419,33 +419,24 @@ Your response MUST adhere EXACTLY to the PlanSchema schema provided.
 export const generateBugfixPlan = async ({
   githubIssue,
   rootPath,
-  contextItems,
+  code,
   errors,
 }: {
   githubIssue: string;
   rootPath: string;
-  contextItems?: ContextItem[];
+  code: string;
   errors: string[];
 }): Promise<Plan> => {
   try {
-    if (!contextItems) {
-      const allFiles = traverseCodebase(rootPath);
-      contextItems = await getOrCreateCodebaseContext(0, rootPath, allFiles);
-    }
-
-    const codebaseContext = contextItems
-      ?.map((item) => `${item.file}: ${item.overview}`)
-      .join("\n");
-
-    const bugfixPrompt = `Generate a plan for fixing the specified errors in the codebase.
+    const bugfixPrompt = `Generate a plan for fixing the specified errors or type issues in the Pull Request.
 
 Below is the context and detailed information to guide the process.
 
 ## Context
 
-- **Codebase Context**: A collection of files and their relevant information to aid in understanding the approach and examples.
+- **Code**: The code that was modified in the Pull Request.
   \`\`\`
-  <codebase-context>${codebaseContext}</codebase-context>
+  <code>${code}</code>
   \`\`\`
 
 - **Errors**: The specific errors that need to be fixed.
@@ -466,7 +457,11 @@ Below is the context and detailed information to guide the process.
 - Clearly identify exact files to modify or specify relative file paths.
 - Minimize the extent of file modifications and limit the number of new files.
 - Focus exclusively on fixing the errors, excluding tests or documentation unless specified. DO NOT make any other changes to the codebase, such as removing comments or fixing other errors.
+- DO NOT make any changes to the codebase that are not related to the errors or type issues.
+- If there is a type error, note that the AI agent fixing the error will have access to a list of types in the codebase. You do not need to be overly specific about how to fix the type error, just that it should be fixed.
+- Never suggest fixing an error by deleting or commenting out the code containing the error! If you don't know how to fix the error, just note that it should be fixed.
 - Avoid writing actual code snippets or making assumptions outside the provided codebase information.
+- Note that although you have options to edit files and create new files, almost all errors can be fixed by editing existing files. You should very rarely need to create a new file, if ever.
 
 # Output Format
 
@@ -488,7 +483,7 @@ Step 2. **CreateNewCode**:
 
    \`\`\`json
    {
-     "type": "CreateNewCode",
+     "type": "CreateNewCode", // NOTE: This will rarely be used, but it is here for completeness
      "title": "[Concise description of the new file needed]",
      "instructions": "[Detailed instructions for the new file's functionality]",
      "filePath": "[Relative file path for new file]",
