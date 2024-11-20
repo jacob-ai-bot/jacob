@@ -177,7 +177,7 @@ export default function Settings({
   };
 
   return (
-    <div className="relative h-full w-full text-left dark:bg-slate-900 dark:text-white ">
+    <div className="relative h-full w-full text-left dark:bg-slate-900 dark:text-white">
       <div className="mx-auto w-full max-w-lg rounded-lg bg-aurora-100/50 p-8 dark:bg-slate-800/50">
         <div className="absolute right-4 top-4">
           <SignOutButton callbackUrl="/" />

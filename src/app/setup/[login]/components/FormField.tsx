@@ -37,7 +37,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
   return (
     <div className={`flex w-full flex-col justify-center ${className}`}>
-      <div className="flex items-center space-x-1 ">
+      <div className="flex items-center space-x-1">
         <label htmlFor={inputId} className={labelClasses}>
           {label}
         </label>

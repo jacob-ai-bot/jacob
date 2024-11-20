@@ -150,7 +150,7 @@ export function Artifact({
               exit={{ opacity: 0 }}
               className="h-full overflow-auto bg-gray-50 dark:bg-[#282c34]"
             >
-              <MarkdownRenderer className={`markdown-chat `}>
+              <MarkdownRenderer className={`markdown-chat`}>
                 {`\`\`\`${language}\n${content ?? originalContent}\n\`\`\``}
               </MarkdownRenderer>
             </motion.div>

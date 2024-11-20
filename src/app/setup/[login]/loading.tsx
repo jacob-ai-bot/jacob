@@ -15,7 +15,7 @@ const Loading = () => {
           properly. To speed up this process, we&apos;re reviewing your code and
           creating a first draft of your project configuration...
         </p>
-        <div className="mt-6 flex flex-row items-center justify-center  space-x-2">
+        <div className="mt-6 flex flex-row items-center justify-center space-x-2">
           <div className="h-8 w-8 animate-bounce rounded-full bg-aurora-500 [animation-delay:-0.3s]"></div>
           <div className="h-8 w-8 animate-bounce rounded-full bg-blossom-500 [animation-delay:-0.15s]"></div>
           <div className="h-8 w-8 animate-bounce rounded-full bg-sunset-500"></div>

@@ -48,7 +48,7 @@ function FinishedPage() {
           >
             Install Figma Plugin
           </a>{" "}
-          <h2 className="mb-2  text-lg text-dark-blue">Starter Files</h2>
+          <h2 className="mb-2 text-lg text-dark-blue">Starter Files</h2>
           <div className="mb-2 flex items-center">
             <div className="flex h-6 w-6 items-center justify-center">
               <img

@@ -17,7 +17,7 @@ export default function Error({ error }: { error: Error & { code: string } }) {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-dark-blue ">
+    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-dark-blue">
       <div className="max-w-2xl rounded-lg bg-white/30 px-6 py-8 shadow-md">
         <h1 className="mb-4 text-4xl font-bold text-white">
           Oops! Something went wrong.

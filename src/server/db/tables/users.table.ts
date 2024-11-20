@@ -1,3 +1,4 @@
+import type { Selectable } from "orchid-orm";
 import { BaseTable } from "../baseTable";
 import { UserRole, OnboardingStatus } from "../enums";
 
@@ -6,6 +7,8 @@ const ONBOARDING_STATUS_VALUES = Object.values(OnboardingStatus) as [
   OnboardingStatus,
   ...OnboardingStatus[],
 ];
+
+export type User = Selectable<UsersTable>;
 
 export class UsersTable extends BaseTable {
   readonly table = "users";

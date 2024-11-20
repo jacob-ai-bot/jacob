@@ -39,10 +39,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             {results.slice(0, 10).map((result, index) => (
               <motion.li
                 key={index}
-                className={`flex w-full flex-1 cursor-pointer flex-col p-3 pb-2 hover:bg-aurora-100/50 dark:hover:bg-gray-700
-                    ${index === 0 ? "rounded-t-md pt-5" : ""}
-                    ${index === results.length - 1 ? "rounded-b-md" : ""}
-                    ${index % 2 === 0 ? "bg-aurora-50/30" : ""}`}
+                className={`flex w-full flex-1 cursor-pointer flex-col p-3 pb-2 hover:bg-aurora-100/50 dark:hover:bg-gray-700 ${index === 0 ? "rounded-t-md pt-5" : ""} ${index === results.length - 1 ? "rounded-b-md" : ""} ${index % 2 === 0 ? "bg-aurora-50/30" : ""}`}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 onClick={() => onSelect(result.file)}

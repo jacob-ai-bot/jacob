@@ -164,9 +164,9 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-md border border-aurora-100/50 bg-transparent  shadow-lg dark:border-blueGray-900 dark:bg-blueGray-700">
+    <div className="flex h-full flex-col overflow-hidden rounded-md border border-aurora-100/50 bg-transparent shadow-lg dark:border-blueGray-900 dark:bg-blueGray-700">
       <div
-        className={`flex w-full flex-1 flex-row  ${
+        className={`flex w-full flex-1 flex-row ${
           viewMode === "research"
             ? "hide-scrollbar overflow-scroll"
             : "overflow-hidden"

@@ -32,7 +32,7 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
   onRefresh,
 }) => {
   return (
-    <div className="flex w-full  justify-between bg-white px-4 py-2 dark:bg-gray-800">
+    <div className="flex w-full justify-between bg-white px-4 py-2 dark:bg-gray-800">
       <div className="flex w-full flex-1 items-center">
         <label className="mr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           Live Updates

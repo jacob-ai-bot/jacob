@@ -264,7 +264,7 @@ const Setup: React.FC<SetupProps> = ({
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full space-y-8  p-8">
+        <form onSubmit={handleSubmit} className="w-full space-y-8 p-8">
           {renderSection(
             "Basic Settings",
             "basic",

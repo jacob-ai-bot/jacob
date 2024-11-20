@@ -46,7 +46,7 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
           Total Spending: ${totalSpending.toFixed(2)}
         </p>
       </div>
-      <div className="overflow-hidden rounded-lg border border-aurora-500/30 bg-neutral-50  dark:border-aurora-600/30 dark:bg-gray-800">
+      <div className="overflow-hidden rounded-lg border border-aurora-500/30 bg-neutral-50 dark:border-aurora-600/30 dark:bg-gray-800">
         <div className="hide-scrollbar overflow-auto">
           <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
             <thead className="bg-gray-100 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
@@ -122,7 +122,7 @@ export const PromptsComponent: React.FC<ComponentProps> = ({
                   <div className="absolute right-0 top-0 pr-4 pt-4">
                     <button
                       type="button"
-                      className="rounded-md  text-gray-400 hover:text-gray-500 focus:outline-none dark:bg-gray-800 dark:text-gray-500 dark:hover:text-gray-400"
+                      className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none dark:bg-gray-800 dark:text-gray-500 dark:hover:text-gray-400"
                       onClick={closePanel}
                     >
                       <span className="sr-only">Close</span>
