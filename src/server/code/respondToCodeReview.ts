@@ -26,6 +26,25 @@ export interface RespondToCodeReviewParams extends BaseEventData {
   reviewBody: string | null;
 }
 
+interface CodeReviewTemplateParams {
+  sourceMap: string;
+  types: string;
+  images: string;
+  code: string;
+  reviewBody: string;
+  reviewAction: string;
+  commentsOnSpecificLines: string;
+  step: {
+    type: string;
+    title: string;
+    instructions: string;
+    filePath: string;
+    exitCriteria?: string;
+    dependencies?: string;
+  };
+  [key: string]: unknown;
+}
+
 export async function respondToCodeReview(params: RespondToCodeReviewParams) {
   const {
     repository,
@@ -84,7 +103,7 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
   });
 
   for (const step of plan.steps) {
-    const codeTemplateParams = {
+    const codeTemplateParams: CodeReviewTemplateParams = {
       sourceMap,
       types,
       images,

@@ -722,12 +722,3 @@ Step 2. **CreateNewCode**:
       })
       .map((step) => ({
         ...step,
-        filePath: standardizePath(step.filePath),
-      }));
-
-    return { steps: validSteps };
-  } catch (error) {
-    console.error("Error in generateCodeReviewPlan:", error);
-    throw error;
-  }
-};
