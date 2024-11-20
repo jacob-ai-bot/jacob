@@ -255,9 +255,9 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                   <p className="mb-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
                     JACoB dives into your codebase, analyzing structure, style,
                     and patterns to deliver smarter suggestions and tailor-made
-                    solutions. It's like having a teammate who already knows the
-                    ropes. Explore the examples below and click any file name to
-                    view the code in action.
+                    solutions. It&apos;s like having a teammate who already
+                    knows the ropes. Explore the examples below and click any
+                    file name to view the code in action.
                   </p>
                   {isLoadingResearch ? (
                     <div className="flex items-center justify-center py-8">
