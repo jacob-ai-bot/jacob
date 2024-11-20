@@ -352,7 +352,7 @@ describe("checkAndCommit", () => {
       branch: "jacob-issue-48-test",
       issue,
       commitMessage: "test-commit-message",
-      buildErrorAttemptNumber: 1,
+      buildErrorAttemptNumber: 0,
       existingPr: {
         number: 48,
         node_id: "PR_nodeid",
@@ -390,7 +390,7 @@ describe("checkAndCommit", () => {
         "## Next Steps\n\n" +
         "I am working to resolve an error. I will update this PR with my progress.\n" +
         "@jacob-ai-bot fix error\n\n" +
-        "## Error Message (Attempt Number 2):\n```\n" +
+        "## Error Message:\n```\n" +
         fakeBuildError +
         "\n```",
     );
