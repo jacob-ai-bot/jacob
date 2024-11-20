@@ -27,6 +27,7 @@ export class UsersTable extends BaseTable {
     onboardingStatus: t
       .enum("onboarding_status", ONBOARDING_STATUS_VALUES)
       .default(OnboardingStatus.NONE),
+    dashboardEnabled: t.boolean().default(false),
     ...t.timestamps(),
   }));
 }
