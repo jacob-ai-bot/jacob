@@ -465,7 +465,7 @@ Below is the context and detailed information to guide the process.
 - All modifications to fix a specific error should be specified in a single step.
 - Clearly identify exact files to modify or specify relative file paths.
 - Minimize the extent of file modifications and limit the number of new files.
-- Focus exclusively on fixing the errors, excluding tests or documentation unless specified.
+- Focus exclusively on fixing the errors, excluding tests or documentation unless specified. DO NOT make any other changes to the codebase, such as removing comments or fixing other errors.
 - Avoid writing actual code snippets or making assumptions outside the provided codebase information.
 
 # Output Format

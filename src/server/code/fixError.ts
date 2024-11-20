@@ -23,6 +23,7 @@ import {
   sendGptRequest,
 } from "../openai/request";
 import { generateBugfixPlan } from "../utils/plan";
+import { type PlanStep } from "../agent/plan";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -64,6 +65,8 @@ async function processStepIndividually(
     model,
   } = params;
 
+  const stepString = JSON.stringify(step);
+
   const codeTemplateParams = {
     code,
     issueBody,
@@ -71,7 +74,7 @@ async function processStepIndividually(
     sourceMap,
     types,
     images,
-    step,
+    step: stepString,
   };
 
   const codeSystemPrompt = parseTemplate(
@@ -194,12 +197,10 @@ export async function fixError(params: FixErrorParams) {
 
       const { errors } = assessment;
 
-      const errorMessages = errors
-        ?.map(
-          ({ filePath, startingLineNumber, endingLineNumber, error, code }) =>
-            `Error in ${filePath} (${startingLineNumber}-${endingLineNumber}): ${error}. Code: ${code}`,
-        )
-        .join("\n");
+      const errorMessages = errors?.map(
+        ({ filePath, startingLineNumber, endingLineNumber, error, code }) =>
+          `Error in ${filePath} (${startingLineNumber}-${endingLineNumber}): ${error}. Code: ${code}`,
+      );
 
       const types = getTypes(rootPath, repoSettings);
       const images = await getImages(rootPath, repoSettings);
@@ -211,11 +212,9 @@ export async function fixError(params: FixErrorParams) {
       }
 
       const plan = await generateBugfixPlan({
-        projectId: baseEventData.projectId,
-        issueId: issue?.number ?? 0,
         githubIssue: issue?.body ?? "",
         rootPath,
-        errorMessages,
+        errors: errorMessages,
       });
 
       let updatedCode: string;
@@ -225,7 +224,7 @@ export async function fixError(params: FixErrorParams) {
             processStepIndividually(step, {
               code,
               issueBody: issue?.body ?? "",
-              errorMessages,
+              errorMessages: errorMessages?.join("\n") ?? "",
               sourceMap,
               types,
               images,
@@ -240,7 +239,7 @@ export async function fixError(params: FixErrorParams) {
         const codeTemplateParams = {
           code,
           issueBody: issue?.body ?? "",
-          errorMessages,
+          errorMessages: errorMessages?.join("\n") ?? "",
           sourceMap,
           types,
           images,

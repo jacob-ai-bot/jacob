@@ -164,12 +164,11 @@ describe("fixError", () => {
 
     expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledTimes(1);
     expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledWith({
-      projectId: mockEventData.projectId,
-      errors: "build-error-info\n\n",
-      sourceMap: "source map",
-      types: "types",
-      images: "images",
-      filesToUpdate: ["src/file.txt"],
+      errors: [
+        "Error in src/file.txt (1-5): something went wrong. Code: change some code",
+      ],
+      githubIssue: "body",
+      rootPath: "/rootpath",
     });
 
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
@@ -182,7 +181,7 @@ describe("fixError", () => {
       ["src/file.txt"],
     );
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(2);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     expect(mockedRequest.countTokens).toHaveBeenCalledTimes(1);
 
     expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
@@ -233,7 +232,7 @@ describe("fixError", () => {
       existingPr: { number: 48 } as PullRequest,
     });
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(3);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
     expect(mockedRequest.countTokens).toHaveBeenCalledTimes(1);
   });
 });
