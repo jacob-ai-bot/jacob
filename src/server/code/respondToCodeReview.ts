@@ -9,6 +9,7 @@ import { sendGptRequest } from "../openai/request";
 import { getPRReviewComments, concatenatePRFiles } from "../github/pr";
 import { checkAndCommit } from "./checkAndCommit";
 import { emitCodeEvent } from "~/server/utils/events";
+import { generateCodeReviewPlan } from "../utils/plan";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -71,49 +72,64 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
     existingPr.number,
   );
 
-  const respondToCodeReviewTemplateParams = {
+  const plan = await generateCodeReviewPlan({
+    githubIssue: reviewBody ?? "",
+    rootPath,
+    commentsOnSpecificLines,
+    reviewBody: reviewBody ?? "",
+    code,
     sourceMap,
     types,
     images,
-    code,
-    reviewBody: reviewBody ?? "",
-    reviewAction:
-      state === "changes_requested" ? "requested changes" : "commented",
-    commentsOnSpecificLines,
-  };
+  });
 
-  const responseToCodeReviewSystemPrompt = parseTemplate(
-    "dev",
-    "code_respond_to_code_review",
-    "system",
-    respondToCodeReviewTemplateParams,
-  );
-  const responseToCodeReviewUserPrompt = parseTemplate(
-    "dev",
-    "code_respond_to_code_review",
-    "user",
-    respondToCodeReviewTemplateParams,
-  );
+  for (const step of plan.steps) {
+    const codeTemplateParams = {
+      sourceMap,
+      types,
+      images,
+      code,
+      reviewBody: reviewBody ?? "",
+      reviewAction:
+        state === "changes_requested" ? "requested changes" : "commented",
+      commentsOnSpecificLines,
+      step,
+    };
 
-  // Call sendGptRequest with the review text and concatenated code file
-  const updatedCode =
-    (await sendGptRequest(
-      responseToCodeReviewUserPrompt,
-      responseToCodeReviewSystemPrompt,
-      0.2,
-      baseEventData,
-    )) ?? "";
+    const codeSystemPrompt = parseTemplate(
+      "dev",
+      "code_respond_to_code_review",
+      "system",
+      codeTemplateParams,
+    );
+    const codeUserPrompt = parseTemplate(
+      "dev",
+      "code_respond_to_code_review",
+      "user",
+      codeTemplateParams,
+    );
 
-  if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
-    console.log(`[${repository.full_name}] code`, code);
-    console.log(`[${repository.full_name}] No code generated. Exiting...`);
-    throw new Error("No code generated");
+    const updatedCode =
+      (await sendGptRequest(
+        codeUserPrompt,
+        codeSystemPrompt,
+        0.2,
+        baseEventData,
+        3,
+        60000,
+      )) ?? "";
+
+    if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
+      console.log(`[${repository.full_name}] code`, code);
+      console.log(`[${repository.full_name}] No code generated. Exiting...`);
+      throw new Error("No code generated");
+    }
+
+    const files = reconstructFiles(updatedCode, rootPath);
+    await Promise.all(
+      files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
+    );
   }
-
-  const files = reconstructFiles(updatedCode, rootPath);
-  await Promise.all(
-    files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
-  );
 
   await checkAndCommit({
     ...baseEventData,
