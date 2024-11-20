@@ -244,20 +244,20 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
             transition={{ duration: 0.3 }}
           >
             {viewMode === "research" ? (
-              <div className=" mx-auto max-w-5xl">
+              <div className="mx-auto w-full px-4 sm:max-w-xl md:max-w-3xl lg:max-w-5xl">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="rounded-lg bg-gradient-to-b from-sunset-50/70 to-50% p-6 shadow-md transition-all dark:from-sunset-800/30 dark:to-sunset-800/10"
+                  className="rounded-lg bg-gradient-to-b from-sunset-50/70 to-50% p-4 shadow-md transition-all dark:from-sunset-800/30 dark:to-sunset-800/10 sm:p-6"
                 >
-                  <h1 className="text-2xl font-bold">Research</h1>
+                  <h1 className="text-xl font-bold sm:text-2xl">Research</h1>
                   <p className="mb-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
                     JACoB dives into your codebase, analyzing structure, style,
                     and patterns to deliver smarter suggestions and tailor-made
-                    solutions. It’s like having a teammate who already knows the
-                    ropes. Explore the examples below and click any file name to
-                    view the code in action.
+                    solutions. It&apos;s like having a teammate who already
+                    knows the ropes. Explore the examples below and click any
+                    file name to view the code in action.
                   </p>
                   {isLoadingResearch ? (
                     <div className="flex items-center justify-center py-8">

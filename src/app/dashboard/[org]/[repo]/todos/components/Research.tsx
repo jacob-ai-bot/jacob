@@ -12,13 +12,13 @@ export const Research: React.FC<{ item: any; isLastItem: boolean }> = ({
 
   return (
     <div
-      className={`mb-6 border-b border-sunset-200/50 pb-4 dark:border-gray-700/50 ${isLastItem ? "border-none" : ""}`}
+      className={`mb-4 border-b border-sunset-200/50 pb-3 dark:border-gray-700/50 sm:mb-6 sm:pb-4 ${isLastItem ? "border-none" : ""}`}
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between text-left"
       >
-        <h4 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+        <h4 className="text-base font-medium text-gray-800 dark:text-gray-200 sm:text-lg">
           {item.question}
         </h4>
         <FontAwesomeIcon
@@ -38,7 +38,7 @@ export const Research: React.FC<{ item: any; isLastItem: boolean }> = ({
             }}
             transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
           >
-            <div className="markdown-chat ">
+            <div className="markdown-chat prose-sm max-w-none sm:prose-base">
               <MarkdownRenderer>{item.answer}</MarkdownRenderer>
             </div>
           </motion.div>
