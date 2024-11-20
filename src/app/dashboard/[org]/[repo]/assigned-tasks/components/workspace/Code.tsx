@@ -79,7 +79,7 @@ export const CodeComponent: React.FC<CodeComponentProps> = ({
   return (
     <div className="flex flex-col rounded-lg bg-gradient-to-b from-aurora-50/70 to-30% px-6 pb-6 pt-2 shadow-md transition-all dark:from-aurora-800/80 dark:to-aurora-800/20 dark:shadow-blueGray-800/80">
       <div
-        className={`hide-scrollbar overflow-x-auto  border-gray-200 dark:border-blueGray-500/80   ${
+        className={`hide-scrollbar overflow-x-auto border-gray-200 dark:border-blueGray-500/80 ${
           codeFiles?.length > 1 ? "border-b" : "border-b-0"
         }`}
       >
@@ -101,7 +101,7 @@ export const CodeComponent: React.FC<CodeComponentProps> = ({
       </div>
 
       <div className="mr-4 mt-3 flex w-full items-center justify-end space-x-2">
-        <div className=" mr-2 flex w-full justify-between">
+        <div className="mr-2 flex w-full justify-between">
           <p className="ml-1 mt-2 text-xs text-gray-500 dark:text-gray-300">
             {codeFiles[activeTab]?.filePath ?? ""}
           </p>

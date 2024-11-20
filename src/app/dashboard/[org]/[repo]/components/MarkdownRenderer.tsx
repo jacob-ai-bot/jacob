@@ -93,7 +93,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                 e.preventDefault();
                 setModalFilePath(pathCheck);
               }}
-              className={`cursor-pointer  text-aurora-800/80 no-underline hover:text-aurora-800/80 hover:underline${className}`}
+              className={`cursor-pointer text-aurora-800/80 no-underline hover:text-aurora-800/80 hover:underline${className}`}
             >
               {children}
             </code>

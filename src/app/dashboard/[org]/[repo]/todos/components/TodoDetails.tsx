@@ -173,7 +173,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
         </div>
         <div className="flex w-full flex-row items-center justify-between space-x-2 md:w-auto md:justify-end">
           {selectedTodo.status === TodoStatus.TODO && (
-            <div className="flex items-center space-x-4 ">
+            <div className="flex items-center space-x-4">
               <label className="flex items-center space-x-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <input
                   type="checkbox"

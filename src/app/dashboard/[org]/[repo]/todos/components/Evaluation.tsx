@@ -84,10 +84,10 @@ const Evaluation: React.FC<EvaluationProps> = ({ evaluation }) => {
   };
 
   return (
-    <div className="overflow-hidden ">
+    <div className="overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between p-2 transition "
+        className="flex w-full items-center justify-between p-2 transition"
       >
         <div className="flex flex-shrink flex-col">
           <div className="flex flex-row items-center gap-3">

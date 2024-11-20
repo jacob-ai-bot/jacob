@@ -58,7 +58,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
           );
           if (selected) onModelChange(selected);
         }}
-        className=" block w-full rounded-md border-gray-300 text-sm shadow-sm backdrop-blur-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        className="block w-full rounded-md border-gray-300 text-sm shadow-sm backdrop-blur-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
       >
         {ChatModels.map((model) => (
           <option key={model.modelName} value={model.modelName}>

@@ -6,7 +6,7 @@ const TodoItemPlaceholder: React.FC = () => {
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       <Meteors number={20} />
-      <div className="absolute left-1/2 top-16 z-10 -translate-x-1/2  text-center">
+      <div className="absolute left-1/2 top-16 z-10 -translate-x-1/2 text-center">
         <AnimatedShinyText className="mb-4 text-2xl font-bold">
           Inbox zero achieved! 🎉
         </AnimatedShinyText>

@@ -58,7 +58,7 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen w-full border-r border-r-aurora-300 bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:border-r-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100">
       <Sidebar org={org} repo={repo} />
-      <div className="flex flex-1 flex-col overflow-hidden pt-14 md:pt-0 ">
+      <div className="flex flex-1 flex-col overflow-hidden pt-14 md:pt-0">
         <Header
           org={org}
           repoName={repo}

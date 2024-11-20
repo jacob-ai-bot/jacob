@@ -226,7 +226,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           <button
             onClick={toggleSidebar}
             className={`items-center space-x-2 rounded-md pb-1 text-sm text-sunset-600 hover:bg-sunset-50 hover:text-sunset-700 dark:text-purple-400 dark:hover:bg-purple-900/50 dark:hover:text-purple-300 md:px-3 md:py-2 md:pb-2 ${
-              isSidebarOpen ? "hidden" : "inline-flex "
+              isSidebarOpen ? "hidden" : "inline-flex"
             }`}
           >
             <ArrowLeftIcon className="h-4 w-4" />

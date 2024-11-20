@@ -373,7 +373,7 @@ export const SpeechToTextArea = forwardRef<
                 : "text-dark-blue dark:text-slate-100"
             } ${
               isLoading ? "opacity-50" : ""
-            } hide-scrollbar transition-height m-0 flex-1 resize-none  border-0 bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0`}
+            } hide-scrollbar transition-height m-0 flex-1 resize-none border-0 bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0`}
             value={value}
             onChange={handleTextareaChange}
             onKeyDown={(e) => {
@@ -415,7 +415,7 @@ export const SpeechToTextArea = forwardRef<
               className={`${
                 waveformActive
                   ? "z-20 mr-5 text-blossom-500 hover:text-blossom-700"
-                  : " text-aurora-500 hover:text-aurora-600"
+                  : "text-aurora-500 hover:text-aurora-600"
               } transform text-xl dark:text-gray-300 dark:hover:text-gray-500`}
               onClick={isRecording ? stopRecording : startRecording}
               aria-label={isRecording ? "Stop recording" : "Start recording"}

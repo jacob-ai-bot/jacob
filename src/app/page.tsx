@@ -69,7 +69,7 @@ export default async function Home() {
                   </h3>
                   <FontAwesomeIcon
                     icon={faArrowRight}
-                    className=" h-6 w-6 text-blossom-600"
+                    className="h-6 w-6 text-blossom-600"
                   />
                 </div>
                 <div className="text-aurora-600">
