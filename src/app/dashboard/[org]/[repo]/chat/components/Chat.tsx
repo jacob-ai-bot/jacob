@@ -164,6 +164,11 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
     void refetchCodeContent();
   };
 
+  const handleFileSelect = (filePath: string) => {
+    setSelectedFiles([filePath]);
+    void refetchCodeContent();
+  };
+
   const handleSubmit = async (message: string) => {
     await append({ role: "user", content: message });
   };
@@ -226,6 +231,8 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
           language={artifactLanguage}
           codeFiles={codeContent}
           filePath={artifactFilePath}
+          contextItems={contextItems}
+          onFileSelect={handleFileSelect}
         />
       )}
     </div>
