@@ -218,6 +218,10 @@ const BranchNameSchema = z.object({
   }),
 });
 
+const CommitMessageSchema = z.object({
+  commitMessage: z.string().min(1).max(72),
+});
+
 export async function generateJacobBranchName(
   issueNumber: number,
   issueTitle?: string,
@@ -266,6 +270,45 @@ export async function generateJacobBranchName(
 
   const randomDigits = Math.floor(1000 + Math.random() * 9000);
   return `${branchName}-${issueNumber}-${randomDigits}`;
+}
+
+export async function generateCommitMessage(
+  diffOutput: string,
+  fallbackMessage: string,
+): Promise<string | null> {
+  try {
+    const prompt = `Generate a concise and descriptive git commit message based on these changes:\n\n${diffOutput}`;
+
+    const systemPrompt = dedent`
+      You are a helpful assistant that generates git commit messages.
+      You must respond with a JSON object containing a single "commitMessage" field.
+      Your response must match the following schema:
+      const CommitMessageSchema = z.object({
+          commitMessage: z.string().min(1).max(72)
+      });
+      The commit message must:
+      - Be clear and descriptive
+      - Follow conventional commit format
+      - Be no longer than 72 characters
+      - Start with a verb in the present tense
+      - Not end with a period
+    `;
+
+    const response = await sendGptRequestWithSchema(
+      prompt,
+      systemPrompt,
+      CommitMessageSchema,
+      0.3,
+      undefined,
+      3,
+      "gpt-4o-mini-2024-07-18",
+    );
+
+    return response?.commitMessage || null;
+  } catch (error) {
+    console.error("Error generating commit message with LLM:", error);
+    return null;
+  }
 }
 
 export function extractIssueNumberFromBranchName(branch: string) {
