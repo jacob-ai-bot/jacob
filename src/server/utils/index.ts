@@ -269,7 +269,7 @@ export async function generateJacobBranchName(
 }
 
 export function extractIssueNumberFromBranchName(branch: string) {
-  const regex = /jacob-issue-(\d+)-.*/;
+  const regex = /-(\d+)-\d+$/;
   const match = branch.match(regex);
   const issueNumber = parseInt(match?.[1] ?? "", 10);
   return isNaN(issueNumber) ? undefined : issueNumber;
