@@ -77,18 +77,23 @@ async function processStepIndividually(
     step: stepString,
   };
 
-  const codeSystemPrompt = parseTemplate(
+  const codeSystemPrompt = `${parseTemplate(
     "dev",
     "code_fix_error",
     "system",
     codeTemplateParams,
-  );
-  const codeUserPrompt = parseTemplate(
+  )}
+
+IMPORTANT: You must preserve ALL existing code comments when generating fixes. Do not remove, modify or alter any comments in the code. Comments are crucial documentation that must be maintained exactly as-is.`;
+
+  const codeUserPrompt = `${parseTemplate(
     "dev",
     "code_fix_error",
     "user",
     codeTemplateParams,
-  );
+  )}
+
+IMPORTANT: Preserve ALL existing code comments. Do not remove or modify any comments.`;
 
   return sendGptRequest(
     codeUserPrompt,
@@ -245,18 +250,23 @@ export async function fixError(params: FixErrorParams) {
           images,
         };
 
-        const codeSystemPrompt = parseTemplate(
+        const codeSystemPrompt = `${parseTemplate(
           "dev",
           "code_fix_error",
           "system",
           codeTemplateParams,
-        );
-        const codeUserPrompt = parseTemplate(
+        )}
+        
+IMPORTANT: You must preserve ALL existing code comments when generating fixes. Do not remove, modify or alter any comments in the code. Comments are crucial documentation that must be maintained exactly as-is.`;
+
+        const codeUserPrompt = `${parseTemplate(
           "dev",
           "code_fix_error",
           "user",
           codeTemplateParams,
-        );
+        )}
+        
+IMPORTANT: Preserve ALL existing code comments. Do not remove or modify any comments.`;
 
         updatedCode = (await sendGptRequest(
           codeUserPrompt,

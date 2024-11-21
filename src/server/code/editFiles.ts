@@ -127,11 +127,25 @@ async function processStepIndividually(
     snapshotUrl: "",
   };
 
-  const codeSystemPrompt = constructNewOrEditSystemPrompt(
-    "code_edit_files",
-    codeTemplateParams,
-    repoSettings,
-  );
+  const preserveCommentsSystemPrompt = `You are an expert code editor. Your task is to modify or generate code while ensuring all existing comments are preserved exactly as they appear in the original code. This includes all types of comments:
+- Single-line comments (//)
+- Multi-line block comments (/* */)
+- Documentation comments (/** */)
+- Any other comment styles specific to the language
+
+When modifying code:
+1. Keep all existing comments in their original locations
+2. Do not modify, remove, or relocate any comments
+3. Preserve comment formatting and indentation
+4. If code around a comment needs to change, keep the comment contextually relevant
+5. For new code, add comments only if absolutely necessary
+
+${constructNewOrEditSystemPrompt(
+  "code_edit_files",
+  codeTemplateParams,
+  repoSettings,
+)}`;
+
   const codeUserPrompt = parseTemplate(
     "dev",
     "code_edit_files",
@@ -141,7 +155,7 @@ async function processStepIndividually(
 
   return await sendGptRequest(
     codeUserPrompt,
-    codeSystemPrompt,
+    preserveCommentsSystemPrompt,
     0.2,
     baseEventData,
     3,
@@ -185,7 +199,6 @@ export async function editFiles(params: EditFilesParams) {
     throw new Error("Error creating todo");
   }
 
-  // Fetch or generate research data
   let researchData = await db.research.where({ issueId: issue.number }).all();
   if (!researchData.length) {
     console.log(`[${repository.full_name}] No research found. Researching...`);
@@ -231,7 +244,6 @@ export async function editFiles(params: EditFilesParams) {
     filesToUpdate,
     filesToCreate,
   );
-  // console.log(`[${repository.full_name}] Concatenated code:\n\n`, code);
 
   const types = getTypes(rootPath, repoSettings);
   const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
@@ -289,11 +301,25 @@ export async function editFiles(params: EditFilesParams) {
     snapshotUrl: snapshotUrl ?? "",
   };
 
-  const codeSystemPrompt = constructNewOrEditSystemPrompt(
-    "code_edit_files",
-    codeTemplateParams,
-    repoSettings,
-  );
+  const preserveCommentsSystemPrompt = `You are an expert code editor. Your task is to modify or generate code while ensuring all existing comments are preserved exactly as they appear in the original code. This includes all types of comments:
+- Single-line comments (//)
+- Multi-line block comments (/* */)
+- Documentation comments (/** */)
+- Any other comment styles specific to the language
+
+When modifying code:
+1. Keep all existing comments in their original locations
+2. Do not modify, remove, or relocate any comments
+3. Preserve comment formatting and indentation
+4. If code around a comment needs to change, keep the comment contextually relevant
+5. For new code, add comments only if absolutely necessary
+
+${constructNewOrEditSystemPrompt(
+  "code_edit_files",
+  codeTemplateParams,
+  repoSettings,
+)}`;
+
   const codeUserPrompt = parseTemplate(
     "dev",
     "code_edit_files",
@@ -308,7 +334,6 @@ export async function editFiles(params: EditFilesParams) {
     model = "gpt-4o-64k-output-alpha";
   }
   if (codeTokenCount > MAX_OUTPUT[model] * 0.7) {
-    // if the estimated output token count is too close to the model's limit, process each step individually to prevent responses getting truncated
     const results = await Promise.all(
       planSteps
         .filter(
@@ -330,10 +355,9 @@ export async function editFiles(params: EditFilesParams) {
 
     updatedCode = results.filter(Boolean).join("\n\n");
   } else {
-    // Original single request logic
     updatedCode = (await sendGptRequest(
       codeUserPrompt,
-      codeSystemPrompt,
+      preserveCommentsSystemPrompt,
       0.2,
       baseEventData,
       3,

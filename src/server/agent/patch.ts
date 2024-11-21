@@ -52,7 +52,6 @@ async function createNewFile(
     const fullFilePath = path.join(rootPath, filePath);
     const dirPath = path.dirname(fullFilePath);
 
-    // Prepare the prompt for the LLM
     const userPrompt = `
 I want to create a new file with the following patch:
 
@@ -63,16 +62,21 @@ Please provide the complete file content based on this patch. Your response shou
 2. Remove any diff-specific syntax (like +, -, @@ lines).
 3. Be surrounded by <file_content> tags.
 4. Contain no additional commentary, explanations, or code blocks.
+5. Preserve all comments from the patch, including inline comments, block comments, and documentation comments.
 
 Here's an example of how your response should be formatted:
 
 <file_content>
+// This is a comment that should be preserved
 import React from 'react';
 
+/**
+ * Documentation comment that should be preserved
+ */
 function App() {
   return (
     <div>
-      <h1>Hello, World!</h1>
+      <h1>Hello, World!</h1> // Inline comment that should be preserved
     </div>
   );
 }
@@ -80,28 +84,28 @@ function App() {
 export default App;
 </file_content>`;
 
-    const systemPrompt = `You are an expert code creator. Your task is to generate the complete file content based on the given patch for a new file. Make sure to remove any diff-specific syntax and provide only the actual file content. Your response must be the complete file content surrounded by <file_content> tags, with no additional commentary or code blocks.`;
+    const systemPrompt = `You are an expert code creator. Your task is to generate the complete file content based on the given patch for a new file. Make sure to:
+1. Remove any diff-specific syntax
+2. Preserve all comments from the patch, including inline comments, block comments, and documentation comments
+3. Provide only the actual file content surrounded by <file_content> tags
+4. Include no additional commentary or code blocks`;
 
-    // Call the LLM to generate the file content
     const rawFileContent = await sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
     );
 
     if (rawFileContent) {
-      // Extract content between <file_content> tags
       const contentMatch = rawFileContent.match(
         /<file_content>([\s\S]*)<\/file_content>/,
       );
       if (contentMatch?.[1]) {
         const fileContent = contentMatch[1].trim();
 
-        // Create directory if it doesn't exist
         if (!fs.existsSync(dirPath)) {
           fs.mkdirSync(dirPath, { recursive: true });
         }
 
-        // Write the new file
         fs.writeFileSync(fullFilePath, fileContent, "utf-8");
         console.log(`Successfully created new file ${filePath}`);
 
@@ -132,17 +136,14 @@ async function updateExistingFile(
 ): Promise<FileContent[]> {
   const files: FileContent[] = [];
   try {
-    // First, check to see if the file exists
     const fullFilePath = path.join(rootPath, filePath);
     if (!fs.existsSync(fullFilePath)) {
       console.error(`File ${filePath} does not exist`);
       return files;
     }
-    // Read the existing file content
     const existingContent = fs.readFileSync(fullFilePath, "utf-8");
     const numberedContent = addLineNumbers(existingContent);
 
-    // Prepare the prompt for the LLM
     const userPrompt = `
 I have an existing file with the following content (line numbers added for reference):
 
@@ -157,33 +158,44 @@ Please provide the updated file content after applying the patch. Your response 
 2. Maintain the original line numbers.
 3. Be surrounded by <file_content> tags.
 4. Contain no additional commentary, explanations, or code blocks.
+5. Preserve ALL existing comments from the original file, including inline comments, block comments, and documentation comments.
+6. Preserve any new comments from the patch.
+7. Never remove or modify existing comments, even if they appear outdated or incorrect.
 
 Here's an example of how your response should be formatted:
 
 <file_content>
-1| import React from 'react';
-2| 
-3| function App() {
-4|   return (
-5|     <div>
-6|       <h1>Hello, World!</h1>
-7|     </div>
-8|   );
-9| }
-10| 
-11| export default App;
+1| // This existing comment must be preserved
+2| import React from 'react';
+3| 
+4| /**
+5|  * This documentation comment block must be preserved
+6|  */
+7| function App() {
+8|   return (
+9|     <div>
+10|       <h1>Hello, World!</h1> // This inline comment must be preserved
+11|     </div>
+12|   );
+13| }
+14| 
+15| export default App;
 </file_content>`;
 
-    const systemPrompt = `You are an expert code editor. Your task is to apply the given patch to the existing file content and return the entire updated file content, including line numbers. Make sure to handle line numbers correctly, even if they are inconsistent in the patch. If a hunk in the patch cannot be applied, skip it and continue with the next one. Your response must be the complete file content surrounded by <file_content> tags, with no additional commentary or code blocks.`;
+    const systemPrompt = `You are an expert code editor. Your task is to apply the given patch to the existing file content and return the entire updated file content, including line numbers. You must:
+1. Handle line numbers correctly, even if they are inconsistent in the patch
+2. Skip any patch hunks that cannot be applied and continue with the next one
+3. Preserve ALL existing comments from the original file, including inline comments, block comments, and documentation comments
+4. Preserve any new comments from the patch
+5. Never remove or modify existing comments, even if they appear outdated or incorrect
+6. Return the complete file content surrounded by <file_content> tags, with no additional commentary or code blocks`;
 
-    // Call the LLM to apply the patch
     const rawUpdatedContent = await sendSelfConsistencyChainOfThoughtGptRequest(
       userPrompt,
       systemPrompt,
     );
 
     if (rawUpdatedContent) {
-      // Extract content between <file_content> tags
       const contentMatch = rawUpdatedContent.match(
         /<file_content>([\s\S]*)<\/file_content>/,
       );
