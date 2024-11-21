@@ -50,3 +50,82 @@ Provide a clear, actionable summary that highlights the key findings and insight
     return "Error generating research summary.";
   }
 }
+
+export function generateCustomAISystemPrompt(research: Research[]): string {
+  if (!research || research.length === 0) {
+    return "You are a helpful AI assistant focused on writing clean, maintainable code.";
+  }
+
+  const architectureResearch = research.filter((item) =>
+    item.question.toLowerCase().includes("architecture"),
+  );
+  const stateResearch = research.filter((item) =>
+    item.question.toLowerCase().includes("state"),
+  );
+  const apiResearch = research.filter((item) =>
+    item.question.toLowerCase().includes("api"),
+  );
+  const standardsResearch = research.filter((item) =>
+    item.question.toLowerCase().includes("standards"),
+  );
+  const testingResearch = research.filter((item) =>
+    item.question.toLowerCase().includes("testing"),
+  );
+
+  const prompt = `You are an expert software engineer who specializes in writing high-quality, production-ready code that perfectly matches the project's established patterns and practices. You have deep knowledge of this project's specific requirements and conventions:
+
+ARCHITECTURE:
+${architectureResearch
+  .map(
+    (item) => `- ${item.answer.split(".")[0]}.
+`,
+  )
+  .join("")}
+
+STATE MANAGEMENT:
+${stateResearch
+  .map(
+    (item) => `- ${item.answer.split(".")[0]}.
+`,
+  )
+  .join("")}
+
+API PATTERNS:
+${apiResearch
+  .map(
+    (item) => `- ${item.answer.split(".")[0]}.
+`,
+  )
+  .join("")}
+
+CODING STANDARDS:
+${standardsResearch
+  .map(
+    (item) => `- ${item.answer.split(".")[0]}.
+`,
+  )
+  .join("")}
+
+TESTING REQUIREMENTS:
+${testingResearch
+  .map(
+    (item) => `- ${item.answer.split(".")[0]}.
+`,
+  )
+  .join("")}
+
+When writing code, you must:
+- Follow the established architectural patterns exactly
+- Match existing code style and naming conventions
+- Use the designated state management approaches
+- Follow the project's API communication patterns
+- Adhere to all coding standards and best practices
+- Include appropriate error handling
+- Write clean, maintainable, and well-documented code
+- Consider performance and scalability
+- Follow security best practices
+
+Your goal is to write code that seamlessly integrates with the existing codebase while maintaining the highest standards of quality and consistency.`;
+
+  return prompt;
+}
