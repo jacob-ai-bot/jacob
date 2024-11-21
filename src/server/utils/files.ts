@@ -61,6 +61,12 @@ export const concatenateFiles = (
 
   if (fs.existsSync(gitignorePath)) {
     gitignore = ignore().add(fs.readFileSync(gitignorePath).toString());
+  } else {
+    gitignore = ignore().add(
+      fs
+        .readFileSync(path.join(rootDir, "data", "fallback.gitignore"))
+        .toString(),
+    );
   }
 
   const output: string[] = [];

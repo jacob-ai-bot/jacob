@@ -7,7 +7,10 @@ export function traverseCodebase(rootPath: string): StandardizedPath[] {
   const gitignorePath = path.join(rootPath, ".gitignore");
   const gitignoreContent = fs.existsSync(gitignorePath)
     ? fs.readFileSync(gitignorePath, "utf-8")
-    : "";
+    : fs.readFileSync(
+        path.join(rootPath, "data", "fallback.gitignore"),
+        "utf-8",
+      );
 
   const ignoreFilter = ignore().add(gitignoreContent);
 
