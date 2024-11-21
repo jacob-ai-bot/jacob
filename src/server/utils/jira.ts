@@ -95,7 +95,6 @@ export async function syncJiraBoard(
 
   const boardData: JiraBoard = await boardResponse.json();
 
-  // first check if the board already exists
   const existingBoard = await db.issueBoards.findByOptional({
     projectId,
     issueSource: IssueBoardSource.JIRA,
@@ -145,7 +144,6 @@ export async function fetchAllNewJiraIssues() {
 
   for (const issueBoard of issueBoards) {
     try {
-      // get the user from the issue board
       const account = await db.accounts.findBy({
         userId: issueBoard.createdBy,
       });
@@ -157,8 +155,6 @@ export async function fetchAllNewJiraIssues() {
       if (!project?.jiraCloudId) {
         throw new Error("Project not found");
       }
-      // check to see if the account's token is expired
-      // account.expires_at is a unix timestamp in seconds
       let githubAccessToken: string | undefined = account.access_token;
       if (
         account.expires_at &&
@@ -215,7 +211,7 @@ export async function fetchNewJiraIssues({
   const project = await db.projects.findBy({ id: projectId });
 
   try {
-    const jql = `project=${boardId} AND created>=-2h`; // note that the cron job runs every hour
+    const jql = `project=${boardId} AND created>=-2h`;
     const fields = "id,self,summary,description";
 
     const response = await fetch(
@@ -230,7 +226,6 @@ export async function fetchNewJiraIssues({
 
     if (response.status === 401) {
       console.log("Jira access token expired, refreshing...");
-      // get the user from the issue board
       jiraAccessToken = await refreshJiraAccessToken(userId);
       return fetchNewJiraIssues({
         jiraAccessToken,
@@ -265,7 +260,6 @@ export async function fetchNewJiraIssues({
       description: extractTextFromADF(issue.fields.description),
     }));
     for (const issue of issues) {
-      // first check if the issue already exists
       const existingIssue = await db.issues.findByOptional({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
@@ -281,7 +275,6 @@ export async function fetchNewJiraIssues({
       console.log(
         `Repo ${project.repoFullName}: Creating new Jira issue ${issue.id}`,
       );
-      // create a new issue in the database - this ensures we don't duplicate issues
       await db.issues.create({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
@@ -292,7 +285,6 @@ export async function fetchNewJiraIssues({
       if (!owner || !repo) {
         throw new Error("Invalid repo full name");
       }
-      // use AI to generate a more detailed github issue description
       const githubIssueDescription = await rewriteGitHubIssue(
         githubAccessToken,
         owner,
@@ -302,7 +294,6 @@ export async function fetchNewJiraIssues({
         EvaluationMode.DETAILED,
       );
       const githubIssueBody = githubIssueDescription.rewrittenIssue;
-      // create a new GitHub issue - there is a listener for this in the queue that will create a todo
       const githubIssue = await createGitHubIssue(
         owner,
         repo,
@@ -321,7 +312,6 @@ export async function fetchNewJiraIssues({
 }
 
 export async function getJiraCloudIdResources(accessToken: string) {
-  // Fetch accessible resources to obtain cloudId
   const resourcesResponse = await fetch(
     "https://api.atlassian.com/oauth/token/accessible-resources",
     {
@@ -346,8 +336,6 @@ export async function getJiraCloudIdResources(accessToken: string) {
   return resourcesData;
 }
 
-// https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/
-// Jira issues are stored in ADF format, need to extract the text from it
 export function extractTextFromADF(adfNode: any): string {
   let text = "";
 
@@ -364,4 +352,61 @@ export function extractTextFromADF(adfNode: any): string {
   }
 
   return text;
+}
+
+export async function updateJiraTicketWithTodoLink(
+  jiraIssueId: string,
+  cloudId: string,
+  accessToken: string,
+  todoLink: string,
+): Promise<void> {
+  try {
+    const response = await fetch(
+      `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue/${jiraIssueId}/comment`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          body: {
+            version: 1,
+            type: "doc",
+            content: [
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: "This issue has been linked to a todo in Jacob AI: ",
+                  },
+                  {
+                    type: "text",
+                    text: todoLink,
+                    marks: [{ type: "link", attrs: { href: todoLink } }],
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorDetails = await response.text();
+      console.error("Error details:", errorDetails);
+      throw new Error(
+        `Failed to update Jira ticket with todo link: ${response.statusText}`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `Error updating Jira ticket ${jiraIssueId} with todo link:`,
+      error,
+    );
+    throw error;
+  }
 }

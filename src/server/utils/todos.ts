@@ -12,6 +12,7 @@ import { getOrGeneratePlan } from "./plan";
 import { getRepoSettings, type RepoSettings } from "./settings";
 import { getOrCreateCodebaseContext } from "./codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
+import { updateJiraTicketWithTodoLink } from "./jira";
 
 const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
 
@@ -23,6 +24,9 @@ interface GetOrCreateTodoParams {
   rootDir?: string;
   sourceMap?: string;
   repoSettings?: RepoSettings;
+  jiraIssueId?: string;
+  jiraCloudId?: string;
+  jiraAccessToken?: string;
 }
 
 export const getOrCreateTodo = async ({
@@ -33,6 +37,9 @@ export const getOrCreateTodo = async ({
   rootDir,
   sourceMap,
   repoSettings,
+  jiraIssueId,
+  jiraCloudId,
+  jiraAccessToken,
 }: GetOrCreateTodoParams) => {
   const [repoOwner, repoName] = repo?.split("/") ?? [];
 
@@ -44,7 +51,6 @@ export const getOrCreateTodo = async ({
     throw new Error("Access token is required");
   }
 
-  // Check if a todo for this issue already exists
   const existingTodo = await db.todos.findByOptional({
     projectId: projectId,
     issueId: issueNumber,
@@ -55,7 +61,6 @@ export const getOrCreateTodo = async ({
     return existingTodo;
   }
 
-  // Fetch the specific issue from GitHub
   const { data: issue } = await getIssue(
     { name: repoName, owner: { login: repoOwner } },
     accessToken,
@@ -91,10 +96,26 @@ export const getOrCreateTodo = async ({
       status: TodoStatus.TODO,
       issueId: issue.number,
       position: issue.number,
+      jiraIssueId: jiraIssueId,
     });
 
-    // Only research issues and create plans for agent repos for now
-    // TODO: only research issues for premium accounts
+    if (jiraIssueId && jiraCloudId && jiraAccessToken) {
+      try {
+        const todoLink = `https://app.jacb.ai/dashboard/${repoOwner}/${repoName}/todos/${newTodo.id}`;
+        await updateJiraTicketWithTodoLink(
+          jiraIssueId,
+          jiraCloudId,
+          jiraAccessToken,
+          todoLink,
+        );
+      } catch (error) {
+        console.error(
+          `Error updating Jira ticket ${jiraIssueId} with todo link:`,
+          error,
+        );
+      }
+    }
+
     if (agentRepos.includes(repo?.trim())) {
       const allFiles = traverseCodebase(rootPath);
       const codebaseContext = await getOrCreateCodebaseContext(
@@ -130,7 +151,6 @@ export const getOrCreateTodo = async ({
     console.error(
       `Error while creating todo for issue #${issue.number}: ${String(error)}`,
     );
-    // Consider more specific error handling here
   } finally {
     if (cleanupClone) {
       await cleanupClone();
@@ -152,6 +172,5 @@ export const archiveTodosByIssueId = async (
     console.error(
       `Error while archiving todos for issue #${issueId}: ${String(error)}`,
     );
-    // Consider more specific error handling here
   }
 };

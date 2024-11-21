@@ -25,6 +25,7 @@ export class TodosTable extends BaseTable {
     branch: t.text().nullable(),
     evaluationData: t.json().nullable(),
     isArchived: t.boolean().default(false),
+    jiraIssueId: t.text().nullable(),
     ...t.timestamps(),
   }));
 }
