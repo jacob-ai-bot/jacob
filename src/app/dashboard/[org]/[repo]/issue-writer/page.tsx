@@ -3,9 +3,6 @@ import { redirect } from "next/navigation";
 import IssueWriter from "./IssueWriter";
 import { getServerAuthSession } from "~/server/auth";
 import { Suspense } from "react";
-import { getDashboardUsers } from "~/app/utils";
-
-const dashboardUsers = getDashboardUsers();
 
 const IssueWriterPage = async ({
   params,
@@ -13,7 +10,7 @@ const IssueWriterPage = async ({
   params: { org: string; repo: string };
 }) => {
   const { user } = (await getServerAuthSession()) ?? {};
-  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
+  if (!user?.login || !user.dashboardEnabled) {
     redirect("/");
   }
 

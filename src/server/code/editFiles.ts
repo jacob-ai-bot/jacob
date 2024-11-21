@@ -42,6 +42,7 @@ export interface EditFilesParams extends BaseEventData {
   sourceMap: string;
   baseBranch?: string;
   dryRun?: boolean;
+  agentEnabled?: boolean;
   repoSettings?: RepoSettings;
 }
 
@@ -160,6 +161,7 @@ export async function editFiles(params: EditFilesParams) {
     sourceMap,
     baseBranch,
     dryRun,
+    agentEnabled,
     repoSettings,
     ...baseEventData
   } = params;
@@ -176,6 +178,7 @@ export async function editFiles(params: EditFilesParams) {
     accessToken: token,
     rootDir: rootPath,
     sourceMap,
+    agentEnabled,
     repoSettings,
   });
   if (!todo) {

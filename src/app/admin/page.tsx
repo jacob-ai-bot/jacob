@@ -9,7 +9,6 @@ import { SignOutButton } from "~/app/_components/SignOutButton";
 import { db } from "~/server/db/db";
 import { type Project } from "~/server/db/tables/projects.table";
 import { type User } from "~/server/db/tables/users.table";
-import { getDashboardUsers } from "~/app/utils";
 import {
   Table,
   TableBody,
@@ -27,12 +26,6 @@ const getProjects = cache(async () => {
 const getUsers = cache(async () => {
   return db.users.order({ login: "ASC" }).all();
 });
-
-const agentRepos = process.env.AGENT_REPOS?.split(",").map((repo) =>
-  repo.trim(),
-);
-
-const dashboardUsers = getDashboardUsers();
 
 interface ProjectsTableProps {
   projects: Project[];
@@ -55,7 +48,7 @@ function ProjectsTable({ projects }: ProjectsTableProps) {
             <TableCell className="font-medium">{project.id}</TableCell>
             <TableCell>{project.repoFullName}</TableCell>
             <TableCell className="text-right">
-              {agentRepos?.includes(project.repoFullName) ? "YES" : ""}
+              {project.agentEnabled ? "YES" : ""}
             </TableCell>
           </TableRow>
         ))}
@@ -89,7 +82,7 @@ function UsersTable({ users }: UsersTableProps) {
             <TableCell>{user.name}</TableCell>
             <TableCell>{user.email}</TableCell>
             <TableCell className="text-right">
-              {dashboardUsers.includes(user.login ?? "") ? "YES" : ""}
+              {user.dashboardEnabled ? "YES" : ""}
             </TableCell>
           </TableRow>
         ))}

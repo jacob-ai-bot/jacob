@@ -13,8 +13,6 @@ import { getRepoSettings, type RepoSettings } from "./settings";
 import { getOrCreateCodebaseContext } from "./codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
 
-const agentRepos = (process.env.AGENT_REPOS ?? "").split(",") ?? [];
-
 interface GetOrCreateTodoParams {
   repo: string;
   projectId: number;
@@ -22,6 +20,7 @@ interface GetOrCreateTodoParams {
   accessToken?: string;
   rootDir?: string;
   sourceMap?: string;
+  agentEnabled?: boolean;
   repoSettings?: RepoSettings;
 }
 
@@ -32,6 +31,7 @@ export const getOrCreateTodo = async ({
   accessToken,
   rootDir,
   sourceMap,
+  agentEnabled,
   repoSettings,
 }: GetOrCreateTodoParams) => {
   const [repoOwner, repoName] = repo?.split("/") ?? [];
@@ -95,7 +95,7 @@ export const getOrCreateTodo = async ({
 
     // Only research issues and create plans for agent repos for now
     // TODO: only research issues for premium accounts
-    if (agentRepos.includes(repo?.trim())) {
+    if (agentEnabled) {
       const allFiles = traverseCodebase(rootPath);
       const codebaseContext = await getOrCreateCodebaseContext(
         projectId,
@@ -117,11 +117,7 @@ export const getOrCreateTodo = async ({
       });
       await getOrCreateResearchForProject(projectId, codebaseContext);
     } else {
-      console.log(
-        `Skipping research for repo ${repo} issue #${issue.number}. Agent repos are ${agentRepos.join(
-          ", ",
-        )}`,
-      );
+      console.log(`Skipping research for repo ${repo} issue #${issue.number}.`);
     }
 
     console.log(`Created new todo for issue #${issue.number}`);

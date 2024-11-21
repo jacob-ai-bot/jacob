@@ -3,9 +3,6 @@ import { redirect } from "next/navigation";
 import { api } from "~/trpc/server";
 import { getServerAuthSession } from "~/server/auth";
 import Setup from "./Setup";
-import { getDashboardUsers } from "~/app/utils";
-
-const dashboardUsers = getDashboardUsers();
 
 const SetupPage = async ({
   params,
@@ -13,7 +10,7 @@ const SetupPage = async ({
   params: { org: string; repo: string; developer: string };
 }) => {
   const { user } = (await getServerAuthSession()) ?? {};
-  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
+  if (!user?.login || !user.dashboardEnabled) {
     redirect("/");
   }
 

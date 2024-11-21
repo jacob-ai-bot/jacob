@@ -277,11 +277,7 @@ async function onReposAdded(
       const repoSettings = await getRepoSettings(path, repo.full_name);
 
       try {
-        if (
-          process.env.AGENT_REPOS?.split(",")
-            .map((repo) => repo.trim())
-            .includes(repo.full_name)
-        ) {
+        if (project.agentEnabled) {
           // for the agent repos, we will run the research codebase agent
           const allFiles = traverseCodebase(path);
           console.log(
@@ -651,9 +647,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
             },
           });
         } else {
-          // const editFunction = (process.env.AGENT_REPOS ?? "")
-          //   .split(",")
-          //   .includes(repository.full_name)
+          // const editFunction = project.agentEnabled
           //   ? agentEditFiles
           //   : editFiles;
           // For now use the non-agent version
@@ -770,11 +764,7 @@ export async function onGitHubEvent(event: WebhookQueuedEvent) {
               );
               break;
             }
-            // const fixFunction = (process.env.AGENT_REPOS ?? "")
-            //   .split(",")
-            //   .includes(repository.full_name)
-            //   ? agentFixError
-            //   : fixError;
+            // const fixFunction = project.agentEnabled ? agentFixError : fixError;
             // For now use the non-agent version
             await fixError({
               ...baseEventData,

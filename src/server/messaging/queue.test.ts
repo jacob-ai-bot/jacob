@@ -183,8 +183,6 @@ const mockedEvents = vi.hoisted(() => ({
 }));
 vi.mock("~/server/utils/events", () => mockedEvents);
 
-const originalAgentRepos = process.env.AGENT_REPOS;
-
 describe("onGitHubEvent", () => {
   let server: SetupServer | undefined;
 
@@ -200,12 +198,10 @@ describe("onGitHubEvent", () => {
 
   beforeEach(() => {
     server?.resetHandlers();
-    process.env.AGENT_REPOS = "PioneerSquareLabs/t3-starter-template";
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    process.env.AGENT_REPOS = originalAgentRepos;
   });
 
   afterAll(() => {
@@ -277,8 +273,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("issue opened - edit files", async () => {
-    process.env.AGENT_REPOS = "";
-
     await onGitHubEvent({
       id: "2",
       name: "issues",
@@ -307,8 +301,6 @@ describe("onGitHubEvent", () => {
   });
 
   test("base branch command - issue opened - edit files", async () => {
-    process.env.AGENT_REPOS = "";
-
     await onGitHubEvent({
       id: "2",
       name: "issues",
@@ -401,8 +393,6 @@ describe("onGitHubEvent", () => {
 
   // TODO: Write tests for agent fix error
   test("PR comment created - fix build/test error command", async () => {
-    process.env.AGENT_REPOS = "";
-
     await onGitHubEvent({
       id: "5",
       name: "issue_comment",

@@ -34,6 +34,7 @@ declare module "next-auth" {
       id: string;
       login: string;
       role?: UserRole;
+      dashboardEnabled?: boolean;
       expires?: string; // ISO DateString
       // ...other properties
     } & DefaultSession["user"];
