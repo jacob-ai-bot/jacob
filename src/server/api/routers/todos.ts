@@ -11,6 +11,7 @@ import { type ContextItem } from "~/server/utils/codebaseContext";
 import { type PlanStep } from "~/server/db/tables/planSteps.table";
 import { type BaseEventData } from "~/server/utils";
 import { getOrCreateResearchForProject } from "~/server/agent/research";
+import { posthogClient } from "~/server/analytics/posthog";
 
 export const todoRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -63,14 +64,29 @@ export const todoRouter = createTRPCRouter({
         branch: z.string().nullable(),
       }),
     )
-    .mutation(async ({ input }): Promise<Todo> => {
+    .mutation(async ({ input, ctx }): Promise<Todo> => {
       const { issueId } = input;
 
       if (!issueId) {
         throw new Error("Issue ID is required");
       }
 
-      return await db.todos.selectAll().insert(input);
+      const todo = await db.todos.selectAll().insert(input);
+
+      posthogClient.capture({
+        distinctId: ctx.session.user.id,
+        event: "Todo Created",
+        properties: {
+          todoId: todo.id,
+          projectId: input.projectId,
+          name: input.name,
+          status: input.status,
+          issueId: input.issueId,
+          branch: input.branch,
+        },
+      });
+
+      return todo;
     }),
 
   update: protectedProcedure

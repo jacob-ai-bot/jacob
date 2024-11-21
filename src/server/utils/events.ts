@@ -8,6 +8,7 @@ import type { PullRequest } from "~/server/code/checkAndCommit";
 import { newRedisConnection } from "./redis";
 import { type RetrievedIssue } from "~/server/code/checkAndCommit";
 import { type Plan, type PlanStep } from "~/server/agent/plan";
+import { posthogClient } from "~/server/analytics/posthog";
 
 export const EVENT_RETENTION_TIME_IN_SECONDS = 14 * 24 * 60 * 60;
 
@@ -145,6 +146,21 @@ export async function emitTaskEvent(params: EmitTaskEventParams) {
     },
   });
   await redisConnection.publish("events", JSON.stringify(event));
+
+  if (status === "in_progress") {
+    posthogClient.capture({
+      distinctId: baseEventData.userId,
+      event: "Task Started",
+      properties: {
+        taskId: event.id,
+        issueId: issueNumber,
+        projectId: baseEventData.projectId,
+        repoFullName: baseEventData.repoFullName,
+        subType: subType,
+        taskName: issue?.title,
+      },
+    });
+  }
 }
 
 interface EmitCommandEventParams extends BaseEventData {
