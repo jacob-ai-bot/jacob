@@ -13,6 +13,9 @@ import { codeReviewCommandSuggestion } from "../github/issue";
 import { db } from "../db/db";
 import { getOrCreateTodo } from "../utils/todos";
 import { sendTransactionalEmail } from "../utils/email";
+import { posthogClient } from "../analytics/posthog";
+import { TodoStatus } from "../db/enums";
+import { getRepositoryLogins } from "../github/repo";
 
 dotenv.config();
 
@@ -73,6 +76,17 @@ ghApp.webhooks.on("issues.opened", async (event) => {
           issueNumber: payload.issue.number,
           accessToken: installationAuthentication?.token,
         });
+        posthogClient.capture({
+          distinctId: String(payload.issue.user.id) ?? "",
+          event: "Todo Created",
+          properties: {
+            todoId: todo?.id ?? 0,
+            projectId: project.id,
+            name: todo?.name ?? "",
+            status: todo?.status ?? TodoStatus.TODO,
+            issueId: payload.issue.number,
+          },
+        });
 
         console.log(
           `[${repository.full_name}] New todo item created for issue #${payload.issue.number}`,
@@ -80,23 +94,15 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         const [githubOrg, githubRepo] = repository.full_name.split("/");
 
         try {
-          const octokit = new Octokit({
-            auth: installationAuthentication?.token,
-          });
-
-          const { data: collaborators } = await octokit.repos.listCollaborators(
-            {
-              owner: githubOrg ?? "",
-              repo: githubRepo ?? "",
-              affiliation: "all",
-            },
+          const collaboratorLogins = await getRepositoryLogins(
+            githubOrg ?? "",
+            githubRepo ?? "",
+            installationAuthentication?.token ?? "",
           );
-
-          const collaboratorLogins = collaborators.map((c) => c.login);
 
           const jacobUsers = await db.users
             .whereIn("login", collaboratorLogins)
-            .all();
+            .select("id", "email");
 
           const planSteps = await db.planSteps
             .where({

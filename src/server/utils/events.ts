@@ -2,7 +2,7 @@ import { type Issue } from "@octokit/webhooks-types";
 import { DateTime } from "luxon";
 
 import { db } from "~/server/db/db";
-import { TaskType, type TaskSubType, type TaskStatus } from "~/server/db/enums";
+import { TaskStatus, TaskType, type TaskSubType } from "~/server/db/enums";
 import { type BaseEventData, getLanguageFromFileName } from "~/server/utils";
 import type { PullRequest } from "~/server/code/checkAndCommit";
 import { newRedisConnection } from "./redis";
@@ -147,7 +147,7 @@ export async function emitTaskEvent(params: EmitTaskEventParams) {
   });
   await redisConnection.publish("events", JSON.stringify(event));
 
-  if (status === "in_progress") {
+  if (status === TaskStatus.IN_PROGRESS) {
     posthogClient.capture({
       distinctId: baseEventData.userId,
       event: "Task Started",
