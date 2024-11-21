@@ -5,6 +5,7 @@ import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-meth
 import { graphql } from "@octokit/graphql";
 import type { MarkPullRequestReadyForReviewPayload } from "@octokit/graphql-schema";
 import path from "path";
+import { posthogClient } from "~/server/analytics/posthog";
 
 import { concatenateFiles, type FilesRangesMap } from "../utils/files";
 
@@ -57,6 +58,20 @@ export async function createPR(
       draft,
     });
     console.log("Pull request created:", result.data.html_url);
+
+    posthogClient.capture({
+      distinctId: repository.owner.id.toString(),
+      event: "Pull Request Created",
+      properties: {
+        repository: repository.full_name,
+        pullRequestNumber: result.data.number,
+        title: result.data.title,
+        branch: newBranch,
+        baseBranch: baseBranch ?? repository.default_branch,
+        isDraft: draft ?? false,
+        reviewers: reviewers,
+      },
+    });
   } catch (error) {
     if (isErrorWithStatus(error) && error.status === 422) {
       // If a 422 error is caught, the user does not have draft PRs enabled. Try again with draft set to false.
@@ -73,6 +88,21 @@ export async function createPR(
         draft: false, // retry with draft set to false
       });
       console.log("Non-draft pull request created:", result.data.html_url);
+
+      posthogClient.capture({
+        distinctId: repository.owner.id.toString(),
+        event: "Pull Request Created",
+        properties: {
+          repository: repository.full_name,
+          pullRequestNumber: result.data.number,
+          title: result.data.title,
+          branch: newBranch,
+          baseBranch: baseBranch ?? repository.default_branch,
+          isDraft: false,
+          reviewers: reviewers,
+          retryAfterDraftError: true,
+        },
+      });
     } else {
       // If the error code is not 422, rethrow the error
       throw error;
