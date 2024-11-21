@@ -6,6 +6,7 @@ import { applyPatches } from "diff";
 import { removeMarkdownCodeblocks } from "~/app/utils";
 import { promisify } from "util";
 import { exec as execCallback } from "child_process";
+import { fallbackGitignore } from "~/data/fallbackGitignore";
 
 type LineLengthMap = Record<string, number>;
 
@@ -62,11 +63,7 @@ export const concatenateFiles = (
   if (fs.existsSync(gitignorePath)) {
     gitignore = ignore().add(fs.readFileSync(gitignorePath).toString());
   } else {
-    gitignore = ignore().add(
-      fs
-        .readFileSync(path.join(rootDir, "data", "fallback.gitignore"))
-        .toString(),
-    );
+    gitignore = ignore().add(fallbackGitignore);
   }
 
   const output: string[] = [];

@@ -1,3 +1,4 @@
+export const fallbackGitignore = `
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -292,3 +293,4 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+`;

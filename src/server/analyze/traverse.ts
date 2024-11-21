@@ -2,15 +2,13 @@ import fs from "fs";
 import path from "path";
 import ignore from "ignore";
 import { type StandardizedPath, standardizePath } from "../utils/files";
+import { fallbackGitignore } from "~/data/fallbackGitignore";
 
 export function traverseCodebase(rootPath: string): StandardizedPath[] {
   const gitignorePath = path.join(rootPath, ".gitignore");
   const gitignoreContent = fs.existsSync(gitignorePath)
     ? fs.readFileSync(gitignorePath, "utf-8")
-    : fs.readFileSync(
-        path.join(rootPath, "data", "fallback.gitignore"),
-        "utf-8",
-      );
+    : fallbackGitignore;
 
   const ignoreFilter = ignore().add(gitignoreContent);
 
