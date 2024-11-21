@@ -129,6 +129,8 @@ describe("editFiles", () => {
     userId: "test-user",
   };
 
+  const mockedTodo = { id: "mocked-todo-id" };
+
   const editFilesParams: EditFilesParams = {
     ...mockEventData,
     repository: {
@@ -180,7 +182,7 @@ describe("editFiles", () => {
 
     // Verify that the research data is fetched
     expect(mockedDb.research.where).toHaveBeenCalledWith({
-      issueId: issue.number,
+      todoId: mockedTodo.id,
     });
 
     // We always want to check that there is a todo before continuing with the edit
