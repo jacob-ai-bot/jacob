@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import Settings from "./Settings";
 import { api } from "~/trpc/server";
 import LoadingPage from "~/app/dashboard/loading";
-import { getDashboardUsers } from "~/app/utils";
 
 interface PageProps {
   params: {
@@ -13,11 +12,9 @@ interface PageProps {
   };
 }
 
-const dashboardUsers = getDashboardUsers();
-
 export default async function SettingsPage({ params }: PageProps) {
   const { user } = (await getServerAuthSession()) ?? {};
-  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
+  if (!user?.login || !user.dashboardEnabled) {
     redirect("/");
   }
 

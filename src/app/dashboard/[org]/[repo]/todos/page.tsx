@@ -2,9 +2,6 @@ import { redirect } from "next/navigation";
 
 import Todo from "./Todo";
 import { getServerAuthSession } from "~/server/auth";
-import { getDashboardUsers } from "~/app/utils";
-
-const dashboardUsers = getDashboardUsers();
 
 const TodoPage = async ({
   params,
@@ -12,7 +9,7 @@ const TodoPage = async ({
   params: { org: string; repo: string };
 }) => {
   const { user } = (await getServerAuthSession()) ?? {};
-  if (!user?.login || !dashboardUsers.includes(user.login.toLowerCase())) {
+  if (!user?.login || !user.dashboardEnabled) {
     redirect("/");
   }
 

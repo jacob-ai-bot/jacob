@@ -70,6 +70,7 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         const todo = await getOrCreateTodo({
           repo: repository.full_name,
           projectId: project.id,
+          agentEnabled: project.agentEnabled,
           issueNumber: payload.issue.number,
           accessToken: installationAuthentication?.token,
         });

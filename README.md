@@ -185,7 +185,8 @@ JACoB works via a custom GitHub app and a Figma Plugin, along with a command-lin
      - Set the `GITHUB_PRIVATE_KEY` generated in the GitHub app setup
      - From the a GitHub app, populate the `GITHUB_APP_ID`, the `GITHUB_APP_NAME`, the `GITHUB_CLIENT_ID`, and the `GITHUB_CLIENT_SECRET` (note that this needs to be populated as both `GITHUB_CLIENT_SECRET` and `VITE_GITHUB_CLIENT_SECRET` in the `.env` file)
      - Determine the `GITHUB_APP_USERNAME` by calling a URL like this https://api.github.com/users/[GITHUB_APP_NAME][bot] and look at the `id` in the response (it will be a number)
-     - Add your GitHub username to the `DASHBOARD_USERS` variable
+     - Later: After logging in to the local website, set the dashboardEnabled value on your row in the users table to TRUE. Set the role on this row to 'admin'.
+     - Later: After connecting a repo to the local GitHub app, set the agentEnabled value on the associated row in the projects table to TRUE
    - Ensure the app is listening for the following webhook events: `Issue comments`, `Issues`, `Pull request review comments`, and `Pull request reviews`
 
 2. **Infrastructure with Docker**

@@ -246,10 +246,3 @@ export function includesIgnoreCase(
   if (!str || !searchString) return false;
   return str.toLowerCase().includes(searchString.toLowerCase());
 }
-
-export function getDashboardUsers(): string[] {
-  return (process.env.DASHBOARD_USERS ?? "")
-    .toLowerCase()
-    .split(",")
-    .map((user) => user.trim());
-}
