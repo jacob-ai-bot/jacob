@@ -189,7 +189,7 @@ export async function editFiles(params: EditFilesParams) {
   }
 
   // Fetch or generate research data
-  let researchData = await db.research.where({ issueId: issue.number }).all();
+  let researchData = await db.research.where({ todoId: todo.id }).all();
   if (!researchData.length) {
     console.log(`[${repository.full_name}] No research found. Researching...`);
 

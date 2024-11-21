@@ -275,6 +275,57 @@ export function extractIssueNumberFromBranchName(branch: string) {
   return isNaN(issueNumber) ? undefined : issueNumber;
 }
 
+const CommitMessageSchema = z.object({
+  commitMessage: z
+    .string()
+    .max(72, { message: "Commit message must be at most 72 characters." }),
+});
+
+export async function generateJacobCommitMessage(
+  issueTitle: string,
+  errorMessage: string,
+) {
+  let commitMessage = "";
+
+  try {
+    const prompt = `Generate a concise git commit message based on this issue title: "${issueTitle}" and the following error message: "${errorMessage}". The commit message should be in imperative mood and concise.`;
+
+    const systemPrompt = dedent`
+      You are an assistant that generates git commit messages.
+      You must respond with a JSON object containing a single "commitMessage" field.
+      Your response must match the following schema:
+      const CommitMessageSchema = z.object({
+          commitMessage: z.string().max(72, { message: 'Commit message must be at most 72 characters.' })
+      });
+      The commit message must:
+      - Be in the imperative mood (e.g., "Fix crash on startup")
+      - Be concise (ideally one line, max 72 characters)
+    `;
+
+    const response = await sendGptRequestWithSchema(
+      prompt,
+      systemPrompt,
+      CommitMessageSchema,
+      0.3,
+      undefined,
+      3,
+      "gpt-4o-mini-2024-07-18",
+    );
+
+    if (response?.commitMessage) {
+      commitMessage = response.commitMessage;
+    }
+  } catch (error) {
+    console.error("Error generating commit message with LLM:", error);
+  }
+
+  if (!commitMessage) {
+    commitMessage = `JACoB fix error: ${errorMessage}`;
+  }
+
+  return commitMessage;
+}
+
 export type ExecPromise = Promise<{
   stdout: string | Buffer;
   stderr: string | Buffer;

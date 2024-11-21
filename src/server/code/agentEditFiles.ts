@@ -65,8 +65,17 @@ export async function editFiles(params: EditFilesParams) {
   const issueText = `${issue.title}${issueBody}`;
   const projectId = baseEventData.projectId;
 
+  const todo = await db.todos.findByOptional({
+    projectId,
+    issueId: issue.number,
+  });
+  if (!todo) {
+    // TODO: create a new todo
+    throw new Error("No todo found");
+  }
+
   // Fetch research data from the database based on the issue ID
-  const researchData = await db.research.where({ issueId: issue.number }).all();
+  const researchData = await db.research.where({ todoId: todo.id }).all();
 
   // Convert the fetched research data into a string of question/answers
   const research = researchData

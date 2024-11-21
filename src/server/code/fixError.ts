@@ -8,10 +8,13 @@ import {
   type BaseEventData,
   parseTemplate,
   extractIssueNumberFromBranchName,
+  getStyles,
+  generateJacobCommitMessage,
 } from "../utils";
-import { assessBuildError } from "./assessBuildError";
-import { runNpmInstall } from "../build/node/check";
-import { checkAndCommit } from "./checkAndCommit";
+import {
+  checkAndCommit,
+  MAX_ATTEMPTS_TO_FIX_BUILD_ERROR,
+} from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
 import { concatenatePRFiles } from "../github/pr";
 import { reconstructFiles } from "../utils/files";
@@ -24,6 +27,14 @@ import {
 } from "../openai/request";
 import { generateBugfixPlan } from "../utils/plan";
 import { type PlanStep } from "../agent/plan";
+import {
+  assessAndInstallNpmPackages,
+  getBuildErrors,
+  type ProjectContext,
+} from "../agent/bugfix";
+import { db } from "../db/db";
+import { researchIssue } from "../agent/research";
+import { getOrCreateTodo } from "../utils/todos";
 
 export type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -123,68 +134,134 @@ export async function fixError(params: FixErrorParams) {
     console.log(
       `[${repository.full_name}] Loaded Issue #${issueNumber} associated with PR #${existingPr?.number}`,
     );
+    if (!issue) {
+      throw new Error("No issue found");
+    }
   } else {
     console.log(
       `[${repository.full_name}] No Issue associated with ${branch} branch for PR #${existingPr?.number}`,
     );
+    throw new Error("No issue found");
+  }
+  const sourceMap = getSourceMap(rootPath, repoSettings);
+  const types = getTypes(rootPath, repoSettings);
+  const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
+    "\n",
+  );
+  const styles = await getStyles(rootPath, repoSettings);
+  const images = await getImages(rootPath, repoSettings);
+  const projectId = baseEventData.projectId;
+  const todo = await getOrCreateTodo({
+    repo: repository.full_name,
+    projectId,
+    issueNumber: issue?.number,
+    accessToken: token,
+    rootDir: rootPath,
+    sourceMap,
+    repoSettings,
+  });
+  if (!todo) {
+    throw new Error("No todo found");
+  }
+  // Fetch or generate research data
+  let researchData = await db.research.where({ todoId: todo.id }).all();
+  if (!researchData.length) {
+    console.log(`[${repository.full_name}] No research found. Researching...`);
+
+    await researchIssue({
+      githubIssue: issue?.body ?? "",
+      todoId: todo.id,
+      issueId: issue?.number,
+      rootDir: rootPath,
+      projectId,
+    });
+    researchData = await db.research.where({ todoId: todo.id }).all();
+  }
+  const research = researchData
+    .map((item) => `Question: ${item.question}\nAnswer: ${item.answer}`)
+    .join("\n\n");
+  if (!research) {
+    throw new Error("No research found");
   }
 
-  const buildErrorSection = (body?.split("## Error Message") ?? [])[1];
-  const headingEndMarker = "\n```\n";
-  const afterHeadingIndex = (buildErrorSection ?? "").indexOf(headingEndMarker);
-  const restOfHeading =
-    afterHeadingIndex === -1
-      ? ""
-      : buildErrorSection?.slice(0, afterHeadingIndex) ?? "";
-  const attemptMatch = restOfHeading.match(/Attempt\s+Number\s+(\d+)/);
-  const attemptNumber = attemptMatch
-    ? parseInt(attemptMatch[1] ?? "1", 10)
-    : NaN;
-  const endOfErrorSectionMarker = "```";
-  const errors =
-    afterHeadingIndex === -1
-      ? ""
-      : (
-          buildErrorSection?.slice(
-            afterHeadingIndex + headingEndMarker.length,
-          ) ?? ""
-        ).split(endOfErrorSectionMarker)[0] ?? "";
+  const projectContext: ProjectContext = {
+    baseEventData,
+    repository,
+    token,
+    prIssue,
+    body,
+    rootPath,
+    branch,
+    existingPr,
+    repoSettings,
+    sourceMapOrFileList: sourceMap,
+    types,
+    packages,
+    styles,
+    images,
+    research,
+  };
+
+  let errorInfoArray = await getBuildErrors(projectContext);
+  let errors = errorInfoArray
+    ?.map(
+      (error) =>
+        `${error.filePath}: ${error.errorType} - line (${error.lineNumber}): ${error.errorMessage}`,
+    )
+    .join("\n");
+  // Check to see if we need to install npm packages
+  const didInstallNpmPackages = await assessAndInstallNpmPackages(
+    errors,
+    projectContext,
+  );
+  if (didInstallNpmPackages) {
+    console.log(`[${repository.full_name}] Ran npm install, trying again...`);
+    errorInfoArray = await getBuildErrors(projectContext);
+    errors = errorInfoArray
+      ?.map(
+        (error) =>
+          `${error.filePath}: ${error.errorType} - line (${error.lineNumber}): ${error.errorMessage}`,
+      )
+      .join("\n");
+  }
+
+  const attemptNumber = MAX_ATTEMPTS_TO_FIX_BUILD_ERROR;
   console.log(`[${repository.full_name}] Errors:`, errors);
 
-  const sourceMap = getSourceMap(rootPath, repoSettings);
-  const assessment = await assessBuildError({
-    ...baseEventData,
-    sourceMap,
-    errors,
-  });
-  console.log(`[${repository.full_name}] Assessment of Error:`, assessment);
+  console.log(`[${repository.full_name}] Assessment of Error:`, errors);
+  if (errorInfoArray.length === 0) {
+    console.log(
+      `[${repository.full_name}] No errors found in assessment. Exiting...`,
+    );
+    await checkAndCommit({
+      ...baseEventData,
+      repository,
+      token,
+      rootPath,
+      branch,
+      repoSettings,
+      commitMessage: "No errors found in assessment",
+      existingPr,
+      issue,
+      buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
+    });
+    return;
+  }
 
   try {
-    const commitMessageBase = "JACoB fix error: ";
-    const commitMessage = `${commitMessageBase}${assessment.errors?.[0]?.error ?? ""}`;
+    const commitMessage = await generateJacobCommitMessage(
+      issue?.title ?? "",
+      errors,
+    );
 
-    if (assessment.needsNpmInstall && assessment.npmPackageToInstall) {
-      console.log(`[${repository.full_name}] Needs npm install`);
+    const didInstallNpmPackages = await assessAndInstallNpmPackages(
+      errors,
+      projectContext,
+    );
+    if (didInstallNpmPackages) {
+      console.log(`[${repository.full_name}] Ran npm install, trying again...`);
 
-      await runNpmInstall({
-        ...baseEventData,
-        path: rootPath,
-        packageName: assessment.npmPackageToInstall.trim(),
-        repoSettings,
-      });
-
-      await checkAndCommit({
-        ...baseEventData,
-        repository,
-        token,
-        rootPath,
-        branch,
-        repoSettings,
-        commitMessage,
-        existingPr,
-        issue,
-        buildErrorAttemptNumber: isNaN(attemptNumber) ? 1 : attemptNumber,
-      });
+      return;
     } else {
       const { code } = await concatenatePRFiles(
         rootPath,
@@ -192,28 +269,21 @@ export async function fixError(params: FixErrorParams) {
         token,
         existingPr.number,
         undefined,
-        assessment.filesToUpdate,
+        errorInfoArray?.map((e) => e.filePath),
       );
 
-      const { errors } = assessment;
-
-      const errorMessages = errors?.map(
-        ({ filePath, startingLineNumber, endingLineNumber, error, code }) =>
-          `Error in ${filePath} (${startingLineNumber}-${endingLineNumber}): ${error}. Code: ${code}`,
+      const errorMessages = errorInfoArray?.map(
+        ({ filePath, lineNumber, errorType, errorMessage }) =>
+          `Error in ${filePath}: line(${lineNumber}): ${errorType} - ${errorMessage}`,
       );
 
-      const types = getTypes(rootPath, repoSettings);
-      const images = await getImages(rootPath, repoSettings);
-
-      let model: Model = "claude-3-5-sonnet-20241022";
+      const model: Model = "claude-3-5-sonnet-20241022";
       const codeTokenCount = countTokens(code) * 1.05;
-      if (codeTokenCount > MAX_OUTPUT[model]) {
-        model = "gpt-4o-64k-output-alpha";
-      }
 
       const plan = await generateBugfixPlan({
         githubIssue: issue?.body ?? "",
         rootPath,
+        code,
         errors: errorMessages,
       });
 
@@ -295,19 +365,15 @@ export async function fixError(params: FixErrorParams) {
       });
     }
   } catch (error) {
+    console.log(`[${repository.full_name}] Error in fixError:`, error);
     if (prIssue) {
       const message = dedent`JACoB here once again...
 
         Unfortunately, I wasn't able to resolve the error(s).
 
         Here is some information about the error(s):
-        
-        ${assessment.errors
-          .map(
-            ({ filePath, startingLineNumber, endingLineNumber, error, code }) =>
-              `Error in ${filePath} (${startingLineNumber}-${endingLineNumber}): ${error}. Code: ${code}`,
-          )
-          .join("\n")}
+
+        ${errors}
       `;
 
       await addCommentToIssue(repository, prIssue.number, token, message);
