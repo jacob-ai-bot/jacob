@@ -216,7 +216,7 @@ export async function fetchNewJiraIssues({
 
   try {
     const jql = `project=${boardId} AND created>=-2h`; // note that the cron job runs every hour
-    const fields = "id,self,summary,description";
+    const fields = "id,self,summary,description,status";
 
     const response = await fetch(
       `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fields)}`,
@@ -252,6 +252,9 @@ export async function fetchNewJiraIssues({
       fields: {
         summary: string;
         description: any;
+        status: {
+          name: string;
+        };
       };
       self: string;
     };
@@ -301,7 +304,11 @@ export async function fetchNewJiraIssues({
         issue.description,
         EvaluationMode.DETAILED,
       );
-      const githubIssueBody = githubIssueDescription.rewrittenIssue;
+      let githubIssueBody = `[${issue.id}: ${issue.title}](${issue.url})\n\n---\n\n`;
+      githubIssueBody += githubIssueDescription.rewrittenIssue;
+      // Add the original Jira issue description to the body
+      githubIssueBody += `\n\n---\n\nOriginal Jira issue description: \n\n${issue.title}\n\n${issue.description}`;
+
       // create a new GitHub issue - there is a listener for this in the queue that will create a todo
       const githubIssue = await createGitHubIssue(
         owner,
