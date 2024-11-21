@@ -76,9 +76,14 @@ const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
 const mockedDb = vi.hoisted(() => ({
   research: {
-    where: vi.fn().mockReturnValue({
-      all: vi.fn().mockResolvedValue([{ someResearchData: "mocked research" }]),
-    }),
+    where: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([
+      {
+        question: "Question",
+        answer: "Answer",
+        todoId: "mocked-todo-id",
+      },
+    ]),
   },
   todos: {
     findByOptional: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
@@ -88,7 +93,7 @@ const mockedDb = vi.hoisted(() => ({
 vi.mock("~/server/db/db", () => ({ db: mockedDb }));
 
 const mockedTodos = vi.hoisted(() => ({
-  getOrCreateTodo: vi.fn().mockResolvedValue({}),
+  getOrCreateTodo: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
 }));
 vi.mock("../utils/todos", () => mockedTodos);
 
@@ -184,6 +189,8 @@ describe("editFiles", () => {
     expect(mockedDb.research.where).toHaveBeenCalledWith({
       todoId: mockedTodo.id,
     });
+
+    expect(mockedDb.research.all).toHaveBeenCalled();
 
     // We always want to check that there is a todo before continuing with the edit
     expect(mockedTodos.getOrCreateTodo).toHaveBeenCalledOnce();

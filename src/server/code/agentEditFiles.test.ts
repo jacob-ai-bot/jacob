@@ -11,7 +11,6 @@ import {
 import { type Issue, type Repository } from "@octokit/webhooks-types";
 import { dedent } from "ts-dedent";
 
-import { useTestDatabase } from "~/server/utils/testHelpers";
 import issuesOpenedEditFilesPayload from "../../data/test/webhooks/issues.opened.editFiles.json";
 import { type EditFilesParams, editFiles } from "./agentEditFiles";
 
@@ -153,10 +152,23 @@ vi.mock("../utils/index", async () => {
 
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
-describe("editFiles", () => {
-  useTestDatabase();
+const mockedDb = vi.hoisted(() => ({
+  research: {
+    where: vi.fn().mockReturnValue({
+      all: vi
+        .fn()
+        .mockResolvedValue([{ question: "Question", answer: "Answer" }]),
+    }),
+  },
+  todos: {
+    findByOptional: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
+    update: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+vi.mock("~/server/db/db", () => ({ db: mockedDb }));
 
-  beforeEach(() => {
+describe("editFiles", () => {
+  beforeEach(async () => {
     process.env.PROMPT_FOLDER = originalPromptsFolder;
   });
 
@@ -195,7 +207,7 @@ describe("editFiles", () => {
     expect(mockedPlan.createPlan).toHaveBeenLastCalledWith(
       `${issue.title}\n${issue.body}`,
       "file.txt:\ntext",
-      "",
+      "Question: Question\nAnswer: Answer",
       "",
       "",
     );

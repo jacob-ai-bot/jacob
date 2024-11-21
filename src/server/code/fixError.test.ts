@@ -17,6 +17,7 @@ const mockedCheckAndCommit = vi.hoisted(() => ({
   checkAndCommit: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(undefined))),
+  MAX_ATTEMPTS_TO_FIX_BUILD_ERROR: 1,
 }));
 vi.mock("./checkAndCommit", () => mockedCheckAndCommit);
 
@@ -63,6 +64,19 @@ const mockedEvents = vi.hoisted(() => ({
 }));
 vi.mock("~/server/utils/events", () => mockedEvents);
 
+const mockedBugfix = vi.hoisted(() => ({
+  getBuildErrors: vi.fn().mockResolvedValue([
+    {
+      filePath: "src/index.ts",
+      lineNumber: 10,
+      errorType: "SyntaxError",
+      errorMessage: "Unexpected token 'const'",
+    },
+  ]),
+  assessAndInstallNpmPackages: vi.fn().mockResolvedValue(false),
+}));
+vi.mock("../agent/bugfix", () => mockedBugfix);
+
 const mockedRequest = vi.hoisted(() => ({
   sendGptRequest: vi
     .fn()
@@ -72,6 +86,9 @@ const mockedRequest = vi.hoisted(() => ({
           resolve("__FILEPATH__file.txt__fixed-file-content"),
         ),
     ),
+  sendGptRequestWithSchema: vi
+    .fn()
+    .mockImplementation(() => new Promise((resolve) => resolve(""))),
   countTokens: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(100))),
@@ -117,6 +134,29 @@ const mockedPlan = vi.hoisted(() => ({
 }));
 vi.mock("../utils/plan", () => mockedPlan);
 
+const mockedDb = vi.hoisted(() => ({
+  research: {
+    where: vi.fn().mockReturnThis(),
+    all: vi.fn().mockResolvedValue([
+      {
+        question: "Question",
+        answer: "Answer",
+        todoId: "mocked-todo-id",
+      },
+    ]),
+  },
+  todos: {
+    findByOptional: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
+    update: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+vi.mock("~/server/db/db", () => ({ db: mockedDb }));
+
+const mockedTodos = vi.hoisted(() => ({
+  getOrCreateTodo: vi.fn().mockResolvedValue({ id: "mocked-todo-id" }),
+}));
+vi.mock("../utils/todos", () => mockedTodos);
+
 const originalPromptsFolder = process.env.PROMPT_FOLDER ?? "src/server/prompts";
 
 describe("fixError", () => {
@@ -146,26 +186,21 @@ describe("fixError", () => {
       repository: {
         owner: { login: "test-login" },
         name: "test-repo",
+        full_name: "test-login/test-repo",
       } as Repository,
       token: "token",
       prIssue,
-      body: "## Error Message (Attempt Number 2):\n```\nbuild-error-info\n\n```\n## Something else\n\n",
+      body: "## Error Message:\n```\nbuild-error-info\n\n```\n## Something else\n\n",
       rootPath: "/rootpath",
       branch: "jacob-issue-48-test",
       existingPr: { number: 48 } as PullRequest,
     });
 
-    expect(mockedAssessBuildError.assessBuildError).toHaveBeenCalledTimes(1);
-    expect(mockedAssessBuildError.assessBuildError).toHaveBeenLastCalledWith({
-      ...mockEventData,
-      errors: "build-error-info\n\n",
-      sourceMap: "source map",
-    });
-
     expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledTimes(1);
     expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledWith({
+      code: "__FILEPATH__file.txt__\ncode-with-error",
       errors: [
-        "Error in src/file.txt (1-5): something went wrong. Code: change some code",
+        "Error in src/index.ts: line(10): SyntaxError - Unexpected token 'const'",
       ],
       githubIssue: "body",
       rootPath: "/rootpath",
@@ -174,14 +209,18 @@ describe("fixError", () => {
     expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
     expect(mockedPR.concatenatePRFiles).toHaveBeenLastCalledWith(
       "/rootpath",
-      { name: "test-repo", owner: { login: "test-login" } },
+      {
+        full_name: "test-login/test-repo",
+        name: "test-repo",
+        owner: { login: "test-login" },
+      },
       "token",
       48,
       undefined,
-      ["src/file.txt"],
+      ["src/index.ts"],
     );
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledTimes(1);
     expect(mockedRequest.countTokens).toHaveBeenCalledTimes(1);
 
     expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
@@ -203,9 +242,9 @@ describe("fixError", () => {
     const checkAndCommitOptions =
       checkAndCommitCalls[0]![0] as CheckAndCommitOptions;
     expect(checkAndCommitOptions.commitMessage).toBe(
-      "JACoB fix error: something went wrong",
+      "JACoB fix error: src/index.ts: SyntaxError - line (10): Unexpected token 'const'",
     );
-    expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(2);
+    expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(1);
   });
 
   test("fixError handles lengthy plans", async () => {
@@ -223,6 +262,7 @@ describe("fixError", () => {
       repository: {
         owner: { login: "test-login" },
         name: "test-repo",
+        full_name: "test-login/test-repo",
       } as Repository,
       token: "token",
       prIssue,

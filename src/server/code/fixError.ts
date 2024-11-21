@@ -11,8 +11,6 @@ import {
   getStyles,
   generateJacobCommitMessage,
 } from "../utils";
-import { assessBuildError } from "./assessBuildError";
-import { runNpmInstall } from "../build/node/check";
 import {
   checkAndCommit,
   MAX_ATTEMPTS_TO_FIX_BUILD_ERROR,
@@ -32,7 +30,7 @@ import { type PlanStep } from "../agent/plan";
 import {
   assessAndInstallNpmPackages,
   getBuildErrors,
-  ProjectContext,
+  type ProjectContext,
 } from "../agent/bugfix";
 import { db } from "../db/db";
 import { researchIssue } from "../agent/research";
@@ -279,7 +277,7 @@ export async function fixError(params: FixErrorParams) {
           `Error in ${filePath}: line(${lineNumber}): ${errorType} - ${errorMessage}`,
       );
 
-      let model: Model = "claude-3-5-sonnet-20241022";
+      const model: Model = "claude-3-5-sonnet-20241022";
       const codeTokenCount = countTokens(code) * 1.05;
 
       const plan = await generateBugfixPlan({
