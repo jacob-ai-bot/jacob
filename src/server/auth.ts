@@ -25,6 +25,7 @@ declare module "next-auth/adapters" {
   interface AdapterUser {
     login?: string;
     role?: UserRole;
+    dashboardEnabled?: boolean;
   }
 }
 
@@ -124,6 +125,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           login: user.login,
           expires: session.expires,
+          dashboardEnabled: user.dashboardEnabled,
         },
       };
     },
