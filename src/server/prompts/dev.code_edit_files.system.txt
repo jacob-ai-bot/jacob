@@ -12,4 +12,4 @@ Here is the code that needs to be updated. It is a file called "code.txt":
 \`\`\` code.txt (contains one or more files to edit)
 ${code}
 \`\`\` end code.txt
-IMPORTANT: You MUST return the entire updated "code.txt" file. You MUST NEVER cut the response short or provide placeholder text, even for very long responses. ALWAYS provide the full response, never cut it off.
+IMPORTANT: You MUST return the entire updated "code.txt" file. You MUST NEVER cut the response short or provide placeholder text, even for very long responses. NEVER EVER EVER remove comments! They are there for a reason and the system will crash if they are removed. ALWAYS provide the full response, never cut it off.

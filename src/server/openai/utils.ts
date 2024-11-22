@@ -83,11 +83,12 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   // ],
   models: Model[] = [
     "claude-3-5-sonnet-20241022",
-    "gpt-4o-2024-08-06",
+    "gpt-4o-2024-11-20",
     "claude-3-5-sonnet-20241022",
+    "o1-preview-2024-09-12",
     // "gemini-1.5-pro-exp-0801",
   ],
-  minTemperature = 0.2,
+  minTemperature = 0.1,
   maxTemperature = 0.5,
 ): Promise<string | null> => {
   try {

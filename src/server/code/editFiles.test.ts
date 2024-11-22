@@ -40,6 +40,9 @@ const mockedRequest = vi.hoisted(() => ({
     filesToCreate: [],
     filesToUpdate: ["file.txt"],
   }),
+  sendSelfConsistencyChainOfThoughtGptRequest: vi
+    .fn()
+    .mockResolvedValue("__FILEPATH__file.txt__\nfixed-file-content"),
   sendGptRequest: vi
     .fn()
     .mockResolvedValue("__FILEPATH__file.txt__\nfixed-file-content"),
@@ -152,7 +155,7 @@ describe("editFiles", () => {
   test("editFiles success path", async () => {
     await editFiles(editFilesParams);
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(1);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(5);
 
     expect(mockedRequest.sendGptRequest.mock.calls[0]![0]).toContain(
       "Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.",

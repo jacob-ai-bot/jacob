@@ -33,6 +33,7 @@ import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
 import { PlanningAgentActionType } from "../db/enums";
 import { type PlanStep } from "../agent/plan";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -57,14 +58,8 @@ async function processStepIndividually(
     model: Model;
   },
 ) {
-  const {
-    rootPath,
-    repoSettings,
-    baseEventData,
-    issueText,
-    researchData,
-    model,
-  } = params;
+  const { rootPath, repoSettings, baseEventData, issueText, researchData } =
+    params;
 
   const filesToProcess = [step.filePath];
   const { code } = concatenateFiles(
@@ -140,7 +135,7 @@ async function processStepIndividually(
     codeTemplateParams,
   );
 
-  return await sendGptRequest(
+  return await sendSelfConsistencyChainOfThoughtGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
     0.2,
@@ -148,7 +143,6 @@ async function processStepIndividually(
     3,
     60000,
     undefined,
-    model,
   );
 }
 
@@ -304,14 +298,12 @@ export async function editFiles(params: EditFilesParams) {
     codeTemplateParams,
   );
 
-  let model: Model = "claude-3-5-sonnet-20241022";
+  const model: Model = "claude-3-5-sonnet-20241022";
   const codeTokenCount = countTokens(code);
   let updatedCode: string;
-  if (codeTokenCount > MAX_OUTPUT[model]) {
-    model = "gpt-4o-64k-output-alpha";
-  }
   if (codeTokenCount > MAX_OUTPUT[model] * 0.7) {
     // if the estimated output token count is too close to the model's limit, process each step individually to prevent responses getting truncated
+    // TODO: Change this to use patch-based generation (see agentEditFiles for an example)
     const results = await Promise.all(
       planSteps
         .filter(
@@ -334,7 +326,7 @@ export async function editFiles(params: EditFilesParams) {
     updatedCode = results.filter(Boolean).join("\n\n");
   } else {
     // Original single request logic
-    updatedCode = (await sendGptRequest(
+    updatedCode = (await sendSelfConsistencyChainOfThoughtGptRequest(
       codeUserPrompt,
       codeSystemPrompt,
       0.2,
@@ -342,7 +334,6 @@ export async function editFiles(params: EditFilesParams) {
       3,
       60000,
       undefined,
-      model,
     ))!;
   }
 
