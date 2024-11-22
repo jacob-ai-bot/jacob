@@ -21,15 +21,14 @@ export const evaluate = async (
   models: Model[] = ["claude-3-5-sonnet-20241022"],
 ): Promise<EvaluationInfo[]> => {
   const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must evaluate this GPT-generated output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. 
-  If this is a code change, your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. 
-  If this is a text response, your evaluation should specifically note if the response is accurate, relevant, and complete based on the original prompts.
-  Provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
+  If this is a code change, your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. Check to ensure the code file was not cut off prematurely. Deduct points if comments are removed or added that are not related to the issue.
+  Provide a brief summary of the evaluation and a final rating of the response from 1 to 5. Round to the nearest 0.1. Reserve 5.0 for only the most perfect responses, and use it sparingly.
 
   export const EvaluationSchema = z.object({
     evaluation: z.string(), // a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and (if applicable) how well the output addresses the original GitHub issue.
     unrelatedCodeChanges: z.string(), // a brief list of the unrelated code changes such as removed comments or other unrelated code additions or removals. If this is a text response or there are no unrelated code changes, say "None".
     summary: z.string(), // a brief summary of the evaluation
-    rating: z.number().min(1).max(5), // a final rating of the response from 1 to 5 (1 is bad, 2 is OK, 3 is good, 4 is great, 5 is perfect)
+    rating: z.number().min(1.0).max(5.0), // a final rating of the response from 1.0 to 5.0 (1.0 is bad, 2.0 is OK, 3.0 is good, 4.0 is excellent. You should ONLY use 5.0 if the response is absolutely perfect, but reserve it for rare cases only.)
   });
   ## INSTRUCTIONS
   Review the original user prompt, system prompt, and response. Evaluate how well the response adheres to the original user prompt and system prompt. Provide a detailed, multi-paragraph evaluation based on how closely the output adheres to these original instructions, and how well the output addresses the original GitHub issue. Provide a brief summary of the evaluation and a final rating of the response from 1 to 5.
