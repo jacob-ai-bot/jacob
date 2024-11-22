@@ -3,6 +3,7 @@ import {
   UncontrolledTreeEnvironment,
   Tree,
   StaticTreeDataProvider,
+  type TreeItemIndex,
 } from "react-complex-tree";
 import "react-complex-tree/lib/style.css";
 import { type CodeFile } from "./Chat";
@@ -21,6 +22,7 @@ interface TreeItem {
     isFolder: boolean;
     path: string;
   };
+  index: string;
 }
 
 export function FileMenu({
@@ -40,6 +42,7 @@ export function FileMenu({
           isFolder: true,
           path: "/",
         },
+        index: "root",
       },
     };
 
@@ -56,21 +59,22 @@ export function FileMenu({
         if (!items[itemId]) {
           items[itemId] = {
             id: itemId,
+            children: isLast ? undefined : [],
             data: {
               title: part,
               isFolder: !isLast,
               path: currentPath,
             },
+            index: itemId,
           };
 
-          if (!isLast) {
-            items[itemId].children = [];
+          const parent = items[parentId];
+          if (parent && !parent.children) {
+            parent.children = [];
           }
-
-          if (!items[parentId].children) {
-            items[parentId].children = [];
+          if (parent?.children) {
+            parent.children.push(itemId);
           }
-          items[parentId].children!.push(itemId);
         }
 
         parentId = itemId;
@@ -80,21 +84,18 @@ export function FileMenu({
     return items;
   }, [codeFiles]);
 
-  const handleSelect = (items: string[]) => {
-    const selectedId = items[0];
-    if (selectedId && !treeData[selectedId].data.isFolder) {
-      onFileSelect(treeData[selectedId].data.path);
+  const handleSelect = (_items: TreeItemIndex[], _treeId: string) => {
+    const selectedId = _items[0] as string;
+    const selectedItem = treeData[selectedId];
+    if (selectedId && selectedItem && !selectedItem.data.isFolder) {
+      onFileSelect(selectedItem.data.path);
     }
   };
 
   return (
     <div className="h-full w-64 overflow-auto border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-slate-900">
       <UncontrolledTreeEnvironment
-        dataProvider={
-          new StaticTreeDataProvider(treeData, (item) => ({
-            ...item,
-          }))
-        }
+        dataProvider={new StaticTreeDataProvider(treeData)}
         getItemTitle={(item) => item.data.title}
         viewState={{
           ["tree-1"]: {
@@ -103,7 +104,7 @@ export function FileMenu({
           },
         }}
         onExpandItem={(item) => {
-          setExpandedIds((prev) => [...prev, item.index]);
+          setExpandedIds((prev) => [...prev, item.index as string]);
         }}
         onCollapseItem={(item) => {
           setExpandedIds((prev) => prev.filter((id) => id !== item.index));
