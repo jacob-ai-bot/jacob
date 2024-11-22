@@ -23,7 +23,13 @@ const EvaluationSchema = z.object({
   overallIndicator: z.enum(["Red", "Yellow", "Green"]),
 });
 
+const JiraEvaluationSchema = z.object({
+  evaluationScore: z.number().min(1).max(5),
+  feedback: z.string().nullable(),
+});
+
 export type Evaluation = z.infer<typeof EvaluationSchema>;
+export type JiraEvaluation = z.infer<typeof JiraEvaluationSchema>;
 
 export async function evaluateIssue({
   githubIssue,
@@ -142,6 +148,59 @@ Please provide your evaluation in the following JSON format:
     userPrompt,
     systemPrompt,
     EvaluationSchema,
+    0.4,
+    baseEventData,
+    3,
+    "claude-3-5-sonnet-20241022",
+  );
+
+  return evaluation;
+}
+
+export async function evaluateJiraIssue({
+  title,
+  description,
+  baseEventData,
+}: {
+  title: string;
+  description: string;
+  baseEventData?: BaseEventData;
+}): Promise<JiraEvaluation> {
+  const systemPrompt = `You are an expert software architect and technical evaluator. Your task is to analyze a Jira issue and evaluate whether it contains sufficient detail for an AI coding agent to implement it successfully.
+
+Key points to consider:
+- Issue description clarity: Is the requirement well-defined with clear objectives?
+- Implementation details: Are there specific technical requirements or constraints?
+- Acceptance criteria: Are the success criteria clearly defined?
+- Technical context: Is there enough context about the existing system?
+- Edge cases: Are potential edge cases and error scenarios described?
+
+Provide a score from 1-5 (half points allowed) indicating how likely an AI agent can successfully implement this issue:
+1: Extremely vague, missing critical information
+2: Basic idea present but lacking important details
+3: Moderate detail but missing some key information
+4: Good detail with clear requirements
+5: Excellent detail with comprehensive information
+
+If the score is less than 4, provide a one-sentence feedback message explaining what needs to be added to make the issue actionable.`;
+
+  const userPrompt = `Please evaluate the following Jira issue:
+
+Title: ${title}
+
+Description:
+${description}
+
+Provide your evaluation in the following JSON format:
+{
+  "evaluationScore": number, // 1-5 with half points allowed
+  "feedback": string | null // One-sentence feedback if score < 4, null otherwise
+}`;
+
+  const evaluation = await sendGptRequestWithSchema(
+    userPrompt,
+    systemPrompt,
+    JiraEvaluationSchema,
     0.4,
     baseEventData,
     3,

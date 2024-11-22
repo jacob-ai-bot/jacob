@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { evaluateIssue } from "./evaluateIssue";
+import { evaluateIssue, evaluateJiraIssue } from "./evaluateIssue";
 import * as openaiRequest from "../openai/request";
 import { PlanningAgentActionType } from "../db/enums";
 import { type StandardizedPath } from "./files";
@@ -247,5 +247,54 @@ describe("evaluateIssue", () => {
       3,
       "claude-3-5-sonnet-20241022",
     );
+  });
+});
+
+describe("evaluateJiraIssue", () => {
+  it("should return a valid evaluation for a well-defined issue", async () => {
+    const mockEvaluation = {
+      evaluationScore: 4.5,
+      feedback: null,
+    };
+
+    vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
+      mockEvaluation,
+    );
+
+    const result = await evaluateJiraIssue({
+      title: "Implement user authentication with OAuth",
+      description:
+        "Add OAuth2 authentication flow using GitHub provider. Include login/logout buttons, handle token storage, and implement protected routes. Use NextAuth.js for implementation.",
+    });
+
+    expect(result).toEqual(mockEvaluation);
+    expect(openaiRequest.sendGptRequestWithSchema).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.any(Object),
+      0.4,
+      undefined,
+      3,
+      "claude-3-5-sonnet-20241022",
+    );
+  });
+
+  it("should return a low score and feedback for an insufficient issue", async () => {
+    const mockEvaluation = {
+      evaluationScore: 2.5,
+      feedback:
+        "Please provide specific implementation details and acceptance criteria for the authentication feature.",
+    };
+
+    vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
+      mockEvaluation,
+    );
+
+    const result = await evaluateJiraIssue({
+      title: "Add authentication",
+      description: "We need to add user authentication to the app.",
+    });
+
+    expect(result).toEqual(mockEvaluation);
   });
 });
