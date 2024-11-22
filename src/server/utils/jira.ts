@@ -353,6 +353,57 @@ export async function getJiraCloudIdResources(accessToken: string) {
   return resourcesData;
 }
 
+export async function updateJiraTicketWithTodoLink(
+  jiraIssueId: string,
+  cloudId: string,
+  accessToken: string,
+  todoLink: string,
+): Promise<void> {
+  const body = {
+    body: {
+      version: 1,
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "A todo has been created for this issue in Jacob AI: ",
+            },
+            {
+              type: "text",
+              text: todoLink,
+              marks: [{ type: "link", attrs: { href: todoLink } }],
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  const response = await fetch(
+    `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue/${jiraIssueId}/comment`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!response.ok) {
+    const errorDetails = await response.text();
+    console.error("Error details:", errorDetails);
+    throw new Error(
+      `Failed to update Jira ticket with todo link: ${response.statusText}`,
+    );
+  }
+}
+
 // https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/
 // Jira issues are stored in ADF format, need to extract the text from it
 export function extractTextFromADF(adfNode: any): string {

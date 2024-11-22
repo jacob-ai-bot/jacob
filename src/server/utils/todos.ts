@@ -12,6 +12,7 @@ import { getOrGeneratePlan } from "./plan";
 import { getRepoSettings, type RepoSettings } from "./settings";
 import { getOrCreateCodebaseContext } from "./codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
+import { updateJiraTicketWithTodoLink } from "./jira";
 
 interface GetOrCreateTodoParams {
   repo: string;
@@ -22,6 +23,7 @@ interface GetOrCreateTodoParams {
   sourceMap?: string;
   agentEnabled?: boolean;
   repoSettings?: RepoSettings;
+  jiraIssueId?: string;
 }
 
 export const getOrCreateTodo = async ({
@@ -33,6 +35,7 @@ export const getOrCreateTodo = async ({
   sourceMap,
   agentEnabled,
   repoSettings,
+  jiraIssueId,
 }: GetOrCreateTodoParams) => {
   const [repoOwner, repoName] = repo?.split("/") ?? [];
 
@@ -91,7 +94,39 @@ export const getOrCreateTodo = async ({
       status: TodoStatus.TODO,
       issueId: issue.number,
       position: issue.number,
+      jiraIssueId: jiraIssueId,
     });
+
+    // If this todo is linked to a Jira issue, update the Jira ticket with a link
+    if (jiraIssueId) {
+      try {
+        const project = await db.projects.findBy({ id: projectId });
+        if (!project?.jiraCloudId) {
+          throw new Error("Project Jira cloud ID not found");
+        }
+
+        const account = await db.accounts.findBy({
+          userId: project.createdBy,
+        });
+        if (!account?.jiraAccessToken) {
+          throw new Error("Jira access token not found");
+        }
+
+        const todoLink = `https://app.jacb.ai/dashboard/${repoOwner}/${repoName}/todos/${newTodo.id}`;
+        await updateJiraTicketWithTodoLink(
+          jiraIssueId,
+          project.jiraCloudId,
+          account.jiraAccessToken,
+          todoLink,
+        );
+      } catch (error) {
+        console.error(
+          `Error updating Jira ticket ${jiraIssueId} with todo link: ${String(
+            error,
+          )}`,
+        );
+      }
+    }
 
     // Only research issues and create plans for agent repos for now
     // TODO: only research issues for premium accounts
