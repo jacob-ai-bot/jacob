@@ -3,6 +3,7 @@ import {
   type ExecAsyncException,
   type BaseEventData,
   rethrowErrorWithTokenRedacted,
+  generateCommitMessage,
 } from "../utils";
 
 const appName = process.env.GITHUB_APP_NAME ?? "";
@@ -57,7 +58,19 @@ export async function addCommitAndPush({
     const hasChanges = statusOutput.toString().trim() !== "";
 
     if (hasChanges) {
-      const sanitizedMessage = sanitizeCommitMessage(commitMessage);
+      const { stdout: diffOutput } = await executeWithLogRequiringSuccess({
+        ...baseEventData,
+        directory: rootPath,
+        command: "git diff --staged",
+      });
+
+      const generatedMessage = await generateCommitMessage(
+        diffOutput,
+        commitMessage,
+      );
+      const finalMessage = generatedMessage || commitMessage;
+      const sanitizedMessage = sanitizeCommitMessage(finalMessage);
+
       await executeWithLogRequiringSuccess({
         ...baseEventData,
         directory: rootPath,
