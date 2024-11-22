@@ -43,6 +43,12 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_JIRA_CLIENT_ID: z.string(),
     NEXT_PUBLIC_LINEAR_CLIENT_ID: z.string(),
+    NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
+    NEXT_PUBLIC_POSTHOG_HOST: z
+      .string()
+      .optional()
+      .default("https://app.posthog.com"),
+    NEXT_PUBLIC_ENABLE_ANALYTICS: z.enum(["true", "false"]).default("false"),
   },
 
   /**
@@ -64,6 +70,9 @@ export const env = createEnv({
     LINEAR_WEBHOOK_SECRET: process.env.LINEAR_WEBHOOK_SECRET,
     NEXT_PUBLIC_JIRA_CLIENT_ID: process.env.NEXT_PUBLIC_JIRA_CLIENT_ID,
     NEXT_PUBLIC_LINEAR_CLIENT_ID: process.env.NEXT_PUBLIC_LINEAR_CLIENT_ID,
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
