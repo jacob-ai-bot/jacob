@@ -9,12 +9,7 @@ import {
   getStyles,
   type TemplateParams,
 } from "../utils";
-import {
-  countTokens,
-  MAX_OUTPUT,
-  type Model,
-  sendGptRequest,
-} from "../openai/request";
+import { countTokens, MAX_OUTPUT, type Model } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import {

@@ -7,7 +7,6 @@ import {
   StaticTreeDataProvider,
   type TreeItemIndex,
 } from "react-complex-tree";
-import { ContextItem } from "~/server/utils/codebaseContext";
 
 interface FileMenuProps {
   filePaths: string[];
@@ -127,15 +126,11 @@ export function FileMenu({
         canReorderItems={false}
         renderItemTitle={({ item, context }) => (
           <div
-            className={`
-            flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-150
-            ${
+            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-150 ${
               context.isSelected
                 ? "bg-aurora-100 text-aurora-700 dark:bg-aurora-900/30 dark:text-aurora-300"
                 : "hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800/50 dark:hover:text-neutral-300"
-            }
-            ${item.isFolder ? "font-medium text-neutral-700 dark:text-neutral-200" : "text-neutral-600 dark:text-neutral-400"}
-          `}
+            } ${item.isFolder ? "font-medium text-neutral-700 dark:text-neutral-200" : "text-neutral-600 dark:text-neutral-400"}`}
           >
             {item.isFolder ? (
               <FolderIcon
@@ -152,8 +147,7 @@ export function FileMenu({
         renderItemArrow={({ item, context }) =>
           item.isFolder ? (
             <ChevronRightIcon
-              className={`h-3.5 w-3.5 text-neutral-500 transition-transform duration-150 dark:text-neutral-400
-                ${context.isExpanded ? "rotate-90" : ""}`}
+              className={`h-3.5 w-3.5 text-neutral-500 transition-transform duration-150 dark:text-neutral-400 ${context.isExpanded ? "rotate-90" : ""}`}
             />
           ) : null
         }
