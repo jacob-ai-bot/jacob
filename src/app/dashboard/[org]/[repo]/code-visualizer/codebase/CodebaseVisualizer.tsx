@@ -40,6 +40,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   const [viewMode, setViewMode] = useState<"folder" | "taxonomy" | "research">(
     "folder",
   );
+  const [scalingMode, setScalingMode] = useState<"size" | "importance">("size");
 
   const { data: researchItems, isLoading: isLoadingResearch } =
     api.todos.getProjectResearch.useQuery(
@@ -76,11 +77,36 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
     });
   }, [contextItems, currentPath, viewMode]);
 
-  const treeData = useMemo(() => {
-    return processContextItems(filteredContextItems, currentPath, viewMode);
-  }, [filteredContextItems, currentPath, viewMode]);
+  const calculateImportance = (item: ContextItem): number => {
+    let importance = 0;
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // File role importance
+    if (item.file.includes("index.")) importance += 5;
+    if (item.file.includes("main.")) importance += 4;
+    if (item.file.includes("app.")) importance += 4;
+    if (item.file.includes("types.")) importance += 3;
+    if (item.file.includes("utils.")) importance += 2;
+
+    // Dependencies importance
+    const numImports = item.imports?.length ?? 0;
+    importance += Math.min(5, numImports / 2);
+
+    // Git metrics importance
+    const numCommits = item.commits?.length ?? 0;
+    importance += Math.min(3, numCommits / 5);
+
+    return importance;
+  };
+
+  const treeData = useMemo(() => {
+    return processContextItems(
+      filteredContextItems,
+      currentPath,
+      viewMode,
+      scalingMode,
+    );
+  }, [filteredContextItems, currentPath, viewMode, scalingMode]);
+
   const handleNodeClick = (path: string) => {
     if (viewMode === "folder") {
       const folder = path
@@ -230,6 +256,24 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
               >
                 Research
               </button>
+              {viewMode !== "research" && (
+                <button
+                  className={`rounded px-3 py-1 text-sm ${
+                    scalingMode === "importance"
+                      ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                      : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                  }`}
+                  onClick={() =>
+                    setScalingMode(
+                      scalingMode === "size" ? "importance" : "size",
+                    )
+                  }
+                >
+                  {scalingMode === "size"
+                    ? "Scale by Size"
+                    : "Scale by Importance"}
+                </button>
+              )}
             </div>
           </div>
           <motion.div
@@ -299,6 +343,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 selectedFolder={"/" + currentPath?.join("/")}
                 viewMode={viewMode}
                 theme={theme}
+                scalingMode={scalingMode}
               />
             )}
           </motion.div>
@@ -335,14 +380,20 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   );
 };
 
-function getCircleSize(text: string) {
-  return Math.floor(text.length / 50);
+function getCircleSize(
+  text: string,
+  importance: number,
+  scalingMode: "size" | "importance",
+) {
+  const sizeFromLength = Math.floor(text.length / 50);
+  return scalingMode === "size" ? sizeFromLength : sizeFromLength + importance;
 }
 
 function processContextItems(
   contextItems: ContextItem[],
   currentPath: string[],
   viewMode: "folder" | "taxonomy" | "research",
+  scalingMode: "size" | "importance",
 ): FileType {
   const root: FileType = {
     name: currentPath[currentPath.length - 1] ?? "root",
@@ -354,7 +405,6 @@ function processContextItems(
   };
 
   contextItems.forEach((item) => {
-    // set the taxonomy to be the taxonomy string + the file (just the actual file name, not the path!)
     const taxonomy = item.taxonomy! + "/" + item.file?.split("/").pop() ?? "";
     const parts =
       viewMode === "folder"
@@ -367,6 +417,15 @@ function processContextItems(
             .filter(Boolean)
             .slice(currentPath.length - 1) ?? [];
     let currentNode = root;
+
+    let importance = 0;
+    if (item.file.includes("index.")) importance += 5;
+    if (item.file.includes("main.")) importance += 4;
+    if (item.file.includes("app.")) importance += 4;
+    if (item.file.includes("types.")) importance += 3;
+    if (item.file.includes("utils.")) importance += 2;
+    importance += Math.min(5, (item.imports?.length ?? 0) / 2);
+    importance += Math.min(3, (item.commits?.length ?? 0) / 5);
 
     parts.forEach((part, index) => {
       let child = currentNode.children?.find(
@@ -382,7 +441,7 @@ function processContextItems(
                   .concat(parts.slice(0, index + 1))
                   .join("/")
               : parts.slice(0, index + 1).join("/"),
-          size: getCircleSize(item.text ?? ""),
+          size: getCircleSize(item.text ?? "", importance, scalingMode),
           file: item.file,
           taxonomy: taxonomy,
           children: [],
@@ -392,7 +451,7 @@ function processContextItems(
         }
       }
       if (index === parts.length - 1) {
-        child.size = getCircleSize(item.text ?? "");
+        child.size = getCircleSize(item.text ?? "", importance, scalingMode);
         if (!item.file?.includes(".")) {
           delete child.children;
         }
