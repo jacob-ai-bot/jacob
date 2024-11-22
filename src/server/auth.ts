@@ -26,6 +26,7 @@ declare module "next-auth/adapters" {
     login?: string;
     role?: UserRole;
     dashboardEnabled?: boolean;
+    isTeamAdmin?: boolean;
   }
 }
 
@@ -36,13 +37,14 @@ declare module "next-auth" {
       login: string;
       role?: UserRole;
       dashboardEnabled?: boolean;
+      isTeamAdmin?: boolean;
       expires?: string; // ISO DateString
       // ...other properties
     } & DefaultSession["user"];
     accessToken: string;
   }
 
-  export interface Profile {
+  interface Profile {
     login: string;
   }
 
@@ -51,6 +53,7 @@ declare module "next-auth" {
     role: UserRole;
     login: string;
     expires?: string;
+    isTeamAdmin?: boolean;
   }
 }
 
@@ -126,6 +129,7 @@ export const authOptions: NextAuthOptions = {
           login: user.login,
           expires: session.expires,
           dashboardEnabled: user.dashboardEnabled,
+          isTeamAdmin: account.isTeamAdmin ?? false,
         },
       };
     },
