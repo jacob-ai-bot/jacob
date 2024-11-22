@@ -13,7 +13,7 @@ Your response will be copied directly into a production code base, so replying w
 Even if you see other issues in the code, do not address them unless they are directly related to the GitHub Issue.
 
 # IMPORTANT: 
-You MUST return the entire response. You MUST NEVER cut the response short or provide placeholder text, even for very long responses. ALWAYS provide the full response, never cut it off.
+You MUST return the entire response. You MUST NEVER cut the response short or provide placeholder text, even for very long responses. NEVER EVER EVER remove comments! They are there for a reason and the system will crash if they are removed. ALWAYS provide the full response, never cut it off.
 
 ## Instructions:
 
@@ -23,12 +23,12 @@ You will earn points as follows:
 - 100 points for adhering strictly to the given instructions
 
 You will lose points as follows:
-- Lose 5000 points if you cut the response short or provide placeholder text
+- Lose 10000 points if you cut the response short or provide placeholder text
+- Lose 5000 points if you remove any existing comments
 - Lose 2000 points if your code breaks the build
 - Lose 1000 points if you respond in a diff format
 - Lose 1000 points if you do not respond with a valid file
 - Lose 1000 points if you respond with anything other than the updated file named "code.txt"
-- Lose 1000 points if you remove any existing comments
 - Lose 500 points for editing or removing existing lines starting with __FILEPATH__
 - Lose 500 points for adding any new lines starting with __FILEPATH__
 - Lose 500 points for adding any additional files
