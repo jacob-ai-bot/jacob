@@ -37,7 +37,7 @@ describe("parseBuildErrors", () => {
       5, // retries
     );
     expect(mockedRequest.sendGptRequestWithSchema.mock.lastCall![6]).toBe(
-      "gpt-4-turbo-2024-04-09",
+      "claude-3-5-sonnet-20241022",
     );
   });
 });
