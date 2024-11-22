@@ -15,7 +15,10 @@ interface ArtifactProps {
   fileName: string;
   filePath: string;
   language: string;
+  onSelectNewFile: (path: string) => void;
   codeFiles?: CodeFile[];
+  allFilePaths?: string[];
+  onHideArtifact: () => void;
 }
 
 export function Artifact({
@@ -24,17 +27,32 @@ export function Artifact({
   filePath,
   language,
   codeFiles = [],
+  allFilePaths = [],
+  onSelectNewFile,
+  onHideArtifact,
 }: ArtifactProps) {
   const [activeTab, setActiveTab] = useState<"view" | "edit" | "diff">("view");
   const [originalContent, setOriginalContent] = useState<string | null>(null);
-  const [selectedFilePath, setSelectedFilePath] = useState<string>(filePath);
-  const [selectedContent, setSelectedContent] = useState<string>(content);
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
+  const [selectedContent, setSelectedContent] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   };
+  useEffect(() => {
+    setSelectedFilePath(filePath);
+  }, [filePath]);
+
+  useEffect(() => {
+    setSelectedContent(content);
+  }, [content]);
+
+  useEffect(() => {
+    setSelectedFilename(fileName);
+  }, [fileName]);
 
   useEffect(() => {
     if (codeFiles.length > 0) {
@@ -54,10 +72,7 @@ export function Artifact({
 
   const handleFileSelect = (path: string) => {
     setSelectedFilePath(path);
-    const selectedFile = codeFiles.find((file) => file.path === path);
-    if (selectedFile?.content) {
-      setSelectedContent(selectedFile.content);
-    }
+    onSelectNewFile(path);
   };
 
   const handleSave = async () => {
@@ -66,7 +81,7 @@ export function Artifact({
       if ("showSaveFilePicker" in window) {
         // @ts-ignore
         const fileHandle = await window.showSaveFilePicker({
-          suggestedName: fileName,
+          suggestedName: selectedFilename,
           types: [
             {
               description: "Text Files",
@@ -86,7 +101,7 @@ export function Artifact({
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = fileName;
+        link.download = selectedFilename ?? "";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -110,8 +125,8 @@ export function Artifact({
   return (
     <div className="flex h-full w-full">
       <FileMenu
-        codeFiles={codeFiles}
-        selectedFilePath={selectedFilePath}
+        filePaths={allFilePaths}
+        selectedFilePath={selectedFilePath ?? ""}
         onFileSelect={handleFileSelect}
       />
       <motion.div
@@ -122,9 +137,11 @@ export function Artifact({
       >
         <div className="border-b border-aurora-200 bg-aurora-50/50 shadow-sm dark:border-gray-700 dark:bg-slate-800">
           <div className="flex items-center justify-between px-4 py-2">
-            <h2 className="truncate text-sm font-medium text-gray-700 dark:text-gray-200">
-              {fileName}
-            </h2>
+            <div className="flex items-center space-x-2">
+              <h2 className="truncate text-sm font-medium text-gray-700 dark:text-gray-200">
+                {selectedFilename}
+              </h2>
+            </div>
             <div className="flex">
               <button
                 onClick={() => setActiveTab("view")}
@@ -158,6 +175,13 @@ export function Artifact({
                   Diff
                 </button>
               )}
+              <button
+                onClick={onHideArtifact}
+                className="ml-4 rounded p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                title="Hide artifact"
+              >
+                ✕
+              </button>
             </div>
           </div>
         </div>
@@ -185,7 +209,7 @@ export function Artifact({
               >
                 <DiffEditor
                   original={originalContent ?? ""}
-                  modified={selectedContent}
+                  modified={selectedContent ?? ""}
                   language={language}
                   theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
                   options={{
@@ -211,7 +235,7 @@ export function Artifact({
                 className="h-full"
               >
                 <Editor
-                  value={selectedContent}
+                  value={selectedContent ?? ""}
                   language={language}
                   theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
                   options={{
@@ -232,7 +256,7 @@ export function Artifact({
         </div>
         <div className="flex items-center justify-end space-x-2 border-t border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-slate-800">
           <button
-            onClick={() => copyToClipboard(selectedContent)}
+            onClick={() => copyToClipboard(selectedContent ?? "")}
             className="rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             title="Copy to clipboard"
           >

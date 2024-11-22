@@ -52,20 +52,20 @@ body {
 }
 
 .markdown h1 {
-  @apply text-github-red mb-4 mt-6 border-b border-[#30363d] pb-1 text-2xl dark:border-[#30363d] dark:text-[rgb(224,108,117)];
+  @apply mb-4 mt-6 border-b border-[#30363d] pb-1 text-2xl text-github-red dark:border-[#30363d] dark:text-[rgb(224,108,117)];
 }
 
 .markdown h2 {
-  @apply text-github-red mb-4 mt-6 border-b border-[#30363d] pb-1 text-xl dark:border-[#30363d] dark:text-[rgb(224,108,117)];
+  @apply mb-4 mt-6 border-b border-[#30363d] pb-1 text-xl text-github-red dark:border-[#30363d] dark:text-[rgb(224,108,117)];
 }
 
 .markdown h3 {
-  @apply text-github-green dark:text-github-green mb-3 mt-4 text-lg;
+  @apply mb-3 mt-4 text-lg text-github-green dark:text-github-green;
 }
 
 .markdown h4,
 .markdown h5 {
-  @apply text-github-blue mb-3 mt-4 text-base dark:text-[rgb(198,120,221)];
+  @apply mb-3 mt-4 text-base text-github-blue dark:text-[rgb(198,120,221)];
 }
 
 .markdown hr {
@@ -85,7 +85,7 @@ body {
 }
 
 .markdown strong {
-  @apply text-github-blue font-semibold dark:text-[rgb(58,146,225)];
+  @apply font-semibold text-github-blue dark:text-[rgb(58,146,225)];
 }
 
 .markdown code {
@@ -408,6 +408,46 @@ body {
     @apply border-border;
   }
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
   }
+}
+
+.rct-tree-item-li {
+  @apply hover:bg-neutral-100 dark:hover:bg-neutral-800/70 !important;
+}
+.rct-tree-item-button {
+  @apply w-full outline-none ring-0 focus:ring-0 dark:hover:bg-neutral-800/50 !important;
+}
+.rct-tree-item-title-container-selected {
+  @apply bg-aurora-100 dark:bg-aurora-900/30 !important;
+}
+
+.rct-tree-item-button-selected {
+  @apply bg-aurora-100 dark:bg-aurora-900/30 !important;
+}
+
+.rct-tree-item {
+  @apply select-none !important;
+}
+
+.rct-tree-item-title-container {
+  @apply flex-1 !important;
+}
+
+.rct-tree-item-arrow {
+  @apply flex w-6 items-center justify-center !important;
+}
+
+/* Remove the default focus and selection styles */
+.rct-tree-item-button::before {
+  display: none !important;
+}
+
+.rct-tree-item-button:focus {
+  background: transparent !important;
+}
+
+/* Remove the default left border */
+.rct-tree-item-button {
+  border-left: none !important;
 }

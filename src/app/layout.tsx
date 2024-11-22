@@ -6,6 +6,7 @@ import "~/index.css";
 import { TRPCReactProvider } from "~/trpc/react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "react-complex-tree/lib/style-modern.css";
 
 export const metadata = {
   title: "JACoB",
