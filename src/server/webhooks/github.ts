@@ -1,6 +1,5 @@
 import { App } from "@octokit/app";
 import * as dotenv from "dotenv";
-import { Octokit } from "@octokit/rest";
 
 import {
   authInstallation,

@@ -135,6 +135,7 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
   }, [messages]);
 
   useEffect(() => {
+    console.log("codeContent", codeContent);
     if (codeContent) {
       setArtifactFilePath(codeContent[0]?.path ?? "");
       setArtifactContent(codeContent[0]?.content ?? "");
@@ -153,6 +154,7 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
       if (selectedFile) {
         setSelectedFiles([selectedFilePath]);
         void refetchCodeContent();
+        console.log("refetching code content for ", selectedFilePath);
       } else {
         toast.error("Selected file not found in the codebase context.");
       }
@@ -168,6 +170,20 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
     await append({ role: "user", content: message });
   };
 
+  const handleSelectNewFile = (path: string) => {
+    console.log("handleSelectNewFile", path);
+    setSelectedFiles([path]);
+    void refetchCodeContent();
+  };
+
+  const handleHideArtifact = () => {
+    setArtifactContent(null);
+    setArtifactFileName("");
+    setArtifactLanguage("");
+    setArtifactFilePath("");
+    setSelectedFiles([]);
+  };
+
   if (!mounted) return null;
 
   return (
@@ -175,12 +191,14 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
       <div className="mx-auto flex max-w-5xl flex-1 flex-col overflow-clip rounded-md bg-white/50 p-4 shadow-sm dark:bg-slate-800">
         <div className="mb-1 w-full self-end p-1 text-right dark:bg-gray-800">
           <div className="relative flex items-center justify-end">
-            <div className="relative z-10 -mt-2 mr-6 text-left">
-              <SearchBar
-                codebaseContext={contextItems}
-                onSelectResult={handleSearchResultSelect}
-              />
-            </div>
+            {!artifactContent && (
+              <div className="relative z-10 -mt-2 mr-6 text-left">
+                <SearchBar
+                  codebaseContext={contextItems}
+                  onSelectResult={handleSearchResultSelect}
+                />
+              </div>
+            )}
             <div className="z-0">
               <ModelSelector selectedModel={model} onModelChange={setModel} />
             </div>
@@ -226,6 +244,9 @@ export function Chat({ contextItems, org, repo, selectedFilePath }: ChatProps) {
           language={artifactLanguage}
           codeFiles={codeContent}
           filePath={artifactFilePath}
+          allFilePaths={contextItems.map((item) => item.file)}
+          onSelectNewFile={handleSelectNewFile}
+          onHideArtifact={handleHideArtifact}
         />
       )}
     </div>
