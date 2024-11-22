@@ -6,6 +6,7 @@ export type ErrorInfo = {
   filePath: string;
   lineNumber: number;
   errorType: string;
+  codeWithError?: string;
   errorMessage: string;
 };
 
@@ -15,6 +16,7 @@ const ErrorInfoSchema = z.object({
       filePath: z.string().nullable(),
       lineNumber: z.number().nullable(),
       errorType: z.string().nullable(),
+      codeWithError: z.string().nullable(),
       errorMessage: z.string().nullable(),
     }),
   ),
@@ -43,6 +45,7 @@ export async function parseBuildErrors(
     - lineNumber: The line number where the error occurred (as a number)
     - errorType: The type or category of the error
     - errorMessage: The detailed error message
+    - codeWithError: The code that caused the error (if applicable)
 
     Build Output:
     ${buildOutput}
@@ -55,6 +58,7 @@ export async function parseBuildErrors(
         filePath: z.string(),
         lineNumber: z.number(),
         errorType: z.string(),
+        codeWithError: z.string(),
         errorMessage: z.string(),
       }),
      )
@@ -64,18 +68,20 @@ export async function parseBuildErrors(
     {
       "errors": [
         {
-          "filePath": "src/index.ts",
-          "lineNumber": 10,
-        "errorType": "SyntaxError",
-        "errorMessage": "Unexpected token 'const'"
-      },
-      {
-        "filePath": "src/utils.ts",
-        "lineNumber": 20,
-        "errorType": "TypeError",
-        "errorMessage": "Cannot read property 'map' of undefined"
-      }
-    ]
+          "filePath": "./src/lib/posthog.ts",
+          "lineNumber": 8,
+          "errorType": "Type error",
+          "codeWithError": ">  8 |   posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {",
+          "errorMessage": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'."
+        },
+        {
+          "filePath": "src/utils.ts",
+          "lineNumber": 20,
+          "errorType": "Type error",
+          "codeWithError": "> 20 |   const { data } = await supabase.from('users').select('*').eq('id', userId).map((user) => user.id);",
+          "errorMessage": "Cannot read property 'map' of undefined"
+        }
+      ]
     }
 
     If you can't determine a value, use an empty string for string fields or 0 for lineNumber.
@@ -89,7 +95,7 @@ export async function parseBuildErrors(
       0.2,
       undefined,
       5,
-      "gpt-4-turbo-2024-04-09",
+      "claude-3-5-sonnet-20241022",
     )) as ParsedErrors;
     const errors = parsedErrors.errors;
     // convert the error files to standardize paths

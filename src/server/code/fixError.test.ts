@@ -200,7 +200,7 @@ describe("fixError", () => {
     expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledWith({
       code: "__FILEPATH__file.txt__\ncode-with-error",
       errors: [
-        "Error in src/index.ts: line(10): SyntaxError - Unexpected token 'const'",
+        "Error in src/index.ts: line(10): SyntaxError - Unexpected token 'const' ",
       ],
       githubIssue: "body",
       rootPath: "/rootpath",

@@ -273,8 +273,8 @@ export async function fixError(params: FixErrorParams) {
       );
 
       const errorMessages = errorInfoArray?.map(
-        ({ filePath, lineNumber, errorType, errorMessage }) =>
-          `Error in ${filePath}: line(${lineNumber}): ${errorType} - ${errorMessage}`,
+        ({ filePath, lineNumber, errorType, errorMessage, codeWithError }) =>
+          `Error in ${filePath}: line(${lineNumber}): ${errorType} - ${errorMessage} ${codeWithError ? `\nCode: ${codeWithError}` : ""}`,
       );
 
       const model: Model = "claude-3-5-sonnet-20241022";
