@@ -30,11 +30,12 @@ import { CircleText } from "./CircleText";
 import { keepBetween, keepCircleInsideCircle, truncateString } from "./utils";
 import { type ContextItem } from "~/server/utils/codebaseContext";
 import { standardizePath } from "~/app/utils";
+
 type Props = {
   data: FileType;
   filesChanged: string[];
   maxDepth: number;
-  colorEncoding: "type" | "number-of-changes" | "last-change";
+  colorEncoding: "type" | "number-of-changes" | "last-change" | "importance";
   customFileColors?: Record<string, string>;
   onNodeClick?: (path: string) => void;
   width?: number;
@@ -44,6 +45,7 @@ type Props = {
   viewMode: "folder" | "taxonomy";
   theme: "light" | "dark";
 };
+
 type ExtendedFileType = {
   extension?: string;
   pathWithoutExtension?: string;
@@ -52,7 +54,9 @@ type ExtendedFileType = {
   value?: number;
   sortOrder?: number;
   fileColors?: Record<string, string>;
+  importance?: number;
 } & FileType;
+
 type ProcessedDataItem = {
   data: ExtendedFileType;
   depth: number;
@@ -63,10 +67,30 @@ type ProcessedDataItem = {
   parent: ProcessedDataItem | null;
   children: Array<ProcessedDataItem>;
 };
+
 const looseFilesId = "__structure_loose_file__";
 const maxChildren = 9000;
 const lastCommitAccessor = (d) => new Date(d.commits?.[0]?.date + "0");
 const numberOfCommitsAccessor = (d) => d?.commits?.length || 0;
+
+const calculateImportance = (file: ExtendedFileType): number => {
+  let importance = 1;
+
+  // Weight by file type/role
+  const isEntryPoint = file.name.includes("index") || file.name.includes("main");
+  if (isEntryPoint) importance += 3;
+
+  // Weight by Git metrics
+  const commitCount = file.commits?.length || 0;
+  importance += Math.min(commitCount / 10, 5);
+
+  // Weight by dependencies
+  const importCount = file.imports?.length || 0;
+  importance += Math.min(importCount / 5, 3);
+
+  return importance;
+};
+
 export const Tree = ({
   data,
   filesChanged = [],
@@ -83,6 +107,7 @@ export const Tree = ({
 }: Props) => {
   const fileColors = { ...defaultFileColors, ...customFileColors };
   const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [hoveredFile, setHoveredFile] = useState<ExtendedFileType | null>(null);
   const cachedPositions = useRef<Record<string, [number, number]>>({});
   const cachedOrders = useRef<Record<string, string[]>>({});
 
@@ -92,7 +117,23 @@ export const Tree = ({
       return d.children ? flatten(d.children.map(flattenTree)) : d;
     };
     const items = flattenTree(data);
-    // @ts-ignore
+
+    if (colorEncoding === "importance") {
+      const importanceValues = items.map((item) => calculateImportance(item));
+      const colorExtent = extent(importanceValues);
+      const colors = [
+        theme === "dark" ? "#374151" : "#E5E7EB", // Less important
+        theme === "dark" ? "#9CA3AF" : "#9CA3AF", // Medium importance
+        "#FF9800", // High importance
+        "#F57C00", // Very high importance
+      ];
+      const colorScale = scaleLinear()
+        .domain(range(0, colors.length).map((i) => colorExtent[0] + ((colorExtent[1] - colorExtent[0]) * i) / (colors.length - 1)))
+        .range(colors)
+        .clamp(true);
+      return { colorScale, colorExtent };
+    }
+
     const flatTree =
       colorEncoding === "last-change"
         ? items
@@ -105,118 +146,71 @@ export const Tree = ({
             .slice(2, -2);
     const colorExtent = extent(flatTree);
 
-    // const valueScale = scaleLog()
-    //   .domain(colorExtent)
-    //   .range([0, 1])
-    //   .clamp(true);
-    // const colorScale = scaleSequential((d) => interpolateBuPu(valueScale(d)));
     const colors = [
       "#f4f4f4",
       "#f4f4f4",
       "#f4f4f4",
-      // @ts-ignore
       colorEncoding === "last-change" ? "#C7ECEE" : "#FEEAA7",
-      // @ts-ignore
       colorEncoding === "number-of-changes" ? "#3C40C6" : "#823471",
     ];
     const colorScale = scaleLinear()
-      .domain(
-        range(0, colors.length).map(
-          (i) =>
-            +colorExtent[0] +
-            ((colorExtent[1] - colorExtent[0]) * i) / (colors.length - 1),
-        ),
-      )
+      .domain(range(0, colors.length).map((i) => +colorExtent[0] + ((colorExtent[1] - colorExtent[0]) * i) / (colors.length - 1)))
       .range(colors)
       .clamp(true);
     return { colorScale, colorExtent };
-  }, [data]);
+  }, [data, colorEncoding, theme]);
 
   const generateColorByDepth = (filePath: string) => {
     const blueGrayPalette = [
-      "#E0F2F1", // Very light teal
-      "#FFCCBC", // Light deep orange
-      "#D1C4E9", // Light purple
-      "#C5CAE9", // Light indigo
-      "#BBDEFB", // Light blue
-      "#B2EBF2", // Light cyan
-      "#B2DFDB", // Light teal
-      "#E0E7FF", // Light indigo
-      "#D7E3FC", // Very light purple
+      "#E0F2F1",
+      "#FFCCBC",
+      "#D1C4E9",
+      "#C5CAE9",
+      "#BBDEFB",
+      "#B2EBF2",
+      "#B2DFDB",
+      "#E0E7FF",
+      "#D7E3FC",
     ];
 
-    // Split the file path into parts
-    const parts = (filePath ?? "").split("/").filter(Boolean); // filter(Boolean) removes empty strings
-
+    const parts = (filePath ?? "").split("/").filter(Boolean);
     const lastFolder = parts.length > 1 ? parts[parts.length - 2] : parts[0];
-    // return a random color but keep it the same for each filePath so it's stable, mod on the length of the file path
     return blueGrayPalette[(lastFolder ?? "").length % blueGrayPalette.length];
   };
+
   const getColor = (d) => {
-    return generateColorByDepth(d.path ?? d.taxonomy);
-    if (colorEncoding === "type") {
-      const isParent = d.children;
-      if (isParent) {
-        const extensions = countBy(d.children, (c) => c.extension);
-        const mainExtension = maxBy(entries(extensions), ([k, v]) => v)?.[0];
-        return fileColors[mainExtension] || "#CED6E0";
-      }
-      return fileColors[d.extension] || "#CED6E0";
-    } else if (colorEncoding === "number-of-changes") {
-      return colorScale(numberOfCommitsAccessor(d)) || "#f4f4f4";
-    } else if (colorEncoding === "last-change") {
-      return colorScale(lastCommitAccessor(d)) || "#f4f4f4";
+    if (colorEncoding === "importance") {
+      return colorScale(calculateImportance(d));
     }
+    return generateColorByDepth(d.path ?? d.taxonomy);
   };
 
   const packedData = useMemo(() => {
     if (!data) return [];
-    const hierarchicalData = hierarchy(
-      processChild(
-        data,
-        getColor,
-        cachedOrders.current,
-        0,
-        fileColors,
-        viewMode,
-      ),
-    )
-      .sum((d) => d.value)
+    const hierarchicalData = hierarchy(processChild(data, getColor, cachedOrders.current, 0, fileColors, viewMode))
+      .sum((d) => {
+        const baseValue = d.value || 0;
+        if (colorEncoding === "importance") {
+          return baseValue * calculateImportance(d);
+        }
+        return baseValue;
+      })
       .sort((a, b) => {
         if (b.data?.path?.startsWith("src/fonts")) {
-          //   a.data.sortOrder,
-          //   b.data.sortOrder,
-          //   (b.data.sortOrder - a.data.sortOrder) ||
-          //     (b.data.name > a.data.name ? 1 : -1),
-          //   a,
-          //   b,
-          // );
         }
-        return (
-          b.data.sortOrder - a.data.sortOrder ||
-          (b.data.name > a.data.name ? 1 : -1)
-        );
+        return b.data.sortOrder - a.data.sortOrder || (b.data.name > a.data.name ? 1 : -1);
       });
 
     const packedTree = pack()
-      .size([width, height * 1.3]) // we'll reflow the tree to be more horizontal, but we want larger bubbles (.pack() sizes the bubbles to fit the space)
+      .size([width, height * 1.3])
       .padding((d) => {
         if (d.depth <= 0) return 0;
-        const hasChildWithNoChildren =
-          d.children.filter((d) => !d.children?.length).length > 1;
+        const hasChildWithNoChildren = d.children.filter((d) => !d.children?.length).length > 1;
         if (hasChildWithNoChildren) return 5;
         return 13;
-        // const hasChildren = !!d.children?.find((d) => d?.children?.length);
-        // return hasChildren ? 60 : 8;
-        // return [60, 20, 12][d.depth] || 5;
       })(hierarchicalData);
-    packedTree.children = reflowSiblings(
-      packedTree.children,
-      cachedPositions.current,
-      maxDepth,
-      height,
-      width,
-    );
+
+    packedTree.children = reflowSiblings(packedTree.children, cachedPositions.current, maxDepth, height, width);
     const children = packedTree.descendants() as ProcessedDataItem[];
 
     cachedOrders.current = {};
@@ -233,16 +227,10 @@ export const Tree = ({
     });
 
     return children.slice(0, maxChildren);
-  }, [data, fileColors, viewMode]);
+  }, [data, fileColors, viewMode, colorEncoding]);
 
-  const selectedNode =
-    selectedNodeId && packedData.find((d) => d.data.path === selectedNodeId);
-
-  const fileTypes = uniqBy(
-    packedData.map((d) => fileColors[d.data.extension] && d.data.extension),
-  )
-    .sort()
-    .filter(Boolean);
+  const selectedNode = selectedNodeId && packedData.find((d) => d.data.path === selectedNodeId);
+  const fileTypes = uniqBy(packedData.map((d) => fileColors[d.data.extension] && d.data.extension)).sort().filter(Boolean);
 
   return (
     <svg
@@ -255,8 +243,6 @@ export const Tree = ({
       }}
       xmlns="http://www.w3.org/2000/svg"
       onClick={(e) => {
-        // if there's a selected node, grab the parent node and call onNodeClick with the parent node's path
-        // otherwise, call onNodeClick with null to deselect the node
         const parent = selectedFolder?.split("/").slice(0, -1).join("/");
         onNodeClick && parent ? onNodeClick(parent) : null;
       }}
@@ -277,35 +263,32 @@ export const Tree = ({
         const isOutOfDepth = depth >= maxDepth;
         const isParent = !!children;
         const runningR = r;
-        // if (depth <= 1 && !children) runningR *= 3;
         if (data.path === looseFilesId) return null;
         const isHighlighted =
           viewMode === "folder"
             ? selectedItem?.file === standardizePath(data.path)
             : selectedItem?.file === standardizePath(data.file);
         const doHighlight = !!selectedItem;
+        const importance = calculateImportance(data);
+        const isImportant = importance > 5;
 
         return (
           <g
             key={data.path + data.file + data.name + data.taxonomy}
             style={{
               fill: isHighlighted ? "#FFF9C4" : data.color,
-              transition: `transform ${
-                isHighlighted ? "0.5s" : "0s"
-              } ease-out, fill 0.1s ease-out`,
+              transition: `transform ${isHighlighted ? "0.5s" : "0s"} ease-out, fill 0.1s ease-out`,
+              cursor: "pointer",
             }}
             stroke="#000000"
             strokeWidth={5}
             transform={`translate(${x}, ${y})`}
             onClick={(e) => {
-              console.log("clicked", data.path);
-              console.log(
-                "calling onNodeClick",
-                viewMode === "folder" ? data.path : data.taxonomy,
-              );
               e.stopPropagation();
               onNodeClick?.(viewMode === "folder" ? data.path : data.taxonomy);
             }}
+            onMouseEnter={() => setHoveredFile(data)}
+            onMouseLeave={() => setHoveredFile(null)}
           >
             {isParent ? (
               <>
@@ -322,18 +305,11 @@ export const Tree = ({
             ) : (
               <circle
                 style={{
-                  // filter: isHighlighted ? "url(#glow)" : undefined, // Remove glow for now
                   transition: "all 0.5s ease-out",
                 }}
                 r={runningR}
-                strokeWidth={isHighlighted ? "5" : "2"}
-                stroke={
-                  isHighlighted
-                    ? "#290819"
-                    : theme === "dark"
-                      ? "#290819"
-                      : "#29081922"
-                } // We can change this to be a different color when highlighted
+                strokeWidth={isHighlighted || isImportant ? "5" : "2"}
+                stroke={isHighlighted ? "#290819" : theme === "dark" ? "#290819" : "#29081922"}
               />
             )}
           </g>
@@ -349,26 +325,20 @@ export const Tree = ({
         if (r < 16 && selectedNodeId !== data.path) return null;
         if (data.label.length > r * 0.5) return null;
 
-        const label = truncateString(
-          data.label,
-          r < 30 ? Math.floor(r / 2.7) + 3 : 100,
-        )?.replaceAll("_", " ");
-
+        const label = truncateString(data.label, r < 30 ? Math.floor(r / 2.7) + 3 : 100)?.replaceAll("_", " ");
         const offsetR = r + 12 - depth * 4;
         const fontSize = 16 - depth;
+        const importance = calculateImportance(data);
+        const isImportant = importance > 5;
 
         return (
           <g
             key={data.path + data.file + data.name + data.taxonomy}
             style={{ pointerEvents: "none", transition: "all 0.5s ease-out" }}
             transform={`translate(${x}, ${y})`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onNodeClick?.(data.path);
-            }}
           >
             <CircleText
-              style={{ fontSize, transition: "all 0.5s ease-out" }}
+              style={{ fontSize: isImportant ? fontSize * 1.2 : fontSize, transition: "all 0.5s ease-out" }}
               r={Math.max(20, offsetR - 3)}
               fill={theme === "dark" ? "#E0E7FF" : "#374151"}
               stroke={theme === "dark" ? "#334155" : "white"}
@@ -378,7 +348,7 @@ export const Tree = ({
               text={label}
             />
             <CircleText
-              style={{ fontSize, transition: "all 0.5s ease-out" }}
+              style={{ fontSize: isImportant ? fontSize * 1.2 : fontSize, transition: "all 0.5s ease-out" }}
               fill={theme === "dark" ? "#E0E7FF" : "#374151"}
               rotate={depth * 1 - 0}
               r={Math.max(20, offsetR - 3)}
@@ -392,23 +362,22 @@ export const Tree = ({
         if (depth <= 0) return null;
         if (depth > maxDepth) return null;
         const isParent = !!children;
-        // if (depth <= 1 && !children) runningR *= 3;
         if (data.path === looseFilesId) return null;
         const isHighlighted =
           viewMode === "folder"
             ? selectedItem?.file === standardizePath(data.path)
             : selectedItem?.file === standardizePath(data.file);
-
         const doHighlight = false;
+        const importance = calculateImportance(data);
+        const isImportant = importance > 5;
+
         if (isParent && !isHighlighted) return null;
         if (selectedNodeId === data.path && !isHighlighted) return null;
-        if (!(isHighlighted || (!doHighlight && !selectedNode && r > 22))) {
+        if (!(isHighlighted || isImportant || (!doHighlight && !selectedNode && r > 22))) {
           return null;
         }
 
-        const label = isHighlighted
-          ? data.label
-          : truncateString(data.label, Math.floor(r / 4) + 3);
+        const label = isHighlighted ? data.label : truncateString(data.label, Math.floor(r / 4) + 3);
 
         return (
           <g
@@ -418,21 +387,13 @@ export const Tree = ({
               transition: `transform ${isHighlighted ? "0.5s" : "0s"} ease-out`,
             }}
             transform={`translate(${x}, ${y})`}
-            onClick={(e) => {
-              e.stopPropagation();
-              console.log("clicked");
-              console.log("viewMode", viewMode);
-              console.log("data.path", data.path);
-              console.log("data.taxonomy", data.taxonomy);
-              onNodeClick?.(viewMode === "folder" ? data.path : data.taxonomy);
-            }}
           >
             <text
               style={{
                 pointerEvents: "none",
                 opacity: 0.9,
-                fontSize: "14px",
-                fontWeight: isHighlighted ? 800 : 500,
+                fontSize: isImportant ? "16px" : "14px",
+                fontWeight: isHighlighted || isImportant ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               fill="#4B5563"
@@ -449,8 +410,8 @@ export const Tree = ({
               style={{
                 pointerEvents: "none",
                 opacity: 1,
-                fontSize: "14px",
-                fontWeight: isHighlighted ? 800 : 500,
+                fontSize: isImportant ? "16px" : "14px",
+                fontWeight: isHighlighted || isImportant ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               textAnchor="middle"
@@ -462,8 +423,8 @@ export const Tree = ({
               style={{
                 pointerEvents: "none",
                 opacity: 0.9,
-                fontSize: "14px",
-                fontWeight: isHighlighted ? 800 : 500,
+                fontSize: isImportant ? "16px" : "14px",
+                fontWeight: isHighlighted || isImportant ? 800 : 500,
                 transition: "all 0.5s ease-out",
               }}
               fill="#110101"
@@ -476,78 +437,66 @@ export const Tree = ({
         );
       })}
 
-      {/* {!filesChanged.length && colorEncoding === "type" && (
-        <Legend
-          fileTypes={fileTypes}
-          fileColors={fileColors}
-          width={width}
-          height={height}
-        />
-      )} */}
-      {/* {!filesChanged.length && colorEncoding !== "type" && (
-        <ColorLegend
-          scale={colorScale}
-          extent={colorExtent}
-          colorEncoding={colorEncoding}
-        />
-      )} */}
+      {hoveredFile && (
+        <g transform={`translate(${width - 200}, 20)`}>
+          <rect
+            x="0"
+            y="0"
+            width="180"
+            height="100"
+            fill={theme === "dark" ? "#1F2937" : "#FFFFFF"}
+            stroke={theme === "dark" ? "#374151" : "#E5E7EB"}
+            strokeWidth="1"
+            rx="4"
+          />
+          <text x="10" y="20" fill={theme === "dark" ? "#E5E7EB" : "#374151"} fontSize="12">
+            File: {hoveredFile.name}
+          </text>
+          <text x="10" y="40" fill={theme === "dark" ? "#E5E7EB" : "#374151"} fontSize="12">
+            Size: {hoveredFile.size} bytes
+          </text>
+          <text x="10" y="60" fill={theme === "dark" ? "#E5E7EB" : "#374151"} fontSize="12">
+            Commits: {hoveredFile.commits?.length || 0}
+          </text>
+          <text x="10" y="80" fill={theme === "dark" ? "#E5E7EB" : "#374151"} fontSize="12">
+            Importance: {calculateImportance(hoveredFile).toFixed(1)}
+          </text>
+        </g>
+      )}
+
+      {colorEncoding === "importance" && (
+        <g transform={`translate(20, ${height - 80})`}>
+          <text x="0" y="-5" fill={theme === "dark" ? "#E5E7EB" : "#374151"} fontSize="12">
+            File Importance
+          </text>
+          <linearGradient id="importanceGradient">
+            <stop offset="0%" stopColor={theme === "dark" ? "#374151" : "#E5E7EB"} />
+            <stop offset="50%" stopColor="#9CA3AF" />
+            <stop offset="75%" stopColor="#FF9800" />
+            <stop offset="100%" stopColor="#F57C00" />
+          </linearGradient>
+          <rect x="0" y="0" width="100" height="10" fill="url(#importanceGradient)" rx="2" />
+          <text x="0" y="25" fill={theme === "dark" ? "#E5E7EB" : "#374151"} fontSize="10">
+            Low
+          </text>
+          <text x="80" y="25" fill={theme === "dark" ? "#E5E7EB" : "#374151"} fontSize="10">
+            High
+          </text>
+        </g>
+      )}
     </svg>
   );
 };
 
 const formatD = (d) => (typeof d === "number" ? d : timeFormat("%b %Y")(d));
-const ColorLegend = ({ scale, extent, colorEncoding }) => {
-  if (!scale?.ticks) return null;
-  const ticks = scale.ticks(10);
-  return (
-    <g transform={`translate(${width - 160}, ${height - 90})`}>
-      <text x={50} y="-5" fontSize="10" textAnchor="middle">
-        {/* @ts-ignore */}
-        {colorEncoding === "number-of-changes"
-          ? "Number of changes"
-          : "Last change date"}
-      </text>
-      <linearGradient id="gradient">
-        {ticks.map((tick, i) => {
-          const color = scale(tick);
-          return (
-            <stop offset={i / (ticks.length - 1)} stopColor={color} key={i} />
-          );
-        })}
-      </linearGradient>
-      <rect x="0" width="100" height="13" fill="url(#gradient)" />
-      {extent.map((d, i) => (
-        <text
-          key={i}
-          x={i ? 100 : 0}
-          y="23"
-          fontSize="10"
-          textAnchor={i ? "end" : "start"}
-        >
-          {formatD(d)}
-        </text>
-      ))}
-    </g>
-  );
-};
 
-const processChild = (
-  child: FileType,
-  getColor,
-  cachedOrders,
-  i = 0,
-  fileColors,
-  viewMode,
-): ExtendedFileType => {
+const processChild = (child: FileType, getColor, cachedOrders, i = 0, fileColors, viewMode): ExtendedFileType => {
   if (!child) return;
   const isRoot = !child.path;
   let name = child.name;
   let path = viewMode === "folder" ? child.path : child.taxonomy;
-  let children = child?.children?.map((c, i) =>
-    processChild(c, getColor, cachedOrders, i, fileColors, viewMode),
-  );
+  let children = child?.children?.map((c, i) => processChild(c, getColor, cachedOrders, i, fileColors, viewMode));
 
-  // Modify this condition to prevent collapsing when the only child is a file
   if (children?.length === 1 && children[0].children?.length > 0) {
     name = `${name}/${children[0].name}`;
     path = children[0].path;
@@ -577,21 +526,14 @@ const processChild = (
     label: name,
     extension,
     pathWithoutExtension,
-
     size:
       (["woff", "woff2", "ttf", "otf", "png", "jpg", "svg"].includes(extension)
         ? 100
-        : Math.min(
-            15000,
-            hasExtension ? child.size : Math.min(child.size, 9000),
-          )) + i, // stupid hack to stabilize circle order/position
+        : Math.min(15000, hasExtension ? child.size : Math.min(child.size, 9000))) + i,
     value:
       (["woff", "woff2", "ttf", "otf", "png", "jpg", "svg"].includes(extension)
         ? 100
-        : Math.min(
-            15000,
-            hasExtension ? child.size : Math.min(child.size, 9000),
-          )) + i, // stupid hack to stabilize circle order/position
+        : Math.min(15000, hasExtension ? child.size : Math.min(child.size, 9000))) + i,
     color: "#fff",
     children,
   };
@@ -622,46 +564,27 @@ const reflowSiblings = (
       };
     }),
   ];
-  const paddingScale = scaleSqrt()
-    .domain([maxDepth, 1])
-    .range([3, 8])
-    .clamp(true);
+  const paddingScale = scaleSqrt().domain([maxDepth, 1]).range([3, 8]).clamp(true);
   const simulation = forceSimulation(items)
-    .force(
-      "centerX",
-      forceX(width / 2).strength(items[0].depth <= 2 ? 0.01 : 0),
-    )
-    .force(
-      "centerY",
-      forceY(height / 2).strength(items[0].depth <= 2 ? 0.01 : 0),
-    )
-    .force(
-      "centerX2",
-      forceX(parentPosition?.[0]).strength(parentPosition ? 0.3 : 0),
-    )
-    .force(
-      "centerY2",
-      forceY(parentPosition?.[1]).strength(parentPosition ? 0.8 : 0),
-    )
+    .force("centerX", forceX(width / 2).strength(items[0].depth <= 2 ? 0.01 : 0))
+    .force("centerY", forceY(height / 2).strength(items[0].depth <= 2 ? 0.01 : 0))
+    .force("centerX2", forceX(parentPosition?.[0]).strength(parentPosition ? 0.3 : 0))
+    .force("centerY2", forceY(parentPosition?.[1]).strength(parentPosition ? 0.8 : 0))
     .force(
       "x",
-      forceX((d) => cachedPositions[d.data.path]?.[0] || width / 2).strength(
-        (d) =>
-          cachedPositions[d.data.path]?.[1] ? 0.5 : (width / height) * 0.3,
+      forceX((d) => cachedPositions[d.data.path]?.[0] || width / 2).strength((d) =>
+        cachedPositions[d.data.path]?.[1] ? 0.5 : (width / height) * 0.3,
       ),
     )
     .force(
       "y",
-      forceY((d) => cachedPositions[d.data.path]?.[1] || height / 2).strength(
-        (d) =>
-          cachedPositions[d.data.path]?.[0] ? 0.5 : (height / width) * 0.3,
+      forceY((d) => cachedPositions[d.data.path]?.[1] || height / 2).strength((d) =>
+        cachedPositions[d.data.path]?.[0] ? 0.5 : (height / width) * 0.3,
       ),
     )
     .force(
       "collide",
-      forceCollide((d) =>
-        d.children ? d.r + paddingScale(d.depth) : d.r + 1.6,
-      )
+      forceCollide((d) => (d.children ? d.r + paddingScale(d.depth) : d.r + 1.6))
         .iterations(8)
         .strength(1),
     )
@@ -674,61 +597,42 @@ const reflowSiblings = (
       d.y = keepBetween(d.r, d.y, height - d.r);
 
       if (parentPosition && parentRadius) {
-        // keep within radius
-        const containedPosition = keepCircleInsideCircle(
-          parentRadius,
-          parentPosition,
-          d.r,
-          [d.x, d.y],
-          !!d.children?.length,
-        );
+        const containedPosition = keepCircleInsideCircle(parentRadius, parentPosition, d.r, [d.x, d.y], !!d.children?.length);
         d.x = containedPosition[0];
         d.y = containedPosition[1];
       }
     });
   }
-  // setTimeout(() => simulation.stop(), 100);
+
   const repositionChildren = (d, xDiff, yDiff) => {
     const newD = { ...d };
     newD.x += xDiff;
     newD.y += yDiff;
     if (newD.children) {
-      newD.children = newD.children.map((c) =>
-        repositionChildren(c, xDiff, yDiff),
-      );
+      newD.children = newD.children.map((c) => repositionChildren(c, xDiff, yDiff));
     }
     return newD;
   };
+
   for (const item of items) {
-    const itemCachedPosition = cachedPositions[item.data.path] || [
-      item.x,
-      item.y,
-    ];
-    const itemPositionDiffFromCached = [
-      item.x - itemCachedPosition[0],
-      item.y - itemCachedPosition[1],
-    ];
+    const itemCachedPosition = cachedPositions[item.data.path] || [item.x, item.y];
+    const itemPositionDiffFromCached = [item.x - itemCachedPosition[0], item.y - itemCachedPosition[1]];
 
     if (item.children) {
       const repositionedCachedPositions = { ...cachedPositions };
       const itemReflowDiff = [item.x - item.originalX, item.y - item.originalY];
 
-      item.children = item.children.map((child) =>
-        repositionChildren(child, itemReflowDiff[0], itemReflowDiff[1]),
-      );
+      item.children = item.children.map((child) => repositionChildren(child, itemReflowDiff[0], itemReflowDiff[1]));
       if (item.children.length > 4) {
         if (item.depth > maxDepth) return;
         item.children.forEach((child) => {
-          // move cached positions with the parent
-          const childCachedPosition =
-            repositionedCachedPositions[child.data.path];
+          const childCachedPosition = repositionedCachedPositions[child.data.path];
           if (childCachedPosition) {
             repositionedCachedPositions[child.data.path] = [
               childCachedPosition[0] + itemPositionDiffFromCached[0],
               childCachedPosition[1] + itemPositionDiffFromCached[1],
             ];
           } else {
-            // const diff = getPositionFromAngleAndDistance(100, item.r);
             repositionedCachedPositions[child.data.path] = [child.x, child.y];
           }
         });
@@ -753,11 +657,5 @@ const getSortOrder = (item: ExtendedFileType, cachedOrders, i = 0) => {
     return -100000000;
   }
   if (item.name === "public") return -1000000;
-  // if (item.depth <= 1 && !item.children) {
-  //   // item.value *= 0.33;
-  //   return item.value  * 100;
-  // }
-  // if (item.depth <= 1) return -10;
   return item.value + -i;
-  // return b.value - a.value;
 };

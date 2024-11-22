@@ -22,4 +22,5 @@ export type FileType = {
   imports?: ImportType[];
   numberOfLines?: number;
   children?: FileType[];
+  importance?: number;
 };
