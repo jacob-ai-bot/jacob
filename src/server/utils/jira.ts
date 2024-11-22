@@ -342,10 +342,4 @@ export async function fetchNewJiraIssues({
       }
     }
   } catch (error) {
-    console.error(`Error fetching Jira issues for board ${boardId}:`, error);
-  }
-}
-
-export async function getJiraCloudIdResources(accessToken: string) {
-  // Fetch accessible resources to obtain cloudId
-  const resourcesResponse
+    console.error(`Error fetching
