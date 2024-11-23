@@ -364,7 +364,10 @@ export default function Settings({
                     placeholder="Jira Username"
                     value={member.jiraUsername ?? ""}
                     onChange={(e) =>
-                      handleUpdateJiraUsername(member.id, e.target.value)
+                      handleUpdateJiraUsername(
+                        Number(member.id),
+                        e.target.value,
+                      )
                     }
                     className="ml-4 rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-indigo-300 focus:outline-none focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   />
