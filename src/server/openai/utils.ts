@@ -82,9 +82,8 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   // ],
   models: Model[] = [
     "claude-3-5-sonnet-20241022",
-    "gpt-4o-2024-11-20",
     "claude-3-5-sonnet-20241022",
-    "o1-preview-2024-09-12",
+    "claude-3-5-sonnet-20241022",
     // "gemini-1.5-pro-exp-0801",
   ],
   minTemperature = 0.1,
@@ -99,7 +98,7 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
             100,
         ) / 100;
       return sendGptRequest(
-        userPrompt,
+        `${i}: ${userPrompt}`, // ensure it's not cached
         systemPrompt,
         temperature,
         baseEventData,
