@@ -7,6 +7,8 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-complex-tree/lib/style-modern.css";
+import { PostHogProvider } from "posthog-js/react";
+import { posthog } from "~/utils/posthog";
 
 export const metadata = {
   title: "JACoB",
@@ -33,10 +35,12 @@ export default function RootLayout({
       <body
         className={`h-screen w-screen bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-          <ToastContainer />
-        </ThemeProvider>
+        <PostHogProvider client={posthog}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+            <ToastContainer />
+          </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
