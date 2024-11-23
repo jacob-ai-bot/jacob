@@ -394,6 +394,7 @@ export const extractFilePathWithArrow = (title?: string) => {
 };
 
 export const AT_MENTION = "@jacob-ai-bot";
+export const AT_MENTION_SKIP_BUILD = `${AT_MENTION} --skip-build`;
 
 export enum PRCommand {
   Build = `${AT_MENTION} build`,

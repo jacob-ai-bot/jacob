@@ -78,12 +78,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       updatedBody += " --skip-build";
     }
     try {
-      await updateIssue({
-        repo: `${org}/${repo}`,
-        id: selectedTodo?.issueId ?? 0,
-        title: selectedIssue?.title ?? "",
-        body: updatedBody,
-      });
       await updateTodo({
         id: selectedTodo.id,
         status: TodoStatus.IN_PROGRESS,
@@ -91,6 +85,14 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       onTodoUpdate({
         ...selectedTodo,
         status: TodoStatus.IN_PROGRESS,
+      });
+      // wait a second to ensure the todo is updated
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await updateIssue({
+        repo: `${org}/${repo}`,
+        id: selectedTodo?.issueId ?? 0,
+        title: selectedIssue?.title ?? "",
+        body: updatedBody,
       });
       toast.success("Work started and issue updated!");
     } catch (error) {
@@ -105,7 +107,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     setIsRestartingTask(true);
     try {
       const currentBody = selectedIssue?.body ?? "";
-      const updatedBody = currentBody.replace(/@jacob-ai-bot.*/, "");
+      const updatedBody = currentBody.replace(/@jacob-ai-bot.*/g, "").trim();
 
       await updateIssue({
         repo: `${org}/${repo}`,
