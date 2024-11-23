@@ -7,6 +7,7 @@ import { onboardingRouter } from "./routers/onboarding";
 import { chatRouter } from "./routers/chat";
 import { planStepsRouter } from "./routers/planSteps";
 import { projectsRouter } from "./routers/projects";
+import { usersRouter } from "./routers/users";
 import { jiraRouter } from "./routers/jira";
 import { linearRouter } from "./routers/linear";
 /**
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
   chat: chatRouter,
   planSteps: planStepsRouter,
   projects: projectsRouter,
+  users: usersRouter,
   jira: jiraRouter,
   linear: linearRouter,
 });
