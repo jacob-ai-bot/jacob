@@ -20,5 +20,9 @@ export class AccountsTable extends BaseTable {
     linearAccessToken: t.text(0, Infinity).nullable(),
     linearRefreshToken: t.text(0, Infinity).nullable(),
     refresh_token_expires_in: t.integer().nullable(),
+    isTeamAdmin: t.boolean().default(false),
+    teamAdminAccountId: t.integer().nullable(),
+    jiraUsername: t.text(0, Infinity).nullable(),
+    linearUsername: t.text(0, Infinity).nullable(),
   }));
 }

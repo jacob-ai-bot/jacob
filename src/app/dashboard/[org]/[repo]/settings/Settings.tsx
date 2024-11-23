@@ -8,12 +8,14 @@ import {
   faPlus,
   faLink,
   faSync,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { type JiraBoard, type LinearTeam } from "~/types";
 import { toast } from "react-toastify";
+import { useSession } from "next-auth/react";
 
 interface SettingsProps {
   org: string;
@@ -31,6 +33,7 @@ export default function Settings({
   jiraCloudId: initialJiraCloudId,
 }: SettingsProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
   const [selectedJiraBoard, setSelectedJiraBoard] = useState<string>("");
   const [jiraCloudIdState, setJiraCloudIdState] = useState<string | undefined>(
@@ -38,6 +41,23 @@ export default function Settings({
   );
   const [linearTeams, setLinearTeams] = useState<LinearTeam[]>([]);
   const [selectedLinearTeam, setSelectedLinearTeam] = useState<string>("");
+
+  const { data: teamMembers, refetch: refetchTeamMembers } =
+    api.team.getTeamMembers.useQuery(undefined, {
+      enabled: session?.user?.isTeamAdmin,
+    });
+
+  const { mutate: updateTeamMemberJiraUsername } =
+    api.team.updateTeamMemberJiraUsername.useMutation({
+      onSuccess: () => {
+        toast.success("Team member Jira username updated");
+        void refetchTeamMembers();
+      },
+      onError: (error) => {
+        toast.error("Error updating team member Jira username");
+        console.error("Error updating team member Jira username:", error);
+      },
+    });
 
   const { mutate: syncJiraBoard, isPending: isSyncingJiraBoard } =
     api.jira.syncBoard.useMutation({
@@ -174,6 +194,13 @@ export default function Settings({
         teamId: selectedLinearTeam,
       });
     }
+  };
+
+  const handleUpdateJiraUsername = (
+    accountId: number,
+    jiraUsername: string,
+  ) => {
+    updateTeamMemberJiraUsername({ accountId, jiraUsername });
   };
 
   return (
@@ -315,6 +342,40 @@ export default function Settings({
                 {isSyncingLinearTeam ? "Syncing..." : "Sync Linear Team"}
               </button>
             )}
+          </div>
+        )}
+        {session?.user?.isTeamAdmin && (
+          <div className="mt-6">
+            <h2 className="mb-4 flex items-center text-xl font-semibold dark:text-white">
+              <FontAwesomeIcon icon={faUsers} className="mr-2" />
+              Team Management
+            </h2>
+            <div className="space-y-4">
+              {teamMembers?.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {member.name}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {member.email}
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Jira Username"
+                    value={member.jiraUsername ?? ""}
+                    onChange={(e) =>
+                      handleUpdateJiraUsername(member.id, e.target.value)
+                    }
+                    className="ml-4 rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
         {isLoadingIsUserConnectedToJira && (
