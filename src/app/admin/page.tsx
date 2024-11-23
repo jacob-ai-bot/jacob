@@ -7,89 +7,17 @@ import { redirect } from "next/navigation";
 import { getServerAuthSession, UserRole } from "~/server/auth";
 import { SignOutButton } from "~/app/_components/SignOutButton";
 import { db } from "~/server/db/db";
-import { type Project } from "~/server/db/tables/projects.table";
-import { type User } from "~/server/db/tables/users.table";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/app/_components/ui/table";
+import { DataTable } from "~/app/_components/ui/data-table";
+import { projectColumns } from "./projectColumns";
+import { userColumns } from "./userColumns";
 
-const getProjects = cache(async () => {
+const getProjects = cache(() => {
   return db.projects.order({ repoFullName: "ASC" }).all();
 });
 
-const getUsers = cache(async () => {
+const getUsers = cache(() => {
   return db.users.order({ login: "ASC" }).all();
 });
-
-interface ProjectsTableProps {
-  projects: Project[];
-}
-
-function ProjectsTable({ projects }: ProjectsTableProps) {
-  return (
-    <Table className="caption-top">
-      <TableCaption>Projects</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">ID</TableHead>
-          <TableHead>Repo</TableHead>
-          <TableHead className="text-right">Enabled</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {projects.map((project) => (
-          <TableRow key={project.id}>
-            <TableCell className="font-medium">{project.id}</TableCell>
-            <TableCell>{project.repoFullName}</TableCell>
-            <TableCell className="text-right">
-              {project.agentEnabled ? "YES" : ""}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
-
-interface UsersTableProps {
-  users: User[];
-}
-
-function UsersTable({ users }: UsersTableProps) {
-  return (
-    <Table className="caption-top">
-      <TableCaption>Users</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">ID</TableHead>
-          <TableHead>Login</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead className="text-right">Enabled</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => (
-          <TableRow key={user.id}>
-            <TableCell className="font-medium">{user.id}</TableCell>
-            <TableCell>{user.login}</TableCell>
-            <TableCell>{user.name}</TableCell>
-            <TableCell>{user.email}</TableCell>
-            <TableCell className="text-right">
-              {user.dashboardEnabled ? "YES" : ""}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
 
 export default async function AdminPage() {
   const session = await getServerAuthSession();
@@ -133,9 +61,13 @@ export default async function AdminPage() {
               <SignOutButton />
             </div>
           </div>
-          <div className="grid grid-cols-2">
-            <ProjectsTable projects={projects} />
-            <UsersTable users={users} />
+          <div className="grid grid-cols-2 gap-x-4">
+            <DataTable
+              caption="Projects"
+              columns={projectColumns}
+              data={projects}
+            />
+            <DataTable caption="Users" columns={userColumns} data={users} />
           </div>
         </div>
       </div>
