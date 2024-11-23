@@ -10,6 +10,7 @@ import {
 import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
+import { evaluateJiraIssue } from "./evaluateIssue";
 
 export async function refreshJiraAccessToken(
   accountId: number,
@@ -282,93 +283,66 @@ export async function fetchNewJiraIssues({
       }
 
       console.log(
-        `Repo ${project.repoFullName}: Creating new Jira issue ${issue.id}`,
+        `Repo ${project.repoFullName}: Processing new Jira issue ${issue.id}`,
       );
-      // create a new issue in the database - this ensures we don't duplicate issues
+
+      const evaluation = await evaluateJiraIssue({
+        title: issue.title,
+        description: issue.description,
+      });
+
+      // Create issue record with evaluation data
       await db.issues.create({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
         title: issue.title,
+        jiraIssueDescription: issue.description,
+        evaluationScore: evaluation.evaluationScore,
+        feedback: evaluation.feedback,
+        didCreateGithubIssue: evaluation.evaluationScore >= 4,
       });
-      const owner = project.repoFullName.split("/")[0];
-      const repo = project.repoFullName.split("/")[1];
-      if (!owner || !repo) {
-        throw new Error("Invalid repo full name");
+
+      // Only create GitHub issue if evaluation score is >= 4
+      if (evaluation.evaluationScore >= 4) {
+        const owner = project.repoFullName.split("/")[0];
+        const repo = project.repoFullName.split("/")[1];
+        if (!owner || !repo) {
+          throw new Error("Invalid repo full name");
+        }
+
+        const githubIssueDescription = await rewriteGitHubIssue(
+          githubAccessToken,
+          owner,
+          repo,
+          issue.title,
+          issue.description,
+          EvaluationMode.DETAILED,
+        );
+
+        let githubIssueBody = `[${issue.id}: ${issue.title}](${issue.url})\n\n---\n\n`;
+        githubIssueBody += githubIssueDescription.rewrittenIssue;
+        githubIssueBody += `\n\n---\n\nOriginal Jira issue description: \n\n${issue.title}\n\n${issue.description}`;
+
+        const githubIssue = await createGitHubIssue(
+          owner,
+          repo,
+          issue.title,
+          githubIssueBody,
+          githubAccessToken,
+        );
+
+        console.log(
+          `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data.number} for Jira issue ${issue.id}`,
+        );
+      } else {
+        console.log(
+          `Repo ${project.repoFullName}: Jira issue ${issue.id} did not meet quality threshold (score: ${evaluation.evaluationScore})`,
+        );
       }
-      // use AI to generate a more detailed github issue description
-      const githubIssueDescription = await rewriteGitHubIssue(
-        githubAccessToken,
-        owner,
-        repo,
-        issue.title,
-        issue.description,
-        EvaluationMode.DETAILED,
-      );
-      let githubIssueBody = `[${issue.id}: ${issue.title}](${issue.url})\n\n---\n\n`;
-      githubIssueBody += githubIssueDescription.rewrittenIssue;
-      // Add the original Jira issue description to the body
-      githubIssueBody += `\n\n---\n\nOriginal Jira issue description: \n\n${issue.title}\n\n${issue.description}`;
-
-      // create a new GitHub issue - there is a listener for this in the queue that will create a todo
-      const githubIssue = await createGitHubIssue(
-        owner,
-        repo,
-        issue.title,
-        githubIssueBody,
-        githubAccessToken,
-      );
-
-      console.log(
-        `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data.number} for Jira issue ${issue.id}`,
-      );
     }
   } catch (error) {
     console.error(`Error fetching Jira issues for board ${boardId}:`, error);
   }
 }
 
-export async function getJiraCloudIdResources(accessToken: string) {
-  // Fetch accessible resources to obtain cloudId
-  const resourcesResponse = await fetch(
-    "https://api.atlassian.com/oauth/token/accessible-resources",
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-      },
-    },
-  );
-
-  if (!resourcesResponse.ok) {
-    throw new Error("Failed to fetch accessible resources");
-  }
-
-  const resourcesData: JiraAccessibleResource[] =
-    await resourcesResponse.json();
-
-  if (resourcesData.length === 0) {
-    throw new Error("No accessible resources found");
-  }
-  return resourcesData;
-}
-
-// https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/
-// Jira issues are stored in ADF format, need to extract the text from it
-export function extractTextFromADF(adfNode: any): string {
-  let text = "";
-
-  if (Array.isArray(adfNode)) {
-    for (const node of adfNode) {
-      text += extractTextFromADF(node);
-    }
-  } else if (adfNode && typeof adfNode === "object") {
-    if (adfNode.type === "text" && typeof adfNode.text === "string") {
-      text += adfNode.text;
-    } else if (adfNode.content) {
-      text += extractTextFromADF(adfNode.content);
-    }
-  }
-
-  return text;
-}
+export async function getJiraCloudIdResources

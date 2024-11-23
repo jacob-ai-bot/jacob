@@ -25,6 +25,13 @@ const EvaluationSchema = z.object({
 
 export type Evaluation = z.infer<typeof EvaluationSchema>;
 
+const JiraEvaluationSchema = z.object({
+  evaluationScore: z.number().min(1).max(5),
+  feedback: z.string().nullable(),
+});
+
+export type JiraEvaluation = z.infer<typeof JiraEvaluationSchema>;
+
 export async function evaluateIssue({
   githubIssue,
   planSteps,
@@ -142,6 +149,61 @@ Please provide your evaluation in the following JSON format:
     userPrompt,
     systemPrompt,
     EvaluationSchema,
+    0.4,
+    baseEventData,
+    3,
+    "claude-3-5-sonnet-20241022",
+  );
+
+  return evaluation;
+}
+
+export async function evaluateJiraIssue({
+  title,
+  description,
+  baseEventData,
+}: {
+  title: string;
+  description: string;
+  baseEventData?: BaseEventData;
+}): Promise<JiraEvaluation> {
+  const systemPrompt = `You are an expert software requirements analyst. Your task is to evaluate the quality and completeness of a Jira issue to determine if it contains sufficient detail for an AI coding agent to implement successfully.
+
+Key points to consider:
+- Clarity of requirements
+- Completeness of acceptance criteria
+- Technical specificity
+- Edge cases and error scenarios
+- Dependencies and constraints
+
+You will be given a Jira issue title and description. You must evaluate whether it contains enough detail for an AI to implement the feature or fix. Provide a score and feedback if improvements are needed.`;
+
+  const userPrompt = `Please evaluate the following Jira issue:
+
+Title: ${title}
+Description:
+${description}
+
+Evaluate the issue quality and provide:
+1. A score from 1-5 (using half-point increments) indicating how likely an AI can successfully implement this issue:
+   - 5: Perfect, contains all necessary details
+   - 4: Good, minor details missing but implementable
+   - 3: Moderate, needs some clarification
+   - 2: Poor, significant details missing
+   - 1: Very poor, cannot be implemented as is
+
+2. If the score is less than 4, provide ONE specific, actionable sentence of feedback explaining what needs to be added or clarified to make the issue implementable by an AI.
+
+Format the response as a JSON object:
+{
+  "evaluationScore": number,
+  "feedback": string | null  // null if score >= 4, otherwise a feedback message
+}`;
+
+  const evaluation = await sendGptRequestWithSchema(
+    userPrompt,
+    systemPrompt,
+    JiraEvaluationSchema,
     0.4,
     baseEventData,
     3,
