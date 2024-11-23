@@ -10,7 +10,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { getServerAuthSession } from "~/server/auth";
+import { getServerAuthSession, UserRole } from "~/server/auth";
 
 /**
  * 1. CONTEXT
@@ -94,6 +94,36 @@ export const publicProcedure = t.procedure;
  */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session || !ctx.session.user) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Session or user information is missing",
+    });
+  }
+
+  const { accessToken } = ctx.session;
+  if (!accessToken) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "User is not authenticated",
+    });
+  }
+  return next({
+    ctx: {
+      session: { ...ctx.session, user: ctx.session.user },
+    },
+  });
+});
+
+/**
+ * Protected (authenticated) procedure
+ *
+ * If you want a query or mutation to ONLY be accessible to logged in admins, use this. It verifies
+ * the session is valid and guarantees `ctx.session.user` has an admin role.
+ *
+ * @see https://trpc.io/docs/procedures
+ */
+export const adminProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.session || ctx.session.user.role !== UserRole.admin) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "Session or user information is missing",

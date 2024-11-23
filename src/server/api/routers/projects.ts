@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+} from "~/server/api/trpc";
 import { db } from "~/server/db/db";
 
 export const projectsRouter = createTRPCRouter({
@@ -14,5 +18,12 @@ export const projectsRouter = createTRPCRouter({
         console.error(`Error getting project by org and repo: ${error}`);
         return null;
       }
+    }),
+  setAgentEnabled: adminProcedure
+    .input(z.object({ id: z.number(), enabled: z.boolean() }))
+    .mutation(async ({ input: { id, enabled } }) => {
+      return db.projects.find(id).update({
+        agentEnabled: enabled,
+      });
     }),
 });
