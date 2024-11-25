@@ -26,6 +26,7 @@ env:
   LINEAR_CLIENT_SECRET: linear-client-secret
   LINEAR_WEBHOOK_SECRET: linear-webhook-secret
   NEXT_PUBLIC_LINEAR_CLIENT_ID: linear-client-id
+  NEXT_PUBLIC_POSTHOG_API_KEY: posthog-key
 
 jobs:
   build:
