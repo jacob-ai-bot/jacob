@@ -15,3 +15,5 @@ if (typeof window !== "undefined") {
 }
 
 export { posthog };
+
+export default posthog;
