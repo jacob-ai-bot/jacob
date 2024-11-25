@@ -19,19 +19,23 @@ const Card = ({
   description,
   onClick,
 }: CardProps) => (
-  <div className="m-4 h-96 w-80 rounded-xl border border-gray-300 bg-white">
+  <div className="m-4 h-96 w-80 rounded-xl border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-800">
     <div className="p-4">
-      <div className="text-lg font-medium leading-6 text-gray-900">{title}</div>
+      <div className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+        {title}
+      </div>
       <img
         src={imageSrc}
         alt={altText}
-        className="my-4 h-48 w-full border border-gray-200"
+        className="my-4 h-48 w-full border border-gray-200 bg-white dark:border-gray-700"
       />
-      <p className="text-sm leading-5 text-gray-600">{description}</p>
+      <p className="text-sm leading-5 text-gray-600 dark:text-gray-300">
+        {description}
+      </p>
       <div className="mt-4 flex justify-end">
         <button
           onClick={onClick}
-          className="flex h-10 w-20 items-center justify-center rounded-full bg-aurora-500 text-white"
+          className="flex h-10 w-20 items-center justify-center rounded-full bg-aurora-500 text-white hover:bg-aurora-600"
         >
           View <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
         </button>
@@ -67,7 +71,7 @@ const OverviewComponent = ({ org, repo }: { org: string; repo: string }) => {
         title="Research & plan tasks"
         imageSrc="/images/8abae5e1733d7e1563352136f695f9ddab66574d.png"
         altText="Research & plan tasks"
-        description="Organize and your tasks with our intuitive planning tools to keep your projects on track."
+        description="Organize your tasks with our intuitive planning tools to keep your projects on track."
         onClick={() => handleClick("todos")}
       />
       <Card
