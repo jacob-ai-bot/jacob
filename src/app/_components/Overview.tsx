@@ -2,7 +2,21 @@ import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
-const Card = ({ title, imageSrc, altText, description, onClick }) => (
+interface CardProps {
+  title: string;
+  imageSrc: string;
+  altText: string;
+  description: string;
+  onClick: () => void;
+}
+
+const Card = ({
+  title,
+  imageSrc,
+  altText,
+  description,
+  onClick,
+}: CardProps) => (
   <div className="m-4 h-96 w-80 rounded-xl border border-gray-300 bg-white">
     <div className="p-4">
       <div className="text-lg font-medium leading-6 text-gray-900">{title}</div>
@@ -25,7 +39,7 @@ const Card = ({ title, imageSrc, altText, description, onClick }) => (
 );
 
 const Overview = () => {
-  const handleClick = (title) => {
+  const handleClick = (title: string) => {
     console.log(`View clicked for ${title}`);
   };
 
