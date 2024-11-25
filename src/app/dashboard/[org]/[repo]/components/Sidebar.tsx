@@ -14,11 +14,13 @@ import {
   faPencil,
   faRobot,
   faBars,
+  faHome,
 } from "@fortawesome/free-solid-svg-icons";
 import { debounce } from "lodash";
 import { usePathname } from "next/navigation";
 
 const navItems = [
+  { name: "Overview", icon: faHome },
   { name: "Todos", icon: faListCheck },
   { name: "Assigned Tasks", icon: faRobot },
   { name: "Chat", icon: faComments },
@@ -34,7 +36,7 @@ export default function Sidebar({ org, repo }: { org: string; repo: string }) {
     return (
       navItems.find(
         (item) => item.name.toLowerCase().replace(" ", "-") === path,
-      )?.name ?? "Todos"
+      )?.name ?? "Overview"
     );
   });
 
@@ -75,7 +77,7 @@ export default function Sidebar({ org, repo }: { org: string; repo: string }) {
     const newActiveItem =
       navItems.find(
         (item) => item.name.toLowerCase().replace(" ", "-") === path,
-      )?.name ?? "Todos";
+      )?.name ?? "Overview";
     setActiveItem(newActiveItem);
   }, [pathname]);
 

@@ -7,7 +7,7 @@ import { useEffect } from "react";
 const RepoPage = ({ params }: { params: { org: string; repo: string } }) => {
   const { org, repo } = params;
   useEffect(() => {
-    redirect(`/api/dashboard?org=${org}&repo=${repo}`);
+    redirect(`/dashboard/${org}/${repo}/overview`);
   }, [org, repo]);
   return <LoadingPage />;
 };

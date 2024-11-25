@@ -29,6 +29,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
   index,
 }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const statusColors = {
     [TodoStatus.TODO]:
       "bg-sunset-100 text-sunset-800 dark:bg-sunset-800 dark:text-sunset-100",
@@ -41,6 +42,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
   };
 
   const archiveMutation = api.todos.archive.useMutation();
+  const updateMutation = api.todos.update.useMutation();
   const [isArchiving, setIsArchiving] = useState(false);
 
   const handleArchiveClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -70,7 +72,23 @@ export const TodoItem: React.FC<TodoItemProps> = ({
     setShowConfirmation(false);
   };
 
-  const getBackgroundColor = (index: number, selected: boolean) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData("text/plain", JSON.stringify(todo));
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const getBackgroundColor = (
+    index: number,
+    selected: boolean,
+    isDragging: boolean,
+  ) => {
+    if (isDragging) {
+      return "border-l-4 bg-meadow-100 hover:bg-meadow-100 dark:bg-sky-900/70 dark:hover:bg-slate-600/70";
+    }
     if (selected) {
       return "border-l-4 bg-meadow-50 hover:bg-meadow-50 dark:bg-sky-900/50 dark:hover:bg-slate-600/50";
     }
@@ -84,8 +102,14 @@ export const TodoItem: React.FC<TodoItemProps> = ({
       className={`relative cursor-pointer border-l-meadow-200 px-4 pb-2 pt-1 transition-all dark:border-l-purple-800/80 ${getBackgroundColor(
         index,
         selected,
+        isDragging,
       )}`}
       onClick={() => onSelect(todo.id)}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      data-todo-id={todo.id}
+      data-todo-status={todo.status}
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
