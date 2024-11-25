@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     await setLastUsedRepoCookie(org, repo);
     return NextResponse.redirect(
       new URL(
-        `/dashboard/${org}/${repo}/${page ?? "code-visualizer"}`,
+        `/dashboard/${org}/${repo}/${page ?? "overview"}`,
         process.env.NEXTAUTH_URL,
       ),
     );
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   let redirectTo = "";
 
   if (lastUsedRepo) {
-    redirectTo = `/dashboard/${lastUsedRepo}/${page ?? "code-visualizer"}`;
+    redirectTo = `/dashboard/${lastUsedRepo}/${page ?? "overview"}`;
   } else if (
     !user?.login ||
     (user?.expires && Date.parse(user.expires) < Date.now())
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     } else {
       const repos = data.map((d) => d.full_name);
       if (repos[0]) {
-        redirectTo = `/dashboard/${repos[0]}/${page ?? "code-visualizer"}`;
+        redirectTo = `/dashboard/${repos[0]}/${page ?? "overview"}`;
       } else {
         console.error("No repos found after mapping");
         return NextResponse.redirect(
