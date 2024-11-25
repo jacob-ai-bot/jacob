@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IssueWriter } from "../issue-writer/IssueWriter";
+import IssueWriter from "../issue-writer/IssueWriter";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { CodebaseVisualizer } from "../code-visualizer/codebase/CodebaseVisualizer";
 import { InfographicReport } from "./components/InfographicReport";
@@ -20,7 +20,7 @@ export default function OverviewPage({
     repo,
   });
   const { data: contextItems = [] } = api.codebaseContext.getAll.useQuery(
-    { projectId: project?.id ?? 0 },
+    { org, repo },
     { enabled: !!project?.id },
   );
 
@@ -57,7 +57,7 @@ export default function OverviewPage({
         <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
           Project Insights
         </h2>
-        <InfographicReport projectId={project?.id} />
+        {/* <InfographicReport projectId={project?.id} /> */}
       </div>
     </div>
   );
