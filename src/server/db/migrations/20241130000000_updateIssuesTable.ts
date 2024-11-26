@@ -1,7 +1,8 @@
+import { type Kysely } from "kysely";
 import { change } from "../dbScript";
 
-export const up = async (db) => {
-  await db.alterTable("issues", (t) => {
+export const up = async (db: Kysely<any>) => {
+  await db.alterTable("issues", (t: any) => {
     t.text("jiraIssueDescription").nullable();
     t.numeric("evaluationScore").nullable();
     t.text("feedback").nullable();
@@ -9,8 +10,8 @@ export const up = async (db) => {
   });
 };
 
-export const down = async (db) => {
-  await db.alterTable("issues", (t) => {
+export const down = async (db: Kysely<any>) => {
+  await db.alterTable("issues", (t: any) => {
     t.dropColumn("jiraIssueDescription");
     t.dropColumn("evaluationScore");
     t.dropColumn("feedback");

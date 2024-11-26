@@ -110,7 +110,7 @@ describe("evaluateJiraIssue", () => {
       0.4,
       undefined,
       3,
-      "gpt-4-turbo-2023-05-23",
+      "claude-3-5-sonnet-20241022",
     );
   });
 
@@ -138,7 +138,7 @@ describe("evaluateJiraIssue", () => {
       0.4,
       undefined,
       3,
-      "gpt-4-turbo-2023-05-23",
+      "claude-3-5-sonnet-20241022",
     );
   });
 });

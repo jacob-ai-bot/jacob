@@ -11,7 +11,27 @@ import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
 import { evaluateJiraIssue } from "./evaluateIssue";
-import { extractTextFromADF } from "./jira";
+
+// Helper function to extract text from Atlassian Document Format (ADF)
+function extractTextFromADF(adf: any): string {
+  if (!adf) return "";
+
+  // Handle basic text nodes
+  if (typeof adf === "string") return adf;
+
+  // Handle ADF document structure
+  if (adf.content) {
+    return adf.content
+      .map((node: any) => extractTextFromADF(node))
+      .join("\n")
+      .trim();
+  }
+
+  // Handle text nodes
+  if (adf.text) return adf.text;
+
+  return "";
+}
 
 export async function refreshJiraAccessToken(
   accountId: number,
@@ -294,8 +314,8 @@ export async function fetchNewJiraIssues({
         issueId: issue.id,
         title: issue.title,
         jiraIssueDescription: issue.description,
-        evaluationScore: evaluation.evaluationScore,
-        feedback: evaluation.feedback,
+        evaluationScore: evaluation.evaluationScore.toString(),
+        feedback: evaluation.feedback || "",
         didCreateGithubIssue: evaluation.evaluationScore >= 4,
       });
 
@@ -308,7 +328,7 @@ export async function fetchNewJiraIssues({
           jiraAccessToken,
           cloudId,
           issue.id,
-          evaluation.feedback,
+          evaluation.feedback || "",
         );
 
         continue;

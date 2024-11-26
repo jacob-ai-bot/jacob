@@ -196,7 +196,7 @@ Please provide your evaluation in the following JSON format:
     0.4,
     baseEventData,
     3,
-    "gpt-4-turbo-2023-05-23",
+    "claude-3-5-sonnet-20241022",
   );
 
   return evaluation;
