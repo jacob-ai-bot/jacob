@@ -344,11 +344,4 @@ export async function fetchNewJiraIssues({
             method: "POST",
             headers: {
               Authorization: `Bearer ${jiraAccessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              body: {
-                type: "doc",
-                version: 1,
-                content: [
-                
+              "Content-Type": "application
