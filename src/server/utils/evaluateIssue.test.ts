@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { evaluateIssue } from "./evaluateIssue";
+import { evaluateIssue, evaluateJiraIssue } from "./evaluateIssue";
 import * as openaiRequest from "../openai/request";
 import { PlanningAgentActionType } from "../db/enums";
 import { type StandardizedPath } from "./files";
@@ -247,5 +247,54 @@ describe("evaluateIssue", () => {
       3,
       "claude-3-5-sonnet-20241022",
     );
+  });
+
+  describe("evaluateJiraIssue", () => {
+    it("should evaluate a well-defined Jira issue", async () => {
+      const mockEvaluation = {
+        score: 4.5,
+        feedback: null,
+      };
+
+      vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
+        mockEvaluation,
+      );
+
+      const result = await evaluateJiraIssue({
+        title: "Implement user authentication flow",
+        description:
+          "Add OAuth2 authentication flow with detailed acceptance criteria and technical requirements",
+      });
+
+      expect(result).toEqual(mockEvaluation);
+      expect(openaiRequest.sendGptRequestWithSchema).toHaveBeenCalledWith(
+        expect.stringContaining("Implement user authentication flow"),
+        expect.any(String),
+        expect.any(Object),
+        0.4,
+        undefined,
+        3,
+        "claude-3-5-sonnet-20241022",
+      );
+    });
+
+    it("should evaluate a poorly defined Jira issue", async () => {
+      const mockEvaluation = {
+        score: 2.5,
+        feedback:
+          "Please add specific acceptance criteria and technical requirements",
+      };
+
+      vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
+        mockEvaluation,
+      );
+
+      const result = await evaluateJiraIssue({
+        title: "Fix bug",
+        description: "Something is broken",
+      });
+
+      expect(result).toEqual(mockEvaluation);
+    });
   });
 });
