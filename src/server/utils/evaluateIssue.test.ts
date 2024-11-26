@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { evaluateIssue } from "./evaluateIssue";
+import { evaluateIssue, evaluateJiraIssue } from "./evaluateIssue";
 import * as openaiRequest from "../openai/request";
 import { PlanningAgentActionType } from "../db/enums";
 import { type StandardizedPath } from "./files";
@@ -20,7 +20,6 @@ describe("evaluateIssue", () => {
       specificRiskAreas: ["External API dependencies"],
       estimatedEffort: {
         storyPoints: 3,
-        time: "2 days",
         requiredSkillLevel: "Mid-Level Developer",
         skillset: ["React", "TypeScript", "API Integration"],
       },
@@ -84,168 +83,62 @@ describe("evaluateIssue", () => {
       "claude-3-5-sonnet-20241022",
     );
   });
+});
 
-  it("should handle edge cases with minimum values", async () => {
+describe("evaluateJiraIssue", () => {
+  it("should return a score and feedback when score is less than 4", async () => {
     const mockEvaluation = {
-      confidenceScore: 0,
-      complexityFactors: {
-        codeComplexity: "Low",
-        contextUnderstanding: "Low",
-        riskFactors: "Low",
-      },
-      specificRiskAreas: [],
-      estimatedEffort: {
-        storyPoints: 0,
-        time: "0 hours",
-        requiredSkillLevel: "Junior Developer",
-        skillset: [],
-      },
-      recommendations: [],
-      feedback: "The plan needs significant improvement in all areas.",
-      overallIndicator: "Red",
+      evaluationScore: 3.5,
+      feedback:
+        "The issue description needs more detail about the expected functionality.",
     };
 
     vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
       mockEvaluation,
     );
 
-    const result = await evaluateIssue({
-      githubIssue: "Empty task",
-      planSteps: [],
-      research: "",
-      totalFiles: 0,
-      contextItems: [],
+    const result = await evaluateJiraIssue({
+      issueTitle: "Add new feature",
+      issueDescription: "Implement the new feature.",
     });
 
     expect(result).toEqual(mockEvaluation);
-  });
-
-  it("should handle edge cases with maximum values", async () => {
-    const mockEvaluation = {
-      confidenceScore: 5,
-      complexityFactors: {
-        codeComplexity: "High",
-        contextUnderstanding: "High",
-        riskFactors: "High",
-      },
-      specificRiskAreas: ["Extremely complex task"],
-      estimatedEffort: {
-        storyPoints: 100,
-        time: "1 year",
-        requiredSkillLevel: "Principal Architect",
-        skillset: ["Everything"],
-      },
-      recommendations: ["Complete rewrite of the entire system"],
-      feedback: "The plan is perfect and cannot be improved further.",
-      overallIndicator: "Green",
-    };
-
-    vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
-      mockEvaluation,
-    );
-
-    const result = await evaluateIssue({
-      githubIssue: "Rewrite entire codebase",
-      planSteps: [
-        {
-          instructions:
-            "1. Rewrite everything\n2. Test everything\n3. Deploy everything",
-          type: PlanningAgentActionType.EditExistingCode,
-          filePath: "src/index.ts" as StandardizedPath,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          id: 1,
-          projectId: 1,
-          isActive: true,
-          issueNumber: 1,
-          title: "Rewrite entire codebase",
-          exitCriteria: "",
-          dependencies: "",
-        },
-      ],
-      research: "This is an impossible task",
-      totalFiles: 1000000,
-      contextItems: [
-        {
-          file: "src/index.ts" as StandardizedPath,
-          code: ["// everything"],
-          text: "// everything",
-          importStatements: [],
-          diagram: "",
-          overview: "",
-          taxonomy: "",
-          importedFiles: [],
-          exports: [],
-        },
-      ],
-    });
-
-    expect(result).toEqual(mockEvaluation);
-  });
-
-  it("should pass through baseEventData", async () => {
-    const mockEvaluation = {
-      confidenceScore: 3,
-      complexityFactors: {
-        codeComplexity: "Medium",
-        contextUnderstanding: "Medium",
-        riskFactors: "Medium",
-      },
-      specificRiskAreas: ["Some risk"],
-      estimatedEffort: {
-        storyPoints: 5,
-        time: "1 week",
-        requiredSkillLevel: "Senior Developer",
-        skillset: ["JavaScript"],
-      },
-      recommendations: ["Do something"],
-      feedback: "The plan is okay.",
-      overallIndicator: "Yellow",
-    };
-
-    vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
-      mockEvaluation,
-    );
-
-    const baseEventData = {
-      projectId: 123,
-      repoFullName: "test/repo",
-      userId: "user123",
-      issueId: 456,
-    };
-
-    await evaluateIssue({
-      githubIssue: "Test task",
-      planSteps: [
-        {
-          instructions: "Test plan",
-          type: PlanningAgentActionType.EditExistingCode,
-          filePath: "test.ts" as StandardizedPath,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          id: 1,
-          projectId: 1,
-          isActive: true,
-          issueNumber: 1,
-          title: "Test task",
-          exitCriteria: "",
-          dependencies: "",
-        },
-      ],
-      research: "Test research",
-      totalFiles: 10,
-      contextItems: [],
-      baseEventData,
-    });
-
     expect(openaiRequest.sendGptRequestWithSchema).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
       expect.any(Object),
       0.4,
-      baseEventData,
+      undefined,
       3,
-      "claude-3-5-sonnet-20241022",
+      "gpt-4-turbo-2023-05-23",
+    );
+  });
+
+  it("should return only evaluationScore when score is 4 or higher", async () => {
+    const mockEvaluation = {
+      evaluationScore: 4.5,
+      feedback: "",
+    };
+
+    vi.mocked(openaiRequest.sendGptRequestWithSchema).mockResolvedValue(
+      mockEvaluation,
+    );
+
+    const result = await evaluateJiraIssue({
+      issueTitle: "Implement user login",
+      issueDescription:
+        "Implement a user login system with email and password authentication. The system should validate user credentials against the database and handle session management.",
+    });
+
+    expect(result).toEqual(mockEvaluation);
+    expect(openaiRequest.sendGptRequestWithSchema).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.any(Object),
+      0.4,
+      undefined,
+      3,
+      "gpt-4-turbo-2023-05-23",
     );
   });
 });
