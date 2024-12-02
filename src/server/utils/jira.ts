@@ -225,6 +225,11 @@ async function downloadAndUploadJiraAttachment(
   }
 }
 
+export function getJiraUserFacingUrl(apiUrl: string, issueKey: string): string {
+  const baseUrl = apiUrl.split("/rest/")[0];
+  return `${baseUrl}/browse/${issueKey}`;
+}
+
 export async function fetchNewJiraIssues({
   jiraAccessToken,
   cloudId,
@@ -255,7 +260,7 @@ export async function fetchNewJiraIssues({
 
   try {
     const jql = `project=${boardId} AND created>=-2h`;
-    const fields = "id,self,summary,description,status,attachment";
+    const fields = "id,self,summary,description,status,attachment,priority";
 
     const response = await fetch(
       `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fields)}`,
@@ -287,6 +292,7 @@ export async function fetchNewJiraIssues({
     }
     type OriginalJiraIssue = {
       id: string;
+      key: string;
       fields: {
         summary: string;
         description: any;
@@ -294,19 +300,28 @@ export async function fetchNewJiraIssues({
           name: string;
         };
         attachment?: any[];
+        priority: {
+          iconUrl: string;
+        };
       };
       self: string;
     };
 
     const data = await response.json();
-    const issues: JiraIssue[] = data.issues.map((issue: OriginalJiraIssue) => ({
-      id: issue.id,
-      url: issue.self,
-      number: parseInt(issue.id),
-      title: issue.fields.summary,
-      description: extractTextFromADF(issue.fields.description),
-      attachments: issue.fields.attachment ?? [],
-    }));
+
+    const issues: JiraIssue[] = data.issues.map((issue: OriginalJiraIssue) => {
+      const boardName =
+        issue.fields?.priority?.iconUrl?.split("/").slice(0, 3).join("/") ?? "";
+      return {
+        id: issue.id,
+        url: `${boardName}/browse/${issue.key}`,
+        key: issue.key,
+        number: parseInt(issue.id),
+        title: issue.fields.summary,
+        description: extractTextFromADF(issue.fields.description),
+        attachments: issue.fields.attachment ?? [],
+      };
+    });
 
     for (const issue of issues) {
       const existingIssue = await db.issues.findByOptional({
@@ -357,7 +372,7 @@ export async function fetchNewJiraIssues({
         imageUrls,
       );
 
-      let githubIssueBody = `[${issue.id}: ${issue.title}](${issue.url})\n\n---\n\n`;
+      let githubIssueBody = `[${issue.key}: ${issue.title}](${issue.url})\n\n---\n\n`;
       githubIssueBody += githubIssueDescription.rewrittenIssue;
 
       if (imageUrls.length > 0) {

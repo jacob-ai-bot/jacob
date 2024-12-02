@@ -189,6 +189,7 @@ export interface JiraAccessibleResource {
 export interface JiraIssue {
   id: string;
   url: string;
+  key: string;
   number: number;
   title: string;
   description: string;
