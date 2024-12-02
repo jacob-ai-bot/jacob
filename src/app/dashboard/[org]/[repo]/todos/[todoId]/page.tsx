@@ -39,6 +39,9 @@ export default function TodoDetailPage({ params }: TodoDetailPageProps) {
     },
     {
       enabled: !!todoId,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      staleTime: 30000,
     },
   );
 
