@@ -10,6 +10,7 @@ import {
 import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
+import { uploadToS3, getSignedUrl } from "../utils/images";
 
 export async function refreshJiraAccessToken(
   accountId: number,
@@ -186,6 +187,40 @@ export async function fetchAllNewJiraIssues() {
   }
 }
 
+async function downloadAndUploadJiraAttachment(
+  attachment: any,
+  jiraAccessToken: string,
+): Promise<string | null> {
+  if (!attachment.mimeType?.startsWith("image/")) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(attachment.content, {
+      headers: {
+        Authorization: `Bearer ${jiraAccessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to download attachment");
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const imagePath = await uploadToS3(
+      buffer,
+      attachment.mimeType,
+      env.S3_BUCKET_NAME,
+      `jira-${Date.now()}-${attachment.filename}`,
+    );
+
+    return await getSignedUrl(imagePath, env.S3_BUCKET_NAME);
+  } catch (error) {
+    console.error("Error processing attachment:", error);
+    return null;
+  }
+}
+
 export async function fetchNewJiraIssues({
   jiraAccessToken,
   cloudId,
@@ -215,8 +250,8 @@ export async function fetchNewJiraIssues({
   const project = await db.projects.findBy({ id: projectId });
 
   try {
-    const jql = `project=${boardId} AND created>=-2h`; // note that the cron job runs every hour
-    const fields = "id,self,summary,description,status";
+    const jql = `project=${boardId} AND created>=-2h`;
+    const fields = "id,self,summary,description,status,attachment";
 
     const response = await fetch(
       `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fields)}`,
@@ -230,7 +265,6 @@ export async function fetchNewJiraIssues({
 
     if (response.status === 401) {
       console.log("Jira access token expired, refreshing...");
-      // get the user from the issue board
       jiraAccessToken = await refreshJiraAccessToken(userId);
       return fetchNewJiraIssues({
         jiraAccessToken,
@@ -255,6 +289,7 @@ export async function fetchNewJiraIssues({
         status: {
           name: string;
         };
+        attachment?: any[];
       };
       self: string;
     };
@@ -266,9 +301,10 @@ export async function fetchNewJiraIssues({
       number: parseInt(issue.id),
       title: issue.fields.summary,
       description: extractTextFromADF(issue.fields.description),
+      attachments: issue.fields.attachment || [],
     }));
+
     for (const issue of issues) {
-      // first check if the issue already exists
       const existingIssue = await db.issues.findByOptional({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
@@ -284,18 +320,31 @@ export async function fetchNewJiraIssues({
       console.log(
         `Repo ${project.repoFullName}: Creating new Jira issue ${issue.id}`,
       );
-      // create a new issue in the database - this ensures we don't duplicate issues
       await db.issues.create({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
         title: issue.title,
       });
+
       const owner = project.repoFullName.split("/")[0];
       const repo = project.repoFullName.split("/")[1];
       if (!owner || !repo) {
         throw new Error("Invalid repo full name");
       }
-      // use AI to generate a more detailed github issue description
+
+      const imageUrls: string[] = [];
+      if (issue.attachments?.length) {
+        for (const attachment of issue.attachments) {
+          const imageUrl = await downloadAndUploadJiraAttachment(
+            attachment,
+            jiraAccessToken,
+          );
+          if (imageUrl) {
+            imageUrls.push(imageUrl);
+          }
+        }
+      }
+
       const githubIssueDescription = await rewriteGitHubIssue(
         githubAccessToken,
         owner,
@@ -304,12 +353,19 @@ export async function fetchNewJiraIssues({
         issue.description,
         EvaluationMode.DETAILED,
       );
+
       let githubIssueBody = `[${issue.id}: ${issue.title}](${issue.url})\n\n---\n\n`;
       githubIssueBody += githubIssueDescription.rewrittenIssue;
-      // Add the original Jira issue description to the body
+
+      if (imageUrls.length > 0) {
+        githubIssueBody += "\n\n### Attached Images\n\n";
+        imageUrls.forEach((url, index) => {
+          githubIssueBody += `![Image ${index + 1}](${url})\n`;
+        });
+      }
+
       githubIssueBody += `\n\n---\n\nOriginal Jira issue description: \n\n${issue.title}\n\n${issue.description}`;
 
-      // create a new GitHub issue - there is a listener for this in the queue that will create a todo
       const githubIssue = await createGitHubIssue(
         owner,
         repo,
@@ -328,7 +384,6 @@ export async function fetchNewJiraIssues({
 }
 
 export async function getJiraCloudIdResources(accessToken: string) {
-  // Fetch accessible resources to obtain cloudId
   const resourcesResponse = await fetch(
     "https://api.atlassian.com/oauth/token/accessible-resources",
     {
@@ -353,8 +408,6 @@ export async function getJiraCloudIdResources(accessToken: string) {
   return resourcesData;
 }
 
-// https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/
-// Jira issues are stored in ADF format, need to extract the text from it
 export function extractTextFromADF(adfNode: any): string {
   let text = "";
 
