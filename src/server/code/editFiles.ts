@@ -6,7 +6,7 @@ import {
   type RepoSettings,
   type BaseEventData,
   generateJacobBranchName,
-  getStyles,
+  // getStyles,
   type TemplateParams,
 } from "../utils";
 import { countTokens, MAX_OUTPUT, type Model } from "../openai/request";
@@ -23,8 +23,8 @@ import { getSnapshotUrl } from "~/app/utils";
 import { db } from "../db/db";
 import { researchIssue } from "../agent/research";
 import { getOrCreateTodo } from "../utils/todos";
-import { getTypes, getImages } from "../analyze/sourceMap";
-import { saveImages } from "../utils/images";
+// import { getTypes, getImages } from "../analyze/sourceMap";
+// import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
 import { PlanningAgentActionType } from "../db/enums";
 import { type PlanStep } from "../agent/plan";
@@ -66,17 +66,17 @@ async function processStepIndividually(
     step.type === PlanningAgentActionType.CreateNewCode ? filesToProcess : [],
   );
 
-  const types = getTypes(rootPath, repoSettings);
-  const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
-    "\n",
-  );
-  const styles = await getStyles(rootPath, repoSettings);
-  const images = await saveImages(
-    await getImages(rootPath, repoSettings),
-    issueText,
-    rootPath,
-    repoSettings,
-  );
+  // const types = getTypes(rootPath, repoSettings);
+  // const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
+  //   "\n",
+  // );
+  // const styles = await getStyles(rootPath, repoSettings);
+  // const images = await saveImages(
+  //   await getImages(rootPath, repoSettings),
+  //   issueText,
+  //   rootPath,
+  //   repoSettings,
+  // );
 
   const detailedMarkdownPlanFromSteps = dedent`
     ### Step: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
@@ -107,10 +107,10 @@ async function processStepIndividually(
 
   const codeTemplateParams: TemplateParams = {
     sourceMap: "",
-    types,
-    packages,
-    styles,
-    images,
+    types: "",
+    packages: "",
+    styles: "",
+    images: "",
     code,
     issueBody: issueText,
     plan: detailedMarkdownPlanFromSteps,
@@ -135,7 +135,7 @@ async function processStepIndividually(
     codeSystemPrompt,
     0.2,
     baseEventData,
-    3,
+    2,
     60000,
     undefined,
   );
@@ -225,13 +225,13 @@ export async function editFiles(params: EditFilesParams) {
   );
   // console.log(`[${repository.full_name}] Concatenated code:\n\n`, code);
 
-  const types = getTypes(rootPath, repoSettings);
-  const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
-    "\n",
-  );
-  const styles = await getStyles(rootPath, repoSettings);
-  let images = await getImages(rootPath, repoSettings);
-  images = await saveImages(images, issue?.body, rootPath, repoSettings);
+  // const types = getTypes(rootPath, repoSettings);
+  // const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
+  //   "\n",
+  // );
+  // const styles = await getStyles(rootPath, repoSettings);
+  // let images = await getImages(rootPath, repoSettings);
+  // images = await saveImages(images, issue?.body, rootPath, repoSettings);
   const detailedMarkdownPlanFromSteps = planSteps
     .map(
       (step, index) => dedent`
@@ -270,10 +270,10 @@ export async function editFiles(params: EditFilesParams) {
 
   const codeTemplateParams = {
     sourceMap,
-    types,
-    packages,
-    styles,
-    images,
+    types: "",
+    packages: "",
+    styles: "",
+    images: "",
     code,
     issueBody: issueText,
     plan: detailedMarkdownPlanFromSteps,
@@ -326,7 +326,7 @@ export async function editFiles(params: EditFilesParams) {
       codeSystemPrompt,
       0.2,
       baseEventData,
-      3,
+      2,
       60000,
       undefined,
     ))!;
