@@ -6,11 +6,13 @@ import {
   type JiraIssue,
   type JiraAccessibleResource,
   type JiraBoard,
+  type JiraAttachment,
 } from "~/types";
 import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
-import { uploadToS3, getSignedUrl } from "../utils/images";
+import { uploadToS3, getSignedUrl, IMAGE_TYPE } from "../utils/images";
+const bucketName = process.env.BUCKET_NAME ?? "";
 
 export async function refreshJiraAccessToken(
   accountId: number,
@@ -188,7 +190,7 @@ export async function fetchAllNewJiraIssues() {
 }
 
 async function downloadAndUploadJiraAttachment(
-  attachment: any,
+  attachment: JiraAttachment,
   jiraAccessToken: string,
 ): Promise<string | null> {
   if (!attachment.mimeType?.startsWith("image/")) {
@@ -207,14 +209,16 @@ async function downloadAndUploadJiraAttachment(
     }
 
     const buffer = Buffer.from(await response.arrayBuffer());
+    const imageType =
+      attachment.mimeType === "image/jpeg" ? IMAGE_TYPE.JPEG : IMAGE_TYPE.PNG;
     const imagePath = await uploadToS3(
       buffer,
-      attachment.mimeType,
-      env.S3_BUCKET_NAME,
+      imageType,
+      bucketName,
       `jira-${Date.now()}-${attachment.filename}`,
     );
 
-    return await getSignedUrl(imagePath, env.S3_BUCKET_NAME);
+    return await getSignedUrl(imagePath, bucketName);
   } catch (error) {
     console.error("Error processing attachment:", error);
     return null;
@@ -301,7 +305,7 @@ export async function fetchNewJiraIssues({
       number: parseInt(issue.id),
       title: issue.fields.summary,
       description: extractTextFromADF(issue.fields.description),
-      attachments: issue.fields.attachment || [],
+      attachments: issue.fields.attachment ?? [],
     }));
 
     for (const issue of issues) {
@@ -333,15 +337,13 @@ export async function fetchNewJiraIssues({
       }
 
       const imageUrls: string[] = [];
-      if (issue.attachments?.length) {
-        for (const attachment of issue.attachments) {
-          const imageUrl = await downloadAndUploadJiraAttachment(
-            attachment,
-            jiraAccessToken,
-          );
-          if (imageUrl) {
-            imageUrls.push(imageUrl);
-          }
+      for (const attachment of issue.attachments ?? []) {
+        const imageUrl = await downloadAndUploadJiraAttachment(
+          attachment,
+          jiraAccessToken,
+        );
+        if (typeof imageUrl === "string") {
+          imageUrls.push(imageUrl);
         }
       }
 
@@ -352,6 +354,7 @@ export async function fetchNewJiraIssues({
         issue.title,
         issue.description,
         EvaluationMode.DETAILED,
+        imageUrls,
       );
 
       let githubIssueBody = `[${issue.id}: ${issue.title}](${issue.url})\n\n---\n\n`;

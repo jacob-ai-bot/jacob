@@ -192,6 +192,28 @@ export interface JiraIssue {
   number: number;
   title: string;
   description: string;
+  attachments: JiraAttachment[];
+}
+
+export interface JiraAttachment {
+  self: string;
+  id: string;
+  filename: string;
+  author: {
+    self: string;
+    accountId: string;
+    emailAddress: string;
+    avatarUrls: Record<string, string>;
+    displayName: string;
+    active: boolean;
+    timeZone: string;
+    accountType: string;
+  };
+  created: string;
+  size: number;
+  mimeType: string;
+  content: string;
+  thumbnail: string;
 }
 
 export interface LinearTeam {
