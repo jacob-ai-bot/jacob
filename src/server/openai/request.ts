@@ -193,8 +193,8 @@ export const sendGptRequest = async (
   model: Model = "claude-3-5-sonnet-20241022",
   isJSONMode = false,
 ): Promise<string | null> => {
-  console.log("\n\n --- User Prompt --- \n\n", userPrompt);
-  console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
+  // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
+  // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
     const isO1Model =
@@ -364,7 +364,7 @@ export const sendGptRequest = async (
       });
     }
 
-    console.log("GPT Response: ", content);
+    // console.log("GPT Response: ", content);
     return content;
   } catch (error) {
     if (

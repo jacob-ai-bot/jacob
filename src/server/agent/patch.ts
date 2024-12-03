@@ -23,7 +23,7 @@ export async function applyCodePatchesViaLLM(args: {
     files.push(...file);
   }
   for (const filePath of filesToCreate) {
-    const file = await createNewFile(rootPath, filePath, patch);
+    const file = await applyCodePatchViaLLM(rootPath, filePath, patch, true);
     files.push(...file);
   }
   return files;

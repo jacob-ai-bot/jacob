@@ -2,7 +2,6 @@ import { dedent } from "ts-dedent";
 import { type Issue, type Repository } from "@octokit/webhooks-types";
 import {
   parseTemplate,
-  constructNewOrEditSystemPrompt,
   type RepoSettings,
   type BaseEventData,
   generateJacobBranchName,
