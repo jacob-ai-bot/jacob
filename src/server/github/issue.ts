@@ -3,9 +3,10 @@ import { Octokit } from "@octokit/rest";
 import type { Repository } from "@octokit/webhooks-types";
 
 import { PRCommand } from "../utils";
-import { sendGptRequest } from "../openai/request";
+import { type Model, sendGptRequest } from "../openai/request";
 import { EvaluationMode } from "~/types";
 import { getCodebaseContext } from "../api/utils";
+import type OpenAI from "openai";
 
 export const codeReviewCommandSuggestion = `Please note: I am available to do code reviews in this repo if you add the comment \`${PRCommand.CodeReview}\` to a pull request.`;
 
@@ -146,6 +147,7 @@ export async function rewriteGitHubIssue(
   title: string,
   body: string,
   evaluationMode: EvaluationMode,
+  imageUrls: string[] = [],
 ) {
   try {
     const issueText = `${title} ${body}`;
@@ -162,10 +164,13 @@ export async function rewriteGitHubIssue(
       .map((c) => `${c.filePath}: ${c.context.overview}`)
       .join("\n");
 
-    const model =
+    let model: Model =
       evaluationMode === EvaluationMode.FASTER
         ? "claude-3-5-sonnet-20241022"
         : "o1-preview-2024-09-12";
+    if (imageUrls.length) {
+      model = "gpt-4o-2024-08-06";
+    }
 
     const prompt = `
 You are an expert GitHub issue reviewer and writer. Your task is to analyze the given issue draft and rewrite it to create a top 1% quality GitHub issue. Use the provided codebase context to ensure accuracy and relevance.
@@ -226,15 +231,29 @@ Here is the expected format of your response:
 ---
 `;
 
+    let imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | undefined;
+    if (imageUrls.length) {
+      imagePrompt = {
+        role: "user",
+        content: imageUrls.map((url) => ({
+          type: "image_url",
+          image_url: {
+            url,
+            detail: "high",
+          },
+        })),
+      } as OpenAI.Chat.ChatCompletionMessageParam;
+    }
+
     const aiResponse =
       (await sendGptRequest(
         prompt,
         undefined,
-        0.7,
+        0.5,
         undefined,
         3,
-        undefined,
-        undefined,
+        0,
+        imagePrompt,
         model,
       )) ?? "";
 
