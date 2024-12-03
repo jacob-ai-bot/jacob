@@ -150,3 +150,56 @@ Please provide your evaluation in the following JSON format:
 
   return evaluation;
 }
+
+export async function evaluateJiraIssue({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}): Promise<{
+  score: number;
+  feedback: string;
+}> {
+  const systemPrompt = `You are an expert software architect tasked with evaluating the quality and completeness of Jira issues. Your goal is to determine if the issue contains sufficient detail for an AI coding agent to implement it correctly.
+
+Evaluate based on these criteria:
+- Clear problem description
+- Specific requirements or acceptance criteria
+- Technical context if needed
+- Expected behavior
+- Any relevant constraints or dependencies
+
+Provide a score from 1-5 (allowing half points) where:
+1: Severely lacking detail, impossible to implement
+3: Basic information present but some key details missing
+5: Comprehensive detail, clear requirements, ready for implementation
+
+If score is below 4, provide one clear sentence of feedback on what needs to be added.`;
+
+  const userPrompt = `Please evaluate this Jira issue:
+
+Title: ${title}
+Description: ${description}
+
+Return only a JSON object with:
+- score (number between 1-5, allowing half points)
+- feedback (string, one sentence if score < 4, empty string if score >= 4)`;
+
+  const schema = z.object({
+    score: z.number().min(1).max(5),
+    feedback: z.string(),
+  });
+
+  const evaluation = await sendGptRequestWithSchema(
+    userPrompt,
+    systemPrompt,
+    schema,
+    0.4,
+    undefined,
+    3,
+    "claude-3-5-sonnet-20241022",
+  );
+
+  return evaluation;
+}

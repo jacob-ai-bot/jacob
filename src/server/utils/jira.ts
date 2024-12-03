@@ -12,6 +12,7 @@ import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
 import { uploadToS3, getSignedUrl, IMAGE_TYPE } from "../utils/images";
+import { evaluateJiraIssue } from "./evaluateIssue";
 const bucketName = process.env.BUCKET_NAME ?? "";
 
 export async function refreshJiraAccessToken(
@@ -48,10 +49,113 @@ export async function refreshJiraAccessToken(
   return data.access_token;
 }
 
+import { change } from "../dbScript";
+
+change(async (db) => {
+  await db.changeTable("issues", (t) => ({
+    jiraIssueDescription: t.text().nullable(),
+    evaluationScore: t.numeric().nullable(),
+    feedback: t.text().nullable(),
+    didCreateGithubIssue: t.boolean().default(false),
+  }));
+});
+
+--- /src/server/utils/jira.test.ts
+--- /dev/null
 export async function fetchJiraProjects(accessToken: string, cloudId: string) {
   const response = await fetch(
     `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/project/search`,
     {
+import { describe, it, expect, vi } from "vitest";
+import { fetchNewJiraIssues } from "./jira";
+import * as evaluateIssue from "./evaluateIssue";
+import * as db from "../db/db";
+import * as githubIssue from "../github/issue";
+
+vi.mock("./evaluateIssue");
+vi.mock("../db/db");
+vi.mock("../github/issue");
+
+describe("fetchNewJiraIssues", () => {
+  it("should not create GitHub issue for low quality Jira issue", async () => {
+    vi.mocked(evaluateIssue.evaluateJiraIssue).mockResolvedValue({
+      score: 2.5,
+      feedback: "Add more detailed requirements",
+    });
+
+    const mockIssue = {
+      id: "123",
+      key: "TEST-1",
+      title: "Test Issue",
+      description: "Test Description",
+      url: "https://test.atlassian.net/browse/TEST-1",
+      number: 1,
+      attachments: [],
+    };
+
+    vi.mocked(db.issues.create).mockResolvedValue({
+      id: 1,
+      issueBoardId: 1,
+      issueId: "123",
+      title: "Test Issue",
+      jiraIssueDescription: "Test Description",
+      evaluationScore: 2.5,
+      feedback: "Add more detailed requirements",
+      didCreateGithubIssue: false,
+    });
+
+    await fetchNewJiraIssues({
+      jiraAccessToken: "test-token",
+      cloudId: "test-cloud",
+      projectId: 1,
+      boardId: "TEST",
+      userId: 1,
+      githubAccessToken: "test-token",
+    });
+
+    expect(githubIssue.createGitHubIssue).not.toHaveBeenCalled();
+  });
+
+  it("should create GitHub issue for high quality Jira issue", async () => {
+    vi.mocked(evaluateIssue.evaluateJiraIssue).mockResolvedValue({
+      score: 4.5,
+      feedback: "",
+    });
+
+    const mockIssue = {
+      id: "123",
+      key: "TEST-1",
+      title: "Test Issue",
+      description: "Test Description",
+      url: "https://test.atlassian.net/browse/TEST-1",
+      number: 1,
+      attachments: [],
+    };
+
+    vi.mocked(db.issues.create).mockResolvedValue({
+      id: 1,
+      issueBoardId: 1,
+      issueId: "123",
+      title: "Test Issue",
+      jiraIssueDescription: "Test Description",
+      evaluationScore: 4.5,
+      feedback: "",
+      didCreateGithubIssue: true,
+    });
+
+    await fetchNewJiraIssues({
+      jiraAccessToken: "test-token",
+      cloudId: "test-cloud",
+      projectId: 1,
+      boardId: "TEST",
+      userId: 1,
+      githubAccessToken: "test-token",
+    });
+
+    expect(githubIssue.createGitHubIssue).toHaveBeenCalled();
+  });
+});
+
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: "application/json",
@@ -336,11 +440,28 @@ export async function fetchNewJiraIssues({
         continue;
       }
 
+      const evaluation = await evaluateJiraIssue({
+        title: issue.title,
+        description: issue.description,
+      });
+
       console.log(
         `Repo ${project.repoFullName}: Creating new Jira issue ${issue.id}`,
       );
+
       await db.issues.create({
         issueBoardId: issueBoard.id,
+        jiraIssueDescription: issue.description,
+        evaluationScore: evaluation.score,
+        feedback: evaluation.feedback,
+        didCreateGithubIssue: evaluation.score >= 4,
+      });
+
+      if (evaluation.score < 4) {
+        continue;
+      }
+
+      await db.issues.update({
         issueId: issue.id,
         title: issue.title,
       });
@@ -442,4 +563,7 @@ export function extractTextFromADF(adfNode: any): string {
   }
 
   return text;
+
+--- /src/server/db/migrations/20241130000000_updateIssuesTable.ts
+++ /dev/null
 }
