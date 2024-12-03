@@ -2,12 +2,31 @@ import fs from "fs";
 import path from "path";
 
 import { addLineNumbers, removeLineNumbers } from "~/server/utils/files";
-import { sendSelfConsistencyChainOfThoughtGptRequest } from "~/server/openai/utils";
+import { sendGptRequest } from "../openai/request";
 
 interface FileContent {
   fileName: string;
   filePath: string;
   codeBlock: string;
+}
+
+export async function applyCodePatchesViaLLM(args: {
+  rootPath: string;
+  filesToUpdate: string[];
+  filesToCreate: string[];
+  patch: string;
+}): Promise<FileContent[]> {
+  const { rootPath, filesToUpdate, filesToCreate, patch } = args;
+  const files: FileContent[] = [];
+  for (const filePath of filesToUpdate) {
+    const file = await applyCodePatchViaLLM(rootPath, filePath, patch, false);
+    files.push(...file);
+  }
+  for (const filePath of filesToCreate) {
+    const file = await createNewFile(rootPath, filePath, patch);
+    files.push(...file);
+  }
+  return files;
 }
 
 export async function applyCodePatchViaLLM(
@@ -58,11 +77,14 @@ I want to create a new file with the following patch:
 
 ${patch}
 
+Address ONLY the part of the patch that is related to creating the file named ${filePath}.
+
 Please provide the complete file content based on this patch. Your response should:
 1. Include the entire file content, not just the changed parts.
 2. Remove any diff-specific syntax (like +, -, @@ lines).
 3. Be surrounded by <file_content> tags.
 4. Contain no additional commentary, explanations, or code blocks.
+5. ONLY add the file content for the file named ${filePath}. DO NOT include any other files.
 
 Here's an example of how your response should be formatted:
 
@@ -83,9 +105,15 @@ export default App;
     const systemPrompt = `You are an expert code creator. Your task is to generate the complete file content based on the given patch for a new file. Make sure to remove any diff-specific syntax and provide only the actual file content. Your response must be the complete file content surrounded by <file_content> tags, with no additional commentary or code blocks.`;
 
     // Call the LLM to generate the file content
-    const rawFileContent = await sendSelfConsistencyChainOfThoughtGptRequest(
+    const rawFileContent = await sendGptRequest(
       userPrompt,
       systemPrompt,
+      0.1,
+      undefined,
+      3,
+      60000,
+      undefined,
+      "claude-3-5-sonnet-20241022",
     );
 
     if (rawFileContent) {
@@ -152,11 +180,14 @@ I want to apply the following patch to this file:
 
 ${patch}
 
+Address ONLY the part of the patch that is related to updating the file named ${filePath}.
+
 Please provide the updated file content after applying the patch. Your response should:
 1. Include the entire file content, not just the changed parts.
 2. Maintain the original line numbers.
 3. Be surrounded by <file_content> tags.
 4. Contain no additional commentary, explanations, or code blocks.
+5. ONLY add the file content for the file named ${filePath}. DO NOT include any other files.
 
 Here's an example of how your response should be formatted:
 
@@ -177,9 +208,15 @@ Here's an example of how your response should be formatted:
     const systemPrompt = `You are an expert code editor. Your task is to apply the given patch to the existing file content and return the entire updated file content, including line numbers. Make sure to handle line numbers correctly, even if they are inconsistent in the patch. If a hunk in the patch cannot be applied, skip it and continue with the next one. Your response must be the complete file content surrounded by <file_content> tags, with no additional commentary or code blocks.`;
 
     // Call the LLM to apply the patch
-    const rawUpdatedContent = await sendSelfConsistencyChainOfThoughtGptRequest(
+    const rawUpdatedContent = await sendGptRequest(
       userPrompt,
       systemPrompt,
+      0.1,
+      undefined,
+      3,
+      60000,
+      undefined,
+      "claude-3-5-sonnet-20241022",
     );
 
     if (rawUpdatedContent) {

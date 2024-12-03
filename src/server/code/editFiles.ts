@@ -13,13 +13,14 @@ import { countTokens, MAX_OUTPUT, type Model } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import {
+  applyCodePatch,
+  type FileContent,
   concatenateFiles,
   isValidExistingFile,
   isValidNewFileName,
   reconstructFiles,
 } from "../utils/files";
 import { emitCodeEvent } from "../utils/events";
-import { getSnapshotUrl } from "~/app/utils";
 import { db } from "../db/db";
 import { researchIssue } from "../agent/research";
 import { getOrCreateTodo } from "../utils/todos";
@@ -27,8 +28,9 @@ import { getOrCreateTodo } from "../utils/todos";
 // import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
 import { PlanningAgentActionType } from "../db/enums";
-import { type PlanStep } from "../agent/plan";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
+import { applyCodePatchesViaLLM } from "../agent/patch";
+import { gitStash } from "../git/operations";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -42,95 +44,37 @@ export interface EditFilesParams extends BaseEventData {
   repoSettings?: RepoSettings;
 }
 
-async function processStepIndividually(
-  step: PlanStep,
-  params: {
-    rootPath: string;
-    repoSettings?: RepoSettings;
-    baseEventData: BaseEventData;
-    issueText: string;
-    researchData: (typeof db.research.prototype)[];
-    model: Model;
-  },
-) {
-  const { rootPath, repoSettings, baseEventData, issueText, researchData } =
-    params;
+interface GenerateCodeViaPatchParams {
+  rootPath: string;
+  filesToUpdate: string[];
+  filesToCreate: string[];
+  codeTemplateParams: TemplateParams;
+  baseEventData: BaseEventData;
+  dryRun?: boolean;
+}
 
-  const filesToProcess = [step.filePath];
-  const { code } = concatenateFiles(
-    rootPath,
-    undefined,
-    step.type === PlanningAgentActionType.EditExistingCode
-      ? filesToProcess
-      : [],
-    step.type === PlanningAgentActionType.CreateNewCode ? filesToProcess : [],
-  );
-
-  // const types = getTypes(rootPath, repoSettings);
-  // const packages = Object.keys(repoSettings?.packageDependencies ?? {}).join(
-  //   "\n",
-  // );
-  // const styles = await getStyles(rootPath, repoSettings);
-  // const images = await saveImages(
-  //   await getImages(rootPath, repoSettings),
-  //   issueText,
-  //   rootPath,
-  //   repoSettings,
-  // );
-
-  const detailedMarkdownPlanFromSteps = dedent`
-    ### Step: ${step.type === PlanningAgentActionType.EditExistingCode ? "Edit" : "Create"} \`${step.filePath}\`
-
-    **Task:** ${step.title}
-
-    **Instructions:**
-    ${step.instructions}
-
-    **Exit Criteria:**
-    ${step.exitCriteria}
-
-    ${step.dependencies ? `**Dependencies:**\n${step.dependencies}` : ""}
-  `;
-
-  const detailedMarkdownResearchData = researchData
-    .filter((research) => research.answer?.length)
-    .map(
-      (research) => dedent`
-        ## Question:
-        ${research.question}
-
-        ## Answer:
-        ${research.answer}
-      `,
-    )
-    .join("\n");
-
-  const codeTemplateParams: TemplateParams = {
-    sourceMap: "",
-    types: "",
-    packages: "",
-    styles: "",
-    images: "",
-    code,
-    issueBody: issueText,
-    plan: detailedMarkdownPlanFromSteps,
-    research: detailedMarkdownResearchData,
-    snapshotUrl: "",
-  };
-
-  const codeSystemPrompt = constructNewOrEditSystemPrompt(
-    "code_edit_files",
+const generateCodeViaPatch = async ({
+  rootPath,
+  codeTemplateParams,
+  filesToUpdate,
+  filesToCreate,
+  baseEventData,
+  dryRun = false,
+}: GenerateCodeViaPatchParams): Promise<string> => {
+  const codeSystemPrompt = parseTemplate(
+    "dev",
+    "code_edit_all_files_diff",
+    "system",
     codeTemplateParams,
-    repoSettings,
   );
   const codeUserPrompt = parseTemplate(
     "dev",
-    "code_edit_files",
+    "code_edit_all_files_diff",
     "user",
     codeTemplateParams,
   );
 
-  return await sendSelfConsistencyChainOfThoughtGptRequest(
+  const response = (await sendSelfConsistencyChainOfThoughtGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
     0.2,
@@ -138,8 +82,44 @@ async function processStepIndividually(
     2,
     60000,
     undefined,
-  );
-}
+  ))!;
+
+  const patchMatch = response?.match(/<code_patch>([\s\S]*?)<\/code_patch>/);
+  const patch = patchMatch?.[1] ? patchMatch[1].trim() : "";
+
+  if (!patch) {
+    return response;
+  }
+
+  if (patch && !dryRun) {
+    let patchResult: FileContent[] | undefined;
+    try {
+      patchResult = await applyCodePatch(rootPath, patch);
+    } catch (e) {
+      // Stash in case we have a partially applied local patch that failed
+      await gitStash({ directory: rootPath, baseEventData });
+      console.log(
+        `Will attempt applyCodePatchViaLLM() since local applyCodePatch failed with ${String(
+          e,
+        )}`,
+      );
+    }
+
+    const files =
+      patchResult ??
+      (await applyCodePatchesViaLLM({
+        rootPath,
+        filesToUpdate,
+        filesToCreate,
+        patch,
+      }));
+    return files
+      .map((file) => `__FILEPATH__${file.filePath}\n${file.codeBlock}`)
+      .join("\n\n");
+  }
+
+  return response;
+};
 
 export async function editFiles(params: EditFilesParams) {
   const {
@@ -155,7 +135,6 @@ export async function editFiles(params: EditFilesParams) {
     ...baseEventData
   } = params;
 
-  const snapshotUrl = getSnapshotUrl(issue.body);
   const issueBody = issue.body ? `\n${issue.body}` : "";
   const issueText = issue.title + issueBody;
 
@@ -269,22 +248,17 @@ export async function editFiles(params: EditFilesParams) {
     .join("\n");
 
   const codeTemplateParams = {
-    sourceMap,
-    types: "",
-    packages: "",
-    styles: "",
-    images: "",
     code,
-    issueBody: issueText,
+    issueText,
     plan: detailedMarkdownPlanFromSteps,
     research: detailedMarkdownResearchData,
-    snapshotUrl: snapshotUrl ?? "",
   };
 
-  const codeSystemPrompt = constructNewOrEditSystemPrompt(
+  const codeSystemPrompt = parseTemplate(
+    "dev",
     "code_edit_files",
+    "system",
     codeTemplateParams,
-    repoSettings,
   );
   const codeUserPrompt = parseTemplate(
     "dev",
@@ -296,31 +270,17 @@ export async function editFiles(params: EditFilesParams) {
   const model: Model = "claude-3-5-sonnet-20241022";
   const codeTokenCount = countTokens(code);
   let updatedCode: string;
-  if (codeTokenCount > MAX_OUTPUT[model] * 0.7) {
-    // if the estimated output token count is too close to the model's limit, process each step individually to prevent responses getting truncated
-    // TODO: Change this to use patch-based generation (see agentEditFiles for an example)
-    const results = await Promise.all(
-      planSteps
-        .filter(
-          (step) =>
-            step.type === PlanningAgentActionType.EditExistingCode ||
-            step.type === PlanningAgentActionType.CreateNewCode,
-        )
-        .map((step) =>
-          processStepIndividually(step, {
-            rootPath,
-            repoSettings,
-            baseEventData,
-            issueText,
-            researchData,
-            model,
-          }),
-        ),
-    );
 
-    updatedCode = results.filter(Boolean).join("\n\n");
+  if (codeTokenCount > MAX_OUTPUT[model] * 0.5) {
+    updatedCode = await generateCodeViaPatch({
+      rootPath,
+      filesToUpdate,
+      filesToCreate,
+      codeTemplateParams,
+      baseEventData,
+      dryRun,
+    });
   } else {
-    // Original single request logic
     updatedCode = (await sendSelfConsistencyChainOfThoughtGptRequest(
       codeUserPrompt,
       codeSystemPrompt,

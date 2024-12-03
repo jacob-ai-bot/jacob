@@ -364,6 +364,7 @@ export const sendGptRequest = async (
       });
     }
 
+    console.log("GPT Response: ", content);
     return content;
   } catch (error) {
     if (

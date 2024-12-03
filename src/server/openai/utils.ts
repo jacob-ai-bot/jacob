@@ -82,23 +82,16 @@ export const evaluate = async (
 
 export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   userPrompt: string,
-  systemPrompt = "You are a helpful assistant.",
+  systemPrompt = "You are the world's most distinguished Technical Fellow at Microsoft. Your job is to address a GitHub issue by making precise, minimal changes to the code.",
   temperature = 0.2,
   baseEventData: BaseEventData | undefined = undefined,
   retries = 3,
   delay = 60000,
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  // models: Model[] = [
-  //   "claude-3-5-sonnet-20241022",
-  //   "gpt-4o-2024-05-13",
-  //   "gemini-1.5-pro-latest",
-  //   "gpt-4-0125-preview",
-  // ],
   models: Model[] = [
     "o1-preview-2024-09-12",
     "o1-mini-2024-09-12",
     "claude-3-5-sonnet-20241022",
-    // "gemini-1.5-pro-exp-0801",
   ],
   minTemperature = 0.1,
   maxTemperature = 0.5,
@@ -191,7 +184,7 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
       Temperature: ${bestEvaluation.temperature}
       Average Rating: ${bestAvgRating}
     `);
-    if (bestAvgRating <= 3 && retries > 0) {
+    if (bestAvgRating <= 2.5 && retries > 0) {
       // Now use the information from the evaluations to improve the output.
       const updatePrompt = `
    <ORIGINAL_RESPONSE>
@@ -212,15 +205,26 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
       .join("\n")}
     </EVALUATION>
 
-    Please update the original response to address the specific issues mentioned in these evaluations. It is critical that you maintain the original format of the code in the <ORIGINAL_RESPONSE> tag EXACTLY. Just update the code, do not comment on the changes or include any other information.
+    ## INSTRUCTIONS
+    You are a senior Technical Fellow at Microsoft, tasked with making minor updates to the text in the <ORIGINAL_RESPONSE> tag.
+    Your task is to update the original response to address the specific issues mentioned in these evaluations. 
     
-    Maintain the overall structure and intent of the original response, but improve it based on the feedback provided. Ensure to address any unrelated code changes mentioned. ONLY output the new response, do not comment on the changes or include any other information.
+    ## IMPORTANT
+     - YOU MUST maintain the original format of the text in the <ORIGINAL_RESPONSE> tag EXACTLY. 
+     - Just update the text, do not comment on the changes or include any other information.
+     - Maintain the overall structure and intent of the original response, but improve it based on the feedback provided.
+     - Address any unrelated code changes mentioned.
+     - ONLY output the new response, do not comment on the changes or include any other information.
+
+     Your output will be the exact text that replaces the <ORIGINAL_RESPONSE> tag. DO NOT just provide a list of changes to make, you MUST make the changes inline and response with the full updated text. Failure to do so will result in the system crashing.
     `;
 
       // Send the update request to the LLM
       return sendSelfConsistencyChainOfThoughtGptRequest(
         updatePrompt,
-        systemPrompt,
+        systemPrompt +
+          "\n\n" +
+          "Your output will be the exact text from the <ORIGINAL_RESPONSE> tag with the changes made inline without any additional comments. Respond with the fully-modified text from <ORIGINAL_RESPONSE> to <ORIGINAL_RESPONSE> tags. Do not cut it off or include any other information.",
         temperature,
         baseEventData,
         retries - 1,
