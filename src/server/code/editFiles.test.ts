@@ -155,7 +155,7 @@ describe("editFiles", () => {
   test("editFiles success path", async () => {
     await editFiles(editFilesParams);
 
-    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(4);
+    expect(mockedRequest.sendGptRequest).toHaveBeenCalledTimes(9);
 
     expect(mockedRequest.sendGptRequest.mock.calls[0]![0]).toContain(
       "Any code or suggested imports in the GitHub Issue above is example code and may contain bugs or incorrect information or approaches.",

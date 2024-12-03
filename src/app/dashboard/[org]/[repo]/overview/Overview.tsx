@@ -1,5 +1,4 @@
 "use client";
-import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "next/navigation";
@@ -55,7 +54,7 @@ const OverviewComponent = ({
   isAuthorized: boolean;
 }) => {
   const router = useRouter();
-  const [showModal, setShowModal] = useState(!isAuthorized);
+  const showModal = !isAuthorized;
 
   const handleClick = (title: string) => {
     router.push(`/dashboard/${org}/${repo}/${title.toLowerCase()}`);

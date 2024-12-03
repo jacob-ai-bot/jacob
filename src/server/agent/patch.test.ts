@@ -6,11 +6,11 @@ import fs from "fs";
 import { applyCodePatchViaLLM } from "./patch";
 
 const mockedUtils = vi.hoisted(() => ({
-  sendSelfConsistencyChainOfThoughtGptRequest: vi
+  sendGptRequest: vi
     .fn()
     .mockResolvedValue("<file_content>file-content</file_content>"),
 }));
-vi.mock("~/server/openai/utils", () => mockedUtils);
+vi.mock("~/server/openai/request", () => mockedUtils);
 
 describe("createNewFile", () => {
   afterEach(() => {
@@ -42,17 +42,11 @@ describe("createNewFile", () => {
       },
     ]);
 
-    expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest,
-    ).toHaveBeenCalledOnce();
-    expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![0],
-    ).toContain(
+    expect(mockedUtils.sendGptRequest).toHaveBeenCalledOnce();
+    expect(mockedUtils.sendGptRequest.mock.lastCall![0]).toContain(
       "I want to create a new file with the following patch:\n\npatch",
     );
-    expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![1],
-    ).toContain(
+    expect(mockedUtils.sendGptRequest.mock.lastCall![1]).toContain(
       "You are an expert code creator. Your task is to generate the complete file content based on the given patch for a new file.",
     );
 
@@ -71,8 +65,7 @@ describe("createNewFile", () => {
       .spyOn(fs, "writeFileSync")
       .mockReturnValue(undefined);
 
-    mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest
-      .mockResolvedValueOnce(dedent`
+    mockedUtils.sendGptRequest.mockResolvedValueOnce(dedent`
         <file_content>
         1| modified-line1
         2| modified-line2
@@ -97,12 +90,8 @@ describe("createNewFile", () => {
       },
     ]);
 
-    expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest,
-    ).toHaveBeenCalledOnce();
-    expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![0],
-    ).toContain(dedent`
+    expect(mockedUtils.sendGptRequest).toHaveBeenCalledOnce();
+    expect(mockedUtils.sendGptRequest.mock.lastCall![0]).toContain(dedent`
         I have an existing file with the following content (line numbers added for reference):
 
         1| line1
@@ -110,9 +99,7 @@ describe("createNewFile", () => {
 
         I want to apply the following patch to this file:
       `);
-    expect(
-      mockedUtils.sendSelfConsistencyChainOfThoughtGptRequest.mock.lastCall![1],
-    ).toContain(
+    expect(mockedUtils.sendGptRequest.mock.lastCall![1]).toContain(
       "You are an expert code editor. Your task is to apply the given patch to the existing file content and return the entire updated file content, including line numbers.",
     );
 

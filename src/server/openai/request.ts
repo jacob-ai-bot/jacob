@@ -20,6 +20,8 @@ import { encode } from "gpt-tokenizer";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
 import { PORTKEY_GATEWAY_URL, createHeaders } from "portkey-ai";
 
+const RESPONSE_LENGTH_ERROR = "Response length exceeded max_tokens";
+
 const CONTEXT_WINDOW = {
   "gpt-4-turbo-2024-04-09": 128000,
   "gpt-4-0125-preview": 128000,
@@ -191,8 +193,8 @@ export const sendGptRequest = async (
   model: Model = "claude-3-5-sonnet-20241022",
   isJSONMode = false,
 ): Promise<string | null> => {
-  console.log("\n\n --- User Prompt --- \n\n", userPrompt);
-  console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
+  // console.log("\n\n --- User Prompt --- \n\n", userPrompt);
+  // console.log("\n\n --- System Prompt --- \n\n", systemPrompt);
 
   try {
     const isO1Model =
@@ -316,6 +318,17 @@ export const sendGptRequest = async (
     console.log(`\n +++ ${model} Response time ${duration} ms`);
 
     const gptResponse = response.choices[0]?.message;
+
+    if (
+      response.choices[0]?.finish_reason === "length" ||
+      // @ts-expect-error - this is a type bug in the Portkey SDK
+      response.choices[0]?.finish_reason === "max_tokens"
+    ) {
+      console.log(
+        `\n\n +++ ERROR: ${model} Response finish reason: ${response.choices[0]?.finish_reason}`,
+      );
+      throw new Error(RESPONSE_LENGTH_ERROR);
+    }
     // console.log("\n\n --- GPT Response --- \n\n", gptResponse);
     let content = gptResponse?.content ?? "";
     if (needsJsonHelper) {
@@ -351,8 +364,28 @@ export const sendGptRequest = async (
       });
     }
 
+    // console.log("GPT Response: ", content);
     return content;
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes(RESPONSE_LENGTH_ERROR) &&
+      retries > 0
+    ) {
+      // update the model to a larger one
+      model = "gpt-4o-2024-08-06";
+      return sendGptRequest(
+        userPrompt,
+        systemPrompt,
+        temperature,
+        baseEventData,
+        0,
+        delay,
+        imagePrompt,
+        model,
+        isJSONMode,
+      );
+    }
     if (
       retries === 0 ||
       (error as { response?: Response })?.response?.status !== 429
