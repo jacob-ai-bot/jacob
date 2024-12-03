@@ -10,7 +10,7 @@ const OverviewPage = async ({
   params: { org: string; repo: string };
 }) => {
   const { user } = (await getServerAuthSession()) ?? {};
-  if (!user?.login || !user.dashboardEnabled) {
+  if (!user?.login) {
     redirect("/");
   }
 
@@ -18,7 +18,7 @@ const OverviewPage = async ({
 
   return (
     <Suspense>
-      <Overview org={org} repo={repo} />
+      <Overview org={org} repo={repo} isAuthorized={!!user.dashboardEnabled} />
     </Suspense>
   );
 };
