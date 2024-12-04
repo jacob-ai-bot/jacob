@@ -15,7 +15,7 @@ export class IssuesTable extends BaseTable {
     didCreateGithubIssue: t.boolean().default(false),
     githubIssueId: t.integer().nullable(),
     fullRepoName: t.varchar(255).nullable(),
-    labels: t.text().array().nullable(),
+    labels: t.json().nullable(),
     ...t.timestamps(),
   }));
 }

@@ -346,7 +346,7 @@ export async function fetchNewJiraIssues({
         title: issue.title,
         jiraIssueDescription: issue.description,
         didCreateGithubIssue: false,
-        labels: issue.labels,
+        labels: JSON.stringify(issue.labels ?? []),
       });
 
       // Evaluate the Jira issue
@@ -400,7 +400,7 @@ export async function fetchNewJiraIssues({
         issue.description,
         EvaluationMode.DETAILED,
         imageUrls,
-        issue.labels,
+        issue.labels ?? [],
       );
 
       let githubIssueBody = `[${issue.key}: ${issue.title}](${issue.url})\n\n---\n\n`;
