@@ -166,12 +166,14 @@ export async function evaluateJiraIssue({
   description: string;
 }): Promise<JiraEvaluation> {
   const systemPrompt = `You are an expert software architect and technical evaluator. Your task is to analyze the given Jira issue and provide an evaluation of its suitability for AI completion.
-Provide a score between 1 and 5 (half-point increments allowed) indicating how likely it is that an AI coding agent can flawlessly complete the task. If the score is less than 4, provide a one-sentence feedback message informing the user what needs to be changed to make the ticket actionable by the AI agent.
+Provide a score between 1 and 5 (half-point increments allowed) indicating how likely it is that an AI coding agent will be able to complete the task. Note that more information will be coming, but there needs to be at least some details to make it actionable. If the score is less than 4, provide a one-sentence feedback message informing the user what needs to be changed to make the ticket actionable by the AI agent.
 Evaluation Criteria:
 - Clarity of the issue description
 - Technical complexity
 - Completeness of requirements
-- Feasibility for AI completion`;
+- Feasibility for AI completion
+
+`;
 
   const userPrompt = `Analyze the following Jira issue:
 Title: "${title}"
@@ -181,7 +183,34 @@ Respond with a JSON object in the following format:
 {
   "score": number, // between 1 and 5, half-points allowed
   "feedback": string // optional, include only if score < 4
-}`;
+}
+  
+Examples:
+Title: "Fix the bug"
+Description: ""
+
+Response: 
+{
+  "score": 1,
+  "feedback": "The issue description is too vague, please provide more details"
+}
+
+Title: "Fix the bug in the login page"
+Description: "The login page is not working"
+Response: 
+{
+  "score": 3,
+  "feedback": "There is some information about the issue, but more would be helpful. For example, it would be helpful to know what went wrong and what the expected behavior is."
+}
+
+Title: "Fix the bug in the login page"
+Description: "When the user enters their email and it is invalid, the error message shown is incorrect. It says "Invalid password" instead of "Invalid email address"."
+Response: 
+{
+  "score": 5,
+  "feedback": ""
+}
+`;
 
   const evaluation = await sendGptRequestWithSchema(
     userPrompt,

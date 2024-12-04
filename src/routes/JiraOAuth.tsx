@@ -30,7 +30,7 @@ export function JiraOAuth({ redirectURI }: JiraOAuthProps) {
       );
       authUrl.searchParams.append(
         "scope",
-        "read:jira-work read:board-scope:jira-software read:issue-details:jira read:me offline_access",
+        "read:jira-work write:jira-work write:comment:jira read:comment:jira read:board-scope:jira-software read:issue-details:jira read:me offline_access",
       );
       authUrl.searchParams.append("redirect_uri", redirectURI);
       authUrl.searchParams.append("state", state);

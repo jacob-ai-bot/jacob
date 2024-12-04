@@ -12,6 +12,8 @@ import { getOrGeneratePlan } from "./plan";
 import { getRepoSettings, type RepoSettings } from "./settings";
 import { getOrCreateCodebaseContext } from "./codebaseContext";
 import { traverseCodebase } from "../analyze/traverse";
+import { updateJiraTicketWithTodoLink } from "./jira";
+import { IssueBoardSource } from "~/types";
 
 interface GetOrCreateTodoParams {
   repo: string;
@@ -22,6 +24,7 @@ interface GetOrCreateTodoParams {
   sourceMap?: string;
   agentEnabled?: boolean;
   repoSettings?: RepoSettings;
+  jiraIssueId?: string;
 }
 
 export const getOrCreateTodo = async ({
@@ -84,6 +87,16 @@ export const getOrCreateTodo = async ({
       );
     const extractedIssue = await getExtractedIssue(sourceMapToUse, issueText);
 
+    const issueBoard = await db.issueBoards.findBy({
+      projectId: projectId,
+      issueSource: IssueBoardSource.JIRA,
+    });
+    const jiraIssue = await db.issues.findBy({
+      issueBoardId: issueBoard?.id,
+      githubIssueId: issue.number,
+      fullRepoName: repo,
+    });
+
     const newTodo = await db.todos.create({
       projectId: projectId,
       description: issueText,
@@ -91,7 +104,43 @@ export const getOrCreateTodo = async ({
       status: TodoStatus.TODO,
       issueId: issue.number,
       position: issue.number,
+      originalIssueId: jiraIssue?.id,
     });
+
+    if (jiraIssue) {
+      try {
+        const issueBoard = await db.issueBoards.findBy({
+          projectId: projectId,
+          issueSource: IssueBoardSource.JIRA,
+        });
+        if (!issueBoard) {
+          throw new Error("Issue board not found");
+        }
+        const account = await db.accounts.findBy({
+          userId: issueBoard.createdBy,
+        });
+        if (!account?.jiraAccessToken || !issueBoard.originalBoardId) {
+          throw new Error("Jira credentials not found");
+        }
+        const project = await db.projects.findBy({
+          id: projectId,
+        });
+        if (!project?.jiraCloudId) {
+          throw new Error("Project not found or Jira cloud ID not set");
+        }
+        const todoLink = `https://app.jacb.ai/dashboard/${project.repoFullName}/todos/${newTodo.id}`;
+        await updateJiraTicketWithTodoLink(
+          jiraIssue.issueId,
+          project.jiraCloudId,
+          account.jiraAccessToken,
+          todoLink,
+        );
+      } catch (error) {
+        console.error(
+          `Error updating Jira ticket ${jiraIssue?.issueId}: ${String(error)}`,
+        );
+      }
+    }
 
     // Only research issues and create plans for agent repos for now
     // TODO: only research issues for premium accounts
