@@ -10,6 +10,7 @@ import { projectsRouter } from "./routers/projects";
 import { usersRouter } from "./routers/users";
 import { jiraRouter } from "./routers/jira";
 import { linearRouter } from "./routers/linear";
+import { teamRouter } from "./routers/team";
 /**
  * This is the primary router for your server.
  *
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
   users: usersRouter,
   jira: jiraRouter,
   linear: linearRouter,
+  team: teamRouter,
 });
 
 // export type definition of API

@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { type JiraBoard, type LinearTeam } from "~/types";
 import { toast } from "react-toastify";
+import { useSession } from "next-auth/react";
 
 interface SettingsProps {
   org: string;
@@ -30,6 +31,7 @@ export default function Settings({
   userLogin,
   jiraCloudId: initialJiraCloudId,
 }: SettingsProps) {
+  const { data: session } = useSession();
   const router = useRouter();
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
   const [selectedJiraBoard, setSelectedJiraBoard] = useState<string>("");
@@ -92,6 +94,21 @@ export default function Settings({
     isLoading: isLoadingLinearTeams,
     refetch: refetchLinearTeams,
   } = api.linear.getTeams.useQuery();
+
+  const { data: teamMembers, refetch: refetchTeamMembers } =
+    api.team.getTeamMembers.useQuery();
+
+  const { mutate: updateJiraUsername } =
+    api.team.updateJiraUsername.useMutation({
+      onSuccess: () => {
+        toast.success("Jira Username updated successfully");
+        void refetchTeamMembers();
+      },
+      onError: (error) => {
+        toast.error("Failed to update Jira Username");
+        console.error("Error updating Jira Username:", error);
+      },
+    });
 
   const { mutate: saveJiraCloudId } = api.jira.saveJiraCloudId.useMutation({
     onSuccess: (savedJiraCloudId) => {
@@ -174,6 +191,10 @@ export default function Settings({
         teamId: selectedLinearTeam,
       });
     }
+  };
+
+  const handleUpdateJiraUsername = (memberId: number, newUsername: string) => {
+    updateJiraUsername({ memberId, jiraUsername: newUsername });
   };
 
   return (
@@ -314,6 +335,36 @@ export default function Settings({
                 <FontAwesomeIcon icon={faSync} className="mr-2 h-5 w-5" />
                 {isSyncingLinearTeam ? "Syncing..." : "Sync Linear Team"}
               </button>
+            )}
+          </div>
+        )}
+        {session?.user.isTeamAdmin && (
+          <div className="mt-6">
+            <h2 className="mb-2 text-xl font-semibold dark:text-white">
+              Team Management
+            </h2>
+            {teamMembers?.length ? (
+              <ul className="space-y-4">
+                {teamMembers.map((member) => (
+                  <li
+                    key={member.id}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="dark:text-white">{member.login}</span>
+                    <input
+                      type="text"
+                      value={member.jiraUsername ?? ""}
+                      onChange={(e) =>
+                        handleUpdateJiraUsername(member.id, e.target.value)
+                      }
+                      className="ml-4 w-1/2 rounded-md border border-gray-300 p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter Jira Username"
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="dark:text-gray-300">No team members found.</p>
             )}
           </div>
         )}

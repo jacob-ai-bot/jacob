@@ -36,6 +36,7 @@ declare module "next-auth" {
       login: string;
       role?: UserRole;
       dashboardEnabled?: boolean;
+      isTeamAdmin?: boolean;
       expires?: string; // ISO DateString
       // ...other properties
     } & DefaultSession["user"];
@@ -126,6 +127,7 @@ export const authOptions: NextAuthOptions = {
           login: user.login,
           expires: session.expires,
           dashboardEnabled: user.dashboardEnabled,
+          isTeamAdmin: account.isTeamAdmin,
         },
       };
     },
