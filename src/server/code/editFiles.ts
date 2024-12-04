@@ -5,14 +5,12 @@ import {
   type RepoSettings,
   type BaseEventData,
   generateJacobBranchName,
-  // getStyles,
   type TemplateParams,
 } from "../utils";
 import { countTokens, MAX_OUTPUT, type Model } from "../openai/request";
 import { setNewBranch } from "../git/branch";
 import { checkAndCommit } from "./checkAndCommit";
 import {
-  applyCodePatch,
   type FileContent,
   concatenateFiles,
   isValidExistingFile,
@@ -23,13 +21,10 @@ import { emitCodeEvent } from "../utils/events";
 import { db } from "../db/db";
 import { researchIssue } from "../agent/research";
 import { getOrCreateTodo } from "../utils/todos";
-// import { getTypes, getImages } from "../analyze/sourceMap";
-// import { saveImages } from "../utils/images";
 import { getOrGeneratePlan } from "../utils/plan";
 import { PlanningAgentActionType } from "../db/enums";
 import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/utils";
 import { applyCodePatchesViaLLM } from "../agent/patch";
-import { gitStash } from "../git/operations";
 
 export interface EditFilesParams extends BaseEventData {
   repository: Repository;
@@ -92,17 +87,17 @@ const generateCodeViaPatch = async ({
 
   if (patch && !dryRun) {
     let patchResult: FileContent[] | undefined;
-    try {
-      patchResult = await applyCodePatch(rootPath, patch);
-    } catch (e) {
-      // Stash in case we have a partially applied local patch that failed
-      await gitStash({ directory: rootPath, baseEventData });
-      console.log(
-        `Will attempt applyCodePatchViaLLM() since local applyCodePatch failed with ${String(
-          e,
-        )}`,
-      );
-    }
+    // try {
+    //   patchResult = await applyCodePatch(rootPath, patch);
+    // } catch (e) {
+    //   // Stash in case we have a partially applied local patch that failed
+    //   await gitStash({ directory: rootPath, baseEventData });
+    //   console.log(
+    //     `Will attempt applyCodePatchViaLLM() since local applyCodePatch failed with ${String(
+    //       e,
+    //     )}`,
+    //   );
+    // }
 
     const files =
       patchResult ??
