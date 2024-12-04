@@ -13,6 +13,8 @@ export class IssuesTable extends BaseTable {
     evaluationScore: t.real().nullable(),
     feedback: t.text().nullable(),
     didCreateGithubIssue: t.boolean().default(false),
+    githubIssueId: t.integer().nullable(),
+    fullRepoName: t.varchar(255).nullable(),
     ...t.timestamps(),
   }));
 }

@@ -337,9 +337,6 @@ export async function fetchNewJiraIssues({
         continue;
       }
 
-      console.log(
-        `Repo ${project.repoFullName}: Creating new Jira issue ${issue.id}`,
-      );
       await db.issues.create({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
@@ -362,16 +359,16 @@ export async function fetchNewJiraIssues({
           feedback: evaluation.feedback,
         });
 
-      if (evaluation.score < 4) {
+      if (evaluation.score < 3) {
         console.log(
-          `Jira issue ${issue.id} is not suitable for conversion. Score: ${evaluation.score}`,
+          `Jira issue ${issue.key} is not suitable for conversion. Score: ${evaluation.score}`,
         );
         // Optionally, notify the user or log the feedback
         continue;
       }
 
       console.log(
-        `Jira issue ${issue.id} passed evaluation. Proceeding to create GitHub issue.`,
+        `Jira issue ${issue.key} passed evaluation. Proceeding to create GitHub issue.`,
       );
 
       const owner = project.repoFullName.split("/")[0];
@@ -422,7 +419,7 @@ export async function fetchNewJiraIssues({
       );
 
       console.log(
-        `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data.number} for Jira issue ${issue.id}`,
+        `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data?.number ?? "Unknown Issue Number"} for Jira issue ${issue.id}`,
       );
 
       // Update the issue in the database to indicate GitHub issue was created
@@ -430,6 +427,8 @@ export async function fetchNewJiraIssues({
         .findBy({ issueId: issue.id, issueBoardId: issueBoard.id })
         .update({
           didCreateGithubIssue: true,
+          githubIssueId: githubIssue.data.number,
+          fullRepoName: project.repoFullName,
         });
     }
   } catch (error) {
@@ -486,6 +485,9 @@ export async function updateJiraTicketWithTodoLink(
   accessToken: string,
   todoLink: string,
 ): Promise<void> {
+  const message = `📋 JACoB has analyzed this issue, performed some research, and created a plan.
+
+Click here to review the plan →`;
   const commentBody = {
     body: {
       type: "doc",
@@ -495,7 +497,7 @@ export async function updateJiraTicketWithTodoLink(
           type: "paragraph",
           content: [
             {
-              text: `Linked Todo: `,
+              text: message,
               type: "text",
             },
             {
@@ -516,23 +518,28 @@ export async function updateJiraTicketWithTodoLink(
     },
   };
 
-  const response = await fetch(
-    `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue/${jiraIssueId}/comment`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(commentBody),
+  const url = `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue/${encodeURIComponent(jiraIssueId)}/comment`;
+
+  const body = {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify(commentBody),
+  };
+  const response = await fetch(url, body);
 
   if (!response.ok) {
     const errorDetails = await response.text();
+    console.error(
+      `Failed to update Jira ticket. Status: ${response.status}. URL: ${response.url}`,
+    );
     throw new Error(
       `Failed to add comment to Jira ticket: ${response.statusText}, ${errorDetails}`,
     );
+  } else {
+    console.log(`Successfully added comment to Jira ticket ${jiraIssueId}`);
   }
 }
