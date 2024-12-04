@@ -12,6 +12,7 @@ import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
 import { uploadToS3, getSignedUrl, IMAGE_TYPE } from "../utils/images";
+import { evaluateJiraIssue } from "./evaluateIssue";
 const bucketName = process.env.BUCKET_NAME ?? "";
 
 export async function refreshJiraAccessToken(
@@ -343,7 +344,35 @@ export async function fetchNewJiraIssues({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
         title: issue.title,
+        jiraIssueDescription: issue.description,
+        didCreateGithubIssue: false,
       });
+
+      // Evaluate the Jira issue
+      const evaluation = await evaluateJiraIssue({
+        title: issue.title,
+        description: issue.description,
+      });
+
+      // Update the issue in the database with evaluation results
+      await db.issues
+        .findBy({ issueId: issue.id, issueBoardId: issueBoard.id })
+        .update({
+          evaluationScore: evaluation.score,
+          feedback: evaluation.feedback,
+        });
+
+      if (evaluation.score < 4) {
+        console.log(
+          `Jira issue ${issue.id} is not suitable for conversion. Score: ${evaluation.score}`,
+        );
+        // Optionally, notify the user or log the feedback
+        continue;
+      }
+
+      console.log(
+        `Jira issue ${issue.id} passed evaluation. Proceeding to create GitHub issue.`,
+      );
 
       const owner = project.repoFullName.split("/")[0];
       const repo = project.repoFullName.split("/")[1];
@@ -395,6 +424,13 @@ export async function fetchNewJiraIssues({
       console.log(
         `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data.number} for Jira issue ${issue.id}`,
       );
+
+      // Update the issue in the database to indicate GitHub issue was created
+      await db.issues
+        .findBy({ issueId: issue.id, issueBoardId: issueBoard.id })
+        .update({
+          didCreateGithubIssue: true,
+        });
     }
   } catch (error) {
     console.error(`Error fetching Jira issues for board ${boardId}:`, error);

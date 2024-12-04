@@ -25,6 +25,13 @@ const EvaluationSchema = z.object({
 
 export type Evaluation = z.infer<typeof EvaluationSchema>;
 
+const JiraEvaluationSchema = z.object({
+  score: z.number().min(1).max(5),
+  feedback: z.string().optional(),
+});
+
+export type JiraEvaluation = z.infer<typeof JiraEvaluationSchema>;
+
 export async function evaluateIssue({
   githubIssue,
   planSteps,
@@ -146,6 +153,41 @@ Please provide your evaluation in the following JSON format:
     baseEventData,
     3,
     "claude-3-5-sonnet-20241022",
+  );
+
+  return evaluation;
+}
+
+export async function evaluateJiraIssue({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}): Promise<JiraEvaluation> {
+  const systemPrompt = `You are an expert software architect and technical evaluator. Your task is to analyze the given Jira issue and provide an evaluation of its suitability for AI completion.
+Provide a score between 1 and 5 (half-point increments allowed) indicating how likely it is that an AI coding agent can flawlessly complete the task. If the score is less than 4, provide a one-sentence feedback message informing the user what needs to be changed to make the ticket actionable by the AI agent.
+Evaluation Criteria:
+- Clarity of the issue description
+- Technical complexity
+- Completeness of requirements
+- Feasibility for AI completion`;
+
+  const userPrompt = `Analyze the following Jira issue:
+Title: "${title}"
+Description: "${description}"
+
+Respond with a JSON object in the following format:
+{
+  "score": number, // between 1 and 5, half-points allowed
+  "feedback": string // optional, include only if score < 4
+}`;
+
+  const evaluation = await sendGptRequestWithSchema(
+    userPrompt,
+    systemPrompt,
+    JiraEvaluationSchema,
+    0.2,
   );
 
   return evaluation;
