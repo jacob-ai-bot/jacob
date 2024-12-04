@@ -479,3 +479,60 @@ export function extractTextFromADF(adfNode: any): string {
 
   return text;
 }
+
+export async function updateJiraTicketWithTodoLink(
+  jiraIssueId: string,
+  cloudId: string,
+  accessToken: string,
+  todoLink: string,
+): Promise<void> {
+  const commentBody = {
+    body: {
+      type: "doc",
+      version: 1,
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              text: `Linked Todo: `,
+              type: "text",
+            },
+            {
+              type: "text",
+              text: todoLink,
+              marks: [
+                {
+                  type: "link",
+                  attrs: {
+                    href: todoLink,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  const response = await fetch(
+    `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue/${jiraIssueId}/comment`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(commentBody),
+    },
+  );
+
+  if (!response.ok) {
+    const errorDetails = await response.text();
+    throw new Error(
+      `Failed to add comment to Jira ticket: ${response.statusText}, ${errorDetails}`,
+    );
+  }
+}

@@ -22,6 +22,7 @@ export class TodosTable extends BaseTable {
     status: t.enum("todo_status", TODO_STATUS_VALUES),
     position: t.integer().default(0),
     issueId: t.integer().nullable(),
+    jiraIssueId: t.text().nullable(),
     branch: t.text().nullable(),
     evaluationData: t.json().nullable(),
     isArchived: t.boolean().default(false),
