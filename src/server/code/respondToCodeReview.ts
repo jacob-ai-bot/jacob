@@ -2,12 +2,14 @@ import { dedent } from "ts-dedent";
 import { type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 
+import { generateCodeReviewPlan } from "../utils/plan";
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate, type RepoSettings, type BaseEventData } from "../utils";
 import { reconstructFiles } from "../utils/files";
 import { sendGptRequest } from "../openai/request";
 import { getPRReviewComments, concatenatePRFiles } from "../github/pr";
 import { checkAndCommit } from "./checkAndCommit";
+import { applyCodePatchesViaLLM } from "../agent/patch";
 import { emitCodeEvent } from "~/server/utils/events";
 
 type PullRequest =
@@ -70,50 +72,55 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
     token,
     existingPr.number,
   );
-
-  const respondToCodeReviewTemplateParams = {
-    sourceMap,
-    types,
-    images,
-    code,
-    reviewBody: reviewBody ?? "",
-    reviewAction:
-      state === "changes_requested" ? "requested changes" : "commented",
+  const plan = await generateCodeReviewPlan({
     commentsOnSpecificLines,
-  };
+    reviewBody,
+    rootPath,
+    code,
+  });
 
-  const responseToCodeReviewSystemPrompt = parseTemplate(
-    "dev",
-    "code_respond_to_code_review",
-    "system",
-    respondToCodeReviewTemplateParams,
-  );
-  const responseToCodeReviewUserPrompt = parseTemplate(
-    "dev",
-    "code_respond_to_code_review",
-    "user",
-    respondToCodeReviewTemplateParams,
-  );
+  for (const step of plan.steps) {
+    const { filePath, instructions } = step;
+    const codeTemplateParams = {
+      filePath,
+      instructions,
+      code,
+      sourceMap,
+      types,
+      images,
+    };
+    const codeSystemPrompt = parseTemplate(
+      "dev",
+      "code_edit_existing_file",
+      "system",
+      codeTemplateParams,
+    );
+    const codeUserPrompt = parseTemplate(
+      "dev",
+      "code_edit_existing_file",
+      "user",
+      codeTemplateParams,
+    );
 
-  // Call sendGptRequest with the review text and concatenated code file
-  const updatedCode =
-    (await sendGptRequest(
-      responseToCodeReviewUserPrompt,
-      responseToCodeReviewSystemPrompt,
-      0.2,
+    const updatedCode = await applyCodePatchesViaLLM(
+      rootPath,
+      filePath,
+      codeUserPrompt,
+      codeSystemPrompt,
       baseEventData,
-    )) ?? "";
+      repoSettings,
+      "gpt-4",
+    );
 
-  if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
-    console.log(`[${repository.full_name}] code`, code);
-    console.log(`[${repository.full_name}] No code generated. Exiting...`);
-    throw new Error("No code generated");
+    if (!updatedCode.length) {
+      console.log(
+        `[${repository.full_name}] No code generated for ${filePath}. Skipping...`,
+      );
+      continue;
+    }
+
+    await emitCodeEvent({ ...baseEventData, ...updatedCode[0] });
   }
-
-  const files = reconstructFiles(updatedCode, rootPath);
-  await Promise.all(
-    files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
-  );
 
   await checkAndCommit({
     ...baseEventData,

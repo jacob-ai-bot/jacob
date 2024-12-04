@@ -572,3 +572,106 @@ Step 2. **CreateNewCode**:
     throw error;
   }
 };
+
+export const generateCodeReviewPlan = async ({
+  commentsOnSpecificLines,
+  reviewBody,
+  rootPath,
+  code,
+}: {
+  commentsOnSpecificLines: string;
+  reviewBody: string | null;
+  rootPath: string;
+  code: string;
+}): Promise<Plan> => {
+  try {
+    const codeReviewPrompt = `Generate a plan to address the specified code review comments.
+
+Below is the context and detailed information to guide the process.
+
+## Context
+
+- **Code**: The code that was modified in the Pull Request.
+  \`\`\`
+  <code>${code}</code>
+  \`\`\`
+
+- **Comments on Specific Lines**: The specific comments on code lines.
+  \`\`\`
+  <comments>${commentsOnSpecificLines}</comments>
+  \`\`\`
+
+- **Review Body**: The general comments from the code review.
+  \`\`\`
+  <reviewBody>${reviewBody ?? ""}</reviewBody>
+  \`\`\`
+
+## Guidelines
+
+- Break down the plan into a series of steps, each addressing a specific comment.
+- Each step should be a clear and concise instruction to modify an existing file.
+- Clearly identify exact files to modify or specify relative file paths.
+- Focus exclusively on addressing the code review comments. DO NOT make any other changes.
+- Avoid writing actual code snippets or making assumptions outside the provided codebase information.
+- DO NOT make any changes to the codebase that are not related to the review comments.
+
+# Output Format
+
+Produce a JSON formatted list where each step is defined as an object with the following structure:
+
+\`\`\`json
+{
+  "type": "EditExistingCode",
+  "title": "[Concise description of the change]",
+  "instructions": "[Detailed instructions to address the comment]",
+  "filePath": "[Relative file path of the file to be modified]",
+  "exitCriteria": "[How to verify the comment has been addressed]",
+}
+\`\`\`
+`;
+    let codeReviewPlan: string | null = null;
+    codeReviewPlan = await sendGptRequest(
+      codeReviewPrompt,
+      "",
+      1,
+      undefined,
+      3,
+      60000,
+      null,
+      "o1-preview-2024-09-12",
+    );
+
+    if (!codeReviewPlan) {
+      throw new Error("Error generating code review plan, no plan generated");
+    }
+
+    const structuredPlan = await getStructuredPlan(codeReviewPlan);
+
+    const validSteps = structuredPlan.steps
+      .filter((step) => {
+        const standardizedPath = standardizePath(step.filePath);
+        if (standardizedPath === "") {
+          return false;
+        }
+
+        if (step.type !== PlanningAgentActionType.EditExistingCode) {
+          return false;
+        }
+
+        if (!isValidExistingFile(standardizedPath, rootPath)) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((step) => ({
+        ...step,
+        filePath: standardizePath(step.filePath),
+      }));
+
+    return { steps: validSteps };
+  } catch (error) {
+    console.error("Error in generateCodeReviewPlan:", error);
+    throw error;
+  }
+};
