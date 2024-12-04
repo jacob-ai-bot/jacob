@@ -261,7 +261,8 @@ export async function fetchNewJiraIssues({
 
   try {
     const jql = `project=${boardId} AND created>=-2h`;
-    const fields = "id,self,summary,description,status,attachment,priority";
+    const fields =
+      "id,self,summary,description,status,attachment,priority,labels";
 
     const response = await fetch(
       `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fields)}`,
@@ -304,6 +305,7 @@ export async function fetchNewJiraIssues({
         priority: {
           iconUrl: string;
         };
+        labels?: string[];
       };
       self: string;
     };
@@ -321,6 +323,7 @@ export async function fetchNewJiraIssues({
         title: issue.fields.summary,
         description: extractTextFromADF(issue.fields.description),
         attachments: issue.fields.attachment ?? [],
+        labels: issue.fields.labels ?? [],
       };
     });
 
@@ -343,6 +346,7 @@ export async function fetchNewJiraIssues({
         title: issue.title,
         jiraIssueDescription: issue.description,
         didCreateGithubIssue: false,
+        labels: issue.labels,
       });
 
       // Evaluate the Jira issue
@@ -396,6 +400,7 @@ export async function fetchNewJiraIssues({
         issue.description,
         EvaluationMode.DETAILED,
         imageUrls,
+        issue.labels,
       );
 
       let githubIssueBody = `[${issue.key}: ${issue.title}](${issue.url})\n\n---\n\n`;

@@ -148,6 +148,7 @@ export async function rewriteGitHubIssue(
   body: string,
   evaluationMode: EvaluationMode,
   imageUrls: string[] = [],
+  labels: string[] = [],
 ) {
   try {
     const issueText = `${title} ${body}`;
@@ -271,6 +272,20 @@ Here is the expected format of your response:
 
     if (!rewrittenIssue.length) {
       rewrittenIssue = aiResponse.trim();
+    }
+
+    if (labels.length > 0) {
+      const hashtags = labels
+        .map(
+          (label) =>
+            "#" +
+            label
+              .replace(/[^a-zA-Z0-9\s]/g, "")
+              .replace(/\s+/g, "-")
+              .toLowerCase(),
+        )
+        .join(" ");
+      rewrittenIssue += `\n\n${hashtags}`;
     }
 
     return {
