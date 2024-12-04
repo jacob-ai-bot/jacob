@@ -92,17 +92,17 @@ const generateCodeViaPatch = async ({
 
   if (patch && !dryRun) {
     let patchResult: FileContent[] | undefined;
-    try {
-      patchResult = await applyCodePatch(rootPath, patch);
-    } catch (e) {
-      // Stash in case we have a partially applied local patch that failed
-      await gitStash({ directory: rootPath, baseEventData });
-      console.log(
-        `Will attempt applyCodePatchViaLLM() since local applyCodePatch failed with ${String(
-          e,
-        )}`,
-      );
-    }
+    // try {
+    //   patchResult = await applyCodePatch(rootPath, patch);
+    // } catch (e) {
+    //   // Stash in case we have a partially applied local patch that failed
+    //   await gitStash({ directory: rootPath, baseEventData });
+    //   console.log(
+    //     `Will attempt applyCodePatchViaLLM() since local applyCodePatch failed with ${String(
+    //       e,
+    //     )}`,
+    //   );
+    // }
 
     const files =
       patchResult ??
