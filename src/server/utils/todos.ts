@@ -87,15 +87,17 @@ export const getOrCreateTodo = async ({
       );
     const extractedIssue = await getExtractedIssue(sourceMapToUse, issueText);
 
-    const issueBoard = await db.issueBoards.findBy({
+    const issueBoard = await db.issueBoards.findByOptional({
       projectId: projectId,
       issueSource: IssueBoardSource.JIRA,
     });
-    const jiraIssue = await db.issues.findBy({
-      issueBoardId: issueBoard?.id,
-      githubIssueId: issue.number,
-      fullRepoName: repo,
-    });
+    const jiraIssue = issueBoard
+      ? await db.issues.findByOptional({
+          issueBoardId: issueBoard?.id,
+          githubIssueId: issue.number,
+          fullRepoName: repo,
+        })
+      : undefined;
 
     const newTodo = await db.todos.create({
       projectId: projectId,
@@ -104,15 +106,11 @@ export const getOrCreateTodo = async ({
       status: TodoStatus.TODO,
       issueId: issue.number,
       position: issue.number,
-      originalIssueId: jiraIssue?.id,
+      originalIssueId: jiraIssue?.id ?? undefined,
     });
 
     if (jiraIssue) {
       try {
-        const issueBoard = await db.issueBoards.findBy({
-          projectId: projectId,
-          issueSource: IssueBoardSource.JIRA,
-        });
         if (!issueBoard) {
           throw new Error("Issue board not found");
         }
