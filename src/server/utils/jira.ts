@@ -12,6 +12,7 @@ import { type IssueBoard } from "~/server/db/tables/issueBoards.table";
 import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
 import { uploadToS3, getSignedUrl, IMAGE_TYPE } from "../utils/images";
+import { evaluateJiraIssue } from "./evaluateIssue";
 const bucketName = process.env.BUCKET_NAME ?? "";
 
 export async function refreshJiraAccessToken(
