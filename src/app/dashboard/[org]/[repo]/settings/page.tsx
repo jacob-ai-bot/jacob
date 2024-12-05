@@ -38,6 +38,7 @@ export default async function SettingsPage({ params }: PageProps) {
         projectId={project.id}
         jiraCloudId={jiraCloudId}
         userLogin={user.login}
+        isTeamAdmin={user.isTeamAdmin ?? false}
       />
     </Suspense>
   );

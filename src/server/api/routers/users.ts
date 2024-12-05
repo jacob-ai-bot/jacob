@@ -16,13 +16,33 @@ export const usersRouter = createTRPCRouter({
       });
     }),
 
-  getTeamMembers: protectedProcedure.query(async ({ ctx }) => {
-    const { session } = ctx;
+  getTeamMembers: protectedProcedure.query(async ({ ctx: { session } }) => {
     if (!session.user.isTeamAdmin) {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
-    const teamAdminAccountId = session.user.id;
-    return db.accounts.where({ teamAdminAccountId }).selectAll();
+    const account = await db.accounts.findByOptional({
+      userId: parseInt(session.user.id),
+    });
+    if (!account) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
+    const teamMembers = await db.accounts
+      .where({ teamAdminAccountId: account.id })
+      .selectAll();
+    // loop through teamMembers and look up the user for each
+    const teamMembersWithUser = await Promise.all(
+      teamMembers.map(async (member) => {
+        const user = await db.users.find(member.userId);
+        return { ...member, user };
+      }),
+    );
+    // only return the email and jiraUsername
+    return teamMembersWithUser.map((member) => ({
+      id: member.id,
+      name: member.user.name ?? member.user.login ?? member.user.email ?? "N/A",
+      jiraUsername: member.jiraUsername,
+      linearUsername: member.linearUsername,
+    }));
   }),
 
   updateTeamMemberJiraUsername: protectedProcedure
@@ -32,19 +52,46 @@ export const usersRouter = createTRPCRouter({
         jiraUsername: z.string().nullable(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      const { session } = ctx;
+    .mutation(async ({ input, ctx: { session } }) => {
       if (!session.user.isTeamAdmin) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
       const { accountId, jiraUsername } = input;
-      const teamMember = await db.accounts.findBy({
+      const adminAccount = await db.accounts.findBy({
+        userId: parseInt(session.user.id),
+      });
+      const teamMember = await db.accounts.findByOptional({
         id: accountId,
-        teamAdminAccountId: session.user.id,
+        teamAdminAccountId: adminAccount.id,
       });
       if (!teamMember) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
       return db.accounts.find(accountId).update({ jiraUsername });
+    }),
+
+  updateTeamMemberLinearUsername: protectedProcedure
+    .input(
+      z.object({
+        accountId: z.number(),
+        linearUsername: z.string().nullable(),
+      }),
+    )
+    .mutation(async ({ input, ctx: { session } }) => {
+      if (!session.user.isTeamAdmin) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+      const { accountId, linearUsername } = input;
+      const adminAccount = await db.accounts.findBy({
+        userId: parseInt(session.user.id),
+      });
+      const teamMember = await db.accounts.findByOptional({
+        id: accountId,
+        teamAdminAccountId: adminAccount.id,
+      });
+      if (!teamMember) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      return db.accounts.find(accountId).update({ linearUsername });
     }),
 });
