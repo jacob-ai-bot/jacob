@@ -297,73 +297,69 @@ export async function fetchNewJiraIssues({
   const project = await db.projects.findBy({ id: projectId });
 
   try {
-    const jql = `project=${boardId} AND created>=-2h`;
+    const recentIssuesJql = `project=${boardId} AND created>=-2h`;
+    const manuallyTaggedIssuesJql = `project=${boardId} AND (labels in ("jacob") OR labels in ("Jacob") OR description ~ "@jacob" OR description ~ "#jacob" OR description ~ "@Jacob" OR description ~ "#Jacob")`;
     const fields =
       "id,self,summary,description,status,attachment,priority,labels";
 
-    const response = await fetch(
-      `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fields)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${jiraAccessToken}`,
-          Accept: "application/json",
-        },
-      },
-    );
+    let recentIssues: JiraIssue[] = [];
+    let manuallyTaggedIssues: JiraIssue[] = [];
 
-    if (response.status === 401) {
-      console.log("Jira access token expired, refreshing...");
-      jiraAccessToken = await refreshJiraAccessToken(userId);
-      return fetchNewJiraIssues({
+    try {
+      recentIssues = await fetchIssuesFromJira(
         jiraAccessToken,
         cloudId,
-        projectId,
-        boardId,
-        userId,
-        githubAccessToken,
-        numAttempts: numAttempts + 1,
-      });
+        recentIssuesJql,
+        fields,
+      );
+    } catch (error: any) {
+      if (error.message === "Unauthorized") {
+        console.log("Jira access token expired, refreshing...");
+        jiraAccessToken = await refreshJiraAccessToken(userId);
+        return fetchNewJiraIssues({
+          jiraAccessToken,
+          cloudId,
+          projectId,
+          boardId,
+          userId,
+          githubAccessToken,
+          numAttempts: numAttempts + 1,
+        });
+      } else {
+        throw error;
+      }
     }
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.error("Error details:", errorDetails);
-      throw new Error(`Failed to fetch Jira issues: ${response.statusText}`);
+
+    try {
+      manuallyTaggedIssues = await fetchIssuesFromJira(
+        jiraAccessToken,
+        cloudId,
+        manuallyTaggedIssuesJql,
+        fields,
+      );
+    } catch (error: any) {
+      if (error.message === "Unauthorized") {
+        console.log("Jira access token expired, refreshing...");
+        jiraAccessToken = await refreshJiraAccessToken(userId);
+        return fetchNewJiraIssues({
+          jiraAccessToken,
+          cloudId,
+          projectId,
+          boardId,
+          userId,
+          githubAccessToken,
+          numAttempts: numAttempts + 1,
+        });
+      } else {
+        throw error;
+      }
     }
-    type OriginalJiraIssue = {
-      id: string;
-      key: string;
-      fields: {
-        summary: string;
-        description: any;
-        status: {
-          name: string;
-        };
-        attachment?: any[];
-        priority: {
-          iconUrl: string;
-        };
-        labels?: string[];
-      };
-      self: string;
-    };
 
-    const data = await response.json();
-
-    const issues: JiraIssue[] = data.issues.map((issue: OriginalJiraIssue) => {
-      const boardName =
-        issue.fields?.priority?.iconUrl?.split("/").slice(0, 3).join("/") ?? "";
-      return {
-        id: issue.id,
-        url: `${boardName}/browse/${issue.key}`,
-        key: issue.key,
-        number: parseInt(issue.id),
-        title: issue.fields.summary,
-        status: issue.fields.status.name,
-        description: extractTextFromADF(issue.fields.description),
-        attachments: issue.fields.attachment ?? [],
-        labels: issue.fields.labels ?? [],
-      };
-    });
+    const combinedIssuesMap = new Map<string, JiraIssue>();
+    for (const issue of [...recentIssues, ...manuallyTaggedIssues]) {
+      combinedIssuesMap.set(issue.id, issue);
+    }
+    const issues = Array.from(combinedIssuesMap.values());
 
     for (const issue of issues) {
       const existingIssue = await db.issues.findByOptional({
@@ -371,11 +367,21 @@ export async function fetchNewJiraIssues({
         issueId: issue.id,
       });
 
+      const isManuallyTagged =
+        issue.labels.some((label) => label.toLowerCase() === "jacob") ||
+        /@jacob|#jacob/i.test(issue.description);
+
       if (existingIssue) {
-        console.log(
-          `Repo ${project.repoFullName}: Jira issue ${issue.id} already exists`,
-        );
-        continue;
+        if (isManuallyTagged && !existingIssue.didCreateGithubIssue) {
+          console.log(
+            `Repo ${project.repoFullName}: Jira issue ${issue.id} already exists, but is manually tagged and has not created a GitHub issue yet`,
+          );
+        } else {
+          console.log(
+            `Repo ${project.repoFullName}: Jira issue ${issue.id} already exists`,
+          );
+          continue;
+        }
       }
 
       await db.issues.create({
@@ -387,25 +393,32 @@ export async function fetchNewJiraIssues({
         labels: JSON.stringify(issue.labels ?? []),
       });
 
-      // Evaluate the Jira issue
-      const evaluation = await evaluateJiraIssue({
-        title: issue.title,
-        description: issue.description,
-      });
+      let evaluationScore: number;
+      let feedback: string | undefined;
 
-      // Update the issue in the database with evaluation results
+      if (isManuallyTagged) {
+        evaluationScore = 5;
+        feedback = "manually tagged for jacob";
+      } else {
+        const evaluation = await evaluateJiraIssue({
+          title: issue.title,
+          description: issue.description,
+        });
+        evaluationScore = evaluation.score;
+        feedback = evaluation.feedback;
+      }
+
       await db.issues
         .findBy({ issueId: issue.id, issueBoardId: issueBoard.id })
         .update({
-          evaluationScore: evaluation.score,
-          feedback: evaluation.feedback,
+          evaluationScore: evaluationScore,
+          feedback: feedback,
         });
 
-      if (evaluation.score < 3) {
+      if (evaluationScore < 3) {
         console.log(
-          `Jira issue ${issue.key} is not suitable for conversion. Score: ${evaluation.score}`,
+          `Jira issue ${issue.key} is not suitable for conversion. Score: ${evaluationScore}`,
         );
-        // Optionally, notify the user or log the feedback
         continue;
       }
 
@@ -462,10 +475,11 @@ export async function fetchNewJiraIssues({
       );
 
       console.log(
-        `Repo ${project.repoFullName}: Created GitHub issue ${githubIssue.data?.number ?? "Unknown Issue Number"} for Jira issue ${issue.id}`,
+        `Repo ${project.repoFullName}: Created GitHub issue ${
+          githubIssue.data?.number ?? "Unknown Issue Number"
+        } for Jira issue ${issue.id}`,
       );
 
-      // Update the issue in the database to indicate GitHub issue was created
       await db.issues
         .findBy({ issueId: issue.id, issueBoardId: issueBoard.id })
         .update({
@@ -477,6 +491,73 @@ export async function fetchNewJiraIssues({
   } catch (error) {
     console.error(`Error fetching Jira issues for board ${boardId}:`, error);
   }
+}
+
+async function fetchIssuesFromJira(
+  jiraAccessToken: string,
+  cloudId: string,
+  jql: string,
+  fields: string,
+): Promise<JiraIssue[]> {
+  const response = await fetch(
+    `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search?jql=${encodeURIComponent(
+      jql,
+    )}&fields=${encodeURIComponent(fields)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${jiraAccessToken}`,
+        Accept: "application/json",
+      },
+    },
+  );
+
+  if (response.status === 401) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!response.ok) {
+    const errorDetails = await response.text();
+    console.error("Error details:", errorDetails);
+    throw new Error(`Failed to fetch Jira issues: ${response.statusText}`);
+  }
+
+  type OriginalJiraIssue = {
+    id: string;
+    key: string;
+    fields: {
+      summary: string;
+      description: any;
+      status: {
+        name: string;
+      };
+      attachment?: any[];
+      priority: {
+        iconUrl: string;
+      };
+      labels?: string[];
+    };
+    self: string;
+  };
+
+  const data = await response.json();
+
+  const issues: JiraIssue[] = data.issues.map((issue: OriginalJiraIssue) => {
+    const boardName =
+      issue.fields?.priority?.iconUrl?.split("/").slice(0, 3).join("/") ?? "";
+    return {
+      id: issue.id,
+      url: `${boardName}/browse/${issue.key}`,
+      key: issue.key,
+      number: parseInt(issue.id),
+      title: issue.fields.summary,
+      status: issue.fields.status.name,
+      description: extractTextFromADF(issue.fields.description),
+      attachments: issue.fields.attachment ?? [],
+      labels: issue.fields.labels ?? [],
+    };
+  });
+
+  return issues;
 }
 
 export async function getJiraCloudIdResources(accessToken: string) {
@@ -561,7 +642,9 @@ Click here to review the plan →`;
     },
   };
 
-  const url = `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue/${encodeURIComponent(jiraIssueId)}/comment`;
+  const url = `https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue/${encodeURIComponent(
+    jiraIssueId,
+  )}/comment`;
 
   const body = {
     method: "POST",
