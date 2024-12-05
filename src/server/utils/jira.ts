@@ -181,6 +181,70 @@ export async function fetchAllNewJiraIssues() {
         userId: account.userId,
         githubAccessToken,
       });
+
+      // Begin syncing Jira issue statuses with open Todos
+      // Fetch all open Todos for the current project
+      const openTodos = await db.todos
+        .selectAll()
+        .where({
+          projectId: issueBoard.projectId,
+          isArchived: false,
+        })
+        .whereNotNull("originalIssueId");
+
+      const jiraIssueIds = [];
+      const todoIssueMap = new Map();
+      for (const todo of openTodos) {
+        const originalIssueId = todo.originalIssueId;
+        const issue = await db.issues.find(originalIssueId);
+        if (issue) {
+          const jiraIssueId = issue.issueId;
+          jiraIssueIds.push(jiraIssueId);
+          if (!todoIssueMap.has(jiraIssueId)) {
+            todoIssueMap.set(jiraIssueId, []);
+          }
+          todoIssueMap.get(jiraIssueId).push(todo.id);
+        }
+      }
+
+      if (jiraIssueIds.length > 0) {
+        const jql = `id in (${jiraIssueIds.join(",")})`;
+        const fields = "status";
+        const statusResponse = await fetch(
+          `https://api.atlassian.com/ex/jira/${project.jiraCloudId}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=${encodeURIComponent(fields)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${account.jiraAccessToken}`,
+              Accept: "application/json",
+            },
+          },
+        );
+
+        if (!statusResponse.ok) {
+          const errorDetails = await statusResponse.text();
+          console.error(
+            `Failed to fetch Jira issue statuses: ${statusResponse.statusText} - ${errorDetails}`,
+          );
+        } else {
+          const data = await statusResponse.json();
+          for (const jiraIssue of data.issues) {
+            const statusName = jiraIssue.fields.status.name;
+            if (["Done", "Closed", "Resolved"].includes(statusName)) {
+              // Archive associated Todos
+              const todoIds = todoIssueMap.get(jiraIssue.id);
+              if (todoIds && todoIds.length > 0) {
+                for (const todoId of todoIds) {
+                  await db.todos.find(todoId).update({ isArchived: true });
+                  console.log(
+                    `Archived Todo ${todoId} for Jira issue ${jiraIssue.id} with status '${statusName}'`,
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+      // End syncing Jira issue statuses with open Todos
     } catch (error) {
       console.error(
         `Error fetching Jira issues for board ${issueBoard.id}:`,
@@ -322,6 +386,7 @@ export async function fetchNewJiraIssues({
         number: parseInt(issue.id),
         title: issue.fields.summary,
         description: extractTextFromADF(issue.fields.description),
+        status: issue.fields.status.name,
         attachments: issue.fields.attachment ?? [],
         labels: issue.fields.labels ?? [],
       };
