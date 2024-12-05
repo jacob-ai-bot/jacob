@@ -13,6 +13,7 @@ import { refreshGitHubAccessToken } from "../github/tokens";
 import { createGitHubIssue, rewriteGitHubIssue } from "../github/issue";
 import { uploadToS3, getSignedUrl, IMAGE_TYPE } from "../utils/images";
 import { evaluateJiraIssue } from "./evaluateIssue";
+import { archiveTodosByIssueId } from "./todos";
 const bucketName = process.env.BUCKET_NAME ?? "";
 
 export async function refreshJiraAccessToken(
@@ -173,6 +174,38 @@ export async function fetchAllNewJiraIssues() {
       if (!githubAccessToken) {
         throw new Error("Failed to refresh GitHub access token");
       }
+
+      // Fetch open todos for this project
+      const openTodos = await db.todos.where({
+        projectId: issueBoard.projectId,
+        isArchived: false,
+      });
+
+      for (const todo of openTodos) {
+        if (!todo.originalIssueId) continue;
+
+        const issue = await db.issues.findBy({ id: todo.originalIssueId });
+        if (!issue) continue;
+
+        const jiraResponse = await fetch(
+          `https://api.atlassian.com/ex/jira/${project.jiraCloudId}/rest/api/3/issue/${issue.issueId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${account.jiraAccessToken}`,
+              Accept: "application/json",
+            },
+          },
+        );
+        if (!jiraResponse.ok) continue;
+        const jiraIssue = await jiraResponse.json();
+        if (
+          jiraIssue.fields.status.name === "Done" ||
+          jiraIssue.fields.status.name === "Closed"
+        ) {
+          await archiveTodosByIssueId(issue.id, issueBoard.projectId);
+        }
+      }
+
       await fetchNewJiraIssues({
         jiraAccessToken: account.jiraAccessToken,
         cloudId: project.jiraCloudId,
@@ -321,6 +354,7 @@ export async function fetchNewJiraIssues({
         key: issue.key,
         number: parseInt(issue.id),
         title: issue.fields.summary,
+        status: issue.fields.status.name,
         description: extractTextFromADF(issue.fields.description),
         attachments: issue.fields.attachment ?? [],
         labels: issue.fields.labels ?? [],

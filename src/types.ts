@@ -192,6 +192,7 @@ export interface JiraIssue {
   key: string;
   number: number;
   title: string;
+  status: string;
   description: string;
   labels: string[];
   attachments: JiraAttachment[];
