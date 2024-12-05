@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
@@ -40,6 +41,71 @@ export const userColumns: ColumnDef<User>[] = [
   {
     accessorKey: "dashboardEnabled",
     header: "Enabled",
+  },
+  {
+    accessorKey: "isTeamAdmin",
+    header: "Team Admin Status",
+    cell: ({ row }) => {
+      const { id, isTeamAdmin } = row.original;
+      const [enabled, setEnabled] = React.useState(isTeamAdmin);
+
+      const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.checked;
+        setEnabled(newValue);
+        await trpcClient.users.setIsTeamAdmin.mutate({
+          userId: id,
+          enabled: newValue,
+        });
+        window.location.reload();
+      };
+
+      return (
+        <input type="checkbox" checked={enabled} onChange={handleChange} />
+      );
+    },
+  },
+  {
+    id: "teamAdmin",
+    header: "Assigned Team Admin",
+    cell: ({ row }) => {
+      const { id, teamAdminAccountId } = row.original;
+      const [selectedTeamAdminId, setSelectedTeamAdminId] = React.useState(
+        teamAdminAccountId || "",
+      );
+      const [teamAdmins, setTeamAdmins] = React.useState<
+        { accountId: number; name: string }[]
+      >([]);
+
+      React.useEffect(() => {
+        const fetchTeamAdmins = async () => {
+          const data = await trpcClient.users.getTeamAdmins.query();
+          setTeamAdmins(data);
+        };
+        fetchTeamAdmins();
+      }, []);
+
+      const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newTeamAdminId =
+          e.target.value !== "" ? parseInt(e.target.value) : null;
+        setSelectedTeamAdminId(e.target.value);
+        await trpcClient.users.setTeamAdminAccountId.mutate({
+          userId: id,
+          teamAdminAccountId: newTeamAdminId,
+        });
+        window.location.reload();
+      };
+
+      return (
+        <select value={selectedTeamAdminId} onChange={handleChange}>
+          <option value="">Select Team Admin</option>
+          {teamAdmins.map((admin) => (
+            <option key={admin.accountId} value={admin.accountId}>
+              {admin.name}
+            </option>
+          ))}
+        </select>
+      );
+    },
   },
   {
     id: "actions",

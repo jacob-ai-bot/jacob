@@ -94,4 +94,46 @@ export const usersRouter = createTRPCRouter({
       }
       return db.accounts.find(accountId).update({ linearUsername });
     }),
+
+  getTeamAdmins: adminProcedure.query(async () => {
+    const teamAdminAccounts = await db.accounts
+      .where({ isTeamAdmin: true })
+      .selectAll();
+    const teamAdmins = await Promise.all(
+      teamAdminAccounts.map(async (account) => {
+        const user = await db.users.find(account.userId);
+        return {
+          accountId: account.id,
+          userId: account.userId,
+          name: user.name ?? user.login ?? user.email ?? "N/A",
+        };
+      }),
+    );
+    return teamAdmins;
+  }),
+
+  setIsTeamAdmin: adminProcedure
+    .input(z.object({ userId: z.number(), enabled: z.boolean() }))
+    .mutation(async ({ input: { userId, enabled } }) => {
+      const account = await db.accounts.findBy({ userId });
+      if (!account) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      return db.accounts.find(account.id).update({ isTeamAdmin: enabled });
+    }),
+
+  setTeamAdminAccountId: adminProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        teamAdminAccountId: z.number().nullable(),
+      }),
+    )
+    .mutation(async ({ input: { userId, teamAdminAccountId } }) => {
+      const account = await db.accounts.findBy({ userId });
+      if (!account) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      return db.accounts.find(account.id).update({ teamAdminAccountId });
+    }),
 });
