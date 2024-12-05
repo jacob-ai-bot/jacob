@@ -572,3 +572,106 @@ Step 2. **CreateNewCode**:
     throw error;
   }
 };
+
+export const generateCodeReviewPlan = async ({
+  commentsOnSpecificLines,
+  reviewBody,
+  rootPath,
+}: {
+  commentsOnSpecificLines: string;
+  reviewBody: string;
+  rootPath: string;
+}): Promise<Plan> => {
+  try {
+    const codeReviewPrompt = `Generate a plan for addressing the following code review comments.
+
+## Comments on Specific Lines
+
+\`\`\`
+${commentsOnSpecificLines}
+\`\`\`
+
+## General Review Comments
+
+\`\`\`
+${reviewBody}
+\`\`\`
+
+## Guidelines
+
+- Break down the plan into a series of distinct steps, focusing on modifications to existing files or the creation of new files.
+- Each step should be a clear and concise instruction to modify an existing file or create a new file. NEVER include a step that involves modifying multiple files.
+- All modifications to a file should be specified in a single step. NEVER include multiple steps with the same file path. Just put all the modifications for a single file in a single step.
+- Clearly identify exact files to modify or specify relative file paths and names with extensions for new files to be created. NEVER specify a directory path. For new files, the file path must not already exist in the codebase. For existing files, the file path must be a valid existing file.
+- Minimize the extent of file modifications and limit the number of new files.
+- Concentrate exclusively on necessary code changes, excluding tests or documentation unless specified.
+- Avoid writing actual code snippets or making assumptions outside the provided codebase information.
+
+# Output Format
+
+Produce a JSON formatted list where each step is defined as an object adhering to the PlanSchema:
+
+\`\`\`json
+const PlanSchema = z.object({
+  steps: z.array(z.object({
+    type: z.enum(["EditExistingCode", "CreateNewCode"]),
+    title: z.string(),
+    instructions: z.string(),
+    filePath: z.string(),
+    exitCriteria: z.string(),
+    dependencies: z.string().optional(),
+  })),
+});
+\`\`\`
+
+Your response MUST adhere EXACTLY to the PlanSchema schema provided.
+`;
+
+    const codeReviewPlanStr = await sendGptRequest(
+      codeReviewPrompt,
+      "",
+      1,
+      undefined,
+      3,
+      60000,
+      null,
+      "gpt-4",
+    );
+
+    const structuredPlan = await getStructuredPlan(codeReviewPlanStr);
+
+    const validSteps = structuredPlan.steps
+      .filter((step) => {
+        const standardizedPath = standardizePath(step.filePath);
+        if (standardizedPath === "") {
+          return false;
+        }
+
+        if (step.type === PlanningAgentActionType.EditExistingCode) {
+          if (!isValidExistingFile(standardizedPath, rootPath)) {
+            return false;
+          }
+        }
+
+        if (step.type === PlanningAgentActionType.CreateNewCode) {
+          if (!isValidNewFileName(standardizedPath)) {
+            return false;
+          }
+          if (isValidExistingFile(standardizedPath, rootPath)) {
+            step.type = PlanningAgentActionType.EditExistingCode;
+          }
+        }
+
+        return true;
+      })
+      .map((step) => ({
+        ...step,
+        filePath: standardizePath(step.filePath),
+      }));
+
+    return { steps: validSteps };
+  } catch (error) {
+    console.error("Error in generateCodeReviewPlan:", error);
+    throw error;
+  }
+};
