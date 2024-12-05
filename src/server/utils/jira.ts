@@ -300,7 +300,7 @@ export async function fetchNewJiraIssues({
     const recentIssuesJql = `project=${boardId} AND created>=-2h`;
     const manuallyTaggedIssuesJql = `project=${boardId} AND (labels in ("jacob") OR labels in ("Jacob") OR description ~ "@jacob" OR description ~ "#jacob" OR description ~ "@Jacob" OR description ~ "#Jacob")`;
     const fields =
-      "id,self,summary,description,status,attachment,priority,labels";
+      "id,self,summary,description,status,attachment,priority,labels,issuetype";
 
     let recentIssues: JiraIssue[] = [];
     let manuallyTaggedIssues: JiraIssue[] = [];
@@ -384,6 +384,8 @@ export async function fetchNewJiraIssues({
         }
       }
 
+      const ticketType = issue.ticketType;
+
       await db.issues.create({
         issueBoardId: issueBoard.id,
         issueId: issue.id,
@@ -391,6 +393,7 @@ export async function fetchNewJiraIssues({
         jiraIssueDescription: issue.description,
         didCreateGithubIssue: false,
         labels: JSON.stringify(issue.labels ?? []),
+        ticketType: ticketType,
       });
 
       let evaluationScore: number;
@@ -432,6 +435,10 @@ export async function fetchNewJiraIssues({
         throw new Error("Invalid repo full name");
       }
 
+      const labels = [...(issue.labels ?? [])];
+      if (ticketType) {
+        labels.push(`type-${ticketType.toLowerCase()}`);
+      }
       const imageUrls: string[] = [];
       for (const attachment of issue.attachments ?? []) {
         const imageUrl = await downloadAndUploadJiraAttachment(
@@ -451,7 +458,7 @@ export async function fetchNewJiraIssues({
         issue.description,
         EvaluationMode.DETAILED,
         imageUrls,
-        issue.labels ?? [],
+        labels,
       );
 
       let githubIssueBody = `[${issue.key}: ${issue.title}](${issue.url})\n\n---\n\n`;
@@ -535,6 +542,9 @@ async function fetchIssuesFromJira(
         iconUrl: string;
       };
       labels?: string[];
+      issuetype: {
+        name: string;
+      };
     };
     self: string;
   };
@@ -554,6 +564,7 @@ async function fetchIssuesFromJira(
       description: extractTextFromADF(issue.fields.description),
       attachments: issue.fields.attachment ?? [],
       labels: issue.fields.labels ?? [],
+      ticketType: issue.fields.issuetype.name,
     };
   });
 
