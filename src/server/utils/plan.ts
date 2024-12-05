@@ -572,3 +572,121 @@ Step 2. **CreateNewCode**:
     throw error;
   }
 };
+
+export const generateCodeReviewPlan = async ({
+  commentsOnSpecificLines,
+  reviewBody,
+  rootPath,
+}: {
+  commentsOnSpecificLines: string;
+  reviewBody: string | null;
+  rootPath: string;
+}): Promise<Plan> => {
+  try {
+    const codeReviewPrompt = `Generate a plan to address the code review comments provided.
+
+Below is the context and detailed information to guide the process.
+
+## Context
+
+- **Comments on Specific Lines**:
+  \`\`\`
+  ${commentsOnSpecificLines}
+  \`\`\`
+
+- **Review Body**:
+  \`\`\`
+  ${reviewBody ?? ""}
+  \`\`\`
+
+## Guidelines
+
+- Break down the plan into a series of distinct steps, focusing on addressing each comment.
+- Each step should be a clear and concise instruction to modify an existing file or create a new file to address a specific comment.
+- All modifications to a single file should be specified in a single step.
+- Clearly identify exact files to modify or specify relative file paths.
+- Minimize the extent of file modifications and limit the number of new files.
+- Focus exclusively on addressing the code review comments.
+- Avoid writing actual code snippets or making assumptions outside the provided information.
+
+# Output Format
+
+Produce a JSON formatted list where each step is defined as an object. Each object should adhere to one of two types of planned actions:
+
+Step 1. **EditExistingCode**:
+
+   \`\`\`json
+   {
+     "type": "EditExistingCode",
+     "title": "[Concise description of the change]",
+     "instructions": "[Clear detailed instructions for making the change]",
+     "filePath": "[Relative file path of the file to be modified]",
+     "exitCriteria": "[How to verify the change is correctly implemented]",
+   }
+   \`\`\`
+
+Step 2. **CreateNewCode**:
+
+   \`\`\`json
+   {
+     "type": "CreateNewCode",
+     "title": "[Concise description of the new code needed]",
+     "instructions": "[Detailed instructions for the new code's functionality]",
+     "filePath": "[Relative file path for new file]",
+     "exitCriteria": "[How to verify the new code is correctly implemented]",
+   }
+   \`\`\``;
+
+    let codeReviewPlan: string | null = null;
+
+    codeReviewPlan = await sendGptRequest(
+      codeReviewPrompt,
+      "",
+      1,
+      undefined,
+      3,
+      60000,
+      null,
+      "o1-preview-2024-09-12",
+    );
+
+    if (!codeReviewPlan) {
+      throw new Error("Error generating code review plan, no plan generated");
+    }
+
+    const structuredPlan = await getStructuredPlan(codeReviewPlan);
+
+    const validSteps = structuredPlan.steps
+      .filter((step) => {
+        const standardizedPath = standardizePath(step.filePath);
+        if (standardizedPath === "") {
+          return false;
+        }
+
+        if (step.type === PlanningAgentActionType.EditExistingCode) {
+          if (!isValidExistingFile(standardizedPath, rootPath)) {
+            return false;
+          }
+        }
+
+        if (step.type === PlanningAgentActionType.CreateNewCode) {
+          if (!isValidNewFileName(standardizedPath)) {
+            return false;
+          }
+          if (isValidExistingFile(standardizedPath, rootPath)) {
+            step.type = PlanningAgentActionType.EditExistingCode;
+          }
+        }
+        return true;
+      })
+      .map((step) => ({
+        ...step,
+        filePath: standardizePath(step.filePath),
+      }));
+
+    return { steps: validSteps };
+  } catch (error) {
+    console.error("Error in generateCodeReviewPlan:", error);
+    throw error;
+  }
+};
