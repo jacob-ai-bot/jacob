@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { type JiraBoard, type LinearTeam } from "~/types";
+import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 
 interface SettingsProps {
@@ -31,6 +32,25 @@ export default function Settings({
   jiraCloudId: initialJiraCloudId,
 }: SettingsProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+
+  const { data: teamMembers, refetch: refetchTeamMembers } =
+    api.users.getTeamMembers.useQuery(undefined, {
+      enabled: session?.user?.isTeamAdmin,
+    });
+
+  const updateTeamMemberJiraUsername =
+    api.users.updateTeamMemberJiraUsername.useMutation({
+      onSuccess: () => {
+        toast.success("Jira username updated");
+        void refetchTeamMembers();
+      },
+      onError: (error) => {
+        toast.error("Error updating Jira username");
+        console.error("Error updating Jira username:", error);
+      },
+    });
+
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
   const [selectedJiraBoard, setSelectedJiraBoard] = useState<string>("");
   const [jiraCloudIdState, setJiraCloudIdState] = useState<string | undefined>(
@@ -338,6 +358,56 @@ export default function Settings({
           <div className="text-red-600 dark:text-red-400">
             Error loading Jira cloud ID resources:{" "}
             {jiraCloudIdResourcesError.message}
+          </div>
+        )}
+
+        {session?.user?.isTeamAdmin && (
+          <div className="mt-6">
+            <h2 className="mb-2 text-xl font-semibold dark:text-white">
+              Team Members
+            </h2>
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left">Member ID</th>
+                  <th className="px-6 py-3 text-left">Jira Username</th>
+                  <th className="px-6 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamMembers?.map((member) => (
+                  <tr key={member.id}>
+                    <td className="px-6 py-4">{member.id}</td>
+                    <td className="px-6 py-4">
+                      <input
+                        type="text"
+                        defaultValue={member.jiraUsername || ""}
+                        onBlur={(e) =>
+                          updateTeamMemberJiraUsername.mutate({
+                            accountId: member.id,
+                            jiraUsername: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-md border-gray-300 p-2"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() =>
+                          updateTeamMemberJiraUsername.mutate({
+                            accountId: member.id,
+                            jiraUsername: member.jiraUsername,
+                          })
+                        }
+                        className="rounded-lg bg-blue-500 px-4 py-2 text-white"
+                      >
+                        Save
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
