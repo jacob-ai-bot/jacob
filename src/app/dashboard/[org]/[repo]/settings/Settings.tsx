@@ -21,6 +21,7 @@ interface SettingsProps {
   projectId: number;
   userLogin: string;
   jiraCloudId?: string | undefined;
+  isTeamAdmin: boolean;
 }
 
 export default function Settings({
@@ -29,8 +30,39 @@ export default function Settings({
   projectId,
   userLogin,
   jiraCloudId: initialJiraCloudId,
+  isTeamAdmin = false,
 }: SettingsProps) {
   const router = useRouter();
+
+  const { data: teamMembers, refetch: refetchTeamMembers } =
+    api.users.getTeamMembers.useQuery(undefined, {
+      enabled: isTeamAdmin,
+    });
+
+  const updateTeamMemberJiraUsername =
+    api.users.updateTeamMemberJiraUsername.useMutation({
+      onSuccess: () => {
+        toast.success("Jira username updated");
+        void refetchTeamMembers();
+      },
+      onError: (error) => {
+        toast.error("Error updating Jira username");
+        console.error("Error updating Jira username:", error);
+      },
+    });
+
+  const updateTeamMemberLinearUsername =
+    api.users.updateTeamMemberLinearUsername.useMutation({
+      onSuccess: () => {
+        toast.success("Linear username updated");
+        void refetchTeamMembers();
+      },
+      onError: (error) => {
+        toast.error("Error updating Linear username");
+        console.error("Error updating Linear username:", error);
+      },
+    });
+
   const [jiraBoards, setJiraBoards] = useState<JiraBoard[]>([]);
   const [selectedJiraBoard, setSelectedJiraBoard] = useState<string>("");
   const [jiraCloudIdState, setJiraCloudIdState] = useState<string | undefined>(
@@ -178,7 +210,7 @@ export default function Settings({
 
   return (
     <div className="relative h-full w-full text-left dark:bg-slate-900 dark:text-white">
-      <div className="mx-auto w-full max-w-lg rounded-lg bg-aurora-100/50 p-8 dark:bg-slate-800/50">
+      <div className="mx-auto w-full max-w-2xl rounded-lg bg-aurora-100/50 p-8 dark:bg-slate-800/50">
         <div className="absolute right-4 top-4">
           <SignOutButton callbackUrl="/" />
         </div>
@@ -338,6 +370,64 @@ export default function Settings({
           <div className="text-red-600 dark:text-red-400">
             Error loading Jira cloud ID resources:{" "}
             {jiraCloudIdResourcesError.message}
+          </div>
+        )}
+
+        {isTeamAdmin && (
+          <div className="mt-6">
+            <h2 className="mb-2 text-xl font-semibold dark:text-white">
+              Team Members
+            </h2>
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className="px-2 py-3 text-left">Name</th>
+                  {isUserConnectedToJira && (
+                    <th className="px-2 py-3 text-left">Jira Username</th>
+                  )}
+                  {isUserConnectedToLinear && (
+                    <th className="px-2 py-3 text-left">Linear Username</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {teamMembers?.map((member) => (
+                  <tr key={member.id}>
+                    <td className="whitespace-nowrap p-2">{member.name}</td>
+                    {isUserConnectedToJira && (
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          defaultValue={member.jiraUsername ?? ""}
+                          onBlur={(e) =>
+                            updateTeamMemberJiraUsername.mutate({
+                              accountId: member.id,
+                              jiraUsername: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-md border-gray-300 p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        />
+                      </td>
+                    )}
+                    {isUserConnectedToLinear && (
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          defaultValue={member.linearUsername ?? ""}
+                          onBlur={(e) =>
+                            updateTeamMemberLinearUsername.mutate({
+                              accountId: member.id,
+                              linearUsername: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-md border-gray-300 p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        />
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
