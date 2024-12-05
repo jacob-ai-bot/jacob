@@ -312,7 +312,7 @@ export async function fetchNewJiraIssues({
         recentIssuesJql,
         fields,
       );
-    } catch (error) {
+    } catch (error: any) {
       if (error.message === "Unauthorized") {
         console.log("Jira access token expired, refreshing...");
         jiraAccessToken = await refreshJiraAccessToken(userId);
@@ -337,7 +337,7 @@ export async function fetchNewJiraIssues({
         manuallyTaggedIssuesJql,
         fields,
       );
-    } catch (error) {
+    } catch (error: any) {
       if (error.message === "Unauthorized") {
         console.log("Jira access token expired, refreshing...");
         jiraAccessToken = await refreshJiraAccessToken(userId);
@@ -367,16 +367,22 @@ export async function fetchNewJiraIssues({
         issueId: issue.id,
       });
 
-      if (existingIssue) {
-        console.log(
-          `Repo ${project.repoFullName}: Jira issue ${issue.id} already exists`,
-        );
-        continue;
-      }
-
       const isManuallyTagged =
         issue.labels.some((label) => label.toLowerCase() === "jacob") ||
         /@jacob|#jacob/i.test(issue.description);
+
+      if (existingIssue) {
+        if (isManuallyTagged && !existingIssue.didCreateGithubIssue) {
+          console.log(
+            `Repo ${project.repoFullName}: Jira issue ${issue.id} already exists, but is manually tagged and has not created a GitHub issue yet`,
+          );
+        } else {
+          console.log(
+            `Repo ${project.repoFullName}: Jira issue ${issue.id} already exists`,
+          );
+          continue;
+        }
+      }
 
       await db.issues.create({
         issueBoardId: issueBoard.id,
