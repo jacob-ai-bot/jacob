@@ -78,11 +78,24 @@ const generateCodeViaPatch = async ({
     undefined,
   ))!;
 
-  const patchMatch = response?.match(/<code_patch>([\s\S]*?)<\/code_patch>/);
-  const patch = patchMatch?.[1] ? patchMatch[1].trim() : "";
+  // Find the index of the first opening tag
+  const firstOpeningTag = response.indexOf("<code_patch>");
+  let patch: string;
 
-  if (!patch) {
-    return response;
+  if (firstOpeningTag === -1) {
+    // No tags found, use the entire response as the patch
+    patch = response.trim();
+  } else {
+    // Find the last closing tag
+    const lastClosingTag = response.lastIndexOf("</code_patch>");
+
+    // If there's no closing tag, get everything after the opening tag
+    patch =
+      lastClosingTag === -1
+        ? response.slice(firstOpeningTag + "<code_patch>".length).trim()
+        : response
+            .slice(firstOpeningTag + "<code_patch>".length, lastClosingTag)
+            .trim();
   }
 
   if (patch && !dryRun) {
