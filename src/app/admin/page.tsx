@@ -15,8 +15,20 @@ const getProjects = cache(() => {
   return db.projects.order({ repoFullName: "ASC" }).all();
 });
 
-const getUsers = cache(() => {
-  return db.users.order({ login: "ASC" }).all();
+const getUsers = cache(async () => {
+  const users = await db.users.order({ login: "ASC" }).all();
+  const usersWithAccounts = await Promise.all(
+    users.map(async (user) => {
+      const account = await db.accounts.findByOptional({ userId: user.id });
+      return {
+        ...user,
+        isTeamAdmin: account?.isTeamAdmin ?? false,
+        teamAdminAccountId: account?.teamAdminAccountId ?? null,
+        accountId: account?.id ?? null,
+      };
+    }),
+  );
+  return usersWithAccounts;
 });
 
 export default async function AdminPage() {
@@ -28,6 +40,13 @@ export default async function AdminPage() {
   }
 
   const [projects, users] = await Promise.all([getProjects(), getUsers()]);
+
+  const teamAdmins = users
+    .filter((user) => user.isTeamAdmin)
+    .map((user) => ({
+      accountId: user.accountId,
+      name: user.name ?? user.login ?? "N/A",
+    }));
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-muted p-4">
@@ -67,7 +86,12 @@ export default async function AdminPage() {
               columns={projectColumns}
               data={projects}
             />
-            <DataTable caption="Users" columns={userColumns} data={users} />
+            <DataTable
+              caption="Users"
+              columns={userColumns}
+              data={users}
+              meta={{ teamAdmins }}
+            />
           </div>
         </div>
       </div>

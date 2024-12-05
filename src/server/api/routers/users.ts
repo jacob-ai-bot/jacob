@@ -16,6 +16,63 @@ export const usersRouter = createTRPCRouter({
       });
     }),
 
+  setIsTeamAdmin: adminProcedure
+    .input(z.object({ userId: z.number(), isTeamAdmin: z.boolean() }))
+    .mutation(async ({ input: { userId, isTeamAdmin } }) => {
+      const account = await db.accounts.findByOptional({ userId });
+      if (!account) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Account not found",
+        });
+      }
+      return db.accounts.find(account.id).update({ isTeamAdmin });
+    }),
+
+  setTeamAdminAccountId: adminProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        teamAdminAccountId: z.number().nullable(),
+      }),
+    )
+    .mutation(async ({ input: { userId, teamAdminAccountId } }) => {
+      const account = await db.accounts.findByOptional({ userId });
+      if (!account) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Account not found",
+        });
+      }
+      if (teamAdminAccountId) {
+        const teamAdminAccount =
+          await db.accounts.findOptional(teamAdminAccountId);
+        if (!teamAdminAccount?.isTeamAdmin) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid team admin account",
+          });
+        }
+      }
+      return db.accounts.find(account.id).update({ teamAdminAccountId });
+    }),
+
+  getTeamAdmins: adminProcedure.query(async () => {
+    const teamAdminAccounts = await db.accounts
+      .where({ isTeamAdmin: true })
+      .all();
+    const teamAdmins = await Promise.all(
+      teamAdminAccounts.map(async (account) => {
+        const user = await db.users.find(account.userId);
+        return {
+          accountId: account.id,
+          name: user.name ?? user.login ?? "N/A",
+        };
+      }),
+    );
+    return teamAdmins;
+  }),
+
   getTeamMembers: protectedProcedure.query(async ({ ctx: { session } }) => {
     if (!session.user.isTeamAdmin) {
       throw new TRPCError({ code: "FORBIDDEN" });

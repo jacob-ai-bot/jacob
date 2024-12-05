@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
@@ -12,7 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "~/app/_components/ui/dropdown-menu";
 
-export const userColumns: ColumnDef<User>[] = [
+export const userColumns: ColumnDef<
+  User & {
+    isTeamAdmin: boolean;
+    teamAdminAccountId: number | null;
+    accountId: number | null;
+  }
+>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -42,10 +49,47 @@ export const userColumns: ColumnDef<User>[] = [
     header: "Enabled",
   },
   {
+    accessorKey: "isTeamAdmin",
+    header: "Is Team Admin",
+    cell: ({ row }) => (row.original.isTeamAdmin ? "Yes" : "No"),
+  },
+  {
+    accessorKey: "teamAdminAccountId",
+    header: "Team Admin",
+    cell: ({ row }) => {
+      const teamAdmins = row.table.options.meta.teamAdmins as Array<{
+        accountId: number;
+        name: string;
+      }>;
+      const { id, teamAdminAccountId } = row.original;
+
+      return (
+        <select
+          value={teamAdminAccountId ?? ""}
+          onChange={async (e) => {
+            const value = e.target.value ? parseInt(e.target.value) : null;
+            await trpcClient.users.setTeamAdminAccountId.mutate({
+              userId: id,
+              teamAdminAccountId: value,
+            });
+            window.location.reload();
+          }}
+        >
+          <option value="">None</option>
+          {teamAdmins.map((admin) => (
+            <option key={admin.accountId} value={admin.accountId}>
+              {admin.name}
+            </option>
+          ))}
+        </select>
+      );
+    },
+  },
+  {
     id: "actions",
     size: 1,
     cell: ({ row }) => {
-      const { id, dashboardEnabled } = row.original;
+      const { id, dashboardEnabled, isTeamAdmin, accountId } = row.original;
 
       return (
         <DropdownMenu>
@@ -66,7 +110,19 @@ export const userColumns: ColumnDef<User>[] = [
                 window.location.reload();
               }}
             >
-              {dashboardEnabled ? "Disable" : "Enable"}
+              {dashboardEnabled ? "Disable Dashboard" : "Enable Dashboard"}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                if (!accountId) return;
+                await trpcClient.users.setIsTeamAdmin.mutate({
+                  userId: id,
+                  isTeamAdmin: !isTeamAdmin,
+                });
+                window.location.reload();
+              }}
+            >
+              {isTeamAdmin ? "Unset Team Admin" : "Set as Team Admin"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
