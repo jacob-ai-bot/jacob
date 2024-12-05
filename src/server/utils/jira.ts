@@ -138,6 +138,7 @@ export async function syncJiraBoard(
 }
 
 export async function fetchAllNewJiraIssues() {
+  console.log("fetching all new jira issues");
   let issueBoards: IssueBoard[] = [];
   try {
     issueBoards = await db.issueBoards.where({
@@ -186,7 +187,6 @@ export async function fetchAllNewJiraIssues() {
 
         const issue = await db.issues.findBy({ id: todo.originalIssueId });
         if (!issue) continue;
-
         const jiraResponse = await fetch(
           `https://api.atlassian.com/ex/jira/${project.jiraCloudId}/rest/api/3/issue/${issue.issueId}`,
           {
@@ -202,7 +202,11 @@ export async function fetchAllNewJiraIssues() {
           jiraIssue.fields.status.name === "Done" ||
           jiraIssue.fields.status.name === "Closed"
         ) {
-          await archiveTodosByIssueId(issue.id, issueBoard.projectId);
+          if (todo.issueId) {
+            await archiveTodosByIssueId(todo.issueId, issueBoard.projectId);
+          } else {
+            console.log("todo has no issueId, skipping");
+          }
         }
       }
 
