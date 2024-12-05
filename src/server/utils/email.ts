@@ -68,143 +68,136 @@ export async function sendTransactionalEmail(
             padding: 0;
         }
         .container {
+            width: 100%;
             max-width: 600px;
             margin: 0 auto;
-            padding: 32px 24px;
+            padding: 20px 15px;
         }
         .main-card {
             background-color: #FFFFFF;
-            border-radius: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            padding: 40px 32px;
-            margin-bottom: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px 20px;
+            margin-bottom: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
         }
         .gradient-bar {
             height: 4px;
             background: linear-gradient(to right, #00C8FF, #FF3390);
-            margin: -40px -32px 32px;
+            border-radius: 2px;
+            margin-bottom: 20px;
         }
         h1 {
             color: #1F2937;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 600;
-            margin-bottom: 24px;
-            letter-spacing: -0.02em;
+            margin-bottom: 20px;
             text-align: center;
         }
         .todo-card {
             background: linear-gradient(to bottom right, rgba(0, 200, 255, 0.05), rgba(255, 51, 144, 0.05));
             border: 1px solid rgba(0, 200, 255, 0.1);
-            border-radius: 16px;
-            padding: 32px;
-            margin: 32px 0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
             text-align: center;
         }
         .todo-title {
             color: #1F2937;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .view-button {
             display: inline-block;
-            background: #FFFFFF;
-            color: #007FB3;
+            background: #00C8FF;
+            color: #FFFFFF;
             text-decoration: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
             font-weight: 500;
             font-size: 14px;
-            border: 1px solid rgba(0, 127, 179, 0.2);
-            transition: all 0.2s ease;
+            border: none;
+            transition: background 0.3s ease;
         }
         .view-button:hover {
             background: #007FB3;
-            color: #FFFFFF;
-            border-color: #007FB3;
         }
         .section-title {
             color: #1F2937;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            margin: 40px 0 24px;
-            padding-bottom: 8px;
+            margin: 30px 0 15px;
             border-bottom: 2px solid #E5E7EB;
+            padding-bottom: 5px;
         }
-        .plan-step {
-            margin-bottom: 32px;
-            padding-bottom: 32px;
+        .plan-step, .research-item {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
             border-bottom: 1px solid #E5E7EB;
         }
-        .plan-step:last-child {
+        .plan-step:last-child, .research-item:last-child {
             border-bottom: none;
             padding-bottom: 0;
+            margin-bottom: 0;
         }
         .file-path {
             font-family: monospace;
             font-size: 13px;
             color: #6B7280;
             background: #F3F4F6;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-bottom: 16px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            display: inline-block;
             word-break: break-all;
         }
-        .instructions {
+        .instructions, .research-answer {
             color: #374151;
             font-size: 14px;
             line-height: 1.6;
         }
-        .instructions p {
-            margin: 0 0 16px;
+        .instructions p, .research-answer p {
+            margin: 0 0 12px;
         }
-        .instructions p:last-child {
+        .instructions p:last-child, .research-answer p:last-child {
             margin-bottom: 0;
-        }
-        .research-item {
-            margin-bottom: 32px;
-            padding-bottom: 32px;
-            border-bottom: 1px solid #E5E7EB;
-        }
-        .research-item:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
         }
         .research-question {
             color: #1F2937;
             font-weight: 600;
-            margin-bottom: 16px;
-        }
-        .research-answer {
-            color: #4B5563;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        .research-answer p {
-            margin: 0 0 16px;
-        }
-        .research-answer p:last-child {
-            margin-bottom: 0;
+            margin-bottom: 12px;
         }
         .cta-button {
             display: inline-block;
             background: linear-gradient(135deg, #00C8FF, #007FB3);
             color: #FFFFFF;
             text-decoration: none;
-            padding: 16px 32px;
-            border-radius: 12px;
+            padding: 14px 28px;
+            border-radius: 10px;
             font-weight: 500;
-            font-size: 15px;
-            margin: 40px 0;
+            font-size: 16px;
+            margin: 30px 0;
             text-align: center;
             width: 100%;
             box-sizing: border-box;
+            transition: background 0.3s ease;
+        }
+        .cta-button:hover {
+            background: #007FB3;
         }
         .footer {
             text-align: center;
             color: #6B7280;
-            font-size: 14px;
-            margin-top: 40px;
+            font-size: 13px;
+            margin-top: 30px;
         }
         code {
             background: #F3F4F6;
@@ -216,21 +209,52 @@ export async function sendTransactionalEmail(
         }
         pre {
             background: #F3F4F6;
-            padding: 16px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 6px;
             overflow-x: auto;
-            margin: 16px 0;
+            margin: 12px 0;
         }
         pre code {
             background: none;
             padding: 0;
             border-radius: 0;
         }
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 15px 10px;
+            }
+            .main-card {
+                padding: 20px 15px;
+            }
+            h1 {
+                font-size: 22px;
+            }
+            .todo-title {
+                font-size: 16px;
+            }
+            .view-button, .cta-button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            .section-title {
+                font-size: 15px;
+            }
+            .instructions, .research-answer {
+                font-size: 13px;
+            }
+            .footer {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="main-card">
+            <div class="header">
+                <!-- Optional Logo -->
+                <!-- <img src="https://yourdomain.com/logo.png" alt="Company Logo" class="logo"> -->
+            </div>
             <div class="gradient-bar"></div>
             <h1>Your Enhanced Issue is Ready</h1>
             
@@ -286,7 +310,7 @@ export async function sendTransactionalEmail(
     </div>
 </body>
 </html>
-          `,
+              `,
         },
       },
       Subject: {
