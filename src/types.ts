@@ -196,6 +196,7 @@ export interface JiraIssue {
   description: string;
   labels: string[];
   attachments: JiraAttachment[];
+  ticketType: string;
 }
 
 export interface JiraAttachment {
