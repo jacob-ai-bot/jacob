@@ -63,30 +63,6 @@ export const SpeechToTextArea = forwardRef<
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
-    useEffect(() => {
-      const prepareMicrophone = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
-          setMediaStream(stream);
-        } catch (error) {
-          console.error("Microphone access denied:", error);
-          toast.error("Microphone access is required to use voice recording.");
-        }
-      };
-
-      void prepareMicrophone();
-
-      // Cleanup when component unmounts
-      return () => {
-        if (mediaStream) {
-          mediaStream.getTracks().forEach((track) => track.stop());
-        }
-      };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const startRecording = async () => {
       let stream = mediaStream;
 
@@ -173,6 +149,11 @@ export const SpeechToTextArea = forwardRef<
         const transcription = await fetchTranscription(audioBlob);
         if (transcription) {
           await submitTranscription(transcription);
+        }
+
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          setMediaStream(null);
         }
       };
 
