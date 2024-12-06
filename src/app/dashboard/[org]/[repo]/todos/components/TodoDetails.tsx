@@ -14,6 +14,7 @@ import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
 import Link from "next/link";
 import Evaluation from "./Evaluation";
+import StatusBar from "./StatusBar";
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -43,6 +44,17 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       todoId: selectedTodo.id,
       githubIssue: selectedIssue?.body ?? "",
     });
+
+  const { data: planSteps, isLoading: isLoadingPlanSteps } =
+    api.planSteps.getByProjectAndIssue.useQuery(
+      {
+        projectId: selectedTodo.projectId,
+        issueNumber: selectedTodo.issueId ?? 0,
+      },
+      {
+        enabled: !!selectedTodo.projectId && !!selectedTodo.issueId,
+      },
+    );
 
   const [isGeneratingResearch, setIsGeneratingResearch] = useState(false);
   const [isStartingWork, setIsStartingWork] = useState(false);
@@ -131,6 +143,12 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
   if (!selectedIssue || !selectedTodo) {
     return <div>No issue found</div>;
   }
+
+  const researchCreated = research && research.length > 0;
+  const totalPlanSteps = planSteps ? planSteps.length : 0;
+  const completedPlanSteps = planSteps
+    ? planSteps.filter((step) => step.completed).length
+    : 0;
 
   const userQuestions = research?.filter(
     (item) => item.type === ResearchAgentActionType.AskProjectOwner,
@@ -222,6 +240,14 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
           )}
         </div>
       </div>
+
+      {!isLoadingResearch && !isLoadingPlanSteps && (
+        <StatusBar
+          researchCreated={researchCreated}
+          totalPlanSteps={totalPlanSteps}
+          completedPlanSteps={completedPlanSteps}
+        />
+      )}
 
       <div className="space-y-8">
         {/* Evaluation Section */}
