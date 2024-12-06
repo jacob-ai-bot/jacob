@@ -25,12 +25,14 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   caption?: string;
+  meta?: Record<string, any>;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   caption,
+  meta,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -44,6 +46,7 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
     },
+    meta,
   });
 
   return (
