@@ -14,6 +14,7 @@ import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
 import Link from "next/link";
 import Evaluation from "./Evaluation";
+import StatusBar from "./StatusBar"; // Added import for StatusBar
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -43,6 +44,12 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       todoId: selectedTodo.id,
       githubIssue: selectedIssue?.body ?? "",
     });
+
+  const { data: planSteps, isLoading: isLoadingPlanSteps } =
+    api.planSteps.getByProjectAndIssue.useQuery({
+      projectId: selectedTodo.projectId,
+      issueNumber: selectedTodo.issueId ?? 0,
+    }); // Added useQuery for planSteps
 
   const [isGeneratingResearch, setIsGeneratingResearch] = useState(false);
   const [isStartingWork, setIsStartingWork] = useState(false);
@@ -152,6 +159,28 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     }
   };
 
+  // Determine Research Status
+  let researchStatus: "Not Started" | "In Progress" | "Ready" = "Not Started";
+  if (research && research.length > 0) {
+    if (!planSteps || planSteps.length === 0) {
+      researchStatus = "In Progress";
+    } else if (research.length > 1 && planSteps.length > 1) {
+      researchStatus = "Ready";
+    }
+  }
+
+  // Determine Plan Status
+  let planStatus: "Not Started" | "Ready" = "Not Started";
+  if (planSteps && planSteps.length > 0) {
+    planStatus = "Ready";
+  }
+
+  // Determine Evaluation Status
+  let evaluationStatus: "Not Started" | "Ready" = "Not Started";
+  if (evaluation) {
+    evaluationStatus = "Ready";
+  }
+
   return (
     <>
       <div className="mb-6 flex flex-col items-start justify-between gap-4 overflow-hidden md:flex-row md:items-center">
@@ -160,7 +189,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             {selectedIssue.title}
           </h2>
           <div
-            className={`inline-flex items-center text-center text-sm font-medium ${
+            className={`inline-flex items-center whitespace-nowrap text-center text-sm font-medium ${
               selectedTodo.status === TodoStatus.DONE
                 ? "bg-aurora-100 text-aurora-800 dark:bg-aurora-800 dark:text-aurora-100"
                 : selectedTodo.status === TodoStatus.IN_PROGRESS
@@ -224,7 +253,13 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       </div>
 
       <div className="space-y-8">
-        {/* Evaluation Section */}
+        {/* Evaluation Section */} {/* Status Bar Integration */}
+        <StatusBar
+          researchStatus={researchStatus}
+          planStatus={planStatus}
+          evaluationStatus={evaluationStatus}
+          evaluation={evaluation}
+        />
         {isLoadingEvaluation ? (
           <LoadingIndicator />
         ) : (
@@ -241,7 +276,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             </motion.div>
           )
         )}
-
         {/* Issue Section */}
         <IssueComponent
           org={org}
@@ -250,7 +284,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
           initialTitle={selectedIssue.title}
           initialBody={selectedIssue.body}
         />
-
         {/* Questions for User Section */}
         {userQuestions && userQuestions.length > 0 && (
           <motion.div
@@ -266,7 +299,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             />
           </motion.div>
         )}
-
         {/* Plan Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -279,7 +311,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             issueNumber={selectedTodo.issueId ?? 0}
           />
         </motion.div>
-
         {/* Research Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
