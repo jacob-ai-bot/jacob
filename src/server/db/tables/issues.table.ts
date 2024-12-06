@@ -16,6 +16,7 @@ export class IssuesTable extends BaseTable {
     githubIssueId: t.integer().nullable(),
     fullRepoName: t.varchar(255).nullable(),
     labels: t.json().nullable(),
+    ticketType: t.varchar(255).nullable(),
     ...t.timestamps(),
   }));
 }

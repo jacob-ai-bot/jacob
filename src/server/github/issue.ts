@@ -275,12 +275,16 @@ Here is the expected format of your response:
     }
 
     if (labels.length > 0) {
-      const hashtags = labels
+      const normalizedLabels = labels.map((label) =>
+        label.trim().toLowerCase(),
+      );
+      const uniqueLabels = Array.from(new Set(normalizedLabels));
+      const hashtags = uniqueLabels
         .map(
           (label) =>
             "#" +
             label
-              .replace(/[^a-zA-Z0-9\s]/g, "")
+              .replace(/[^a-zA-Z0-9\s-]/g, "")
               .replace(/\s+/g, "-")
               .toLowerCase(),
         )
