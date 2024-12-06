@@ -437,7 +437,10 @@ export async function fetchNewJiraIssues({
 
       const labels = [...(issue.labels ?? [])];
       if (ticketType) {
-        labels.push(`type-${ticketType.toLowerCase()}`);
+        const label = ticketType.toLowerCase();
+        if (!labels.includes(label)) {
+          labels.push(label);
+        }
       }
       const imageUrls: string[] = [];
       for (const attachment of issue.attachments ?? []) {
