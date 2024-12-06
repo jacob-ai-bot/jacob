@@ -4,8 +4,8 @@ import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
 import { parseTemplate, type RepoSettings, type BaseEventData } from "../utils";
-import { reconstructFiles } from "../utils/files";
-import { sendGptRequest } from "../openai/request";
+import { generateCodeReviewPlan } from "../utils/plan";
+import { applyCodePatchViaLLM } from "../agent/patch";
 import { getPRReviewComments, concatenatePRFiles } from "../github/pr";
 import { checkAndCommit } from "./checkAndCommit";
 import { emitCodeEvent } from "~/server/utils/events";
@@ -64,56 +64,16 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
     )
     .join("\n");
 
-  const { code } = await concatenatePRFiles(
-    rootPath,
-    repository,
-    token,
-    existingPr.number,
-  );
-
-  const respondToCodeReviewTemplateParams = {
-    sourceMap,
-    types,
-    images,
-    code,
-    reviewBody: reviewBody ?? "",
-    reviewAction:
-      state === "changes_requested" ? "requested changes" : "commented",
+  const plan = await generateCodeReviewPlan({
     commentsOnSpecificLines,
-  };
+    reviewBody: reviewBody ?? "",
+    rootPath,
+  });
 
-  const responseToCodeReviewSystemPrompt = parseTemplate(
-    "dev",
-    "code_respond_to_code_review",
-    "system",
-    respondToCodeReviewTemplateParams,
-  );
-  const responseToCodeReviewUserPrompt = parseTemplate(
-    "dev",
-    "code_respond_to_code_review",
-    "user",
-    respondToCodeReviewTemplateParams,
-  );
-
-  // Call sendGptRequest with the review text and concatenated code file
-  const updatedCode =
-    (await sendGptRequest(
-      responseToCodeReviewUserPrompt,
-      responseToCodeReviewSystemPrompt,
-      0.2,
-      baseEventData,
-    )) ?? "";
-
-  if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
-    console.log(`[${repository.full_name}] code`, code);
-    console.log(`[${repository.full_name}] No code generated. Exiting...`);
-    throw new Error("No code generated");
+  for (const step of plan.steps) {
+    const { filePath, instructions } = step;
+    await applyCodePatchViaLLM(rootPath, filePath, instructions, false, 0);
   }
-
-  const files = reconstructFiles(updatedCode, rootPath);
-  await Promise.all(
-    files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
-  );
 
   await checkAndCommit({
     ...baseEventData,
