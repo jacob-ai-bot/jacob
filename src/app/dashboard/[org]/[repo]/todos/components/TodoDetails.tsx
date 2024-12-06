@@ -14,6 +14,7 @@ import QuestionsForUser from "./QuestionsForUser";
 import { ResearchAgentActionType } from "~/types";
 import Link from "next/link";
 import Evaluation from "./Evaluation";
+import StatusBar from "./StatusBar"; // Added import for StatusBar
 
 interface TodoDetailsProps {
   selectedTodo: Todo;
@@ -43,6 +44,12 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
       todoId: selectedTodo.id,
       githubIssue: selectedIssue?.body ?? "",
     });
+
+  const { data: planSteps, isLoading: isLoadingPlanSteps } =
+    api.planSteps.getByProjectAndIssue.useQuery({
+      projectId: selectedTodo.projectId,
+      issueNumber: selectedTodo.issueId ?? 0,
+    }); // Added useQuery for planSteps
 
   const [isGeneratingResearch, setIsGeneratingResearch] = useState(false);
   const [isStartingWork, setIsStartingWork] = useState(false);
@@ -152,6 +159,22 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     }
   };
 
+  // Determine Research Status
+  let researchStatus: "Not Started" | "In Progress" | "Ready" = "Not Started";
+  if (research && research.length > 0) {
+    if (!planSteps || planSteps.length === 0) {
+      researchStatus = "In Progress";
+    } else if (research.length > 1 && planSteps.length > 1) {
+      researchStatus = "Ready";
+    }
+  }
+
+  // Determine Plan Status
+  let planStatus: "Not Started" | "Ready" = "Not Started";
+  if (planSteps && planSteps.length > 0) {
+    planStatus = "Ready";
+  }
+
   return (
     <>
       <div className="mb-6 flex flex-col items-start justify-between gap-4 overflow-hidden md:flex-row md:items-center">
@@ -222,6 +245,9 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
           )}
         </div>
       </div>
+
+      {/* Status Bar Integration */}
+      <StatusBar researchStatus={researchStatus} planStatus={planStatus} />
 
       <div className="space-y-8">
         {/* Evaluation Section */}
