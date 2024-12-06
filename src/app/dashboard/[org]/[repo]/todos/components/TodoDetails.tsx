@@ -175,6 +175,12 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
     planStatus = "Ready";
   }
 
+  // Determine Evaluation Status
+  let evaluationStatus: "Not Started" | "Ready" = "Not Started";
+  if (evaluation) {
+    evaluationStatus = "Ready";
+  }
+
   return (
     <>
       <div className="mb-6 flex flex-col items-start justify-between gap-4 overflow-hidden md:flex-row md:items-center">
@@ -183,7 +189,7 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             {selectedIssue.title}
           </h2>
           <div
-            className={`inline-flex items-center text-center text-sm font-medium ${
+            className={`inline-flex items-center whitespace-nowrap text-center text-sm font-medium ${
               selectedTodo.status === TodoStatus.DONE
                 ? "bg-aurora-100 text-aurora-800 dark:bg-aurora-800 dark:text-aurora-100"
                 : selectedTodo.status === TodoStatus.IN_PROGRESS
@@ -246,11 +252,14 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
         </div>
       </div>
 
-      {/* Status Bar Integration */}
-      <StatusBar researchStatus={researchStatus} planStatus={planStatus} />
-
       <div className="space-y-8">
-        {/* Evaluation Section */}
+        {/* Evaluation Section */} {/* Status Bar Integration */}
+        <StatusBar
+          researchStatus={researchStatus}
+          planStatus={planStatus}
+          evaluationStatus={evaluationStatus}
+          evaluation={evaluation}
+        />
         {isLoadingEvaluation ? (
           <LoadingIndicator />
         ) : (
@@ -267,7 +276,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             </motion.div>
           )
         )}
-
         {/* Issue Section */}
         <IssueComponent
           org={org}
@@ -276,7 +284,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
           initialTitle={selectedIssue.title}
           initialBody={selectedIssue.body}
         />
-
         {/* Questions for User Section */}
         {userQuestions && userQuestions.length > 0 && (
           <motion.div
@@ -292,7 +299,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             />
           </motion.div>
         )}
-
         {/* Plan Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -305,7 +311,6 @@ const TodoDetails: React.FC<TodoDetailsProps> = ({
             issueNumber={selectedTodo.issueId ?? 0}
           />
         </motion.div>
-
         {/* Research Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
