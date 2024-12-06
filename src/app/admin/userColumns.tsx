@@ -56,8 +56,9 @@ export const userColumns: ColumnDef<
   {
     accessorKey: "teamAdminAccountId",
     header: "Team Admin",
-    cell: ({ row }) => {
-      const teamAdmins = row.table.options.meta.teamAdmins as Array<{
+    cell: ({ row, table }) => {
+      // @ts-expect-error - meta is not typed
+      const teamAdmins = (table.options.meta?.teamAdmins ?? []) as Array<{
         accountId: number;
         name: string;
       }>;

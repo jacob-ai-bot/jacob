@@ -39,6 +39,7 @@ export const usersRouter = createTRPCRouter({
     .mutation(async ({ input: { userId, teamAdminAccountId } }) => {
       const account = await db.accounts.findByOptional({ userId });
       if (!account) {
+        console.error("Account not found for userId", userId);
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Account not found",

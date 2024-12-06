@@ -50,7 +50,7 @@ export default async function AdminPage() {
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-muted p-4">
-      <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-background shadow-xl">
+      <div className="flex w-full max-w-[1600px] flex-col overflow-hidden rounded-3xl bg-background shadow-xl">
         <div className="p-12">
           <div className="mb-8 flex w-full flex-row items-center justify-between gap-4">
             <div className="flex flex-row items-center gap-2">
@@ -80,18 +80,22 @@ export default async function AdminPage() {
               <SignOutButton />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-4">
-            <DataTable
-              caption="Projects"
-              columns={projectColumns}
-              data={projects}
-            />
-            <DataTable
-              caption="Users"
-              columns={userColumns}
-              data={users}
-              meta={{ teamAdmins }}
-            />
+          <div className="grid grid-cols-4 gap-x-4">
+            <div className="col-span-1">
+              <DataTable
+                caption="Projects"
+                columns={projectColumns}
+                data={projects}
+              />
+            </div>
+            <div className="col-span-3">
+              <DataTable
+                caption="Users"
+                columns={userColumns}
+                data={users}
+                meta={{ teamAdmins }}
+              />
+            </div>
           </div>
         </div>
       </div>
