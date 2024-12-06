@@ -1,6 +1,5 @@
 import React, {
   useState,
-  useEffect,
   useRef,
   forwardRef,
   useImperativeHandle,
@@ -63,34 +62,10 @@ export const SpeechToTextArea = forwardRef<
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
-    useEffect(() => {
-      const prepareMicrophone = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
-          setMediaStream(stream);
-        } catch (error) {
-          console.error("Microphone access denied:", error);
-          toast.error("Microphone access is required to use voice recording.");
-        }
-      };
-
-      void prepareMicrophone();
-
-      // Cleanup when component unmounts
-      return () => {
-        if (mediaStream) {
-          mediaStream.getTracks().forEach((track) => track.stop());
-        }
-      };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const startRecording = async () => {
       let stream = mediaStream;
 
-      if (!stream || stream.getAudioTracks().length === 0) {
+      if (!stream || !stream.active || stream.getAudioTracks().length === 0) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           setMediaStream(stream);
@@ -182,6 +157,10 @@ export const SpeechToTextArea = forwardRef<
     const stopRecording = () => {
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
+      }
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        setMediaStream(null);
       }
     };
 
