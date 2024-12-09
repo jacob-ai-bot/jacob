@@ -16,8 +16,9 @@ import {
   MAX_ATTEMPTS_TO_FIX_BUILD_ERROR,
 } from "./checkAndCommit";
 import { addCommentToIssue, getIssue } from "../github/issue";
-import { concatenatePRFiles } from "../github/pr";
-import { reconstructFiles } from "../utils/files";
+import { generateCodeViaPatch } from "./editFiles";
+import { sendSelfConsistencyChainOfThoughtGptRequest } from "../openai/request";
+import { applyCodePatchesViaLLM } from "../agent/patch";
 import { emitCodeEvent } from "~/server/utils/events";
 import {
   countTokens,
@@ -101,7 +102,7 @@ async function processStepIndividually(
     codeTemplateParams,
   );
 
-  return sendGptRequest(
+  return sendSelfConsistencyChainOfThoughtGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
     0.2,
@@ -315,41 +316,25 @@ export async function fixError(params: FixErrorParams) {
           images,
         };
 
-        const codeSystemPrompt = parseTemplate(
-          "dev",
-          "code_fix_error",
-          "system",
+        const filesToUpdate = errorInfoArray?.map((e) => e.filePath);
+        const filesToCreate: string[] = [];
+        updatedCode = await generateCodeViaPatch({
+          rootPath,
+          filesToUpdate,
+          filesToCreate,
           codeTemplateParams,
-        );
-        const codeUserPrompt = parseTemplate(
-          "dev",
-          "code_fix_error",
-          "user",
-          codeTemplateParams,
-        );
-
-        updatedCode = (await sendGptRequest(
-          codeUserPrompt,
-          codeSystemPrompt,
-          0.2,
           baseEventData,
-          3,
-          60000,
-          undefined,
-          model,
-        ))!;
+          dryRun: false,
+        });
       }
 
-      if (updatedCode.length < 10 || !updatedCode.includes("__FILEPATH__")) {
+      if (!updatedCode || updatedCode.length < 10) {
         console.log(`[${repository.full_name}] code`, code);
         console.log(`[${repository.full_name}] No code generated. Exiting...`);
         throw new Error("No code generated");
       }
 
-      const files = reconstructFiles(updatedCode, rootPath);
-      await Promise.all(
-        files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
-      );
+      // Patches have been applied via generateCodeViaPatch and applyCodePatchesViaLLM
 
       await checkAndCommit({
         ...baseEventData,
