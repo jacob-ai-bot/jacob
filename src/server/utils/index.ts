@@ -287,7 +287,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function generateCommitMessage(
   diffOutput: string,
-  fallbackMessage: string,
+  _fallbackMessage: string,
 ): Promise<string | null> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {

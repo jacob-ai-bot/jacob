@@ -66,10 +66,10 @@ export async function addCommitAndPush({
         command: "git diff --staged",
       });
 
-      let processedDiffOutput = diffOutput;
-      if (diffOutput.length > MAX_DIFF_SIZE) {
+      let processedDiffOutput = diffOutput.toString();
+      if (processedDiffOutput.length > MAX_DIFF_SIZE) {
         processedDiffOutput =
-          diffOutput.slice(0, MAX_DIFF_SIZE) + "\n... (truncated)";
+          processedDiffOutput.slice(0, MAX_DIFF_SIZE) + "\n... (truncated)";
       }
 
       let generatedMessage = null;
@@ -83,7 +83,7 @@ export async function addCommitAndPush({
         generatedMessage = null;
       }
 
-      const finalMessage = generatedMessage || commitMessage;
+      const finalMessage = generatedMessage ?? commitMessage;
       const sanitizedMessage = sanitizeCommitMessage(finalMessage);
 
       await executeWithLogRequiringSuccess({
