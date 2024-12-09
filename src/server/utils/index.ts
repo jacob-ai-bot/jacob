@@ -219,7 +219,17 @@ const BranchNameSchema = z.object({
 });
 
 const CommitMessageSchema = z.object({
-  commitMessage: z.string().min(1).max(72),
+  commitMessage: z
+    .string()
+    .min(1)
+    .max(72)
+    .regex(
+      /^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert)(\([a-z-]+\))?: .+$/,
+      {
+        message:
+          "Commit message must follow conventional commit format: type(scope): description",
+      },
+    ),
 });
 
 export async function generateJacobBranchName(
@@ -272,43 +282,62 @@ export async function generateJacobBranchName(
   return `${branchName}-${issueNumber}-${randomDigits}`;
 }
 
+const MAX_RETRIES = 3;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function generateCommitMessage(
   diffOutput: string,
   fallbackMessage: string,
 ): Promise<string | null> {
-  try {
-    const prompt = `Generate a concise and descriptive git commit message based on these changes:\n\n${diffOutput}`;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const prompt = dedent`
+        Generate a concise and descriptive git commit message based on these changes:
 
-    const systemPrompt = dedent`
-      You are a helpful assistant that generates git commit messages.
-      You must respond with a JSON object containing a single "commitMessage" field.
-      Your response must match the following schema:
-      const CommitMessageSchema = z.object({
-          commitMessage: z.string().min(1).max(72)
-      });
-      The commit message must:
-      - Be clear and descriptive
-      - Follow conventional commit format
-      - Be no longer than 72 characters
-      - Start with a verb in the present tense
-      - Not end with a period
-    `;
+        ${diffOutput}
 
-    const response = await sendGptRequestWithSchema(
-      prompt,
-      systemPrompt,
-      CommitMessageSchema,
-      0.3,
-      undefined,
-      3,
-      "gpt-4o-mini-2024-07-18",
-    );
+        Examples of good commit messages:
+        - feat(auth): implement OAuth2 login flow
+        - fix(ui): resolve button alignment in navbar
+        - refactor(api): simplify error handling logic
+        - docs(readme): update installation instructions
 
-    return response?.commitMessage || null;
-  } catch (error) {
-    console.error("Error generating commit message with LLM:", error);
-    return null;
+        Your commit message must:
+        - Follow the conventional commit format: type(scope): description
+        - Use one of these types: feat, fix, docs, style, refactor, perf, test, chore, build, ci, revert
+        - Include a relevant scope in parentheses
+        - Have a clear, concise description
+        - Not exceed 72 characters in total
+      `;
+
+      const systemPrompt = dedent`
+        You are a helpful assistant that generates git commit messages.
+        You must respond with a JSON object containing a single "commitMessage" field.
+        Your response must follow the conventional commit format and match the schema requirements.
+        Focus on clarity, conciseness, and following the standard format.
+      `;
+
+      const response = await sendGptRequestWithSchema(
+        prompt,
+        systemPrompt,
+        CommitMessageSchema,
+        0.3,
+        undefined,
+        3,
+        "gpt-4o-mini-2024-07-18",
+      );
+
+      return response?.commitMessage || null;
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+      if (attempt === MAX_RETRIES - 1) {
+        console.error("All attempts to generate commit message failed");
+        return null;
+      }
+      await sleep(Math.pow(2, attempt) * 1000);
+    }
   }
+  return null;
 }
 
 export function extractIssueNumberFromBranchName(branch: string) {

@@ -21,6 +21,8 @@ function sanitizeCommitMessage(message: string): string {
   return message.replace(/([`"$\\!'&|;<>])/g, "\\$1");
 }
 
+const MAX_DIFF_SIZE = 4000;
+
 export async function addCommitAndPush({
   rootPath,
   branchName,
@@ -64,10 +66,23 @@ export async function addCommitAndPush({
         command: "git diff --staged",
       });
 
-      const generatedMessage = await generateCommitMessage(
-        diffOutput,
-        commitMessage,
-      );
+      let processedDiffOutput = diffOutput;
+      if (diffOutput.length > MAX_DIFF_SIZE) {
+        processedDiffOutput =
+          diffOutput.slice(0, MAX_DIFF_SIZE) + "\n... (truncated)";
+      }
+
+      let generatedMessage = null;
+      try {
+        generatedMessage = await generateCommitMessage(
+          processedDiffOutput,
+          commitMessage,
+        );
+      } catch (error) {
+        console.warn("Failed to generate commit message:", error);
+        generatedMessage = null;
+      }
+
       const finalMessage = generatedMessage || commitMessage;
       const sanitizedMessage = sanitizeCommitMessage(finalMessage);
 
