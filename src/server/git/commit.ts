@@ -3,6 +3,7 @@ import {
   type ExecAsyncException,
   type BaseEventData,
   rethrowErrorWithTokenRedacted,
+  generateCommitMessage,
 } from "../utils";
 
 const appName = process.env.GITHUB_APP_NAME ?? "";
@@ -19,6 +20,8 @@ function sanitizeCommitMessage(message: string): string {
   // Escape all special characters
   return message.replace(/([`"$\\!'&|;<>])/g, "\\$1");
 }
+
+const MAX_DIFF_SIZE = 4000;
 
 export async function addCommitAndPush({
   rootPath,
@@ -57,7 +60,32 @@ export async function addCommitAndPush({
     const hasChanges = statusOutput.toString().trim() !== "";
 
     if (hasChanges) {
-      const sanitizedMessage = sanitizeCommitMessage(commitMessage);
+      const { stdout: diffOutput } = await executeWithLogRequiringSuccess({
+        ...baseEventData,
+        directory: rootPath,
+        command: "git diff --staged",
+      });
+
+      let processedDiffOutput = diffOutput.toString();
+      if (processedDiffOutput.length > MAX_DIFF_SIZE) {
+        processedDiffOutput =
+          processedDiffOutput.slice(0, MAX_DIFF_SIZE) + "\n... (truncated)";
+      }
+
+      let generatedMessage = null;
+      try {
+        generatedMessage = await generateCommitMessage(
+          processedDiffOutput,
+          commitMessage,
+        );
+      } catch (error) {
+        console.warn("Failed to generate commit message:", error);
+        generatedMessage = null;
+      }
+
+      const finalMessage = generatedMessage ?? commitMessage;
+      const sanitizedMessage = sanitizeCommitMessage(finalMessage);
+
       await executeWithLogRequiringSuccess({
         ...baseEventData,
         directory: rootPath,
