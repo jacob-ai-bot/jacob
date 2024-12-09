@@ -9,6 +9,7 @@ import { type RepoSettings, Style } from "./settings";
 import { emitCommandEvent } from "./events";
 import { sendGptRequestWithSchema } from "../openai/request";
 import { z } from "zod";
+import { newRedisConnection } from "./redis"; // Import the newRedisConnection function
 
 export { type RepoSettings, getRepoSettings } from "./settings";
 
