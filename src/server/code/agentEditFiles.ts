@@ -247,7 +247,7 @@ export async function editFiles(params: EditFilesParams) {
           ...baseEventData,
           rootPath,
           branchName: newBranch,
-          commitMessage: step.title,
+          issueTitle: step.title,
           token,
         });
         // Save this patch and add it to the list of other code patches
