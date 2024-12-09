@@ -3,12 +3,11 @@ import { type Repository } from "@octokit/webhooks-types";
 import { type Endpoints } from "@octokit/types";
 
 import { getSourceMap, getTypes, getImages } from "../analyze/sourceMap";
-import { parseTemplate, type RepoSettings, type BaseEventData } from "../utils";
+import { type RepoSettings, type BaseEventData } from "../utils";
 import { generateCodeReviewPlan } from "../utils/plan";
 import { applyCodePatchViaLLM } from "../agent/patch";
-import { getPRReviewComments, concatenatePRFiles } from "../github/pr";
+import { getPRReviewComments } from "../github/pr";
 import { checkAndCommit } from "./checkAndCommit";
-import { emitCodeEvent } from "~/server/utils/events";
 
 type PullRequest =
   Endpoints["GET /repos/{owner}/{repo}/pulls/{pull_number}"]["response"]["data"];
@@ -20,7 +19,7 @@ export interface RespondToCodeReviewParams extends BaseEventData {
   repoSettings?: RepoSettings;
   branch: string;
   existingPr: PullRequest;
-  state: "changes_requested" | "commented";
+  _state: "changes_requested" | "commented"; // Prefix with _ to mark as intentionally unused
   reviewId: number;
   reviewBody: string | null;
 }
@@ -33,14 +32,10 @@ export async function respondToCodeReview(params: RespondToCodeReviewParams) {
     repoSettings,
     branch,
     existingPr,
-    state,
     reviewId,
     reviewBody,
     ...baseEventData
   } = params;
-  const sourceMap = getSourceMap(rootPath, repoSettings);
-  const types = getTypes(rootPath, repoSettings);
-  const images = await getImages(rootPath, repoSettings);
 
   const prComments = await getPRReviewComments(
     repository,
