@@ -3,6 +3,7 @@ import {
   type ExecAsyncException,
   type BaseEventData,
   rethrowErrorWithTokenRedacted,
+  generateCommitMessage,
 } from "../utils";
 
 const appName = process.env.GITHUB_APP_NAME ?? "";
@@ -11,19 +12,16 @@ const appUsername = process.env.GITHUB_APP_USERNAME ?? "";
 export interface AddCommitAndPushParams extends BaseEventData {
   rootPath: string;
   branchName: string;
-  commitMessage: string;
+  issueTitle?: string;
+  issueBody?: string;
   token: string;
-}
-
-function sanitizeCommitMessage(message: string): string {
-  // Escape all special characters
-  return message.replace(/([`"$\\!'&|;<>])/g, "\\$1");
 }
 
 export async function addCommitAndPush({
   rootPath,
   branchName,
-  commitMessage,
+  issueTitle,
+  issueBody,
   token,
   ...baseEventData
 }: AddCommitAndPushParams) {
@@ -57,11 +55,17 @@ export async function addCommitAndPush({
     const hasChanges = statusOutput.toString().trim() !== "";
 
     if (hasChanges) {
-      const sanitizedMessage = sanitizeCommitMessage(commitMessage);
+      let commitMessage = "";
+      try {
+        commitMessage = await generateCommitMessage(issueTitle, issueBody);
+      } catch (error) {
+        console.error("Error generating commit message:", error);
+        commitMessage = "Automatic commit";
+      }
       await executeWithLogRequiringSuccess({
         ...baseEventData,
         directory: rootPath,
-        command: `git commit -m "${sanitizedMessage}"`,
+        command: `git commit -m "${commitMessage}"`,
       });
       console.log("Changes committed successfully");
     } else {

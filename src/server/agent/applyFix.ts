@@ -38,11 +38,11 @@ export async function applyAndEvaluateFix(
     await applyCodePatchViaLLM(rootPath, filePath, fix);
 
     // Commit and push changes
-    const commitMessage = `Apply fix for ${filePath}`;
+    const message = `Apply fix for ${filePath}`;
     await addCommitAndPush({
       rootPath,
       branchName: branch,
-      commitMessage,
+      issueTitle: message,
       token,
       ...baseEventData,
     });

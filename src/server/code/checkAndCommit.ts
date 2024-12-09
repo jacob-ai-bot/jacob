@@ -86,7 +86,7 @@ export async function checkAndCommit({
       ...baseEventData,
       rootPath,
       branchName: branch,
-      commitMessage,
+      issueTitle: commitMessage,
       token,
     });
   }

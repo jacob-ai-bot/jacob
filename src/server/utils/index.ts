@@ -9,6 +9,7 @@ import { type RepoSettings, Style } from "./settings";
 import { emitCommandEvent } from "./events";
 import { sendGptRequestWithSchema } from "../openai/request";
 import { z } from "zod";
+import { newRedisConnection } from "./redis"; // Import the newRedisConnection function
 
 export { type RepoSettings, getRepoSettings } from "./settings";
 
@@ -321,6 +322,56 @@ export async function generateJacobCommitMessage(
 
   if (!commitMessage) {
     commitMessage = `JACoB fix error: ${errorMessage}`;
+  }
+
+  return commitMessage;
+}
+
+export async function generateCommitMessage(
+  issueTitle?: string,
+  issueBody?: string,
+  changedFiles?: string[],
+) {
+  let commitMessage = "";
+
+  try {
+    const filesSummary = changedFiles
+      ? ` Changes involve: ${changedFiles.join(", ")}.`
+      : "";
+    const prompt = `Generate a concise git commit message based on the following issue title: "${issueTitle}"${issueBody ? ` and description: "${issueBody}"` : ""}.${filesSummary} The commit message should be in imperative mood and concise, ideally one line. Keep it under 72 characters.`;
+
+    const systemPrompt = dedent`
+      You are an assistant that generates git commit messages.
+      You must respond with a JSON object containing a single "commitMessage" field.
+      Your response must match the following schema:
+      const CommitMessageSchema = z.object({
+          commitMessage: z.string().max(72, { message: 'Commit message must be at most 72 characters.' })
+      });
+      The commit message must:
+      - Be in the imperative mood (e.g., "Fix crash on startup")
+      - Accurately summarize the changes made
+      - Be concise (ideally one line, max 72 characters)
+    `;
+
+    const response = await sendGptRequestWithSchema(
+      prompt,
+      systemPrompt,
+      CommitMessageSchema,
+      0.3,
+      undefined,
+      3,
+      "gpt-4o-mini-2024-07-18",
+    );
+
+    if (response?.commitMessage) {
+      commitMessage = response.commitMessage;
+    }
+  } catch (error) {
+    console.error("Error generating commit message with LLM:", error);
+  }
+
+  if (!commitMessage) {
+    commitMessage = "Automatic commit";
   }
 
   return commitMessage;
