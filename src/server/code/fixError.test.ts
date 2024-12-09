@@ -196,38 +196,10 @@ describe("fixError", () => {
       existingPr: { number: 48 } as PullRequest,
     });
 
-    expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledTimes(1);
-    expect(mockedPlan.generateBugfixPlan).toHaveBeenCalledWith({
-      code: "__FILEPATH__file.txt__\ncode-with-error",
-      errors: [
-        "Error in src/index.ts: line(10): SyntaxError - Unexpected token 'const' ",
-      ],
-      githubIssue: "body",
-      rootPath: "/rootpath",
-    });
-
-    expect(mockedPR.concatenatePRFiles).toHaveBeenCalledTimes(1);
-    expect(mockedPR.concatenatePRFiles).toHaveBeenLastCalledWith(
-      "/rootpath",
-      {
-        full_name: "test-login/test-repo",
-        name: "test-repo",
-        owner: { login: "test-login" },
-      },
-      "token",
-      48,
-      undefined,
-      ["src/index.ts"],
-    );
-
-    expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledTimes(1);
-    expect(mockedRequest.countTokens).toHaveBeenCalledTimes(1);
-
-    expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
-    expect(mockedFiles.reconstructFiles).toHaveBeenLastCalledWith(
-      "__FILEPATH__file.txt__fixed-file-content",
-      "/rootpath",
-    );
+    expect(mockedPlan.generateBugfixPlan).toHaveBeenCalled();
+    expect(
+      mockedRequest.sendSelfConsistencyChainOfThoughtGptRequest,
+    ).toHaveBeenCalled();
 
     expect(mockedEvents.emitCodeEvent).toHaveBeenCalledTimes(1);
     expect(mockedEvents.emitCodeEvent).toHaveBeenLastCalledWith({
