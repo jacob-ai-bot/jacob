@@ -23,12 +23,13 @@ import {
   countTokens,
   MAX_OUTPUT,
   type Model,
-  sendGptRequest,
+  sendSelfConsistencyChainOfThoughtGptRequest,
 } from "../openai/request";
 import { generateBugfixPlan } from "../utils/plan";
 import { type PlanStep } from "../agent/plan";
 import {
   assessAndInstallNpmPackages,
+  applyPatchesToFiles,
   getBuildErrors,
   type ProjectContext,
 } from "../agent/bugfix";
@@ -101,7 +102,7 @@ async function processStepIndividually(
     codeTemplateParams,
   );
 
-  return sendGptRequest(
+  return sendSelfConsistencyChainOfThoughtGptRequest(
     codeUserPrompt,
     codeSystemPrompt,
     0.2,
@@ -328,7 +329,7 @@ export async function fixError(params: FixErrorParams) {
           codeTemplateParams,
         );
 
-        updatedCode = (await sendGptRequest(
+        updatedCode = (await sendSelfConsistencyChainOfThoughtGptRequest(
           codeUserPrompt,
           codeSystemPrompt,
           0.2,
@@ -346,9 +347,12 @@ export async function fixError(params: FixErrorParams) {
         throw new Error("No code generated");
       }
 
-      const files = reconstructFiles(updatedCode, rootPath);
-      await Promise.all(
-        files.map((file) => emitCodeEvent({ ...baseEventData, ...file })),
+      const patches =
+        updatedCode.match(/<code_patch>[\s\S]*?<\/code_patch>/g) ?? [];
+      await applyPatchesToFiles(
+        rootPath,
+        patches,
+        errorInfoArray.map((e) => e.filePath),
       );
 
       await checkAndCommit({
