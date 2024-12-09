@@ -40,6 +40,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   const [viewMode, setViewMode] = useState<"folder" | "taxonomy" | "research">(
     "folder",
   );
+  const [scalingMode, setScalingMode] = useState<"size" | "importance">("size");
 
   const { data: researchItems, isLoading: isLoadingResearch } =
     api.todos.getProjectResearch.useQuery(
@@ -188,6 +189,29 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                   </button>
                 </React.Fragment>
               ))}
+
+              <div className="ml-4 flex space-x-2">
+                <button
+                  className={`rounded px-3 py-1 text-sm ${
+                    scalingMode === "size"
+                      ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                      : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                  }`}
+                  onClick={() => setScalingMode("size")}
+                >
+                  Scale by Size
+                </button>
+                <button
+                  className={`rounded px-3 py-1 text-sm ${
+                    scalingMode === "importance"
+                      ? "bg-aurora-500/50 text-gray-800 dark:bg-blueGray-600/40 dark:text-white"
+                      : "text-gray-600 hover:bg-aurora-100/80 dark:text-blueGray-400 dark:hover:bg-blueGray-600/10"
+                  }`}
+                  onClick={() => setScalingMode("importance")}
+                >
+                  Scale by Importance
+                </button>
+              </div>
             </div>
 
             <div className="relative mr-6 flex items-center justify-end">
@@ -299,6 +323,7 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
                 selectedFolder={"/" + currentPath?.join("/")}
                 viewMode={viewMode}
                 theme={theme}
+                scalingMode={scalingMode}
               />
             )}
           </motion.div>
@@ -335,9 +360,22 @@ export const CodebaseVisualizer: React.FC<CodebaseVisualizerProps> = ({
   );
 };
 
-function getCircleSize(text: string) {
-  return Math.floor(text.length / 50);
-}
+// Get circle size based on scaling mode
+const getCircleSize = (
+  text: string,
+  importance: number,
+  scalingMode: "size" | "importance",
+): number => {
+  return scalingMode === "size" ? Math.floor(text.length / 50) : importance;
+};
+
+// Calculate importance based on file type, dependencies, and git metrics
+const calculateImportance = (item: ContextItem): number => {
+  const fileTypeImportance = item.file?.endsWith("index.tsx") ? 10 : 1;
+  const dependencyImportance = item.imports?.length ?? 0;
+  const gitImportance = item.commits?.length ?? 0;
+  return fileTypeImportance + dependencyImportance + gitImportance;
+};
 
 function processContextItems(
   contextItems: ContextItem[],
@@ -382,7 +420,17 @@ function processContextItems(
                   .concat(parts.slice(0, index + 1))
                   .join("/")
               : parts.slice(0, index + 1).join("/"),
-          size: getCircleSize(item.text ?? ""),
+          size: getCircleSize(
+            item.text ?? "",
+            calculateImportance(item),
+            scalingMode,
+          ),
+          value: getCircleSize(
+            item.text ?? "",
+            calculateImportance(item),
+            scalingMode,
+          ),
+          importance: calculateImportance(item),
           file: item.file,
           taxonomy: taxonomy,
           children: [],
@@ -392,7 +440,17 @@ function processContextItems(
         }
       }
       if (index === parts.length - 1) {
-        child.size = getCircleSize(item.text ?? "");
+        child.size = getCircleSize(
+          item.text ?? "",
+          calculateImportance(item),
+          scalingMode,
+        );
+        child.value = getCircleSize(
+          item.text ?? "",
+          calculateImportance(item),
+          scalingMode,
+        );
+        child.importance = calculateImportance(item);
         if (!item.file?.includes(".")) {
           delete child.children;
         }

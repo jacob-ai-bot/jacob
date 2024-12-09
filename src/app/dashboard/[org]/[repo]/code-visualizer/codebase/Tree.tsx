@@ -43,15 +43,17 @@ type Props = {
   selectedFolder?: string | null;
   viewMode: "folder" | "taxonomy";
   theme: "light" | "dark";
+  scalingMode?: "size" | "importance";
 };
 type ExtendedFileType = {
+  importance: number;
   extension?: string;
   pathWithoutExtension?: string;
   label?: string;
   color?: string;
   value?: number;
   sortOrder?: number;
-  fileColors?: Record<string, string>;
+  scalingMode?: "size" | "importance";
 } & FileType;
 type ProcessedDataItem = {
   data: ExtendedFileType;
@@ -71,6 +73,7 @@ export const Tree = ({
   data,
   filesChanged = [],
   maxDepth = 12,
+  scalingMode = "size",
   colorEncoding = "type",
   customFileColors,
   onNodeClick,
@@ -233,7 +236,7 @@ export const Tree = ({
     });
 
     return children.slice(0, maxChildren);
-  }, [data, fileColors, viewMode]);
+  }, [data, fileColors, viewMode, scalingMode]);
 
   const selectedNode =
     selectedNodeId && packedData.find((d) => d.data.path === selectedNodeId);
