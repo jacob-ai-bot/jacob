@@ -89,6 +89,16 @@ const mockedRequest = vi.hoisted(() => ({
   sendGptRequestWithSchema: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(""))),
+  sendSelfConsistencyChainOfThoughtGptRequest: vi
+    .fn()
+    .mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          resolve(
+            "<code_patch>--- file.txt\n+++ file.txt\n@@ -1 +1 @@\n- code-with-error\n+ fixed-code</code_patch>",
+          ),
+        ),
+    ),
   countTokens: vi
     .fn()
     .mockImplementation(() => new Promise((resolve) => resolve(100))),
@@ -221,30 +231,33 @@ describe("fixError", () => {
     );
 
     expect(mockedRequest.sendGptRequestWithSchema).toHaveBeenCalledTimes(1);
+    expect(
+      mockedRequest.sendSelfConsistencyChainOfThoughtGptRequest,
+    ).toHaveBeenCalledTimes(1);
     expect(mockedRequest.countTokens).toHaveBeenCalledTimes(1);
 
-    expect(mockedFiles.reconstructFiles).toHaveBeenCalledTimes(1);
-    expect(mockedFiles.reconstructFiles).toHaveBeenLastCalledWith(
-      "__FILEPATH__file.txt__fixed-file-content",
-      "/rootpath",
-    );
+    expect(mockedFiles.reconstructFiles).not.toHaveBeenCalled();
+  });
 
-    expect(mockedEvents.emitCodeEvent).toHaveBeenCalledTimes(1);
-    expect(mockedEvents.emitCodeEvent).toHaveBeenLastCalledWith({
-      ...mockEventData,
-      codeBlock: "fixed-file-content",
-      fileName: "file.txt",
-      filePath: "/rootpath",
+  test("should handle patch-based code updates", async () => {
+    const result = await fixError({
+      repository: mockRepo,
+      token: "token",
+      rootPath: "/rootpath",
+      branch: "main",
+      model: "model",
+      issue: { body: "body" },
+      errorInfoArray: [{ filePath: "file.txt", error: "error" }],
     });
 
-    expect(mockedCheckAndCommit.checkAndCommit).toHaveBeenCalledTimes(1);
-    const checkAndCommitCalls = mockedCheckAndCommit.checkAndCommit.mock.calls;
-    const checkAndCommitOptions =
-      checkAndCommitCalls[0]![0] as CheckAndCommitOptions;
-    expect(checkAndCommitOptions.commitMessage).toBe(
-      "JACoB fix error: src/index.ts: SyntaxError - line (10): Unexpected token 'const'",
+    expect(result).toBeDefined();
+    expect(mockedBugfix.applyPatchesToFiles).toHaveBeenCalledWith(
+      "/rootpath",
+      [
+        "<code_patch>--- file.txt\n+++ file.txt\n@@ -1 +1 @@\n- code-with-error\n+ fixed-code</code_patch>",
+      ],
+      ["file.txt"],
     );
-    expect(checkAndCommitOptions.buildErrorAttemptNumber).toBe(1);
   });
 
   test("fixError handles lengthy plans", async () => {
