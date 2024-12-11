@@ -94,59 +94,44 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         const [githubOrg, githubRepo] = repository.full_name.split("/");
 
         try {
-          const collaboratorLogins = await getRepositoryLogins(
-            githubOrg ?? "",
-            githubRepo ?? "",
-            installationAuthentication?.token ?? "",
-          );
+          const user = await db.users.findByOptional({
+            login: payload.issue.user.login,
+          });
+          if (user?.email && todo) {
+            const planSteps = await db.planSteps
+              .where({
+                projectId: project.id,
+                issueNumber: payload.issue.number,
+                isActive: true,
+              })
+              .all()
+              .order("createdAt");
 
-          const jacobUsers = await db.users
-            .whereIn("login", collaboratorLogins)
-            .select("id", "email");
+            const researchDetails = await db.research
+              .where({
+                todoId: todo?.id ?? 0,
+                issueId: payload.issue.number,
+              })
+              .all();
 
-          const planSteps = await db.planSteps
-            .where({
-              projectId: project.id,
-              issueNumber: payload.issue.number,
-              isActive: true,
-            })
-            .all()
-            .order("createdAt");
-
-          const researchDetails = await db.research
-            .where({
-              todoId: todo?.id ?? 0,
-              issueId: payload.issue.number,
-            })
-            .all();
-
-          for (const user of jacobUsers) {
-            if (user.email && todo) {
-              try {
-                console.log(
-                  `[${repository.full_name}] Sending transactional email to ${user.email} for issue #${payload.issue.number}`,
-                );
-                await sendTransactionalEmail(
-                  user.email,
-                  todo,
-                  githubOrg ?? "",
-                  githubRepo ?? "",
-                  planSteps,
-                  researchDetails,
-                );
-                console.log(
-                  `[${repository.full_name}] Sent transactional email to ${user.email} for issue #${payload.issue.number}`,
-                );
-              } catch (error) {
-                console.error(
-                  `[${repository.full_name}] Error sending transactional email to ${user.email} for issue #${payload.issue.number}: ${String(error)}`,
-                );
-              }
-            }
+            console.log(
+              `[${repository.full_name}] Sending transactional email to ${user.email} for issue #${payload.issue.number}`,
+            );
+            await sendTransactionalEmail(
+              user.email,
+              todo,
+              githubOrg ?? "",
+              githubRepo ?? "",
+              planSteps,
+              researchDetails,
+            );
+            console.log(
+              `[${repository.full_name}] Sent transactional email to ${user.email} for issue #${payload.issue.number}`,
+            );
           }
         } catch (error) {
           console.error(
-            `[${repository.full_name}] Error fetching collaborators or sending emails for issue #${payload.issue.number}: ${String(error)}`,
+            `[${repository.full_name}] Error fetching user or sending email for issue #${payload.issue.number}: ${String(error)}`,
           );
         }
       }
@@ -236,7 +221,7 @@ ghApp.webhooks.on("issue_comment.created", async (event) => {
 
 ghApp.webhooks.on("pull_request.opened", async (event) => {
   const { payload } = event;
-  const { pull_request, repository } = payload;
+  const { pull_request, repository, installation } = payload;
   console.log(
     `[${repository.full_name}] Received PR #${pull_request.number} opened event`,
   );
@@ -249,6 +234,72 @@ ghApp.webhooks.on("pull_request.opened", async (event) => {
   } else {
     console.log(
       `[${repository.full_name}] Pull request body has no ${AT_MENTION} mention (Issue #${pull_request.number})`,
+    );
+  }
+
+  try {
+    const user = await db.users.findByOptional({
+      login: pull_request.user.login,
+    });
+    if (user?.email) {
+      const project = await db.projects.findBy({
+        repoFullName: repository.full_name,
+      });
+
+      const existingTodo = await db.todos.findByOptional({
+        projectId: project.id,
+        issueId: pull_request.number,
+      });
+
+      if (!existingTodo) {
+        const installationAuthentication = await authInstallation(
+          installation?.id,
+        );
+        const todo = await getOrCreateTodo({
+          repo: repository.full_name,
+          projectId: project.id,
+          agentEnabled: project.agentEnabled,
+          issueNumber: pull_request.number,
+          accessToken: installationAuthentication?.token,
+        });
+
+        const [githubOrg, githubRepo] = repository.full_name.split("/");
+
+        const planSteps = await db.planSteps
+          .where({
+            projectId: project.id,
+            issueNumber: pull_request.number,
+            isActive: true,
+          })
+          .all()
+          .order("createdAt");
+
+        const researchDetails = await db.research
+          .where({
+            todoId: todo?.id ?? 0,
+            issueId: pull_request.number,
+          })
+          .all();
+
+        console.log(
+          `[${repository.full_name}] Sending transactional email to ${user.email} for pull request #${pull_request.number}`,
+        );
+        await sendTransactionalEmail(
+          user.email,
+          todo,
+          githubOrg ?? "",
+          githubRepo ?? "",
+          planSteps,
+          researchDetails,
+        );
+        console.log(
+          `[${repository.full_name}] Sent transactional email to ${user.email} for pull request #${pull_request.number}`,
+        );
+      }
+    }
+  } catch (error) {
+    console.error(
+      `[${repository.full_name}] Error fetching user or sending email for pull request #${pull_request.number}: ${String(error)}`,
     );
   }
 });
