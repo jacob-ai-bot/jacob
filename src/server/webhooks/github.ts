@@ -94,6 +94,8 @@ ghApp.webhooks.on("issues.opened", async (event) => {
         const [githubOrg, githubRepo] = repository.full_name.split("/");
 
         try {
+          // Commenting out the following code to disable email notifications to teammates
+          /*
           const collaboratorLogins = await getRepositoryLogins(
             githubOrg ?? "",
             githubRepo ?? "",
@@ -142,6 +144,48 @@ ghApp.webhooks.on("issues.opened", async (event) => {
                   `[${repository.full_name}] Error sending transactional email to ${user.email} for issue #${payload.issue.number}: ${String(error)}`,
                 );
               }
+            }
+          }
+          */
+
+          // New code to send email only to the issue creator
+          const issueCreator = await db.users.findByOptional({
+            login: payload.issue.user.login,
+          });
+
+          if (issueCreator?.email && todo) {
+            try {
+              console.log(
+                `[${repository.full_name}] Sending transactional email to ${issueCreator.email} for issue #${payload.issue.number}`,
+              );
+              await sendTransactionalEmail(
+                issueCreator.email,
+                todo,
+                githubOrg ?? "",
+                githubRepo ?? "",
+                // Assuming planSteps and researchDetails are still needed
+                await db.planSteps
+                  .where({
+                    projectId: project.id,
+                    issueNumber: payload.issue.number,
+                    isActive: true,
+                  })
+                  .all()
+                  .order("createdAt"),
+                await db.research
+                  .where({
+                    todoId: todo?.id ?? 0,
+                    issueId: payload.issue.number,
+                  })
+                  .all(),
+              );
+              console.log(
+                `[${repository.full_name}] Sent transactional email to ${issueCreator.email} for issue #${payload.issue.number}`,
+              );
+            } catch (error) {
+              console.error(
+                `[${repository.full_name}] Error sending transactional email to ${issueCreator.email} for issue #${payload.issue.number}: ${String(error)}`,
+              );
             }
           }
         } catch (error) {
