@@ -19,6 +19,8 @@ interface HeaderProps {
   isLoadingBranches: boolean;
   repos: Repo[] | undefined;
   isLoadingRepos: boolean;
+  selectedBranch: string;
+  setSelectedBranch: (branch: string) => void;
 }
 
 export default function Header({
@@ -28,11 +30,12 @@ export default function Header({
   isLoadingBranches,
   repos = [],
   isLoadingRepos,
+  selectedBranch,
+  setSelectedBranch,
 }: HeaderProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState<string>("main");
   const [isCreateBranchModalOpen, setIsCreateBranchModalOpen] = useState(false);
   const [branches, setBranches] = useState<string[]>([]);
 
@@ -48,7 +51,6 @@ export default function Header({
 
   useEffect(() => {
     if (_branches && _branches.length > 0) {
-      setSelectedBranch(_branches[0] ?? "main");
       setBranches(_branches);
     }
   }, [_branches]);
@@ -63,6 +65,8 @@ export default function Header({
   const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newBranch = e.target.value;
     setSelectedBranch(newBranch);
+    localStorage.setItem(`selectedBranch-${org}-${repoName}`, newBranch);
+    router.push(`/dashboard/${org}/${repoName}`);
   };
 
   const handleRefresh = () => {
@@ -83,6 +87,7 @@ export default function Header({
     setIsCreateBranchModalOpen(false);
     toast.success(`Branch "${newBranch}" created successfully`);
     setSelectedBranch(newBranch);
+    localStorage.setItem(`selectedBranch-${org}-${repoName}`, newBranch);
   };
 
   return (

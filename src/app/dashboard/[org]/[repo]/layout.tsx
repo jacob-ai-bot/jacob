@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -15,6 +15,8 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { org, repo } = params;
+  const [selectedBranch, setSelectedBranch] = useState<string>("main");
+
   // This is used to redirect the user to the sign-in page if the session expires
   useEffect(() => {
     const getExpiresIn = async () => {
@@ -55,6 +57,19 @@ export default function DashboardLayout({
   const { data: repos, isLoading: isLoadingRepos } =
     api.github.getRepos.useQuery();
 
+  useEffect(() => {
+    const savedBranch = localStorage.getItem(`selectedBranch-${org}-${repo}`);
+    if (savedBranch) {
+      setSelectedBranch(savedBranch);
+    } else if (branches && branches.length > 0) {
+      setSelectedBranch(branches[0] ?? "main");
+      localStorage.setItem(
+        `selectedBranch-${org}-${repo}`,
+        branches[0] ?? "main",
+      );
+    }
+  }, [org, repo, branches]);
+
   return (
     <div className="flex h-screen w-full border-r border-r-aurora-300 bg-gradient-to-br from-aurora-50 to-blossom-50 text-dark-blue dark:border-r-dark-blue dark:from-slate-900 dark:to-slate-800 dark:text-slate-100">
       <Sidebar org={org} repo={repo} />
@@ -66,6 +81,8 @@ export default function DashboardLayout({
           isLoadingBranches={isLoadingBranches}
           repos={repos}
           isLoadingRepos={isLoadingRepos}
+          selectedBranch={selectedBranch}
+          setSelectedBranch={setSelectedBranch}
         />
         <main className="hide-scrollbar flex-1 overflow-auto bg-gradient-to-br from-aurora-50 to-blossom-50 p-1 pl-1 dark:from-slate-900 dark:to-slate-800 md:p-6 md:pl-[96px]">
           {children}

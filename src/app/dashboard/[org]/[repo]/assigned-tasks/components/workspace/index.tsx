@@ -22,6 +22,7 @@ type WorkspaceProps = {
   setSelectedTask: (task: Task | undefined) => void;
   org: string;
   repo: string;
+  branch: string;
   events: Event[];
   currentEventIndex: number;
 };
@@ -32,6 +33,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   setSelectedIcon,
   org,
   repo,
+  branch,
   events,
   currentEventIndex,
 }) => {
@@ -97,6 +99,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
             codeFiles={selectedTask?.codeFiles}
             org={org}
             repo={repo}
+            branch={branch}
           />
         );
       case SidebarIcon.Terminal:
@@ -115,6 +118,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
             codeFiles={selectedTask?.codeFiles}
             org={org}
             repo={repo}
+            branch={branch}
           />
         );
     }
