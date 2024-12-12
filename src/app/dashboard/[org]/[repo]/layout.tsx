@@ -62,8 +62,11 @@ export default function DashboardLayout({
     if (savedBranch) {
       setSelectedBranch(savedBranch);
     } else if (branches && branches.length > 0) {
-      setSelectedBranch(branches[0]);
-      localStorage.setItem(`selectedBranch-${org}-${repo}`, branches[0]);
+      setSelectedBranch(branches[0] ?? "main");
+      localStorage.setItem(
+        `selectedBranch-${org}-${repo}`,
+        branches[0] ?? "main",
+      );
     }
   }, [org, repo, branches]);
 

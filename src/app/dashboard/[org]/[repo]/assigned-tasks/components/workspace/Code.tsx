@@ -13,14 +13,14 @@ type CodeComponentProps = {
   codeFiles?: Code[];
   org: string;
   repo: string;
-  branch?: string;
+  branch: string;
 };
 
 export const CodeComponent: React.FC<CodeComponentProps> = ({
   codeFiles,
   org,
   repo,
-  branch = "main",
+  branch,
 }) => {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [activeModeTab, setActiveModeTab] = useState<"view" | "diff">("view");

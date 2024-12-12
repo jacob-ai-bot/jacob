@@ -66,6 +66,7 @@ export default function Header({
     const newBranch = e.target.value;
     setSelectedBranch(newBranch);
     localStorage.setItem(`selectedBranch-${org}-${repoName}`, newBranch);
+    router.push(`/dashboard/${org}/${repoName}`);
   };
 
   const handleRefresh = () => {

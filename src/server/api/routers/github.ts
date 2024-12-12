@@ -30,7 +30,9 @@ export async function fetchGithubFileContents(
     const fileContents = await Promise.all(
       filePaths.map(async (path) => {
         try {
-          console.log(`fetching file from GitHub: ${path}`);
+          console.log(
+            `fetching file from GitHub: ${path} with branch: ${branch}`,
+          );
           const response = await octokit.repos.getContent({
             owner: org,
             repo,

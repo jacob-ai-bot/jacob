@@ -34,6 +34,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
   const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState<boolean>(true);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [branch, setBranch] = useState<string>("main");
 
   const searchParams = useSearchParams();
   const issueId = searchParams.get("issueId");
@@ -54,6 +55,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
       { org, repo, issueId: selectedTask?.issueId ?? 0 },
       { enabled: !!selectedTask },
     );
+
+  useEffect(() => {
+    const savedBranch = localStorage.getItem(`selectedBranch-${org}-${repo}`);
+    setBranch(savedBranch ?? "main");
+  }, [org, repo]);
 
   useEffect(() => {
     if (taskEvents) {
@@ -241,6 +247,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ org, repo }) => {
           setSelectedTask={setSelectedTask}
           org={org}
           repo={repo}
+          branch={branch}
           events={events}
           currentEventIndex={currentEventIndex}
         />
