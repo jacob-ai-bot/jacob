@@ -19,6 +19,8 @@ interface HeaderProps {
   isLoadingBranches: boolean;
   repos: Repo[] | undefined;
   isLoadingRepos: boolean;
+  selectedBranch: string;
+  setSelectedBranch: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export default function Header({
@@ -28,11 +30,11 @@ export default function Header({
   isLoadingBranches,
   repos = [],
   isLoadingRepos,
+  selectedBranch,
 }: HeaderProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState<string>("main");
   const [isCreateBranchModalOpen, setIsCreateBranchModalOpen] = useState(false);
   const [branches, setBranches] = useState<string[]>([]);
 
@@ -48,10 +50,24 @@ export default function Header({
 
   useEffect(() => {
     if (_branches && _branches.length > 0) {
-      setSelectedBranch(_branches[0] ?? "main");
       setBranches(_branches);
     }
   }, [_branches]);
+
+  useEffect(() => {
+    const storedBranch = localStorage.getItem(
+      `selectedBranch_${org}_${repoName}`,
+    );
+    if (storedBranch && storedBranch !== selectedBranch) {
+      setSelectedBranch(storedBranch);
+    } else if (_branches && _branches.length > 0) {
+      setSelectedBranch(_branches[0] ?? "main");
+    }
+  }, [org, repoName, _branches]);
+
+  useEffect(() => {
+    localStorage.setItem(`selectedBranch_${org}_${repoName}`, selectedBranch);
+  }, [selectedBranch, org, repoName]);
 
   const handleRepoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedRepo = e.target.value;
