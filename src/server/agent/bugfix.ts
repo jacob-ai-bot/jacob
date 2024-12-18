@@ -12,7 +12,8 @@ import { z } from "zod";
 import { type PullRequest } from "~/server/code/agentFixError";
 import { getFiles, standardizePath } from "../utils/files";
 import { applyAndEvaluateFix } from "./applyFix";
-import { type ErrorInfo, parseBuildErrors } from "./llmParseErrors";
+import { type ErrorInfo, parseBuildErrors } from "./types";
+import { applyCodePatchesViaLLM } from "./patch";
 
 /**
  * This module implements a bug fixing system using a hybrid approach
@@ -383,4 +384,21 @@ export async function generatePotentialFixes(
   const patches = response.match(/<code_patch>[\s\S]*?<\/code_patch>/g) ?? [];
   console.log("patches: ", patches);
   return patches.map((patch) => patch.replace(/<\/?code_patch>/g, "").trim());
+}
+
+export async function applyPatchesToFiles(
+  rootPath: string,
+  patches: string[],
+  filesToUpdate: string[],
+) {
+  const combinedPatch = patches
+    .map((p) => p.replace(/<\/?code_patch>/g, "").trim())
+    .join("\n\n");
+
+  await applyCodePatchesViaLLM({
+    rootPath,
+    filesToUpdate,
+    filesToCreate: [],
+    patch: combinedPatch,
+  });
 }
