@@ -289,7 +289,7 @@ Please update the \`${fileName}\` file to address the following:
             )}
             <button
               onClick={handleNewIssue}
-              className="flex w-full items-center justify-center rounded-full bg-sunset-400 px-4 py-2 text-white transition-colors hover:bg-sunset-500 dark:bg-sunset-600 dark:hover:bg-sunset-500 sm:w-auto"
+              className="flex w-full items-center justify-center rounded-full bg-blossom-500 px-4 py-2 text-white transition-colors hover:bg-blossom-600 dark:bg-blossom-600/30 dark:hover:bg-blossom-500/30 sm:w-auto"
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />
               {isEditing ? "Clear Issue" : "New Issue"}
