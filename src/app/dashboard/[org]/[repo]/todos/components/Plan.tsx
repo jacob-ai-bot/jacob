@@ -360,9 +360,16 @@ const PlanStepComponent: React.FC<PlanStepProps> = ({
 interface PlanProps {
   projectId: number;
   issueNumber: number;
+  planSteps?: PlanStep[];
+  allFiles?: string[];
 }
 
-const Plan: React.FC<PlanProps> = ({ projectId, issueNumber }) => {
+const Plan: React.FC<PlanProps> = ({
+  projectId,
+  issueNumber,
+  planSteps: propsPlanSteps,
+  allFiles: propsAllFiles,
+}) => {
   const [feedback, setFeedback] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingStep, setIsAddingStep] = useState(false);
@@ -379,59 +386,38 @@ const Plan: React.FC<PlanProps> = ({ projectId, issueNumber }) => {
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const {
-    data: planSteps,
+    data: planStepsData,
     isLoading,
     refetch,
-  } = api.planSteps.getByProjectAndIssue.useQuery({
-    projectId,
-    issueNumber,
-  });
+  } = api.planSteps.getByProjectAndIssue.useQuery(
+    {
+      projectId,
+      issueNumber,
+    },
+    {
+      enabled: !propsPlanSteps,
+    },
+  );
 
-  const { data: allFiles } = api.codebaseContext.getAllFiles.useQuery({
-    projectId,
-  });
+  const planSteps = propsPlanSteps ?? planStepsData;
+
+  const { data: allFilesData } = api.codebaseContext.getAllFiles.useQuery(
+    {
+      projectId,
+    },
+    {
+      enabled: !propsAllFiles,
+    },
+  );
+
+  const allFiles = propsAllFiles ?? allFilesData;
 
   const { mutateAsync: createPlanStep } = api.planSteps.create.useMutation();
   const { mutateAsync: redoPlan } = api.planSteps.redoPlan.useMutation();
 
-  const handleRedoPlan = async () => {
-    try {
-      setIsRegenerating(true);
-      await redoPlan({ projectId, issueNumber, feedback });
-      setFeedback("");
-      await refetch();
-      toast.success("Plan has been regenerated successfully!");
-    } catch (error) {
-      console.error("Error regenerating plan:", error);
-      toast.error("Failed to regenerate the plan.");
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
+  const isLoadingPlanSteps = isLoading && !propsPlanSteps;
 
-  const handleAddStep = async () => {
-    try {
-      await createPlanStep(newStep as PlanStep);
-      setIsAddingStep(false);
-      setNewStep({
-        projectId,
-        issueNumber,
-        type: PlanningAgentActionType.EditExistingCode,
-        title: "",
-        filePath: "",
-        instructions: "",
-        exitCriteria: "",
-        dependencies: "",
-      });
-      await refetch();
-      toast.success("New plan step added successfully!");
-    } catch (error) {
-      console.error("Error adding new plan step:", error);
-      toast.error("Failed to add new plan step.");
-    }
-  };
-
-  if (isLoading) {
+  if (isLoadingPlanSteps) {
     return <div>Loading plan...</div>;
   }
 
