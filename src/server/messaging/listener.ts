@@ -5,6 +5,7 @@ import { purgeEvents } from "~/server/utils/events";
 import { purgeTokens } from "~/server/utils/tokens";
 import { fetchAllNewJiraIssues } from "~/server/utils/jira";
 import { fetchAllNewLinearIssues } from "~/server/utils/linear";
+import { fetchAllNewZendeskTickets } from "~/server/utils/zendesk";
 
 void initRabbitMQ({ listener: true });
 
@@ -37,6 +38,16 @@ CronJob.from({
   onTick: async () => {
     console.log("Cron job: Fetching new Linear issues");
     await fetchAllNewLinearIssues();
+  },
+  start: true,
+});
+
+// Fetch new Zendesk tickets every hour at minute 10
+CronJob.from({
+  cronTime: "10 * * * *",
+  onTick: async () => {
+    console.log("Cron job: Fetching new Zendesk tickets");
+    await fetchAllNewZendeskTickets();
   },
   start: true,
 });
