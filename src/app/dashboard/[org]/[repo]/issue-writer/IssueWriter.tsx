@@ -20,6 +20,7 @@ import SpeechToTextArea, {
 import { useSearchParams } from "next/navigation";
 import { EvaluationMode } from "~/types";
 import Link from "next/link";
+import { Button } from "~/app/_components/ui/button";
 
 interface IssueWriterProps {
   org: string;
@@ -287,13 +288,14 @@ Please update the \`${fileName}\` file to address the following:
                 View Issue
               </Link>
             )}
-            <button
+            <Button
               onClick={handleNewIssue}
-              className="flex w-full items-center justify-center rounded-full bg-sunset-400 px-4 py-2 text-white transition-colors hover:bg-sunset-500 dark:bg-sunset-600 dark:hover:bg-sunset-500 sm:w-auto"
+              variant="pink"
+              className="flex w-full items-center justify-center rounded-full sm:w-auto"
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />
               {isEditing ? "Clear Issue" : "New Issue"}
-            </button>
+            </Button>
           </div>
         </div>
         {isEditing ? (
@@ -359,18 +361,15 @@ Please update the \`${fileName}\` file to address the following:
                 </span>
               </div>
               <div className="flex w-full justify-end space-x-2 sm:w-auto">
-                <button
+                <Button
                   onClick={handleEvaluateIssue}
                   disabled={isEvaluating}
-                  className={`flex w-full items-center justify-center rounded-md px-4 py-2 text-white transition-colors sm:w-auto ${
-                    isEvaluating
-                      ? "cursor-not-allowed bg-gray-400"
-                      : "bg-yellow-400 hover:bg-yellow-500 dark:bg-yellow-600 dark:hover:bg-yellow-500"
-                  }`}
+                  variant="pink"
+                  className="flex w-full items-center justify-center rounded-md px-4 py-2 sm:w-auto"
                 >
                   <FontAwesomeIcon icon={faEye} className="mr-2" />
                   {isEvaluating ? "Evaluating..." : "Evaluate"}
-                </button>
+                </Button>
                 <button
                   onClick={handleCreateIssue}
                   disabled={(isCreating || !rewrittenIssue) && !hasEvaluated}
