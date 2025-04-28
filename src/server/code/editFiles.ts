@@ -274,11 +274,11 @@ export async function editFiles(params: EditFilesParams) {
     codeTemplateParams,
   );
 
-  const model: Model = "claude-3-5-sonnet-20241022";
+  const model: Model = "o3";
   const codeTokenCount = countTokens(code);
   let updatedCode: string;
 
-  if (codeTokenCount > MAX_OUTPUT[model] * 0.5) {
+  if (codeTokenCount > MAX_OUTPUT[model] * 0.8) {
     updatedCode = await generateCodeViaPatch({
       rootPath,
       filesToUpdate,

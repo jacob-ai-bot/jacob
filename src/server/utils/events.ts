@@ -192,7 +192,7 @@ interface EmitPromptEventParams extends BaseEventData {
   cost: number;
   duration: number;
   requestPrompts: {
-    promptType: "User" | "System" | "Assistant";
+    promptType: "User" | "System" | "Assistant" | "Developer";
     prompt: string;
   }[];
   responsePrompt: string;

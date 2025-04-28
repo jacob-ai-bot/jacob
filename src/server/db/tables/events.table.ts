@@ -42,6 +42,7 @@ const definePrompt = (t: JSONTypes) =>
       t.literal("User"),
       t.literal("System"),
       t.literal("Assistant"),
+      t.literal("Developer"),
     ),
     prompt: t.string(),
     timestamp: t.string(),

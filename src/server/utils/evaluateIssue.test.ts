@@ -81,7 +81,7 @@ describe("evaluateIssue", () => {
       0.4,
       undefined,
       3,
-      "claude-3-5-sonnet-20241022",
+      "o1-2024-12-17",
     );
   });
 
@@ -245,7 +245,7 @@ describe("evaluateIssue", () => {
       0.4,
       baseEventData,
       3,
-      "claude-3-5-sonnet-20241022",
+      "o1-2024-12-17",
     );
   });
 });

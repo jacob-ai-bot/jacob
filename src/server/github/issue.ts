@@ -167,8 +167,8 @@ export async function rewriteGitHubIssue(
 
     let model: Model =
       evaluationMode === EvaluationMode.FASTER
-        ? "claude-3-5-sonnet-20241022"
-        : "o1-preview-2024-09-12";
+        ? "claude-3-7-sonnet-20250219"
+        : "gpt-4.1";
     if (imageUrls.length) {
       model = "gpt-4o-2024-08-06";
     }

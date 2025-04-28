@@ -95,7 +95,7 @@ export async function parseBuildErrors(
       0.2,
       undefined,
       5,
-      "claude-3-5-sonnet-20241022",
+      "claude-3-7-sonnet-20250219",
     )) as ParsedErrors;
     const errors = parsedErrors.errors;
     // convert the error files to standardize paths

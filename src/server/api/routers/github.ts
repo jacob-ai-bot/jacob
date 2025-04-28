@@ -393,7 +393,7 @@ export const githubRouter = createTRPCRouter({
         const extractedIssue = await getExtractedIssue(
           `${codebaseContext.map((c) => `${c.filePath}: ${c.context.overview} ${c.context.diagram} `).join("\n")}`,
           issueText,
-          "o1-mini-2024-09-12",
+          "gpt-4.1",
         );
         if (!extractedIssue) {
           throw new TRPCError({

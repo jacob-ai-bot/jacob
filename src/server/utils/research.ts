@@ -40,7 +40,7 @@ Provide a clear, actionable summary that highlights the key findings and insight
       3,
       30000,
       null,
-      "claude-3-5-sonnet-20241022",
+      "claude-3-7-sonnet-20250219",
       false,
     );
 
