@@ -55,7 +55,7 @@ export const researchIssue = async function ({
   rootDir,
   projectId,
   maxLoops = 1, // don't loop for now, we'll just do one pass
-  model = "claude-3-5-sonnet-20241022",
+  model = "gpt-4.1",
 }: ResearchIssueParams): Promise<Research[]> {
   console.log("Researching issue...");
   // First get the context for the full codebase
@@ -231,7 +231,7 @@ export async function researchCodebase(
       0, // no retries, so we can quickly failover to gemini
       60000,
       null,
-      "claude-3-5-sonnet-20241022",
+      "claude-3-7-sonnet-20250219",
     );
   } catch (error) {
     result = await sendGptRequest(
@@ -242,7 +242,7 @@ export async function researchCodebase(
       2,
       60000,
       null,
-      "gemini-1.5-pro-latest",
+      "gemini-2.5-pro-preview-03-25",
     );
   }
 
@@ -303,7 +303,7 @@ export async function selectRelevantFiles(
       0.3,
       undefined,
       3,
-      "claude-3-5-sonnet-20241022",
+      "claude-3-7-sonnet-20250219",
     )) as RelevantFiles;
 
     if (!response.files) {

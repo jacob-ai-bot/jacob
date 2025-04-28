@@ -232,7 +232,7 @@ const searchCodebase = async (
     temperature,
     undefined,
     3,
-    "claude-3-5-sonnet-20241022",
+    "claude-3-7-sonnet-20250219",
   )) as unknown as SearchResult;
 
   if (!searchResult.files) {

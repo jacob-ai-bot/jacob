@@ -259,7 +259,7 @@ Below is the context and detailed steps to guide the process.
         3,
         60000,
         null,
-        "o1-preview-2024-09-12",
+        "o3",
       );
       console.log("\n\n\n\n\n****** Generated plan:", o1Plan, "\n\n\n\n\n");
     } catch (error) {
@@ -274,7 +274,7 @@ Below is the context and detailed steps to guide the process.
           3,
           60000,
           null,
-          "claude-3-5-sonnet-20241022",
+          "claude-3-7-sonnet-20250219",
         );
       } catch (error) {
         console.error("Error generating plan using claude:", error);
@@ -287,7 +287,7 @@ Below is the context and detailed steps to guide the process.
           3,
           60000,
           null,
-          "gemini-1.5-pro-latest",
+          "gemini-2.5-pro-preview-03-25",
         );
       }
     }
@@ -501,7 +501,7 @@ Step 2. **CreateNewCode**:
         3,
         60000,
         null,
-        "o1-preview-2024-09-12",
+        "o3",
       );
     } catch (error) {
       console.error("Error generating bugfix plan:", error);
@@ -514,7 +514,7 @@ Step 2. **CreateNewCode**:
           3,
           60000,
           null,
-          "claude-3-5-sonnet-20241022",
+          "claude-3-7-sonnet-20250219",
         );
       } catch (error) {
         console.error("Error generating bugfix plan using claude:", error);
@@ -526,7 +526,7 @@ Step 2. **CreateNewCode**:
           3,
           60000,
           null,
-          "gemini-1.5-pro-latest",
+          "gemini-2.5-pro-preview-03-25",
         );
       }
     }
@@ -646,7 +646,7 @@ Step 2. **CreateNewCode**:
         3,
         60000,
         null,
-        "o1-preview-2024-09-12",
+        "o3",
       );
       console.log(
         "\n\n\n\n\n****** Generated code review plan:",

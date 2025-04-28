@@ -277,7 +277,7 @@ export async function fixError(params: FixErrorParams) {
           `Error in ${filePath}: line(${lineNumber}): ${errorType} - ${errorMessage} ${codeWithError ? `\nCode: ${codeWithError}` : ""}`,
       );
 
-      const model: Model = "claude-3-5-sonnet-20241022";
+      const model: Model = "o3";
       const codeTokenCount = countTokens(code) * 1.05;
 
       const plan = await generateBugfixPlan({

@@ -152,7 +152,7 @@ Please provide your evaluation in the following JSON format:
     0.4,
     baseEventData,
     3,
-    "claude-3-5-sonnet-20241022",
+    "claude-3-7-sonnet-20250219",
   );
 
   return evaluation;
