@@ -37,7 +37,7 @@ describe("parseBuildErrors", () => {
       5, // retries
     );
     expect(mockedRequest.sendGptRequestWithSchema.mock.lastCall![6]).toBe(
-      "claude-3-5-sonnet-20241022",
+      "claude-3-7-sonnet-20250219",
     );
   });
 });
