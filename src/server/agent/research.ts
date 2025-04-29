@@ -113,7 +113,7 @@ export const researchIssue = async function ({
         model,
       )) as ResearchSchema;
 
-      for (const question of response.questions) {
+      const promises = response.questions.map(async (question) => {
         const functionResponse = await callFunction(
           question.type as ResearchAgentActionType,
           question.question,
@@ -129,9 +129,10 @@ export const researchIssue = async function ({
           answer: functionResponse,
         };
         gatheredInformation.push(research);
-        await db.research.create(research);
-      }
-      if (response.questions.length === 0) {
+        return db.research.create(research);
+      });
+      const results = await Promise.all(promises);
+      if (results.every((r) => r.question.length === 0)) {
         break;
       }
       userPrompt = dedent`
@@ -231,7 +232,7 @@ export async function researchCodebase(
       0, // no retries, so we can quickly failover to gemini
       60000,
       null,
-      "claude-3-7-sonnet-20250219",
+      "gpt-4.1",
     );
   } catch (error) {
     result = await sendGptRequest(
@@ -303,7 +304,7 @@ export async function selectRelevantFiles(
       0.3,
       undefined,
       3,
-      "claude-3-7-sonnet-20250219",
+      "gpt-4.1-mini",
     )) as RelevantFiles;
 
     if (!response.files) {
