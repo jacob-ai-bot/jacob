@@ -131,10 +131,10 @@ export const researchIssue = async function ({
         gatheredInformation.push(research);
         return db.research.create(research);
       });
-      const results = await Promise.all(promises);
-      if (results.every((r) => r.question.length === 0)) {
-        break;
-      }
+      await Promise.all(promises);
+      // if (results.every((r) => r.question.length === 0)) {
+      //   break;
+      // }
       userPrompt = dedent`
       ### Gathered Information:
       ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
@@ -222,7 +222,7 @@ export async function researchCodebase(
   );
   let result: string | null = "";
 
-  // First try to send the request to the claude model. If that fails because the codebase is too large, call gemini.
+  // First try to send the request to gpt-4.1 model. If that fails because the codebase is too large, call gemini.
   try {
     result = await sendGptRequest(
       codeResearchUserPrompt,
