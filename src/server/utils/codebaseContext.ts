@@ -111,7 +111,7 @@ export async function getOrCreateCodebaseContext(
   projectId: number,
   rootPath: string,
   filePaths: StandardizedPath[],
-  models: Model[] = ["gpt-4o-mini-2024-07-18", "gpt-4o-2024-08-06"],
+  models: Model[] = ["gpt-4.1-mini", "gpt-4.1"],
 ): Promise<ContextItem[]> {
   const contextItems: ContextItem[] = [];
   const filesToProcess: StandardizedPath[] = [];
