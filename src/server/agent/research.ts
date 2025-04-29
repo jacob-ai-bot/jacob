@@ -113,7 +113,7 @@ export const researchIssue = async function ({
         model,
       )) as ResearchSchema;
 
-      for (const question of response.questions) {
+      const promises = response.questions.map(async (question) => {
         const functionResponse = await callFunction(
           question.type as ResearchAgentActionType,
           question.question,
@@ -129,11 +129,12 @@ export const researchIssue = async function ({
           answer: functionResponse,
         };
         gatheredInformation.push(research);
-        await db.research.create(research);
-      }
-      if (response.questions.length === 0) {
-        break;
-      }
+        return db.research.create(research);
+      });
+      await Promise.all(promises);
+      // if (results.every((r) => r.question.length === 0)) {
+      //   break;
+      // }
       userPrompt = dedent`
       ### Gathered Information:
       ${gatheredInformation.map((r) => `### ${r.type} \n\n#### Question: ${r.question} \n\n${r.answer}`).join("\n")}
@@ -221,7 +222,7 @@ export async function researchCodebase(
   );
   let result: string | null = "";
 
-  // First try to send the request to the claude model. If that fails because the codebase is too large, call gemini.
+  // First try to send the request to gpt-4.1 model. If that fails because the codebase is too large, call gemini.
   try {
     result = await sendGptRequest(
       codeResearchUserPrompt,
@@ -231,7 +232,7 @@ export async function researchCodebase(
       0, // no retries, so we can quickly failover to gemini
       60000,
       null,
-      "claude-3-7-sonnet-20250219",
+      "gpt-4.1",
     );
   } catch (error) {
     result = await sendGptRequest(
@@ -303,7 +304,7 @@ export async function selectRelevantFiles(
       0.3,
       undefined,
       3,
-      "claude-3-7-sonnet-20250219",
+      "gpt-4.1-mini",
     )) as RelevantFiles;
 
     if (!response.files) {
