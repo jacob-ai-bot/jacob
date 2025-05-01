@@ -52,6 +52,7 @@ const CONTEXT_WINDOW = {
   "o1-2024-12-17": 200000,
   "gpt-4.1": 1047576,
   "gpt-4.1-mini": 1047576,
+  "o4-mini": 200000,
   o3: 200000,
 };
 
@@ -85,6 +86,7 @@ export const MAX_OUTPUT = {
   "o1-2024-12-17": 100000,
   "gpt-4.1": 32768,
   "gpt-4.1-mini": 32768,
+  "o4-mini": 100000,
   o3: 100000,
 };
 
@@ -119,6 +121,7 @@ const INPUT_TOKEN_COSTS = {
   "o1-2024-12-17": 15 / ONE_MILLION,
   "gpt-4.1": 2 / ONE_MILLION,
   "gpt-4.1-mini": 0.4 / ONE_MILLION,
+  "o4-mini": 1.1 / ONE_MILLION,
   o3: 10 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
@@ -151,6 +154,7 @@ const OUTPUT_TOKEN_COSTS = {
   "o1-2024-12-17": 60 / ONE_MILLION,
   "gpt-4.1": 8 / ONE_MILLION,
   "gpt-4.1-mini": 1.6 / ONE_MILLION,
+  "o4-mini": 4.4 / ONE_MILLION,
   o3: 40 / ONE_MILLION,
 };
 const PORTKEY_VIRTUAL_KEYS = {
@@ -185,6 +189,7 @@ const PORTKEY_VIRTUAL_KEYS = {
   "o1-2024-12-17": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4.1": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "gpt-4.1-mini": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "o4-mini": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   o3: process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
 };
 
@@ -234,7 +239,8 @@ const sendOpenAIRequest = async (
       model === "o1-mini-2024-09-12" ||
       model === "o1-preview-2024-09-12" ||
       model === "o1-2024-12-17" ||
-      model === "o3";
+      model === "o3" ||
+      model === "o4-mini";
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY ?? "",
     });
@@ -372,7 +378,8 @@ export const sendGptRequest = async (
       model === "o1-mini-2024-09-12" ||
       model === "o1-preview-2024-09-12" ||
       model === "o1-2024-12-17" ||
-      model === "o3";
+      model === "o3" ||
+      model === "o4-mini";
     // Check if the prompt fits within the context window
     if (!isPromptWithinContextWindow(userPrompt, systemPrompt, model)) {
       // If it doesn't fit, try with the largest model
