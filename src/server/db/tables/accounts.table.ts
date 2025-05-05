@@ -23,6 +23,9 @@ export class AccountsTable extends BaseTable {
     linearAccessToken: t.text(0, Infinity).nullable(),
     linearRefreshToken: t.text(0, Infinity).nullable(),
     linearUsername: t.text(0, Infinity).nullable(),
+    zendeskAccessToken: t.text(0, Infinity).nullable(),
+    zendeskRefreshToken: t.text(0, Infinity).nullable(),
+    zendeskUsername: t.text(0, Infinity).nullable(),
     refresh_token_expires_in: t.integer().nullable(),
   }));
 }

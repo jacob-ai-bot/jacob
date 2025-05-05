@@ -47,3 +47,9 @@ export enum OnboardingStatus {
   READY = "ready",
   DONE = "done",
 }
+
+export enum IssueBoardSource {
+  Jira = "jira",
+  Linear = "linear",
+  Zendesk = "zendesk",
+}
