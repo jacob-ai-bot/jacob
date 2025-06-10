@@ -40,6 +40,7 @@ const CONTEXT_WINDOW = {
   "claude-3-5-sonnet-20241022": 200000,
   "claude-3-5-haiku-20241022": 200000,
   "claude-3-7-sonnet-20250219": 200000,
+  "claude-sonnet-4-20250514": 200000,
   "llama-3.1-sonar-large-128k-online": 127072,
   "llama-3.1-sonar-small-128k-online": 127072,
   "llama3-70b-8192": 8192, // Limited to 8K during preview, will be 128K in the future
@@ -54,6 +55,7 @@ const CONTEXT_WINDOW = {
   "gpt-4.1-mini": 1047576,
   "o4-mini": 200000,
   o3: 200000,
+  "o3-pro-2025-06-10": 200000,
 };
 
 export const MAX_OUTPUT = {
@@ -74,6 +76,7 @@ export const MAX_OUTPUT = {
   "claude-3-5-sonnet-20241022": 8192,
   "claude-3-5-haiku-20241022": 4096,
   "claude-3-7-sonnet-20250219": 64000,
+  "claude-sonnet-4-20250514": 64000,
   "llama-3.1-sonar-large-128k-online": 4096,
   "llama-3.1-sonar-small-128k-online": 4096,
   "llama3-70b-8192": 4096,
@@ -88,6 +91,7 @@ export const MAX_OUTPUT = {
   "gpt-4.1-mini": 32768,
   "o4-mini": 100000,
   o3: 100000,
+  "o3-pro-2025-06-10": 100000,
 };
 
 const ONE_MILLION = 1000000;
@@ -109,6 +113,7 @@ const INPUT_TOKEN_COSTS = {
   "claude-3-5-sonnet-20241022": 3 / ONE_MILLION,
   "claude-3-5-haiku-20241022": 1 / ONE_MILLION,
   "claude-3-7-sonnet-20250219": 3 / ONE_MILLION,
+  "claude-sonnet-4-20250514": 3 / ONE_MILLION,
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
   "llama3-70b-8192": 0.59 / ONE_MILLION,
@@ -122,7 +127,8 @@ const INPUT_TOKEN_COSTS = {
   "gpt-4.1": 2 / ONE_MILLION,
   "gpt-4.1-mini": 0.4 / ONE_MILLION,
   "o4-mini": 1.1 / ONE_MILLION,
-  o3: 10 / ONE_MILLION,
+  o3: 2 / ONE_MILLION,
+  "o3-pro-2025-06-10": 20 / ONE_MILLION,
 };
 const OUTPUT_TOKEN_COSTS = {
   "gpt-4-turbo-2024-04-09": 30 / ONE_MILLION,
@@ -142,6 +148,7 @@ const OUTPUT_TOKEN_COSTS = {
   "claude-3-5-sonnet-20241022": 15 / ONE_MILLION,
   "claude-3-5-haiku-20241022": 5 / ONE_MILLION,
   "claude-3-7-sonnet-20250219": 15 / ONE_MILLION,
+  "claude-sonnet-4-20250514": 15 / ONE_MILLION,
   "llama-3.1-sonar-large-128k-online": 1 / ONE_MILLION,
   "llama-3.1-sonar-small-128k-online": 0.2 / ONE_MILLION,
   "llama3-70b-8192": 0.79 / ONE_MILLION,
@@ -155,7 +162,8 @@ const OUTPUT_TOKEN_COSTS = {
   "gpt-4.1": 8 / ONE_MILLION,
   "gpt-4.1-mini": 1.6 / ONE_MILLION,
   "o4-mini": 4.4 / ONE_MILLION,
-  o3: 40 / ONE_MILLION,
+  o3: 8 / ONE_MILLION,
+  "o3-pro-2025-06-10": 80 / ONE_MILLION,
 };
 const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4-turbo-2024-04-09": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
@@ -175,6 +183,7 @@ const PORTKEY_VIRTUAL_KEYS = {
   "claude-3-5-sonnet-20241022": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-5-haiku-20241022": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "claude-3-7-sonnet-20250219": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
+  "claude-sonnet-4-20250514": process.env.PORTKEY_VIRTUAL_KEY_ANTHROPIC,
   "llama-3.1-sonar-large-128k-online":
     process.env.PORTKEY_VIRTUAL_KEY_PERPLEXITY,
   "llama-3.1-sonar-small-128k-online":
@@ -191,6 +200,7 @@ const PORTKEY_VIRTUAL_KEYS = {
   "gpt-4.1-mini": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   "o4-mini": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
   o3: process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
+  "o3-pro-2025-06-10": process.env.PORTKEY_VIRTUAL_KEY_OPENAI,
 };
 
 export type Model = keyof typeof CONTEXT_WINDOW;
@@ -240,6 +250,7 @@ const sendOpenAIRequest = async (
       model === "o1-preview-2024-09-12" ||
       model === "o1-2024-12-17" ||
       model === "o3" ||
+      model === "o3-pro-2025-06-10" ||
       model === "o4-mini";
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY ?? "",
@@ -379,6 +390,7 @@ export const sendGptRequest = async (
       model === "o1-preview-2024-09-12" ||
       model === "o1-2024-12-17" ||
       model === "o3" ||
+      model === "o3-pro-2025-06-10" ||
       model === "o4-mini";
     // Check if the prompt fits within the context window
     if (!isPromptWithinContextWindow(userPrompt, systemPrompt, model)) {

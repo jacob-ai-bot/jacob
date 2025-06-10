@@ -113,7 +113,7 @@ export default App;
       3,
       60000,
       undefined,
-      "o3",
+      "claude-sonnet-4-20250514",
     );
 
     if (rawFileContent) {
