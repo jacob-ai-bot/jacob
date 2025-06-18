@@ -259,7 +259,7 @@ Below is the context and detailed steps to guide the process.
         3,
         60000,
         null,
-        "o3-pro-2025-06-10",
+        "o3",
       );
       console.log("\n\n\n\n\n****** Generated plan:", o1Plan, "\n\n\n\n\n");
     } catch (error) {
@@ -501,7 +501,7 @@ Step 2. **CreateNewCode**:
         3,
         60000,
         null,
-        "o3-pro-2025-06-10",
+        "o3",
       );
     } catch (error) {
       console.error("Error generating bugfix plan:", error);
@@ -646,7 +646,7 @@ Step 2. **CreateNewCode**:
         3,
         60000,
         null,
-        "o3-pro-2025-06-10",
+        "o3",
       );
       console.log(
         "\n\n\n\n\n****** Generated code review plan:",

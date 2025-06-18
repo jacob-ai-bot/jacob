@@ -25,7 +25,7 @@ export const evaluate = async (
   userPrompt: string,
   systemPrompt: string,
   baseEventData: BaseEventData | undefined,
-  models: Model[] = ["o3-pro-2025-06-10"],
+  models: Model[] = ["o3"],
 ): Promise<EvaluationInfo[]> => {
   const bestSystemPrompt = `You are the top, most distinguished Technical Fellow at Microsoft. You must provide a very harsh but fair evaluation of this GPT-generated output and determine its quality. Pay special attention to the instructions that were given in the prompt. Your evaluation will be based on how closely the output adheres to these original instructions, how well the output addresses the original GitHub issue, and the overall quality of the response. 
   If this is a code change, your evaluation should specifically note if the code adheres to the exit criteria (if given), is typed properly (if needed), and ONLY makes the minimal number of changes necessary to address the issue. Check to ensure the code file was not cut off prematurely. 
@@ -88,11 +88,7 @@ export const sendSelfConsistencyChainOfThoughtGptRequest = async (
   retries = 3,
   delay = 60000,
   imagePrompt: OpenAI.Chat.ChatCompletionMessageParam | null = null,
-  models: Model[] = [
-    "o3-pro-2025-06-10",
-    "claude-sonnet-4-20250514",
-    "o3-pro-2025-06-10",
-  ],
+  models: Model[] = ["o3", "claude-sonnet-4-20250514", "o3"],
   minTemperature = 0.1,
   maxTemperature = 0.8,
   previousEvaluations: Evaluation[] | null = null,
